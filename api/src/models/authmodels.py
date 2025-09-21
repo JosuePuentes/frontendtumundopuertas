@@ -1,0 +1,123 @@
+from pydantic import BaseModel, EmailStr, Field
+from typing import List, Optional, Dict
+from bson import ObjectId
+
+class Client(BaseModel):
+    rif: str
+    encargado: str
+    direccion: str
+    telefono: str
+    email: str
+    password: str
+    descripcion: str
+    dias_credito: int
+    limite_credito: float
+    activo: bool = True
+    descuento1: float = 0
+    descuento2: float = 0
+    descuento3: float = 0
+
+class ClientUpdate(BaseModel):
+    rif: Optional[str] = None
+    encargado: Optional[str] = None
+    direccion: Optional[str] = None
+    telefono: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None # Para cambiarla opcionalmente
+    descripcion: Optional[str] = None
+    dias_credito: Optional[int] = None
+    limite_credito: Optional[float] = None
+    activo: Optional[bool] = None
+    descuento1: Optional[float] = None
+    descuento2: Optional[float] = None
+    descuento3: Optional[float] = None
+
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class AdminLogin(BaseModel):
+    usuario: str
+    password: str
+    
+class UserAdmin(BaseModel):
+    usuario: Optional[str] = None
+    password: Optional[str] = None
+    permisos: Optional[List[str]] = None
+    nombreCompleto: Optional[str] = None
+    identificador: Optional[str] = None
+
+class Empleado(BaseModel):
+    permisos: List[str] = []
+    nombreCompleto: Optional[str] = None
+    identificador: Optional[str] = None
+
+class Cliente(BaseModel):
+    nombre: str
+    rif: str
+    direccion: str
+    telefono: str
+    
+
+class PedidoItem(BaseModel):
+    id: str
+    codigo: str
+    nombre: str
+    descripcion: str
+    categoria: str
+    precio: float
+    costo: float
+    costoProduccion: float  # Nuevo campo
+    cantidad: int
+    activo: bool = True
+    detalleitem: Optional[str] = ""
+    imagenes: Optional[List[str]] = []
+
+class AsignacionArticulo(BaseModel):
+    itemId: str
+    empleadoId: str
+    nombreempleado: str
+    fecha_inicio: str
+    estado: str
+    descripcionitem: str
+    costoproduccion: str
+
+class PedidoSeguimiento(BaseModel):
+    orden: int
+    nombre_subestado: str
+    estado: str
+    fecha_inicio: Optional[str] = None
+    fecha_fin: Optional[str] = None
+    asignaciones_articulos: Optional[List[AsignacionArticulo]] = None
+
+class RegistroPago(BaseModel):
+    fecha: str   # ISO date
+    monto: float
+    estado: str  # "abonado", "pagado", "sin pago"
+
+
+class Pedido(BaseModel):
+    cliente_id: str
+    cliente_nombre: str
+    fecha_creacion: str
+    fecha_actualizacion: str
+    estado_general: str
+    items: List[PedidoItem]
+    seguimiento: List[PedidoSeguimiento]
+    pago: Optional[str] = None   # "sin pago" | "abonado" | "pagado"
+    historial_pagos: Optional[List[RegistroPago]] = []
+
+class Item(BaseModel):
+    _id: str
+    codigo: str
+    nombre: str
+    descripcion: str
+    categoria: str
+    precio: float
+    costo: float
+    costoProduccion: float  # Nuevo campo
+    cantidad: int
+    activo: bool = True
+    imagenes: Optional[List[str]] = []
