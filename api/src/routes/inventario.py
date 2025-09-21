@@ -51,36 +51,43 @@ async def update_item(item_id: str, item: Item):
     return {"message": "Item actualizado correctamente", "id": item_id}
 
 @router.post("/bulk")
-async def bulk_create_items(items: List[Item]):
+async def bulk_upsert_items(items: List[Item]):
     inserted_count = 0
+    updated_count = 0
     skipped_items = []
     errors = []
 
     for item_data in items:
-        # Check if item with same codigo or nombre already exists
-        existing_item = items_collection.find_one({"$or": [
-            {"codigo": item_data.codigo},
-            {"nombre": item_data.nombre}
-        ]})
-
-        if existing_item:
-            skipped_items.append({"item": item_data.dict(by_alias=True), "reason": "Item con código o nombre ya existente"})
-            continue
+        item_dict = item_data.dict(by_alias=True)
         
         # Ensure _id is not set for new items, let MongoDB generate it
-        item_dict = item_data.dict(by_alias=True)
         if "_id" in item_dict:
             del item_dict["_id"]
 
-        try:
-            items_collection.insert_one(item_dict)
-            inserted_count += 1
-        except Exception as e:
-            errors.append({"item": item_data.dict(by_alias=True), "error": str(e)})
+        # Check if item with same codigo already exists
+        existing_item = items_collection.find_one({"codigo": item_data.codigo})
+
+        if existing_item:
+            # Update existing item
+            try:
+                items_collection.update_one(
+                    {"_id": existing_item["_id"]},
+                    {"$set": item_dict}
+                )
+                updated_count += 1
+            except Exception as e:
+                errors.append({"item": item_data.dict(by_alias=True), "error": str(e), "action": "update"})
+        else:
+            # Insert new item
+            try:
+                items_collection.insert_one(item_dict)
+                inserted_count += 1
+            except Exception as e:
+                errors.append({"item": item_data.dict(by_alias=True), "error": str(e), "action": "insert"})
 
     return {
-        "message": f"Procesamiento de carga masiva completado. {inserted_count} items insertados, {len(skipped_items)} saltados.",
+        "message": f"Procesamiento de carga masiva completado. {inserted_count} items insertados, {updated_count} items actualizados, {len(errors)} con errores.",
         "inserted_count": inserted_count,
-        "skipped_items": skipped_items,
+        "updated_count": updated_count,
         "errors": errors
     }
