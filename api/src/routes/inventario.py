@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, status, Query
 from ..config.mongodb import items_collection
-from ..models.authmodels import Item
+from ..models.authmodels import Item, InventarioExcelItem
 from bson import ObjectId
+import openpyxl
+import io
 
 router = APIRouter()
 
@@ -27,15 +29,14 @@ async def get_item(item_id: str):
 
 @router.post("/")
 async def create_item(item: Item):
-    existing_item = items_collection.find_one({"nombre": item.nombre})
+    existing_item = items_collection.find_one({"codigo": item.codigo})
     if existing_item:
-        raise HTTPException(status_code=400, detail="El item ya existe")
-    result = items_collection.insert_one(item.dict())
+        raise HTTPException(status_code=400, detail="El item con este código ya existe")
+    result = items_collection.insert_one(item.dict(by_alias=True, exclude_unset=True))
     return {"message": "Item creado correctamente", "id": str(result.inserted_id)}
 
 @router.put("/id/{item_id}/")
 async def update_item(item_id: str, item: Item):
-    # Validar que ningún valor del item sea 0 o "0"
     try:
         item_obj_id = ObjectId(item_id)
     except Exception as e:
@@ -48,3 +49,96 @@ async def update_item(item_id: str, item: Item):
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Item no encontrado")
     return {"message": "Item actualizado correctamente", "id": item_id}
+
+@router.post("/upload-excel", status_code=status.HTTP_201_CREATED)
+async def upload_inventory_excel(file: UploadFile = File(...)):
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Formato de archivo no válido. Se espera un archivo Excel (.xlsx o .xls)")
+
+    try:
+        contents = await file.read()
+        workbook = openpyxl.load_workbook(io.BytesIO(contents))
+        sheet = workbook.active
+
+        # Asumiendo que la primera fila son los encabezados
+        headers = [cell.value for cell in sheet[1]]
+        expected_headers = ["codigo", "descripcion", "departamento", "marca", "precio", "costo", "existencia"]
+
+        # Validar que los encabezados esperados estén presentes
+        if not all(header in headers for header in expected_headers):
+            raise HTTPException(status_code=400, detail=f"Faltan encabezados en el archivo Excel. Se esperan: {', '.join(expected_headers)}")
+
+        items_to_insert = []
+        for row_index in range(2, sheet.max_row + 1):
+            row_data = {headers[i]: cell.value for i, cell in enumerate(sheet[row_index])}
+            
+            # Validate with InventarioExcelItem model
+            try:
+                excel_item = InventarioExcelItem(**row_data)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Error de validación en la fila {row_index}: {e}")
+
+            # Map to the main Item model
+            item_data = Item(
+                codigo=excel_item.codigo,
+                nombre=excel_item.descripcion, # Defaulting nombre to descripcion
+                descripcion=excel_item.descripcion,
+                departamento=excel_item.departamento,
+                marca=excel_item.marca,
+                categoria="General", # Defaulting categoria
+                precio=excel_item.precio,
+                costo=excel_item.costo,
+                # costoProduccion will use its default value from the Item model
+                cantidad=0, # Defaulting quantity, as it's not in Excel input
+                existencia=excel_item.existencia,
+                activo=True,
+                imagenes=[]
+            )
+            items_to_insert.append(item_data.dict(by_alias=True, exclude_unset=True))
+
+        if not items_to_insert:
+            raise HTTPException(status_code=400, detail="No se encontraron datos válidos para insertar en el archivo Excel.")
+
+        # Insert or update items
+        inserted_count = 0
+        updated_count = 0
+        for item_data in items_to_insert:
+            # Check if item with this 'codigo' already exists
+            existing_item = items_collection.find_one({"codigo": item_data["codigo"]})
+            if existing_item:
+                items_collection.update_one(
+                    {"_id": existing_item["_id"]},
+                    {"$set": item_data}
+                )
+                updated_count += 1
+            else:
+                items_collection.insert_one(item_data)
+                inserted_count += 1
+
+        return {"message": f"Inventario procesado correctamente. Insertados: {inserted_count}, Actualizados: {updated_count}"}
+
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al procesar el archivo Excel: {str(e)}")
+
+@router.get("/search", response_model=List[Item])
+async def search_items(
+    query: str = Query(..., min_length=1, description="Texto de búsqueda para código, descripción, nombre, departamento o marca"),
+    limit: int = Query(10, gt=0, description="Número máximo de resultados a devolver"),
+    skip: int = Query(0, ge=0, description="Número de resultados a omitir para paginación")
+):
+    search_filter = {
+        "$or": [
+            {"codigo": {"$regex": query, "$options": "i"}},
+            {"descripcion": {"$regex": query, "$options": "i"}},
+            {"nombre": {"$regex": query, "$options": "i"}},
+            {"departamento": {"$regex": query, "$options": "i"}},
+            {"marca": {"$regex": query, "$options": "i"}}
+        ]
+    }
+    
+    items = list(items_collection.find(search_filter).skip(skip).limit(limit))
+    for item in items:
+        item["_id"] = str(item["_id"])
+    return items
