@@ -157,7 +157,7 @@ async def finalizar_pedido(
     if error_subestado:
         raise HTTPException(status_code=500, detail=f"Error actualizando subestado: {error_subestado}")
     if not actualizado:
-        raise HTTPException(status_code=404, detail="Subestado no encontrado")
+        raise HTTPException(status_code=400, detail="Subestado no encontrado")
     try:
         result = pedidos_collection.update_one(
             {"_id": pedido_obj_id},
@@ -350,7 +350,7 @@ async def get_comisiones_produccion_terminadas_por_empleado(
                             "nombreempleado": asignacion.get("nombreempleado"),
                             "fecha_inicio": asignacion.get("fecha_inicio"),
                             "estado": asignacion.get("estado"),
-                            "descripcionitem": asignacion.get("descripcionitem"),
+                            "descripcionitem": descripcion_item,
                             "costoproduccion": asignacion.get("costoproduccion"),
                             "fecha_fin": asignacion.get("fecha_fin"),
                             
@@ -550,9 +550,6 @@ async def get_pedidos_por_estados(
     return pedidos
 
 
-# Endpoint único para actualizar el estado de pago y/o registrar abonos
-    return pedidos
-
 # Endpoint para totalizar un pago de un pedido
 @router.put("/{pedido_id}/totalizar-pago")
 async def totalizar_pago(
@@ -652,31 +649,25 @@ async def obtener_pagos(
         try:
             inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d")
             fin = datetime.strptime(fecha_fin, "%Y-%m-%d") + timedelta(days=1)
+            filtro["fecha_creacion"] = {"$gte": inicio, "$lt": fin}
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Formato de fecha inválido, use YYYY-MM-DD")
 
-            filtro = {}
-            if fecha_inicio and fecha_fin:
-                try:
-                    inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d")
-                    fin = datetime.strptime(fecha_fin, "%Y-%m-%d") + timedelta(days=1)
-                    filtro["fecha_creacion"] = {"$gte": inicio, "$lt": fin}
-                except ValueError:
-                    return {"error": "Formato de fecha inválido, use YYYY-MM-DD"}
-
-            # Buscar pedidos
-            pedidos = list(
-                pedidos_collection.find(
-                    filtro,
-                    {
-                        "_id": 1,
-                        "cliente_id": 1,
-                        "cliente_nombre": 1,
-                        "pago": 1,
-                        "historial_pagos": 1,
-                        "total_abonado": 1,
-                        "items": 1, # Necesario para calcular el total del pedido en el frontend
-                    },
-                )
-            )
+    # Buscar pedidos
+    pedidos = list(
+        pedidos_collection.find(
+            filtro,
+            {
+                "_id": 1,
+                "cliente_id": 1,
+                "cliente_nombre": 1,
+                "pago": 1,
+                "historial_pagos": 1,
+                "total_abonado": 1,
+                "items": 1, # Necesario para calcular el total del pedido en el frontend
+            },
+        )
+    )
 
     # Convertir ObjectId a str
     for p in pedidos:
