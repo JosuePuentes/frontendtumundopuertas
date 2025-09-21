@@ -653,28 +653,30 @@ async def obtener_pagos(
             inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d")
             fin = datetime.strptime(fecha_fin, "%Y-%m-%d") + timedelta(days=1)
 
-            # Filtrar por historial_pagos.fecha en el rango
-            filtro = {
-                "historial_pagos.fecha": {
-                    "$gte": inicio,
-                    "$lt": fin
-                }
-            }
-        except ValueError:
-            return {"error": "Formato de fecha inválido, use YYYY-MM-DD"}
+            filtro = {}
+            if fecha_inicio and fecha_fin:
+                try:
+                    inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d")
+                    fin = datetime.strptime(fecha_fin, "%Y-%m-%d") + timedelta(days=1)
+                    filtro["fecha_creacion"] = {"$gte": inicio, "$lt": fin}
+                except ValueError:
+                    return {"error": "Formato de fecha inválido, use YYYY-MM-DD"}
 
-    # Buscar pedidos con pagos
-    pedidos = list(
-        pedidos_collection.find(
-            filtro,
-            {
-                "_id": 1,
-                "cliente_nombre": 1,
-                "pago": 1,
-                "historial_pagos": 1,
-            },
-        )
-    )
+            # Buscar pedidos
+            pedidos = list(
+                pedidos_collection.find(
+                    filtro,
+                    {
+                        "_id": 1,
+                        "cliente_id": 1,
+                        "cliente_nombre": 1,
+                        "pago": 1,
+                        "historial_pagos": 1,
+                        "total_abonado": 1,
+                        "items": 1, # Necesario para calcular el total del pedido en el frontend
+                    },
+                )
+            )
 
     # Convertir ObjectId a str
     for p in pedidos:
