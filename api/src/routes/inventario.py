@@ -70,9 +70,29 @@ async def bulk_upsert_items(items: List[Item]):
         if existing_item:
             # Update existing item
             try:
+                update_fields = {
+                    "descripcion": item_dict.get("descripcion"),
+                    "modelo": item_dict.get("modelo"),
+                    "precio": item_dict.get("precio"),
+                    "costo": item_dict.get("costo"),
+                    "nombre": item_dict.get("nombre"),
+                    "categoria": item_dict.get("categoria"),
+                    "costoProduccion": item_dict.get("costoProduccion"),
+                    "activo": item_dict.get("activo"),
+                    "imagenes": item_dict.get("imagenes"),
+                }
+                # Remove None values to avoid setting them in MongoDB
+                update_fields = {k: v for k, v in update_fields.items() if v is not None}
+
+                update_operation = {"$set": update_fields}
+
+                # Add to cantidad if provided
+                if "cantidad" in item_dict:
+                    update_operation["$inc"] = {"cantidad": item_dict["cantidad"]}
+
                 items_collection.update_one(
                     {"_id": existing_item["_id"]},
-                    {"$set": item_dict}
+                    update_operation
                 )
                 updated_count += 1
             except Exception as e:
