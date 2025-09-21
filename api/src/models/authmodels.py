@@ -110,11 +110,12 @@ class Pedido(BaseModel):
     historial_pagos: Optional[List[RegistroPago]] = []
 
 class Item(BaseModel):
-    _id: str
+    _id: Optional[str] = Field(None, alias="id")
     codigo: str
     nombre: str
     descripcion: str
     categoria: str
+    modelo: str # Nuevo campo
     precio: float
     costo: float
     costoProduccion: float  # Nuevo campo
