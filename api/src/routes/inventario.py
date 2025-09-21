@@ -86,9 +86,9 @@ async def bulk_upsert_items(items: List[Item]):
 
                 update_operation = {"$set": update_fields}
 
-                # Add to cantidad if provided
+                # Set cantidad if provided
                 if "cantidad" in item_dict:
-                    update_operation["$inc"] = {"cantidad": item_dict["cantidad"]}
+                    update_operation["$set"]["cantidad"] = item_dict["cantidad"]
 
                 items_collection.update_one(
                     {"_id": existing_item["_id"]},
