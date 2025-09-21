@@ -551,6 +551,40 @@ async def get_pedidos_por_estados(
 
 
 # Endpoint único para actualizar el estado de pago y/o registrar abonos
+    return pedidos
+
+# Endpoint para totalizar un pago de un pedido
+@router.put("/{pedido_id}/totalizar-pago")
+async def totalizar_pago(
+    pedido_id: str
+):
+    try:
+        pedido_obj_id = ObjectId(pedido_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"pedido_id no es un ObjectId válido: {str(e)}")
+
+    update_result = pedidos_collection.update_one(
+        {"_id": pedido_obj_id},
+        {"$set": {"pago": "pagado", "fecha_totalizado": datetime.utcnow().isoformat()}}
+    )
+
+    if update_result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+    return {"message": "Pago totalizado correctamente"}
+
+@router.get("/company-details")
+async def get_company_details():
+    # Hardcoded company details for now
+    return {
+        "nombre": "Tu Mundo Puertas",
+        "rif": "J-12345678-9",
+        "direccion": "Calle Ficticia, Edificio Ejemplo, Piso 1, Oficina 1A, Ciudad Ficticia, Estado Imaginario",
+        "telefono": "+58 212 1234567",
+        "email": "info@tumundopuertas.com"
+    }
+
+# Endpoint único para actualizar el estado de pago y/o registrar abonos
 from fastapi import Request
 
 @router.patch("/{pedido_id}/pago")
@@ -579,8 +613,17 @@ async def actualizar_pago(
         update["$push"] = {"historial_pagos": registro}
 
     try:
+        # Obtener el pedido actual para calcular el total_abonado
+        pedido = pedidos_collection.find_one({"_id": ObjectId(pedido_id)})
+        if not pedido:
+            raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+        current_total_abonado = pedido.get("total_abonado", 0.0)
+        new_total_abonado = current_total_abonado + (monto if monto is not None else 0.0)
+        update["$set"]["total_abonado"] = new_total_abonado
+
         result = pedidos_collection.update_one(
-            {"_id": ObjectId(pedido_id)},
+            {"_id": pedido_obj_id},
             update
         )
     except Exception as e:

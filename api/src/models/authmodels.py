@@ -106,8 +106,16 @@ class Pedido(BaseModel):
     estado_general: str
     items: List[PedidoItem]
     seguimiento: List[PedidoSeguimiento]
-    pago: Optional[str] = None   # "sin pago" | "abonado" | "pagado"
+    pago: Optional[str] = "sin pago"   # "sin pago" | "abonado" | "pagado"
     historial_pagos: Optional[List[RegistroPago]] = []
+    total_abonado: float = 0.0
+
+class Company(BaseModel):
+    nombre: str
+    rif: str
+    direccion: str
+    telefono: str
+    email: str
 
 class Item(BaseModel):
     _id: Optional[str] = Field(None, alias="id")
