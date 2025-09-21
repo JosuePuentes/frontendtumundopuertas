@@ -118,7 +118,7 @@ class Company(BaseModel):
     email: str
 
 class Item(BaseModel):
-    _id: Optional[str] = Field(None, alias="id")
+    id: Optional[str] = Field(None, alias="_id")
     codigo: str
     nombre: str
     descripcion: str
@@ -126,7 +126,12 @@ class Item(BaseModel):
     modelo: str # Nuevo campo
     precio: float
     costo: float
-    costoProduccion: float  # Nuevo campo
+    costoProduccion: float
     cantidad: int
     activo: bool = True
     imagenes: Optional[List[str]] = []
+
+    class Config:
+        populate_by_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}

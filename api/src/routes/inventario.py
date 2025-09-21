@@ -31,7 +31,7 @@ async def create_item(item: Item):
     existing_item = items_collection.find_one({"nombre": item.nombre})
     if existing_item:
         raise HTTPException(status_code=400, detail="El item ya existe")
-    result = items_collection.insert_one(item.dict())
+    result = items_collection.insert_one(item.dict(by_alias=True))
     return {"message": "Item creado correctamente", "id": str(result.inserted_id)}
 
 @router.put("/id/{item_id}/")
@@ -44,7 +44,7 @@ async def update_item(item_id: str, item: Item):
 
     result = items_collection.update_one(
         {"_id": item_obj_id},
-        {"$set": item.dict(exclude_unset=True)}
+        {"$set": item.dict(exclude_unset=True, by_alias=True)}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Item no encontrado")
@@ -64,11 +64,11 @@ async def bulk_create_items(items: List[Item]):
         ]})
 
         if existing_item:
-            skipped_items.append({"item": item_data.dict(), "reason": "Item con código o nombre ya existente"})
+            skipped_items.append({"item": item_data.dict(by_alias=True), "reason": "Item con código o nombre ya existente"})
             continue
         
         # Ensure _id is not set for new items, let MongoDB generate it
-        item_dict = item_data.dict()
+        item_dict = item_data.dict(by_alias=True)
         if "_id" in item_dict:
             del item_dict["_id"]
 
@@ -76,7 +76,7 @@ async def bulk_create_items(items: List[Item]):
             items_collection.insert_one(item_dict)
             inserted_count += 1
         except Exception as e:
-            errors.append({"item": item_data.dict(), "error": str(e)})
+            errors.append({"item": item_data.dict(by_alias=True), "error": str(e)})
 
     return {
         "message": f"Procesamiento de carga masiva completado. {inserted_count} items insertados, {len(skipped_items)} saltados.",
