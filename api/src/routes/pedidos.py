@@ -157,7 +157,7 @@ async def finalizar_pedido(
     if error_subestado:
         raise HTTPException(status_code=500, detail=f"Error actualizando subestado: {error_subestado}")
     if not actualizado:
-        raise HTTPException(status_code=404, detail="Subestado no encontrado")
+        raise HTTPException(status_code=400, detail="Subestado no encontrado")
     try:
         result = pedidos_collection.update_one(
             {"_id": pedido_obj_id},
@@ -350,7 +350,7 @@ async def get_comisiones_produccion_terminadas_por_empleado(
                             "nombreempleado": asignacion.get("nombreempleado"),
                             "fecha_inicio": asignacion.get("fecha_inicio"),
                             "estado": asignacion.get("estado"),
-                            "descripcionitem": asignacion.get("descripcionitem"),
+                            "descripcionitem": descripcion_item,
                             "costoproduccion": asignacion.get("costoproduccion"),
                             "fecha_fin": asignacion.get("fecha_fin"),
                             
@@ -550,6 +550,37 @@ async def get_pedidos_por_estados(
     return pedidos
 
 
+# Endpoint para totalizar un pago de un pedido
+@router.put("/{pedido_id}/totalizar-pago")
+async def totalizar_pago(
+    pedido_id: str
+):
+    try:
+        pedido_obj_id = ObjectId(pedido_id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"pedido_id no es un ObjectId válido: {str(e)}")
+
+    update_result = pedidos_collection.update_one(
+        {"_id": pedido_obj_id},
+        {"$set": {"pago": "pagado", "fecha_totalizado": datetime.utcnow().isoformat()}}
+    )
+
+    if update_result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+    return {"message": "Pago totalizado correctamente"}
+
+@router.get("/company-details")
+async def get_company_details():
+    # Hardcoded company details for now
+    return {
+        "nombre": "Tu Mundo Puertas",
+        "rif": "J-12345678-9",
+        "direccion": "Calle Ficticia, Edificio Ejemplo, Piso 1, Oficina 1A, Ciudad Ficticia, Estado Imaginario",
+        "telefono": "+58 212 1234567",
+        "email": "info@tumundopuertas.com"
+    }
+
 # Endpoint único para actualizar el estado de pago y/o registrar abonos
 from fastapi import Request
 
@@ -579,8 +610,17 @@ async def actualizar_pago(
         update["$push"] = {"historial_pagos": registro}
 
     try:
+        # Obtener el pedido actual para calcular el total_abonado
+        pedido = pedidos_collection.find_one({"_id": ObjectId(pedido_id)})
+        if not pedido:
+            raise HTTPException(status_code=404, detail="Pedido no encontrado")
+
+        current_total_abonado = pedido.get("total_abonado", 0.0)
+        new_total_abonado = current_total_abonado + (monto if monto is not None else 0.0)
+        update["$set"]["total_abonado"] = new_total_abonado
+
         result = pedidos_collection.update_one(
-            {"_id": ObjectId(pedido_id)},
+            {"_id": pedido_obj_id},
             update
         )
     except Exception as e:
@@ -609,26 +649,22 @@ async def obtener_pagos(
         try:
             inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d")
             fin = datetime.strptime(fecha_fin, "%Y-%m-%d") + timedelta(days=1)
-
-            # Filtrar por historial_pagos.fecha en el rango
-            filtro = {
-                "historial_pagos.fecha": {
-                    "$gte": inicio,
-                    "$lt": fin
-                }
-            }
+            filtro["fecha_creacion"] = {"$gte": inicio, "$lt": fin}
         except ValueError:
-            return {"error": "Formato de fecha inválido, use YYYY-MM-DD"}
+            raise HTTPException(status_code=400, detail="Formato de fecha inválido, use YYYY-MM-DD")
 
-    # Buscar pedidos con pagos
+    # Buscar pedidos
     pedidos = list(
         pedidos_collection.find(
             filtro,
             {
                 "_id": 1,
+                "cliente_id": 1,
                 "cliente_nombre": 1,
                 "pago": 1,
                 "historial_pagos": 1,
+                "total_abonado": 1,
+                "items": 1, # Necesario para calcular el total del pedido en el frontend
             },
         )
     )

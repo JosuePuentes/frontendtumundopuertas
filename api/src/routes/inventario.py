@@ -4,6 +4,7 @@ from ..models.authmodels import Item, InventarioExcelItem
 from bson import ObjectId
 import openpyxl
 import io
+from typing import List # Keep this import as it's used in the /bulk endpoint
 
 router = APIRouter()
 
@@ -44,7 +45,7 @@ async def update_item(item_id: str, item: Item):
 
     result = items_collection.update_one(
         {"_id": item_obj_id},
-        {"$set": item.dict(exclude_unset=True)}
+        {"$set": item.dict(exclude_unset=True, by_alias=True)}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Item no encontrado")
@@ -142,3 +143,65 @@ async def search_items(
     for item in items:
         item["_id"] = str(item["_id"])
     return items
+
+@router.post("/bulk")
+async def bulk_upsert_items(items: List[Item]):
+    inserted_count = 0
+    updated_count = 0
+    skipped_items = []
+    errors = []
+
+    for item_data in items:
+        item_dict = item_data.dict(by_alias=True)
+        
+        # Ensure _id is not set for new items, let MongoDB generate it
+        if "_id" in item_dict:
+            del item_dict["_id"]
+
+        # Check if item with same codigo already exists
+        existing_item = items_collection.find_one({"codigo": item_data.codigo})
+
+        if existing_item:
+            # Update existing item
+            try:
+                update_fields = {
+                    "descripcion": item_dict.get("descripcion"),
+                    "modelo": item_dict.get("modelo"),
+                    "precio": item_dict.get("precio"),
+                    "costo": item_dict.get("costo"),
+                    "nombre": item_dict.get("nombre"),
+                    "categoria": item_dict.get("categoria"),
+                    "costoProduccion": item_dict.get("costoProduccion"),
+                    "activo": item_dict.get("activo"),
+                    "imagenes": item_dict.get("imagenes"),
+                }
+                # Remove None values to avoid setting them in MongoDB
+                update_fields = {k: v for k, v in update_fields.items() if v is not None}
+
+                update_operation = {"$set": update_fields}
+
+                # Set cantidad if provided
+                if "cantidad" in item_dict:
+                    update_operation["$set"]["cantidad"] = item_dict["cantidad"]
+
+                items_collection.update_one(
+                    {"_id": existing_item["_id"]},
+                    update_operation
+                )
+                updated_count += 1
+            except Exception as e:
+                errors.append({"item": item_data.dict(by_alias=True), "error": str(e), "action": "update"})
+        else:
+            # Insert new item
+            try:
+                items_collection.insert_one(item_dict)
+                inserted_count += 1
+            except Exception as e:
+                errors.append({"item": item_data.dict(by_alias=True), "error": str(e), "action": "insert"})
+
+    return {
+        "message": f"Procesamiento de carga masiva completado. {inserted_count} items insertados, {updated_count} items actualizados, {len(errors)} con errores.",
+        "inserted_count": inserted_count,
+        "updated_count": updated_count,
+        "errors": errors
+    }
