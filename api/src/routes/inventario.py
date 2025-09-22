@@ -45,7 +45,7 @@ async def update_item(item_id: str, item: Item):
 
     result = items_collection.update_one(
         {"_id": item_obj_id},
-        {"$set": item.dict(exclude_unset=True, by_alias=True)}
+        {"$set": item.dict(exclude_unset=True, by_alias=True, exclude={"_id"})}
     )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Item no encontrado")
