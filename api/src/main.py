@@ -1,14 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-<<<<<<< HEAD
-from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-=======
 
->>>>>>> a8c99d16875711309fadf315b3a6050f28a3ca96
 from .routes.auth import router as auth_router
 from .routes.clientes import router as cliente_router
 from .routes.empleados import router as empleado_router
