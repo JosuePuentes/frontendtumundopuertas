@@ -23,6 +23,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 app = FastAPI()
 
 # Middleware para forzar redirecciones a HTTPS
+# <--- ¡Esta línea es crucial!
 async def force_https_redirects(request: Request, call_next):
     response = await call_next(request)
     if isinstance(response, RedirectResponse):
