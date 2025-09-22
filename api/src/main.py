@@ -26,11 +26,16 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 app = FastAPI()
 
 @app.middleware("http")
-async def custom_trailing_slash_redirect(request: Request, call_next):
+async def redirect_to_https_and_trailing_slash(request: Request, call_next):
+    # 1. Redirigir a HTTPS si la solicitud llega como HTTP
+    if request.url.scheme == "http":
+        new_url = request.url.replace(scheme="https")
+        return RedirectResponse(url=str(new_url), status_code=307)
+
+    # 2. Añadir barra final si es necesario (y ya estamos en HTTPS)
     if not request.url.path.endswith('/') and request.url.path != '/':
         new_path = request.url.path + '/'
-        # Asegurarse de que el esquema sea HTTPS
-        new_url = request.url.replace(path=new_path, scheme="https")
+        new_url = request.url.replace(path=new_path) # Ya estamos en HTTPS
         return RedirectResponse(url=str(new_url), status_code=307)
     
     response = await call_next(request)
