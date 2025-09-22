@@ -1,6 +1,14 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
+<<<<<<< HEAD
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+=======
+
+>>>>>>> a8c99d16875711309fadf315b3a6050f28a3ca96
 from .routes.auth import router as auth_router
 from .routes.clientes import router as cliente_router
 from .routes.empleados import router as empleado_router
@@ -8,6 +16,7 @@ from .routes.pedidos import router as pedido_router
 from .routes.inventario import router as inventario_router
 from .routes.users import router as usuarios_router
 from .routes.files import router as files_router
+
 from dotenv import load_dotenv
 from passlib.context import CryptContext
 import os
@@ -21,6 +30,17 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Inicializar FastAPI
 app = FastAPI()
+
+@app.middleware("http")
+async def custom_trailing_slash_redirect(request: Request, call_next):
+    if not request.url.path.endswith('/') and request.url.path != '/':
+        new_path = request.url.path + '/'
+        # Asegurarse de que el esquema sea HTTPS
+        new_url = request.url.replace(path=new_path, scheme="https")
+        return RedirectResponse(url=str(new_url), status_code=307)
+    
+    response = await call_next(request)
+    return response
 
 # Habilitar CORS
 app.add_middleware(
