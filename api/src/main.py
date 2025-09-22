@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
+
 
 from .routes.auth import router as auth_router
 from .routes.clientes import router as cliente_router
@@ -45,17 +45,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request, call_next):
-        response = await call_next(request)
-        if response.status_code in [307, 308]:
-            location = response.headers.get("location")
-            if location and location.startswith("http://"):
-                https_location = location.replace("http://", "https://", 1)
-                response.headers["location"] = https_location
-        return response
 
-app.add_middleware(HTTPSRedirectMiddleware)
 
 
 # Incluir routers segmentados
