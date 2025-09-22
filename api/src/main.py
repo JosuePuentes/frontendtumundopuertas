@@ -24,7 +24,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # Inicializar FastAPI
 app = FastAPI()
 
-# NUEVO MIDDLEWARE: Manejo personalizado de barras finales y redirección a HTTPS
+@app.middleware("http")
 async def custom_trailing_slash_redirect(request: Request, call_next):
     if not request.url.path.endswith('/') and request.url.path != '/':
         new_path = request.url.path + '/'
