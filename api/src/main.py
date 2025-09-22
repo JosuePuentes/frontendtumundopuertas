@@ -27,8 +27,11 @@ app = FastAPI()
 
 @app.middleware("http")
 async def redirect_to_https_and_trailing_slash(request: Request, call_next):
+    # Obtener el esquema original de la solicitud (confiando en X-Forwarded-Proto)
+    original_scheme = request.headers.get("x-forwarded-proto") or request.url.scheme
+
     # 1. Redirigir a HTTPS si la solicitud llega como HTTP
-    if request.url.scheme == "http":
+    if original_scheme == "http":
         new_url = request.url.replace(scheme="https")
         return RedirectResponse(url=str(new_url), status_code=307)
 
