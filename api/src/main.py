@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse # Importación añadida
 from fastapi.middleware.cors import CORSMiddleware
 from .routes.auth import router as auth_router
 from .routes.clientes import router as cliente_router
@@ -20,6 +21,15 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Inicializar FastAPI
 app = FastAPI()
+
+# Middleware para forzar redirecciones a HTTPS
+async def force_https_redirects(request: Request, call_next):
+    response = await call_next(request)
+    if isinstance(response, RedirectResponse):
+        location = response.headers.get("location")
+        if location and location.startswith("http://"):
+            response.headers["location"] = location.replace("http://", "https://")
+    return response
 
 # Habilitar CORS
 app.add_middleware(
