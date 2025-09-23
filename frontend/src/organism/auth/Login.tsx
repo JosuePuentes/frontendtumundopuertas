@@ -19,7 +19,7 @@ const Login: React.FC = () => {
 		setLoading(true);
 		setError(null);
 		try {
-			const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+			const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 			const res = await fetch(`${apiUrl}/auth/login/`, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },

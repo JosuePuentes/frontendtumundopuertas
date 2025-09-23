@@ -63,7 +63,7 @@ const ModificarEmpleado: React.FC = () => {
   });
 
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
     setLoading(true);
     setError("");
     fetch(`${apiUrl}/empleados/all`)
@@ -99,7 +99,7 @@ const ModificarEmpleado: React.FC = () => {
   };
 
   const onSubmit = async (data: EmpleadoForm) => {
-    const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
     setMensaje("");
     setError("");
     try {

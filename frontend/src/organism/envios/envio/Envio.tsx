@@ -47,7 +47,7 @@ const EnvioPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       const res = await fetch(
         `${apiUrl}/pedidos/estado/?estado_general=orden5`
       );
@@ -63,7 +63,7 @@ const EnvioPage: React.FC = () => {
 
   useEffect(() => {
     fetchPedidos();
-    fetchEmpleado(`${import.meta.env.VITE_API_URL}/empleados/all/`);
+    fetchEmpleado(`${(import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://')}/empleados/all/`);
   }, []);
 
   return (

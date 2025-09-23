@@ -50,7 +50,7 @@ const ModificarItemPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
     fetchItems(`${apiUrl}/inventario/all`);
   }, []);
 

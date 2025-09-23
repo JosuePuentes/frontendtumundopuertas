@@ -96,7 +96,7 @@ const CrearPedido: React.FC = () => {
   const { data: itemsData, loading: itemsLoading, fetchItems } = useItems();
 
   const blurTimeouts = useRef<Record<number, number>>({});
-  const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+  const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 
   useEffect(() => {
     fetchClientes(`${apiUrl}/clientes/all`);

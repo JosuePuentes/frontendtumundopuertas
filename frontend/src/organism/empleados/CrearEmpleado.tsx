@@ -52,7 +52,7 @@ const CrearEmpleado: React.FC = () => {
             setErrorMsg("Completa todos los campos obligatorios.");
             return;
         }
-        const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
         try {
             const response = await fetch(`${apiUrl}/empleados`, {
                 method: "POST",

@@ -86,7 +86,7 @@ const ModificarCliente: React.FC = () => {
       return;
     }
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       const res = await fetch(`${apiUrl}/clientes/id/${clienteSeleccionado?._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
