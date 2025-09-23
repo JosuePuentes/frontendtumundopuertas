@@ -45,7 +45,7 @@ const MisPagos: React.FC = () => {
       if (fechaInicio) params.append("fecha_inicio", fechaInicio);
       if (fechaFin) params.append("fecha_fin", fechaFin);
 
-      const res = await fetch(`${(import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://')}/pedidos/mis-pagos?${params.toString()}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/pedidos/mis-pagos?${params.toString()}`);
       if (!res.ok) throw new Error("Error al obtener pagos");
 
       const data = await res.json();

@@ -88,7 +88,7 @@ interface RegisterResponse {
       }
       setLoading(true);
       try {
-        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
         const res = await fetch(`${apiUrl}/auth/register/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

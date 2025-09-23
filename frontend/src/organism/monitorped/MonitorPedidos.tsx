@@ -25,7 +25,7 @@ const MonitorPedidos: React.FC = () => {
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
   const [shouldSearch, setShouldSearch] = useState(false);
-  const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:8002").replace('http://', 'https://');
+  const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:8002";
 
   const ordenMap: Record<string, string> = {
     orden1: "Herreria",

@@ -53,7 +53,7 @@ const PedidosHerreria: React.FC = () => {
     fetchPedido("/pedidos/estado/?estado_general=orden1&estado_general=pendiente&/")
       .catch(() => setError("Error al cargar los pedidos"))
       .finally(() => setLoading(false));
-    fetchEmpleado(`${(import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://')}/empleados/all/`);
+    fetchEmpleado(`${import.meta.env.VITE_API_URL}/empleados/all/`);
     console.log("Pedidos cargados:", dataPedidos);
   }, []);
 

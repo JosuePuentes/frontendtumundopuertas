@@ -22,12 +22,12 @@ const AsignarEmpleado: React.FC<AsignarEmpleadoProps> = ({ pedidoId, nuevoEstado
 
   // Fetch empleados al montar
   useEffect(() => {
-    const apiurl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+    const apiurl = import.meta.env.VITE_API_URL;
     fetchEmpleado(`${apiurl}/empleados/all`);
     // Obtener el pedido y detectar si ya tiene asignado un empleado
     const fetchPedidoDetalle = async () => {
       try {
-        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
         const res = await fetch(`${apiUrl}/pedidos/id/${pedidoId}`);
         if (!res.ok) return;
         const pedido = await res.json();
@@ -53,7 +53,7 @@ const AsignarEmpleado: React.FC<AsignarEmpleadoProps> = ({ pedidoId, nuevoEstado
     setLoading(true);
     setMessage(null);
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
       const numeroOrden = "1"; // Puedes cambiarlo por la orden que corresponda
       const response = await fetch(`${apiUrl}/pedidos/subestados/`, {
         method: "PUT",

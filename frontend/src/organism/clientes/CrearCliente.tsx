@@ -31,7 +31,7 @@ const CrearCliente: React.FC = () => {
       setMensaje("Completa todos los campos obligatorios.");
       return;
     }
-    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+    const apiUrl = import.meta.env.VITE_API_URL;
     fetch(`${apiUrl}/clientes`, {
       method: "POST",
       headers: {

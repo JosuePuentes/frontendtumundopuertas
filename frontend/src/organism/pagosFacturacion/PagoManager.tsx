@@ -26,7 +26,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
 
     setLoading(true);
     try {
-      const res = await fetch(`${(import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pago, monto }),

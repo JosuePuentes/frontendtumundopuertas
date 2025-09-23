@@ -73,7 +73,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   React.useEffect(() => {
     const fetchPedido = async () => {
       try {
-        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
         const res = await fetch(`${apiUrl}/pedidos/id/${pedidoId}/`);
         if (!res.ok) return;
         const pedido = await res.json();
@@ -152,7 +152,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       consulta.tipo_fecha = "";
     }
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
       const res = await fetch(`${apiUrl}/pedidos/subestados/`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },

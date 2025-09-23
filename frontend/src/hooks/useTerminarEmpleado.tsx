@@ -32,7 +32,7 @@ function useTerminarEmpleado<T = any>(
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${(import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://')}/pedidos/asignacion/terminar`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/pedidos/asignacion/terminar`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

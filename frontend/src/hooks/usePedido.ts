@@ -16,7 +16,7 @@ export function usePedido() {
     setLoading(true);
     setError(null);
     setStatus(null);
-    const apiurl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+    const apiurl = import.meta.env.VITE_API_URL || "https://localhost:3000";
     try {
       const res = await fetch(`${apiurl}${endpoint}`, {
         method: options?.method || "GET",

@@ -14,7 +14,7 @@ const FacturacionPage: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
       const res = await fetch(
         `${apiUrl}/pedidos/estado/?estado_general=orden4`
       );
@@ -30,7 +30,7 @@ const FacturacionPage: React.FC = () => {
 
   useEffect(() => {
     fetchPedidosFacturacion();
-    fetchEmpleado(`${(import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://')}/empleados/all/`);
+    fetchEmpleado(`${import.meta.env.VITE_API_URL}/empleados/all/`);
   }, []);
 
   return (

@@ -209,7 +209,7 @@ const PedidoGroup: React.FC<{ title: string; pedidos: PedidoRuta[]; now: number 
 const DashboardPedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<PedidoRuta[]>([]);
   const [now, setNow] = useState(Date.now());
-      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
       const fetchPedidos = () => {
     fetch(`${apiUrl}/pedidos/produccion/ruta`)
       .then((res) => res.json())
