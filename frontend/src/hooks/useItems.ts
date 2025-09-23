@@ -15,7 +15,7 @@ export function useItems() {
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       let url = `${apiUrl}/inventario/all`;
 
       if (searchQuery) {

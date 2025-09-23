@@ -75,7 +75,7 @@ const CrearItem: React.FC = () => {
       setMensaje("Completa los campos obligatorios.");
       return;
     }
-    const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
     await fetchItems(`${apiUrl}/inventario`, {
       method: "POST",
       body: {
@@ -124,7 +124,7 @@ const CrearItem: React.FC = () => {
     }
 
     setExcelMessage("Subiendo archivo...");
-    const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
     const formData = new FormData();
     formData.append("file", excelFile);
 
