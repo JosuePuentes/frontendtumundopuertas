@@ -620,7 +620,7 @@ async def actualizar_pago(
         update["$set"]["total_abonado"] = new_total_abonado
 
         result = pedidos_collection.update_one(
-            {"_id": pedido_obj_id},
+            {"_id": ObjectId(pedido_id)},
             update
         )
     except Exception as e:
