@@ -66,19 +66,19 @@ async def create_temp_admin():
 
 @router.post("/reset-josue-password/")
 async def reset_josue_password():
-    target_username = "josue"
-    new_password = "admin123"
+    target_identificador = "v24241240"
+    new_password = "genericpass" # Using a more generic password as requested
 
-    user = usuarios_collection.find_one({"usuario": target_username})
+    user = usuarios_collection.find_one({"identificador": target_identificador})
     if not user:
-        raise HTTPException(status_code=404, detail=f"User '{target_username}' not found")
+        raise HTTPException(status_code=404, detail=f"User with identificador '{target_identificador}' not found")
 
     hashed_password = get_password_hash(new_password)
     usuarios_collection.update_one(
         {"_id": user["_id"]},
         {"$set": {"password": hashed_password}}
     )
-    return {"message": f"Password for user '{target_username}' reset successfully to '{new_password}'"}
+    return {"message": f"Password for user with identificador '{target_identificador}' reset successfully to '{new_password}'"}
 
 @router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
