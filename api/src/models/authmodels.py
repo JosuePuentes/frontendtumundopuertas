@@ -56,6 +56,7 @@ class UserAdmin(BaseModel):
     permisos: Optional[List[str]] = None
     nombreCompleto: Optional[str] = None
     identificador: Optional[str] = None
+    rol: Optional[str] = "admin"
     reset_token: Optional[str] = None
     reset_token_expires: Optional[datetime] = None
 
