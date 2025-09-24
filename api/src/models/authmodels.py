@@ -1,6 +1,14 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional, Dict
 from bson import ObjectId
+from datetime import datetime
+
+class ForgotPasswordRequest(BaseModel):
+    usuario: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 class Client(BaseModel):
     rif: str
@@ -48,6 +56,8 @@ class UserAdmin(BaseModel):
     permisos: Optional[List[str]] = None
     nombreCompleto: Optional[str] = None
     identificador: Optional[str] = None
+    reset_token: Optional[str] = None
+    reset_token_expires: Optional[datetime] = None
 
 class Empleado(BaseModel):
     permisos: List[str] = []
