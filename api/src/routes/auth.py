@@ -76,9 +76,9 @@ async def reset_josue_password():
     hashed_password = get_password_hash(new_password)
     usuarios_collection.update_one(
         {"_id": user["_id"]},
-        {"$set": {"password": hashed_password}}
+        {"$set": {"password": hashed_password, "rol": "admin", "permisos": ["admin"]}}
     )
-    return {"message": f"Password for user with identificador '{target_identificador}' reset successfully to '{new_password}'"}
+    return {"message": f"Password and permissions for user with identificador '{target_identificador}' updated successfully. New password: '{new_password}'"}
 
 @router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
