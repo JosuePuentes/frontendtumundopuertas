@@ -35,3 +35,26 @@ async def admin_login(admin: AdminLogin):
         "identificador": db_admin["identificador"]
     }
 
+@router.post("/create-temp-admin/")
+async def create_temp_admin():
+    temp_username = "adminjosue"
+    temp_password = "password123"
+    temp_identificador = "adminjosue_id"
+
+    if usuarios_collection.find_one({"usuario": temp_username}):
+        raise HTTPException(status_code=400, detail="Temporary admin user already exists")
+
+    hashed_password = get_password_hash(temp_password)
+    new_admin = {
+        "usuario": temp_username,
+        "password": hashed_password,
+        "identificador": temp_identificador,
+        "permisos": ["admin"],
+        "rol": "admin",
+        "modulos": []
+    }
+    result = usuarios_collection.insert_one(new_admin)
+    if result.inserted_id:
+        return {"message": "Temporary admin user created successfully"}
+    raise HTTPException(status_code=500, detail="Error creating temporary admin user")
+
