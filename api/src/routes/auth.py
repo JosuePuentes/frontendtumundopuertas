@@ -27,9 +27,7 @@ async def admin_login(admin: AdminLogin):
     if not db_admin:
         raise HTTPException(status_code=401, detail="Usuario no encontrado")
     
-    # Prevent 'adminjosue' from being used as a master password
-    if admin.password == "adminjosue":
-        raise HTTPException(status_code=403, detail="Contraseña maestra no permitida")
+    
     if not verify_password(admin.password, db_admin["password"]):
         raise HTTPException(status_code=401, detail="Contraseña incorrecta")
     access_token = create_admin_access_token(db_admin)
