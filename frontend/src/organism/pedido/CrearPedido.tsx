@@ -71,6 +71,7 @@ type SelectedItem = {
   showSuggestions?: boolean;
   confirmed?: boolean;
   imagenes?: string[];
+  search?: string;
 };
 
 const CrearPedido: React.FC = () => {
@@ -133,7 +134,16 @@ const CrearPedido: React.FC = () => {
       ...prev,
       {
         itemId: "",
+        codigo: "", // Added default
+        nombre: "", // Added default
+        descripcion: "", // Added default
+        categoria: "", // Added default
+        precio: 0, // Added default
+        costo: 0, // Added default
+        costoProduccion: 0, // Added default
         cantidad: 1,
+        existencia: 0, // Added default
+        activo: true, // Added default
         search: "",
         showSuggestions: false,
         confirmed: false,
@@ -168,7 +178,7 @@ const CrearPedido: React.FC = () => {
           if (!copy[index].confirmed) {
             copy[index].search = "";
             copy[index].itemId = "";
-            copy[index].precio = undefined;
+            copy[index].precio = 0;
           }
           copy[index].showSuggestions = false;
         }
@@ -465,7 +475,7 @@ const CrearPedido: React.FC = () => {
             <div className="space-y-4">
               {selectedItems.map((item, idx) => {
                 const filtered: any[] = (itemsData as any[])?.filter((it) =>
-                  it.nombre.toLowerCase().includes(item.search.toLowerCase())
+                  it.nombre.toLowerCase().includes(item.search?.toLowerCase() || '')
                 );
 
                 // Buscar el itemData para mostrar imágenes
@@ -483,7 +493,7 @@ const CrearPedido: React.FC = () => {
                         <FaSearch className="absolute left-3 top-3 text-gray-400" />
                         <Input
                           className="pl-9 focus:ring-2 focus:ring-blue-400"
-                          value={item.search}
+                          value={item.search || ''}
                           onChange={(e) =>
                             handleItemChange(idx, "search", e.target.value)
                           }
@@ -500,7 +510,7 @@ const CrearPedido: React.FC = () => {
                           />
                       </div>
                       {item.showSuggestions &&
-                        item.search.trim().length > 0 && (
+                        item.search && item.search.trim().length > 0 && (
                           <ScrollArea className="absolute left-0 right-0 z-30 mt-2 overflow-auto border rounded-xl bg-white max-h-44 shadow-lg">
                             {filtered.length > 0 ? (
                               filtered.map((f: any, fidx: number) => (
