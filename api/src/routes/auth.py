@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Body
 from ..config.mongodb import usuarios_collection
 from ..auth.auth import get_password_hash, verify_password, create_admin_access_token
 from ..models.authmodels import UserAdmin, AdminLogin, ForgotPasswordRequest, ResetPasswordRequest
