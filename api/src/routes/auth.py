@@ -64,6 +64,22 @@ async def create_temp_admin():
         return {"message": "Temporary admin user created successfully"}
     raise HTTPException(status_code=500, detail="Error creating temporary admin user")
 
+@router.post("/reset-josue-password/")
+async def reset_josue_password():
+    target_username = "josue"
+    new_password = "admin123"
+
+    user = usuarios_collection.find_one({"usuario": target_username})
+    if not user:
+        raise HTTPException(status_code=404, detail=f"User '{target_username}' not found")
+
+    hashed_password = get_password_hash(new_password)
+    usuarios_collection.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"password": hashed_password}}
+    )
+    return {"message": f"Password for user '{target_username}' reset successfully to '{new_password}'"}
+
 @router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
     user = usuarios_collection.find_one({"usuario": request.usuario})
