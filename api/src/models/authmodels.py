@@ -115,6 +115,7 @@ class Pedido(BaseModel):
     fecha_creacion: str
     fecha_actualizacion: str
     estado_general: str
+    creado_por: Optional[str] = None
     items: List[PedidoItem]
     seguimiento: List[PedidoSeguimiento]
     pago: Optional[str] = "sin pago"   # "sin pago" | "abonado" | "pagado"
