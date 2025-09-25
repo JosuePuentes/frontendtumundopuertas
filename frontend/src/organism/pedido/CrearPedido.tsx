@@ -49,6 +49,7 @@ interface PedidoPayload {
   fecha_creacion: string;
   fecha_actualizacion: string;
   estado_general: string;
+  creado_por?: string;
   items: PedidoItem[];
   seguimiento: PedidoSeguimiento[];
 }
@@ -263,12 +264,15 @@ const CrearPedido: React.FC = () => {
       ? clientesData.find((c: any) => String(c.rif) === String(clienteId))
       : null;
 
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+
     const pedidoPayload: PedidoPayload = {
       cliente_id: String(clienteId),
       cliente_nombre: clienteObj?.nombre || "",
       fecha_creacion: fechaISO,
       fecha_actualizacion: fechaISO,
       estado_general: "pendiente",
+      creado_por: user?.usuario || "N/A",
       items: selectedItems.map((item) => {
         const itemData = Array.isArray(itemsData)
           ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
@@ -691,7 +695,7 @@ const CrearPedido: React.FC = () => {
             >
               <AlertTitle>
                 {mensajeTipo === "error" ? "Error" : "Éxito"}
-              </AlertTitle>
+              </Aler tTitle>
               <AlertDescription>{mensaje}</AlertDescription>
             </Alert>
           </div>

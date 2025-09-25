@@ -1,9 +1,10 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Depends
 from bson import ObjectId
 from datetime import datetime, timedelta, timezone
 from ..config.mongodb import pedidos_collection
-from ..models.authmodels import Pedido 
+from ..models.authmodels import Pedido
+from ..auth.auth import get_current_user
 
 router = APIRouter()
 

@@ -21,6 +21,7 @@ type PedidoRuta = {
   fecha_creacion: string;
   fecha_actualizacion: string;
   estado_general: string;
+  creado_por?: string;
   items: PedidoItem[];
   seguimiento: Array<{
     orden: number;
@@ -107,6 +108,7 @@ const PedidoRow: React.FC<{ pedido: PedidoRuta; now: number; isProduccion: boole
       <td className="p-3 text-gray-700">{pedido.cliente_nombre}</td>
       <td className="p-3 text-gray-500">{pedido.cliente_id}</td>
       <td className="p-3 text-gray-600">{new Date(pedido.fecha_creacion).toLocaleDateString()}</td>
+      <td className="p-3 text-gray-600">{pedido.creado_por || "-"}</td>
       <td className="p-3">
         <ul className="flex flex-col gap-2">
           {pedido.items.map((item) => {
@@ -186,6 +188,7 @@ const PedidoGroup: React.FC<{ title: string; pedidos: PedidoRuta[]; now: number 
                 <th className="p-3 font-semibold">Cliente</th>
                 <th className="p-3 font-semibold">ID</th>
                 <th className="p-3 font-semibold">Fecha</th>
+                <th className="p-3 font-semibold">Creado por</th>
                 <th className="p-3 font-semibold">Items</th>
                 <th className="p-3 font-semibold">Estado Actual</th>
                 <th className="p-3 font-semibold">Asignado a</th>

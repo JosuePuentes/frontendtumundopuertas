@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Body
+from fastapi import APIRouter, HTTPException, status
 from ..config.mongodb import usuarios_collection
 from ..auth.auth import get_password_hash, verify_password, create_admin_access_token
 from ..models.authmodels import UserAdmin, AdminLogin, ForgotPasswordRequest, ResetPasswordRequest
@@ -114,15 +114,3 @@ async def reset_password(request: ResetPasswordRequest):
 
     return {"message": "Contraseña restablecida exitosamente."}
 
-@router.post("/reset-password-by-username/")
-async def reset_password_by_username(username: str = Body(...), new_password: str = Body(...)):
-    user = usuarios_collection.find_one({"usuario": username})
-    if not user:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-    hashed_password = get_password_hash(new_password)
-    usuarios_collection.update_one(
-        {"_id": user["_id"]},
-        {"$set": {"password": hashed_password}}
-    )
-    return {"message": f"Contraseña para el usuario '{username}' restablecida exitosamente."}
