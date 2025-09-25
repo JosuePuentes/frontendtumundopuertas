@@ -38,7 +38,8 @@ async def get_pedido(pedido_id: str):
     return pedido
 
 @router.post("/")
-async def create_pedido(pedido: Pedido):
+async def create_pedido(pedido: Pedido, user: dict = Depends(get_current_user)):
+    pedido.creado_por = user.get("usuario")
     print("Creando pedido:", pedido)
     result = pedidos_collection.insert_one(pedido.dict())
     return {"message": "Pedido creado correctamente", "id": str(result.inserted_id), "cliente_nombre": pedido.cliente_nombre}

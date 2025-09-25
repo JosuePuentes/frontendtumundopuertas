@@ -119,7 +119,6 @@ class Pedido(BaseModel):
     items: List[PedidoItem]
     seguimiento: List[PedidoSeguimiento]
     pago: Optional[str] = "sin pago"   # "sin pago" | "abonado" | "pagado"
-    creado_por: Optional[str] = None
     historial_pagos: Optional[List[RegistroPago]] = []
     total_abonado: float = 0.0
 
