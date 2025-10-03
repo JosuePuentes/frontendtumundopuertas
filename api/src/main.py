@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from .routes.auth import router as auth_router
 from .routes.clientes import router as cliente_router
 from .routes.empleados import router as empleado_router
@@ -20,6 +21,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Inicializar FastAPI
 app = FastAPI()
+
+# Middleware para confiar en los encabezados de proxy
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Habilitar CORS
 app.add_middleware(
