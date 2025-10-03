@@ -54,9 +54,14 @@ const ModificarUsuario: React.FC = () => {
 
   useEffect(() => {
     const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+    const token = localStorage.getItem("access_token");
     setLoading(true);
     setError("");
-    fetch(`${apiUrl}/usuarios/all`)
+    fetch(`${apiUrl}/usuarios/all`, {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    })
       .then((response) => {
         if (!response.ok) throw new Error("Error al obtener usuarios");
         return response.json();
@@ -126,6 +131,7 @@ const ModificarUsuario: React.FC = () => {
     }
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+      const token = localStorage.getItem("access_token");
       const payload: any = {
         nombreCompleto: form.nombreCompleto,
         identificador: form.identificador,
@@ -136,7 +142,10 @@ const ModificarUsuario: React.FC = () => {
       }
       const res = await fetch(`${apiUrl}/usuarios/${usuarioSeleccionado?._id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error("Error al modificar usuario");
