@@ -56,7 +56,7 @@ const ModificarUsuario: React.FC = () => {
     const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
     setLoading(true);
     setError("");
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     fetch(`${apiUrl}/usuarios/all`, {
       headers: {
         "Authorization": `Bearer ${token}`
@@ -139,7 +139,7 @@ const ModificarUsuario: React.FC = () => {
       if (form.password && form.password.length >= 6) {
         payload.password = form.password;
       }
-    const token = localStorage.getItem("access_token");
+      const token = localStorage.getItem("access_token");
       const res = await fetch(`${apiUrl}/usuarios/${usuarioSeleccionado?._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
