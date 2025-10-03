@@ -1,9 +1,10 @@
 from typing import List, Optional
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Depends
 from bson import ObjectId
 from datetime import datetime, timedelta, timezone
 from ..config.mongodb import pedidos_collection
-from ..models.authmodels import Pedido 
+from ..models.authmodels import Pedido
+from ..auth.auth import get_current_user
 
 router = APIRouter()
 
@@ -37,7 +38,8 @@ async def get_pedido(pedido_id: str):
     return pedido
 
 @router.post("/")
-async def create_pedido(pedido: Pedido):
+async def create_pedido(pedido: Pedido, user: dict = Depends(get_current_user)):
+    pedido.creado_por = user.get("usuario")
     print("Creando pedido:", pedido)
     result = pedidos_collection.insert_one(pedido.dict())
     return {"message": "Pedido creado correctamente", "id": str(result.inserted_id), "cliente_nombre": pedido.cliente_nombre}
@@ -620,7 +622,7 @@ async def actualizar_pago(
         update["$set"]["total_abonado"] = new_total_abonado
 
         result = pedidos_collection.update_one(
-            {"_id": pedido_obj_id},
+            {"_id": ObjectId(pedido_id)},
             update
         )
     except Exception as e:

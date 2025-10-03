@@ -1,6 +1,14 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional, Dict
 from bson import ObjectId
+from datetime import datetime
+
+class ForgotPasswordRequest(BaseModel):
+    usuario: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
 
 class Client(BaseModel):
     rif: str
@@ -48,6 +56,9 @@ class UserAdmin(BaseModel):
     permisos: Optional[List[str]] = None
     nombreCompleto: Optional[str] = None
     identificador: Optional[str] = None
+    rol: Optional[str] = "admin"
+    reset_token: Optional[str] = None
+    reset_token_expires: Optional[datetime] = None
 
 class Empleado(BaseModel):
     permisos: List[str] = []
@@ -104,6 +115,7 @@ class Pedido(BaseModel):
     fecha_creacion: str
     fecha_actualizacion: str
     estado_general: str
+    creado_por: Optional[str] = None
     items: List[PedidoItem]
     seguimiento: List[PedidoSeguimiento]
     pago: Optional[str] = "sin pago"   # "sin pago" | "abonado" | "pagado"
@@ -122,16 +134,28 @@ class Item(BaseModel):
     codigo: str
     nombre: str
     descripcion: str
+    departamento: Optional[str] = None
+    marca: Optional[str] = None
     categoria: str
-    modelo: str # Nuevo campo
+    modelo: Optional[str] = None # Keeping remote's new field, making it optional
     precio: float
     costo: float
-    costoProduccion: float
+    costoProduccion: float = 0.0  # Keeping my default value
     cantidad: int
+    existencia: int = 0 # New field for stock
     activo: bool = True
     imagenes: Optional[List[str]] = []
 
-    class Config:
+    class Config: # Keeping remote's Config class
         populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+
+class InventarioExcelItem(BaseModel): # Keeping my new model
+    codigo: str
+    descripcion: str
+    departamento: Optional[str] = None
+    marca: Optional[str] = None
+    precio: float
+    costo: float
+    existencia: int = 0

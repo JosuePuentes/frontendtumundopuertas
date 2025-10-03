@@ -1,12 +1,12 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Depends
 from bson import ObjectId
 from ..config.mongodb import usuarios_collection
-from ..auth.auth import get_password_hash
+from ..auth.auth import get_password_hash, get_current_admin_user
 from ..models.authmodels import UserAdmin
 
 router = APIRouter()
 
-@router.put("/{id}")
+@router.put("/{id}", dependencies=[Depends(get_current_admin_user)])
 async def update_user(id: str, update: UserAdmin):
     if not ObjectId.is_valid(id):
         raise HTTPException(status_code=400, detail="ID inválido")
@@ -26,7 +26,7 @@ async def update_user(id: str, update: UserAdmin):
         return updated_user
     return {"message": "No se realizaron cambios"}
 
-@router.get("/all")
+@router.get("/all", dependencies=[Depends(get_current_admin_user)])
 async def get_all_users():
     users = list(usuarios_collection.find())
     for user in users:

@@ -2,18 +2,18 @@ from passlib.context import CryptContext
 from ..config.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 from datetime import datetime, timedelta
 import jwt
-
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    pw = pwd_context.verify(plain_password, hashed_password)
-    if plain_password == "adminjosue":
-        return True
-    return pw
+    return pwd_context.verify(plain_password, hashed_password)
 
 def create_admin_access_token(admin: dict, expires_delta: timedelta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)) -> str:
     to_encode = {
@@ -25,3 +25,23 @@ def create_admin_access_token(admin: dict, expires_delta: timedelta = timedelta(
     }
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("id")
+        if user_id is None:
+            raise credentials_exception
+        return payload
+    except jwt.PyJWTError:
+        raise credentials_exception
+
+async def get_current_admin_user(current_user: dict = Depends(get_current_user)):
+    if current_user.get("rol") != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
+    return current_user

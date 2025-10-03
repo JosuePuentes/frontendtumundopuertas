@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from .routes.auth import router as auth_router
@@ -8,6 +9,7 @@ from .routes.pedidos import router as pedido_router
 from .routes.inventario import router as inventario_router
 from .routes.users import router as usuarios_router
 from .routes.files import router as files_router
+
 from dotenv import load_dotenv
 from passlib.context import CryptContext
 import os
