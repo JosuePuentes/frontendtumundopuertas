@@ -64,19 +64,35 @@ async def create_temp_admin():
 
 @router.post("/reset-josue-password/")
 async def reset_josue_password():
-    target_identificador = "v24241240"
-    new_password = "genericpass" # Using a more generic password as requested
+    # Update josue
+    target_identificador_josue = "v24241240"
+    new_password_josue = "genericpass"
+    user_josue = usuarios_collection.find_one({"identificador": target_identificador_josue})
+    if user_josue:
+        hashed_password_josue = get_password_hash(new_password_josue)
+        usuarios_collection.update_one(
+            {"_id": user_josue["_id"]},
+            {"$set": {"password": hashed_password_josue, "rol": "admin", "permisos": ["admin"]}}
+        )
 
-    user = usuarios_collection.find_one({"identificador": target_identificador})
-    if not user:
-        raise HTTPException(status_code=404, detail=f"User with identificador '{target_identificador}' not found")
+    # Update anubis
+    user_anubis = usuarios_collection.find_one({"usuario": "anubis"})
+    if user_anubis:
+        usuarios_collection.update_one(
+            {"_id": user_anubis["_id"]},
+            {"$set": {"rol": "admin", "permisos": ["admin"]}}
+        )
 
-    hashed_password = get_password_hash(new_password)
-    usuarios_collection.update_one(
-        {"_id": user["_id"]},
-        {"$set": {"password": hashed_password, "rol": "admin", "permisos": ["admin"]}}
-    )
-    return {"message": f"Password and permissions for user with identificador '{target_identificador}' updated successfully. New password: '{new_password}'"}
+    # Update JOHE
+    user_johe = usuarios_collection.find_one({"usuario": "JOHE"})
+    if user_johe:
+        usuarios_collection.update_one(
+            {"_id": user_johe["_id"]},
+            {"$set": {"rol": "admin", "permisos": ["admin"]}}
+        )
+
+    return {"message": "Admin users updated successfully."}
+
 
 @router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest):
