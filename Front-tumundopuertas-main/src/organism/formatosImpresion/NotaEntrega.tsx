@@ -74,7 +74,7 @@ const NotaEntrega: React.FC<NotaEntregaProps> = ({ pedido }) => {
             th, td { border: 1px solid #e5e7eb; padding: 8px; font-size: 14px; }
             th { background: #f3f4f6; }
             .totales-row { background: #f3f4f6; font-weight: bold; }
-            .nota-footer { margin-top: 2rem; color: #64748b; font-size: 13px; text-align: right; }
+            .nota-footer { margin-top: 2rem; color: #64748b; font-size: 13px; text-align: center; }
           </style>
         </head>
         <body>
@@ -85,9 +85,6 @@ const NotaEntrega: React.FC<NotaEntregaProps> = ({ pedido }) => {
                   <img src="/logo.jpeg" alt="Logo" style="height: 60px; width: auto; object-fit: contain; margin-right: 1rem;" />
                   <div>
                     <div class="titulo">NOTA DE ENTREGA</div>
-                    <div style="font-size: 1rem; color: #1e293b; font-weight: 600; margin-top: 0.25rem;">
-                      J-507172554 TU MUNDO PUERTAS, C.A.
-                    </div>
                   </div>
                 </div>
               </div>
@@ -168,6 +165,11 @@ const NotaEntrega: React.FC<NotaEntregaProps> = ({ pedido }) => {
                   </tfoot>
                 </table>
               </div>
+              <div class="nota-footer">
+                <p>J507172554 TU MUNDO PUERTAS, C.A.</p>
+                <p>DOMICILIO FISCAL AV 50 CASA NRO 158-79 BARRIO RAFAEL URDANETA SUR SAN</p>
+                <p>FRANCISCO ZULIA ZONA POSTAL 4004</p>
+              </div>
             </div>
           </div>
           <script>window.onload = function() { window.print(); };</script>
@@ -196,9 +198,6 @@ const NotaEntrega: React.FC<NotaEntregaProps> = ({ pedido }) => {
                 <h1 className="text-2xl font-bold text-blue-900 mb-1">
                   NOTA DE ENTREGA
                 </h1>
-                <div className="text-base font-semibold text-slate-800 mt-0.5">
-                  J-507172554 TU MUNDO PUERTAS, C.A.
-                </div>
               </div>
             </div>
           </div>
@@ -293,6 +292,11 @@ const NotaEntrega: React.FC<NotaEntregaProps> = ({ pedido }) => {
                 </tr>
               </tfoot>
             </table>
+          </div>
+          <div className="mt-8 text-center text-sm text-gray-600">
+            <p>J507172554 TU MUNDO PUERTAS, C.A.</p>
+            <p>DOMICILIO FISCAL AV 50 CASA NRO 158-79 BARRIO RAFAEL URDANETA SUR SAN</p>
+            <p>FRANCISCO ZULIA ZONA POSTAL 4004</p>
           </div>
           <div className="mt-8 flex flex-row justify-between items-center print:hidden">
             <span className="text-xs text-gray-500">
