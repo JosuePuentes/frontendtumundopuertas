@@ -32,10 +32,12 @@ function useTerminarEmpleado<T = any>(
         setLoading(true);
         setError(null);
         try {
+            const token = localStorage.getItem("access_token");
             const response = await fetch(`${import.meta.env.VITE_API_URL}/pedidos/asignacion/terminar`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(payload),
             });

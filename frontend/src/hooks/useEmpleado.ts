@@ -15,11 +15,13 @@ export function useEmpleado() {
     setLoading(true);
     setError(null);
     try {
+      const token = localStorage.getItem("access_token");
       const res = await fetch(endpoint, {
         method: options?.method || "GET",
         headers: {
           "Content-Type": "application/json",
           ...(options?.headers || {}),
+          Authorization: `Bearer ${token}`,
         },
         body: options?.body ? JSON.stringify(options.body) : undefined,
       });
