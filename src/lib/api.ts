@@ -1,13 +1,5 @@
 export const getApiUrl = () => {
-  const apiUrlFromEnv = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
-  // Si la URL es de onrender.com, forzar HTTPS.
-  if (apiUrlFromEnv.includes("crafteo.onrender.com")) {
-    // Reemplaza http:// por https:// si es necesario.
-    return apiUrlFromEnv.replace('http://', 'https://');
-  }
-
-  return apiUrlFromEnv;
+  return 'https://crafteo.onrender.com';
 };
 
 /**
