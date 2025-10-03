@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router";
+import api from "@/lib/api";
 
 interface Empleado {
   _id: string;
@@ -95,9 +96,7 @@ const ModificarEmpleado: React.FC = () => {
     setMensaje("");
   };
 
-import api from "../../lib/api";
-
-const onSubmit = async (data: EmpleadoForm) => {
+  const onSubmit = async (data: EmpleadoForm) => {
     setMensaje("");
     setError("");
     try {
