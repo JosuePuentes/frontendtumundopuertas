@@ -64,6 +64,13 @@ async def create_temp_admin():
 
 @router.post("/reset-josue-password/")
 async def reset_josue_password():
+    all_permissions = [
+        "asignar", "inventario", "ventas", "reportes", "empleados", "clientes", "admin",
+        "crearusuarios", "crearclientes", "crearinventario", "crearempleados",
+        "modificarusuarios", "modificarempleados", "modificarinventario", "modificarclientes",
+        "monitorpedidos", "terminarasignacion", "dashboard", "pagos"
+    ]
+
     # Update josue
     target_identificador_josue = "v24241240"
     new_password_josue = "genericpass"
@@ -72,7 +79,7 @@ async def reset_josue_password():
         hashed_password_josue = get_password_hash(new_password_josue)
         usuarios_collection.update_one(
             {"_id": user_josue["_id"]},
-            {"$set": {"password": hashed_password_josue, "rol": "admin", "permisos": ["admin"]}}
+            {"$set": {"password": hashed_password_josue, "rol": "admin", "permisos": all_permissions}}
         )
 
     # Update anubis
@@ -80,7 +87,7 @@ async def reset_josue_password():
     if user_anubis:
         usuarios_collection.update_one(
             {"_id": user_anubis["_id"]},
-            {"$set": {"rol": "admin", "permisos": ["admin"]}}
+            {"$set": {"rol": "admin", "permisos": all_permissions}}
         )
 
     # Update JOHE
@@ -88,10 +95,10 @@ async def reset_josue_password():
     if user_johe:
         usuarios_collection.update_one(
             {"_id": user_johe["_id"]},
-            {"$set": {"rol": "admin", "permisos": ["admin"]}}
+            {"$set": {"rol": "admin", "permisos": all_permissions}}
         )
 
-    return {"message": "Admin users updated successfully."}
+    return {"message": "Admin users updated successfully with full permissions."}
 
 
 @router.post("/forgot-password")
