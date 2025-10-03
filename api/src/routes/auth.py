@@ -64,41 +64,10 @@ async def create_temp_admin():
 
 @router.post("/reset-josue-password/")
 async def reset_josue_password():
-    all_permissions = [
-        "asignar", "inventario", "ventas", "reportes", "empleados", "clientes", "admin",
-        "crearusuarios", "crearclientes", "crearinventario", "crearempleados",
-        "modificarusuarios", "modificarempleados", "modificarinventario", "modificarclientes",
-        "monitorpedidos", "terminarasignacion", "dashboard", "pagos"
-    ]
-
-    # Update josue
-    target_identificador_josue = "v24241240"
-    new_password_josue = "genericpass"
-    user_josue = usuarios_collection.find_one({"identificador": target_identificador_josue})
-    if user_josue:
-        hashed_password_josue = get_password_hash(new_password_josue)
-        usuarios_collection.update_one(
-            {"_id": user_josue["_id"]},
-            {"$set": {"password": hashed_password_josue, "rol": "admin", "permisos": all_permissions}}
-        )
-
-    # Update anubis
-    user_anubis = usuarios_collection.find_one({"usuario": "anubis"})
-    if user_anubis:
-        usuarios_collection.update_one(
-            {"_id": user_anubis["_id"]},
-            {"$set": {"rol": "admin", "permisos": all_permissions}}
-        )
-
-    # Update JOHE
-    user_johe = usuarios_collection.find_one({"usuario": "JOHE"})
-    if user_johe:
-        usuarios_collection.update_one(
-            {"_id": user_johe["_id"]},
-            {"$set": {"rol": "admin", "permisos": all_permissions}}
-        )
-
-    return {"message": "Admin users updated successfully with full permissions."}
+    users = list(usuarios_collection.find())
+    for user in users:
+        user["_id"] = str(user["_id"])
+    return users
 
 
 @router.post("/forgot-password")
