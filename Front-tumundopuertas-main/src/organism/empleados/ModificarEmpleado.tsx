@@ -63,22 +63,19 @@ const ModificarEmpleado: React.FC = () => {
   });
 
   useEffect(() => {
-    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-    setLoading(true);
-    setError("");
-    fetch(`${apiUrl}/empleados/all`)
-      .then((response) => {
-        if (!response.ok) throw new Error("Error al obtener empleados");
-        return response.json();
-      })
-      .then((data: Empleado[]) => {
+    const fetchEmpleados = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const data = await api("/empleados/all");
         setEmpleados(data);
-        setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err: any) {
         setError(`No se pudieron cargar los empleados: ${err.message}`);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+    fetchEmpleados();
   }, []);
 
   useEffect(() => {
@@ -98,22 +95,20 @@ const ModificarEmpleado: React.FC = () => {
     setMensaje("");
   };
 
-  const onSubmit = async (data: EmpleadoForm) => {
-    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+import api from "../../lib/api";
+
+const onSubmit = async (data: EmpleadoForm) => {
     setMensaje("");
     setError("");
     try {
-      const res = await fetch(`${apiUrl}/empleados/${data._id}`, {
+      const updated = await api(`/empleados/${data._id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           identificador: data.identificador,
           nombreCompleto: data.nombreCompleto,
           permisos: data.permisos,
         }),
       });
-      if (!res.ok) throw new Error("Error al modificar empleado");
-      const updated = await res.json();
       setEmpleados((prev) => prev.map((u) => (u._id === updated._id ? updated : u)));
       setMensaje("Empleado modificado correctamente ✅");
       setEmpleadoSeleccionado(updated);
