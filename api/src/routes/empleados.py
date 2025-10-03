@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Depends
 from bson import ObjectId
 from ..config.mongodb import empleados_collection
-from ..auth.auth import get_password_hash
+from ..auth.auth import get_password_hash, get_current_admin_user
 from ..models.authmodels import Empleado
 
 router = APIRouter()
@@ -20,7 +20,7 @@ async def get_empleado(empleado_id: str):
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
     return empleado
 
-@router.post("/")
+@router.post("/", dependencies=[Depends(get_current_admin_user)])
 async def create_empleado(empleado: Empleado):
     existing_user = empleados_collection.find_one({"identificador": empleado.identificador})
     if existing_user:
@@ -28,7 +28,7 @@ async def create_empleado(empleado: Empleado):
     result = empleados_collection.insert_one(empleado.dict())
     return {"message": "Empleado creado correctamente", "id": str(result.inserted_id)}
 
-@router.put("/{empleado_id}/")
+@router.put("/{empleado_id}/", dependencies=[Depends(get_current_admin_user)])
 async def update_empleado(empleado_id: str, empleado: Empleado):
     # Validar que ningún valor del empleado sea 0 o "0"
     for key, value in empleado.dict(exclude_unset=True).items():
