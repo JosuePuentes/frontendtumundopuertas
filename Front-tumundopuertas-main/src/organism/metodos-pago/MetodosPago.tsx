@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useMetodosPago, MetodoPago } from "../../hooks/useMetodosPago";
+import { useMetodosPago } from "../../hooks/useMetodosPago";
+import type { MetodoPago } from "../../hooks/useMetodosPago";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";

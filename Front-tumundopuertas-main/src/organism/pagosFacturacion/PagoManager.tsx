@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,6 +9,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
+import api from "@/lib/api";
 
 interface PagoManagerProps {
   pedidoId: string;
@@ -33,8 +34,6 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
     };
     fetchMetodosPago();
   }, []);
-  const [metodosPago, setMetodosPago] = useState<any[]>([]);
-  const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
 
   const actualizarPago = async () => {
     if (!pago) return alert("Selecciona un estado de pago");

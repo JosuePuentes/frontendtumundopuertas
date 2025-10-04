@@ -7,6 +7,13 @@ import {
   FaMoneyBillWave,
 } from "react-icons/fa";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -19,7 +26,6 @@ import { useClientes } from "@/hooks/useClientes";
 import { useItems } from "@/hooks/useItems";
 import { useMetodosPago } from "@/hooks/useMetodosPago";
 import ImageDisplay from "@/upfile/ImageDisplay";
-import api from "@/lib/api";
 
 // Tipos locales para el payload
 interface PedidoItem {
@@ -688,8 +694,8 @@ const CrearPedido: React.FC = () => {
                       <SelectValue placeholder="Método de pago" />
                     </SelectTrigger>
                     <SelectContent>
-                      {metodosPago.map((metodo) => (
-                        <SelectItem key={metodo._id} value={metodo._id}>
+                      {metodosPago.filter(metodo => metodo._id).map((metodo) => (
+                        <SelectItem key={metodo._id} value={metodo._id!}>
                           {metodo.nombre}
                         </SelectItem>
                       ))}
