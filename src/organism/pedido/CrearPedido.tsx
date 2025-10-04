@@ -37,10 +37,8 @@ interface PedidoSeguimiento {
   orden: number;
   nombre_subestado: string;
   estado: string;
-  asignado_a?: string | null;
   fecha_inicio?: string | null;
   fecha_fin?: string | null;
-  notas?: string;
 }
 
 interface PedidoPayload {
@@ -255,7 +253,6 @@ const CrearPedido: React.FC = () => {
       orden: idx + 1,
       nombre_subestado: nombre,
       estado: "pendiente",
-      asignado_a: null,
       fecha_inicio: null,
       fecha_fin: null,
     }));
