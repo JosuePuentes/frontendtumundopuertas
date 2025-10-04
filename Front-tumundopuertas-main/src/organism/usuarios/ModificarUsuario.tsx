@@ -152,6 +152,15 @@ const ModificarUsuario: React.FC = () => {
       setUsuarios((prev) => prev.map((u) => (u._id === updated._id ? updated : u)));
       setMensaje("Usuario modificado correctamente ✅");
       setUsuarioSeleccionado(updated);
+
+      // Actualizar localStorage si el usuario modificado es el actual
+      const currentUser = localStorage.getItem("usuario");
+      if (currentUser === updated.usuario) {
+        localStorage.setItem("permisos", JSON.stringify(updated.permisos));
+        // Forzar recarga para que el menú se actualice
+        window.location.reload();
+      }
+
       navigate(`/modificarusuario`);
     } catch (err: any) {
       setError("No se pudo modificar el usuario");
