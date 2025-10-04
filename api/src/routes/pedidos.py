@@ -765,9 +765,11 @@ async def get_venta_diaria(
     if filtro_fecha:
         pipeline.append({
             "$match": {
-                "historial_pagos.fecha": {
-                    "$gte": filtro_fecha[0].isoformat(),
-                    "$lt": filtro_fecha[1].isoformat(),
+                "$expr": {
+                    "$and": [
+                        { "$gte": [ { "$toDate": "$historial_pagos.fecha" }, filtro_fecha[0] ] },
+                        { "$lt": [ { "$toDate": "$historial_pagos.fecha" }, filtro_fecha[1] ] }
+                    ]
                 }
             }
         })
