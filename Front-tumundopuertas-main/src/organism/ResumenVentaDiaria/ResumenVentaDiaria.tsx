@@ -118,7 +118,7 @@ const ResumenVentaDiaria: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.abonos.map((abono, index) => (
+                  {(data.abonos || []).map((abono, index) => (
                     <TableRow key={index} className="hover:bg-gray-50">
                       <TableCell className="font-medium">
                         {abono.pedido_id}
