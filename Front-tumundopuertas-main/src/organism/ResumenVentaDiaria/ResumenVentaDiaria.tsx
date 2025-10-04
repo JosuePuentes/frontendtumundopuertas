@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
+import api from "@/lib/api"; // Import the centralized api function
 
 interface Abono {
   pedido_id: string;
@@ -37,8 +38,6 @@ const ResumenVentaDiaria: React.FC = () => {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
 
-  const apiUrl = import.meta.env.VITE_API_URL.replace('http://', 'https://');
-
   const fetchVentaDiaria = async () => {
     if (!fechaInicio || !fechaFin) {
       setError("Por favor, selecciona un rango de fechas.");
@@ -51,15 +50,7 @@ const ResumenVentaDiaria: React.FC = () => {
       params.append("fecha_inicio", fechaInicio);
       params.append("fecha_fin", fechaFin);
 
-      const token = localStorage.getItem("access_token");
-      const res = await fetch(`${apiUrl}/pedidos/venta-diaria/?${params.toString()}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
-      });
-      if (!res.ok) throw new Error("Error al obtener el resumen de ventas.");
-
-      const responseData: VentaDiariaResponse = await res.json();
+      const responseData: VentaDiariaResponse = await api(`/pedidos/venta-diaria/?${params.toString()}`);
       setData(responseData);
     } catch (err: any) {
       setError(err.message || "Error desconocido");
