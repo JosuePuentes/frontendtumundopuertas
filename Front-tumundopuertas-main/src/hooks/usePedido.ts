@@ -1,4 +1,5 @@
 import { useState } from "react";
+import api from "@/lib/api";
 
 type FetchOptions = {
   method?: "GET" | "POST" | "PUT" | "DELETE";
@@ -16,24 +17,16 @@ export function usePedido() {
     setLoading(true);
     setError(null);
     setStatus(null);
-    const apiurl = import.meta.env.VITE_API_URL.replace('http://', 'https://');
+
     try {
-      const res = await fetch(`${apiurl}${endpoint}`, {
-        method: options?.method || "GET",
-        headers: {
-          "Content-Type": "application/json",
-          ...(options?.headers || {}),
-        },
-        body: options?.body ? JSON.stringify(options.body) : undefined,
-      });
-      const result = await res.json();
+      const result = await api(endpoint, options);
       setDataPedidos(result);
       console.log("Resultado de la API:", result);
-      return { success: true, data: result, status: res.status };
+      return { success: true, data: result };
     } catch (err: any) {
       const errorMessage = err.message || "Error desconocido";
       setError(errorMessage);
-      return { success: false, error: errorMessage, status: null };
+      return { success: false, error: errorMessage };
     } finally {
       setLoading(false);
     }
