@@ -33,7 +33,8 @@ interface Usuario {
     "monitorpedidos",
     "terminarasignacion",
     "dashboard",
-    "pagos"
+    "pagos",
+    "resumenventadiaria"
 ];
 
 const ModificarUsuario: React.FC = () => {
