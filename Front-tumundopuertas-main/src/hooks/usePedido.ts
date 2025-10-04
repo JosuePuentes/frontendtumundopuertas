@@ -1,3 +1,4 @@
+// Force rebuild
 import { useState } from "react";
 import api from "@/lib/api";
 
@@ -11,7 +12,6 @@ export function usePedido() {
   const [dataPedidos, setDataPedidos] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [status, setStatus] = useState<number | null>(null);
 
   const fetchPedido = async (endpoint: string, options?: FetchOptions) => {
     setLoading(true);
@@ -36,5 +36,5 @@ export function usePedido() {
     }
   };
 
-  return { dataPedidos, loading, error, status, fetchPedido };
+  return { dataPedidos, loading, error, fetchPedido };
 }
