@@ -1,36 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../../components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
-import { createMetodoPago } from "../../lib/api";
+import { updateMetodoPago } from "../../lib/api";
 import { MetodoPago } from "../../hooks/useMetodosPago";
 
-interface CrearMetodoPagoProps {
+interface ModificarMetodoPagoProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreated: () => void;
+  onUpdated: () => void;
+  metodo: MetodoPago;
 }
 
-const CrearMetodoPago = ({ isOpen, onClose, onCreated }: CrearMetodoPagoProps) => {
-  const [newMetodo, setNewMetodo] = useState<Omit<MetodoPago, '_id'>>({
-    nombre: "",
-    banco: "",
-    titular: "",
-    numero_cuenta: "",
-    moneda: "dolar",
-  });
+const ModificarMetodoPago = ({ isOpen, onClose, onUpdated, metodo }: ModificarMetodoPagoProps) => {
+  const [updatedMetodo, setUpdatedMetodo] = useState<MetodoPago>(metodo);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setUpdatedMetodo(metodo);
+  }, [metodo]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setNewMetodo((prev) => ({ ...prev, [name]: value }));
+    setUpdatedMetodo((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSelectChange = (value: "dolar" | "bs") => {
-    setNewMetodo((prev) => ({ ...prev, moneda: value }));
+    setUpdatedMetodo((prev) => ({ ...prev, moneda: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,11 +37,11 @@ const CrearMetodoPago = ({ isOpen, onClose, onCreated }: CrearMetodoPagoProps) =
     setLoading(true);
     setError(null);
     try {
-      await createMetodoPago(newMetodo);
-      onCreated();
+      await updateMetodoPago(updatedMetodo._id!, updatedMetodo);
+      onUpdated();
       onClose();
     } catch (err: any) {
-      setError(err.message || "Error al crear el método de pago");
+      setError(err.message || "Error al modificar el método de pago");
     } finally {
       setLoading(false);
     }
@@ -52,29 +51,29 @@ const CrearMetodoPago = ({ isOpen, onClose, onCreated }: CrearMetodoPagoProps) =
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Crear Nuevo Método de Pago</DialogTitle>
+          <DialogTitle>Modificar Método de Pago</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="nombre" className="text-right">Nombre</Label>
-              <Input id="nombre" name="nombre" value={newMetodo.nombre} onChange={handleChange} className="col-span-3" />
+              <Input id="nombre" name="nombre" value={updatedMetodo.nombre} onChange={handleChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="banco" className="text-right">Banco</Label>
-              <Input id="banco" name="banco" value={newMetodo.banco} onChange={handleChange} className="col-span-3" />
+              <Input id="banco" name="banco" value={updatedMetodo.banco} onChange={handleChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="titular" className="text-right">Titular</Label>
-              <Input id="titular" name="titular" value={newMetodo.titular} onChange={handleChange} className="col-span-3" />
+              <Input id="titular" name="titular" value={updatedMetodo.titular} onChange={handleChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="numero_cuenta" className="text-right">Nro. Cuenta</Label>
-              <Input id="numero_cuenta" name="numero_cuenta" value={newMetodo.numero_cuenta} onChange={handleChange} className="col-span-3" />
+              <Input id="numero_cuenta" name="numero_cuenta" value={updatedMetodo.numero_cuenta} onChange={handleChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="moneda" className="text-right">Moneda</Label>
-                <Select onValueChange={handleSelectChange} defaultValue={newMetodo.moneda}>
+                <Select onValueChange={handleSelectChange} value={updatedMetodo.moneda}>
                     <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="Seleccione una moneda" />
                     </SelectTrigger>
@@ -87,7 +86,7 @@ const CrearMetodoPago = ({ isOpen, onClose, onCreated }: CrearMetodoPagoProps) =
           </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <div className="flex justify-end">
-            <Button type="submit" disabled={loading}>{loading ? "Creando..." : "Crear"}</Button>
+            <Button type="submit" disabled={loading}>{loading ? "Guardando..." : "Guardar Cambios"}</Button>
           </div>
         </form>
       </DialogContent>
@@ -95,4 +94,4 @@ const CrearMetodoPago = ({ isOpen, onClose, onCreated }: CrearMetodoPagoProps) =
   );
 };
 
-export default CrearMetodoPago;
+export default ModificarMetodoPago;

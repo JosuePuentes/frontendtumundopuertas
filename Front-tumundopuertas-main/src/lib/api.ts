@@ -59,4 +59,30 @@ export const getPresignedUrl = async (
   return data.presigned_url;
 };
 
+
+export const getMetodosPago = async () => {
+  return api('/metodos-pago');
+};
+
+export const createMetodoPago = async (data: any) => {
+  return api('/metodos-pago', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+};
+
+export const updateMetodoPago = async (id: string, data: any) => {
+  return api(`/metodos-pago/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+};
+
+export const deleteMetodoPago = async (id: string) => {
+  return api(`/metodos-pago/${id}`, {
+    method: 'DELETE',
+  });
+};
+
 export default api;
+

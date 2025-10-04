@@ -17,7 +17,9 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { usePedido } from "@/hooks/usePedido";
 import { useClientes } from "@/hooks/useClientes";
 import { useItems } from "@/hooks/useItems";
+import { useMetodosPago } from "@/hooks/useMetodosPago";
 import ImageDisplay from "@/upfile/ImageDisplay";
+import api from "@/lib/api";
 
 // Tipos locales para el payload
 interface PedidoItem {
@@ -87,7 +89,6 @@ const CrearPedido: React.FC = () => {
   const [mensajeTipo, setMensajeTipo] = useState<"error" | "success" | "">("");
   const [enviando, setEnviando] = useState(false);
   const [montoAbonar, setMontoAbonar] = useState<number>(0);
-  const [metodosPago, setMetodosPago] = useState<any[]>([]);
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
 
   const { fetchPedido } = usePedido();
@@ -98,21 +99,13 @@ const CrearPedido: React.FC = () => {
     fetchClientes,
   } = useClientes();
   const { data: itemsData, loading: itemsLoading, fetchItems } = useItems();
+  const { metodos: metodosPago } = useMetodosPago();
 
   const blurTimeouts = useRef<Record<number, number>>({});
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 
   useEffect(() => {
     fetchClientes(`${apiUrl}/clientes/all`);
-    const fetchMetodosPago = async () => {
-      try {
-        const response = await api("/metodos-pago");
-        setMetodosPago(response);
-      } catch (error) {
-        console.error("Error fetching payment methods:", error);
-      }
-    };
-    fetchMetodosPago();
   }, []);
 
   useEffect(() => {
@@ -696,7 +689,7 @@ const CrearPedido: React.FC = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {metodosPago.map((metodo) => (
-                        <SelectItem key={metodo.id} value={metodo.id}>
+                        <SelectItem key={metodo._id} value={metodo._id}>
                           {metodo.nombre}
                         </SelectItem>
                       ))}

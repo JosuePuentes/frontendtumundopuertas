@@ -11,14 +11,19 @@ import {
 import { Loader2, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMetodosPago } from "@/hooks/useMetodosPago";
+
 // Componente para gestionar pagos y abonos
 const PagoManager: React.FC<{
   pedidoId: string;
   pagoInicial?: string;
   onSuccess?: () => void;
-}> = ({ pedidoId, pagoInicial, onSuccess }) => {
+  metodosPago: any[];
+}> = ({ pedidoId, pagoInicial, onSuccess, metodosPago }) => {
   const [monto, setMonto] = useState("");
   const [estado, setEstado] = useState(pagoInicial || "sin pago");
+  const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -54,7 +59,7 @@ const PagoManager: React.FC<{
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pago: estado, monto: parseFloat(monto) }),
+        body: JSON.stringify({ pago: estado, monto: parseFloat(monto), metodo_pago_id: selectedMetodoPago }),
       });
       if (!res.ok) throw new Error("Error al registrar abono");
       setSuccess("Abono registrado");
@@ -88,11 +93,23 @@ const PagoManager: React.FC<{
           className="text-xs w-24"
           disabled={loading}
         />
+        <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Método de pago" />
+          </SelectTrigger>
+          <SelectContent>
+            {metodosPago.map((metodo) => (
+              <SelectItem key={metodo._id} value={metodo._id}>
+                {metodo.nombre}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           size="sm"
           className="text-xs px-2 py-1"
           onClick={registrarAbono}
-          disabled={loading || !monto || isNaN(Number(monto))}
+          disabled={loading || !monto || isNaN(Number(monto)) || !selectedMetodoPago}
         >
           Abonar
         </Button>
@@ -139,6 +156,7 @@ const Pedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { metodos: metodosPago } = useMetodosPago();
 
   // Fechas de filtro
   const [fechaInicio, setFechaInicio] = useState<string>("");
@@ -295,6 +313,7 @@ const Pedidos: React.FC = () => {
                             pedidoId={pedido._id}
                             pagoInicial={pedido.pago}
                             onSuccess={fetchPedidos}
+                            metodosPago={metodosPago}
                           />
                         </div>
                       </TableCell>
