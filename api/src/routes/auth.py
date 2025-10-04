@@ -31,6 +31,7 @@ async def admin_login(admin: AdminLogin):
     if not verify_password(admin.password, db_admin["password"]):
         raise HTTPException(status_code=401, detail="Contraseña incorrecta")
     access_token = create_admin_access_token(db_admin)
+    print(f"User {admin.usuario} logged in with permissions: {db_admin['permisos']}")
     return {
         "access_token": access_token,
         "token_type": "bearer",

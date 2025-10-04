@@ -14,6 +14,7 @@ async def update_user(id: str, update: UserAdmin):
     if not existing_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     update_data = update.dict(exclude_unset=True)
+    print(f"Updating user {id} with data: {update_data}")
     for key, value in update_data.items():
         if value == 0 or value == "0":
             raise HTTPException(status_code=400, detail=f"error o")
