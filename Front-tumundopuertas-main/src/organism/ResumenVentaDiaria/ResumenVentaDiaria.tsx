@@ -51,7 +51,12 @@ const ResumenVentaDiaria: React.FC = () => {
       params.append("fecha_inicio", fechaInicio);
       params.append("fecha_fin", fechaFin);
 
-      const res = await fetch(`${apiUrl}/pedidos/venta-diaria/?${params.toString()}`);
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${apiUrl}/pedidos/venta-diaria/?${params.toString()}`, {
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
+      });
       if (!res.ok) throw new Error("Error al obtener el resumen de ventas.");
 
       const responseData: VentaDiariaResponse = await res.json();
