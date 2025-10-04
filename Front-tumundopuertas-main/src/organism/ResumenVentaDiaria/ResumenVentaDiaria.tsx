@@ -103,7 +103,7 @@ const ResumenVentaDiaria: React.FC = () => {
         ) : data && (
           <div>
             <div className="text-right font-bold text-2xl mt-6 p-4 bg-green-100 rounded-md text-green-800">
-              Total Ingresos: ${data.total_ingresos.toFixed(2)}
+              Total Ingresos: ${(data.total_ingresos || 0).toFixed(2)}
             </div>
 
             <div className="overflow-x-auto mt-6">
@@ -128,7 +128,7 @@ const ResumenVentaDiaria: React.FC = () => {
                         {new Date(abono.fecha).toLocaleDateString()}
                       </TableCell>
                       <TableCell>{abono.metodo || "N/A"}</TableCell>
-                      <TableCell>${abono.monto.toFixed(2)}</TableCell>
+                      <TableCell>${(abono.monto || 0).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
