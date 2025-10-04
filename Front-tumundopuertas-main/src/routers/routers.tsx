@@ -243,7 +243,7 @@ function AppRouter() {
         <Route
           path="metodos-pago"
           element={
-            <ProtectedRoute permiso="admin">
+            <ProtectedRoute permiso="metodos_pago">
               <MetodosPago />
             </ProtectedRoute>
           }
