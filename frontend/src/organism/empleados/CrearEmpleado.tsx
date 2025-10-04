@@ -52,8 +52,8 @@ const CrearEmpleado: React.FC = () => {
             setErrorMsg("Completa todos los campos obligatorios.");
             return;
         }
-        const apiUrl = (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL.includes("crafteo.onrender.com")) ? "https://crafteo.onrender.com" : (import.meta.env.VITE_API_URL || "https://localhost:3000");
         try {
+            const apiUrl = getApiUrl(); // Usa la función centralizada
             const response = await fetch(`${apiUrl}/empleados`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
