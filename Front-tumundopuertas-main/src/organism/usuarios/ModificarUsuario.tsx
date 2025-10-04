@@ -34,7 +34,7 @@ interface Usuario {
     "terminarasignacion",
     "dashboard",
     "pagos",
-    "resumenventadiaria"
+    "resumenVentaDiaria"
 ];
 
 const ModificarUsuario: React.FC = () => {
