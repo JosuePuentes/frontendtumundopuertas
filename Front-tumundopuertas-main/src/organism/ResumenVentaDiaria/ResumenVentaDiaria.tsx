@@ -50,7 +50,7 @@ const ResumenVentaDiaria: React.FC = () => {
       params.append("fecha_inicio", fechaInicio);
       params.append("fecha_fin", fechaFin);
 
-      const responseData: VentaDiariaResponse = await api(`/pedidos/venta-diaria/?${params.toString()}`);
+      const responseData: VentaDiariaResponse = await api(`/pedidos/venta-diaria?${params.toString()}`);
       setData(responseData);
     } catch (err: any) {
       setError(err.message || "Error desconocido");
