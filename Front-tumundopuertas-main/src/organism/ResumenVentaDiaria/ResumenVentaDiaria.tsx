@@ -23,12 +23,13 @@ interface Abono {
   cliente_nombre: string;
   fecha: string;
   monto: number;
-  metodo?: string;
+  metodo_pago_nombre?: string;
 }
 
 interface VentaDiariaResponse {
   total_ingresos: number;
   abonos: Abono[];
+  ingresos_por_metodo: { [key: string]: number };
 }
 
 const ResumenVentaDiaria: React.FC = () => {
@@ -102,8 +103,33 @@ const ResumenVentaDiaria: React.FC = () => {
           </div>
         ) : data && (
           <div>
-            <div className="text-right font-bold text-2xl mt-6 p-4 bg-green-100 rounded-md text-green-800">
-              Total Ingresos: ${(data.total_ingresos || 0).toFixed(2)}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="text-right font-bold text-2xl mt-6 p-4 bg-green-100 rounded-md text-green-800">
+                Total Ingresos: ${(data.total_ingresos || 0).toFixed(2)}
+              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ingresos por Método de Pago</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Método de Pago</TableHead>
+                        <TableHead>Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {Object.entries(data.ingresos_por_metodo).map(([metodo, total]) => (
+                        <TableRow key={metodo}>
+                          <TableCell>{metodo}</TableCell>
+                          <TableCell>${total.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
             </div>
 
             <div className="overflow-x-auto mt-6">
@@ -127,7 +153,7 @@ const ResumenVentaDiaria: React.FC = () => {
                       <TableCell>
                         {new Date(abono.fecha).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>{abono.metodo || "N/A"}</TableCell>
+                      <TableCell>{abono.metodo_pago_nombre || "N/A"}</TableCell>
                       <TableCell>${(abono.monto || 0).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}

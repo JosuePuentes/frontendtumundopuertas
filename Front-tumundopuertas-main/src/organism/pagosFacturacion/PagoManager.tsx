@@ -19,17 +19,34 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
   const [pago, setPago] = useState<string>(pagoInicial || "sin pago");
   const [monto, setMonto] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  const [metodosPago, setMetodosPago] = useState<any[]>([]);
+  const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
+
+  useEffect(() => {
+    const fetchMetodosPago = async () => {
+      try {
+        const response = await api("/metodos-pago");
+        setMetodosPago(response);
+      } catch (error) {
+        console.error("Error fetching payment methods:", error);
+      }
+    };
+    fetchMetodosPago();
+  }, []);
+  const [metodosPago, setMetodosPago] = useState<any[]>([]);
+  const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
 
   const actualizarPago = async () => {
     if (!pago) return alert("Selecciona un estado de pago");
     if (monto <= 0) return alert("Ingresa un monto válido");
+    if (!selectedMetodoPago) return alert("Selecciona un método de pago");
 
     setLoading(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pago, monto }),
+        body: JSON.stringify({ pago, monto, metodo_pago_id: selectedMetodoPago }),
       });
 
       if (!res.ok) throw new Error("Error actualizando pago");
@@ -37,6 +54,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
       const data = await res.json();
       setPago(data.pago);
       setMonto(0); // reset campo monto
+      setSelectedMetodoPago(""); // reset metodo de pago
     } catch (err: any) {
       console.error(err);
       alert("No se pudo actualizar el pago");
@@ -67,6 +85,19 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
         onChange={(e) => setMonto(Number(e.target.value))}
         disabled={loading}
       />
+
+      <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago} disabled={loading}>
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder="Método de pago" />
+        </SelectTrigger>
+        <SelectContent className="bg-white">
+          {metodosPago.map((metodo) => (
+            <SelectItem key={metodo.id} value={metodo.id}>
+              {metodo.nombre}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       <Button onClick={actualizarPago} disabled={loading}>
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Registrar Pago"}

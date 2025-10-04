@@ -48,6 +48,7 @@ interface RegistroPago {
   fecha: string;
   monto: number;
   estado: string;
+  metodo_pago_id: string;
 }
 
 interface PedidoPayload {
@@ -86,6 +87,8 @@ const CrearPedido: React.FC = () => {
   const [mensajeTipo, setMensajeTipo] = useState<"error" | "success" | "">("");
   const [enviando, setEnviando] = useState(false);
   const [montoAbonar, setMontoAbonar] = useState<number>(0);
+  const [metodosPago, setMetodosPago] = useState<any[]>([]);
+  const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
 
   const { fetchPedido } = usePedido();
   const {
@@ -101,6 +104,15 @@ const CrearPedido: React.FC = () => {
 
   useEffect(() => {
     fetchClientes(`${apiUrl}/clientes/all`);
+    const fetchMetodosPago = async () => {
+      try {
+        const response = await api("/metodos-pago");
+        setMetodosPago(response);
+      } catch (error) {
+        console.error("Error fetching payment methods:", error);
+      }
+    };
+    fetchMetodosPago();
   }, []);
 
   useEffect(() => {
@@ -286,6 +298,7 @@ const CrearPedido: React.FC = () => {
           fecha: fechaISO,
           monto: montoAbonar,
           estado: "abonado",
+          metodo_pago_id: selectedMetodoPago,
         },
       ] : [],
       total_abonado: montoAbonar,
@@ -677,6 +690,18 @@ const CrearPedido: React.FC = () => {
                     placeholder="0.00"
                     className="w-32 focus:ring-2 focus:ring-blue-400"
                   />
+                  <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Método de pago" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {metodosPago.map((metodo) => (
+                        <SelectItem key={metodo.id} value={metodo.id}>
+                          {metodo.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     type="button"
                     variant="outline"

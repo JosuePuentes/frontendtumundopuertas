@@ -24,6 +24,7 @@ import MonitorPedidos from "@/organism/monitorped/MonitorPedidos";
 import  Pedidos  from "@/organism/pagosFacturacion/Pedidos";
 import MisPagos from "@/organism/pagosFacturacion/MisPagos";
 import ResumenVentaDiaria from "@/organism/ResumenVentaDiaria/ResumenVentaDiaria";
+import MetodosPago from "@/organism/metodos-pago/MetodosPago";
 
 function AppRouter() {
   // Función para verificar token y permisos
@@ -236,6 +237,14 @@ function AppRouter() {
           element={
             <ProtectedRoute permiso="admin">
               <Register />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="metodos-pago"
+          element={
+            <ProtectedRoute permiso="admin">
+              <MetodosPago />
             </ProtectedRoute>
           }
         />
