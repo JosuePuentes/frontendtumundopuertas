@@ -16,10 +16,14 @@ export function usePedido() {
   const fetchPedido = async (endpoint: string, options?: FetchOptions) => {
     setLoading(true);
     setError(null);
-    setStatus(null);
+
+    const apiOptions = {
+      ...options,
+      body: options?.body ? JSON.stringify(options.body) : undefined,
+    };
 
     try {
-      const result = await api(endpoint, options);
+      const result = await api(endpoint, apiOptions as RequestInit);
       setDataPedidos(result);
       console.log("Resultado de la API:", result);
       return { success: true, data: result };
