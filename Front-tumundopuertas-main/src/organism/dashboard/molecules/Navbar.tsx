@@ -26,6 +26,7 @@ const defaultLinks = [
   { label: "Pagos", href: "/pagos" },
   { label: "Mis Pagos", href: "/mispagos" },
   { label: "Resumen Venta Diaria", href: "/resumen-venta-diaria" },
+  { label: "Metodos de Pago", href: "/metodos-pago" },
   { label: "Dashboard", href: "/dashboard" },
   { label: "Crear Empleado", href: "/crearempleado" },
   { label: "Modificar Empleado", href: "/modificarempleado" },
@@ -56,6 +57,7 @@ const permisosRuta: Record<string, string | null> = {
   "/pagos": "pagos",
   "/mispagos": "pagos",
   "/resumen-venta-diaria": "resumenVentaDiaria",
+  "/metodos-pago": "metodos_pago",
   "/home": null,
   "/": null,
 };
@@ -75,6 +77,7 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
     }
   };
   const permisos = getPermisos();
+  console.log("Permisos en Navbar:", permisos);
 
   // Lógica de filtrado de enlaces (sin cambios)
   const filteredLinks = links.filter((link) => {
