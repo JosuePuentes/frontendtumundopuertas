@@ -27,7 +27,8 @@ const permisosDisponibles = [
   "mantenimiento",
   "fabricacion",
   "ayudante",
-  "manillar"
+  "manillar",
+  "resumenVentaDiaria"
 ];
 
 const empleadoSchema = z.object({

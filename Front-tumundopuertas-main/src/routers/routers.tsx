@@ -89,7 +89,7 @@ function AppRouter() {
         <Route
           path="resumen-venta-diaria"
           element={
-            <ProtectedRoute permiso="admin">
+            <ProtectedRoute permiso="resumenVentaDiaria">
               <ResumenVentaDiaria />
             </ProtectedRoute>
           }
