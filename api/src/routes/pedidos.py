@@ -749,12 +749,15 @@ async def get_venta_diaria(
     Retorna un resumen de todos los abonos (pagos) realizados,
     filtrando por rango de fechas si se especifica.
     """
+    print(f"[DEBUG] get_venta_diaria_abonos - fecha_inicio: {fecha_inicio}, fecha_fin: {fecha_fin}")
+
     filtro_fecha = None
     if fecha_inicio and fecha_fin:
         try:
             inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(tzinfo=timezone.utc)
             fin = datetime.strptime(fecha_fin, "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1)
             filtro_fecha = (inicio, fin)
+            print(f"[DEBUG] filtro_fecha creado: {filtro_fecha}")
         except ValueError:
             raise HTTPException(status_code=400, detail="Formato de fecha inválido, use YYYY-MM-DD")
 
@@ -788,17 +791,24 @@ async def get_venta_diaria(
         {"$sort": {"fecha": -1}},
     ])
 
+    print(f"[DEBUG] Pipeline de agregación: {pipeline}")
+
     try:
         abonos = list(pedidos_collection.aggregate(pipeline))
+        print(f"[DEBUG] Resultado de la agregación (abonos): {abonos}")
     except Exception as e:
+        print(f"[DEBUG] Error en la consulta a la DB: {e}")
         raise HTTPException(status_code=500, detail=f"Error en la consulta a la DB: {e}")
 
     total_ingresos = sum(abono.get("monto", 0) for abono in abonos)
+    print(f"[DEBUG] Total de ingresos calculado: {total_ingresos}")
 
     for abono in abonos:
         abono["pedido_id"] = str(abono["pedido_id"])
 
-    return {
+    response_data = {
         "total_ingresos": total_ingresos,
         "abonos": abonos,
     }
+    print(f"[DEBUG] Datos de respuesta: {response_data}")
+    return response_data
