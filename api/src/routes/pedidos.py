@@ -552,67 +552,7 @@ async def get_pedidos_por_estados(
     return pedidos
 
 
-@router.get("/venta-diaria/")
-async def get_venta_diaria(
-    fecha_inicio: str = Query(..., description="Fecha de inicio (YYYY-MM-DD)"),
-    fecha_fin: str = Query(..., description="Fecha de fin (YYYY-MM-DD)"),
-):
-    try:
-        start_date = datetime.strptime(fecha_inicio, "%Y-%m-%d")
-        end_date = datetime.strptime(fecha_fin, "%Y-%m-%d")
-    except ValueError:
-        raise HTTPException(
-            status_code=400,
-            detail="Formato de fecha inválido. Use YYYY-MM-DD.",
-        )
 
-    # Adjust end_date to include the entire day
-    end_date = end_date + timedelta(days=1)
-
-    start_date_iso = start_date.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-    end_date_iso = end_date.strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
-
-    # Aggregation pipeline
-    pipeline = [
-        {
-            "$match": {
-                "fecha_creacion": {
-                    "$gte": start_date_iso,
-                    "$lt": end_date_iso,
-                }
-            }
-        },
-        {"$unwind": "$items"},
-        {
-            "$group": {
-                "_id": {
-                    "$dateToString": {
-                        "format": "%Y-%m-%d",
-                        "date": {"$toDate": "$fecha_creacion"},
-                    }
-                },
-                "total_venta": {"$sum": {"$multiply": ["$items.precio", "$items.cantidad"]}},
-            }
-        },
-        {"$sort": {"_id": 1}},
-        {
-            "$project": {
-                "fecha": "$_id",
-                "total_venta": 1,
-                "_id": 0,
-            }
-        },
-    ]
-
-    try:
-        ventas_diarias = list(pedidos_collection.aggregate(pipeline))
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al consultar la base de datos: {e}",
-        )
-
-    return ventas_diarias
 
 
 # Endpoint para totalizar un pago de un pedido
