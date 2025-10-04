@@ -735,10 +735,18 @@ async def get_venta_diaria(
 
     total_ingresos = sum(abono.get("monto", 0) for abono in abonos)
 
+    ingresos_por_metodo = {}
+    for abono in abonos:
+        metodo = abono.get("metodo", "Desconocido")
+        if metodo not in ingresos_por_metodo:
+            ingresos_por_metodo[metodo] = 0
+        ingresos_por_metodo[metodo] += abono.get("monto", 0)
+
     for abono in abonos:
         abono["pedido_id"] = str(abono["pedido_id"])
 
     return {
         "total_ingresos": total_ingresos,
         "abonos": abonos,
+        "ingresos_por_metodo": ingresos_por_metodo,
     }
