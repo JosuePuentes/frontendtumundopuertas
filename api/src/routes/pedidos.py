@@ -739,3 +739,64 @@ async def obtener_pagos(
         p["_id"] = str(p["_id"])
 
     return pedidos
+
+@router.get("/venta-diaria/")
+async def get_venta_diaria(
+    fecha_inicio: Optional[str] = Query(None, description="Fecha inicio en formato YYYY-MM-DD"),
+    fecha_fin: Optional[str] = Query(None, description="Fecha fin en formato YYYY-MM-DD"),
+):
+    """
+    Retorna un resumen de todos los abonos (pagos) realizados,
+    filtrando por rango de fechas si se especifica.
+    """
+    filtro_fecha = None
+    if fecha_inicio and fecha_fin:
+        try:
+            inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            fin = datetime.strptime(fecha_fin, "%Y-%m-%d").replace(tzinfo=timezone.utc) + timedelta(days=1)
+            filtro_fecha = (inicio, fin)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Formato de fecha inválido, use YYYY-MM-DD")
+
+    pipeline = [
+        {"$unwind": "$historial_pagos"},
+    ]
+
+    if filtro_fecha:
+        pipeline.append({
+            "$match": {
+                "historial_pagos.fecha": {
+                    "$gte": filtro_fecha[0].isoformat(),
+                    "$lt": filtro_fecha[1].isoformat(),
+                }
+            }
+        })
+    
+    pipeline.extend([
+        {
+            "$project": {
+                "_id": 0,
+                "pedido_id": "$_id",
+                "cliente_nombre": "$cliente_nombre",
+                "fecha": "$historial_pagos.fecha",
+                "monto": "$historial_pagos.monto",
+                "metodo": "$historial_pagos.metodo",
+            }
+        },
+        {"$sort": {"fecha": -1}},
+    ])
+
+    try:
+        abonos = list(pedidos_collection.aggregate(pipeline))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en la consulta a la DB: {e}")
+
+    total_ingresos = sum(abono.get("monto", 0) for abono in abonos)
+
+    for abono in abonos:
+        abono["pedido_id"] = str(abono["pedido_id"])
+
+    return {
+        "total_ingresos": total_ingresos,
+        "abonos": abonos,
+    }
