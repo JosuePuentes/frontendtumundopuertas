@@ -55,7 +55,7 @@ const permisosRuta: Record<string, string | null> = {
   "/monitorpedidos": "monitorpedidos",
   "/pagos": "pagos",
   "/mispagos": "pagos",
-  "/resumen-venta-diaria": "admin",
+  "/resumen-venta-diaria": "resumenVentaDiaria",
   "/home": null,
   "/": null,
 };
