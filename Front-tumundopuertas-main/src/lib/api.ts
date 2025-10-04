@@ -8,7 +8,7 @@ const getApiUrl = () => {
 };
 
 const getToken = () => {
-  return localStorage.getItem('token');
+  return localStorage.getItem('access_token');
 };
 
 const api = async (url: string, options: RequestInit = {}) => {
