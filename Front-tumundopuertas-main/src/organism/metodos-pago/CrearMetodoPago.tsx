@@ -8,12 +8,10 @@ import { createMetodoPago } from "../../lib/api";
 import type { MetodoPago } from "../../hooks/useMetodosPago";
 
 interface CrearMetodoPagoProps {
-  isOpen: boolean;
-  onClose: () => void;
   onCreated: () => void;
 }
 
-const CrearMetodoPago = ({ isOpen, onClose, onCreated }: CrearMetodoPagoProps) => {
+const CrearMetodoPago = ({ onCreated }: CrearMetodoPagoProps) => {
   const [newMetodo, setNewMetodo] = useState<Omit<MetodoPago, '_id'>>({
     nombre: "",
     banco: "",
@@ -40,7 +38,6 @@ const CrearMetodoPago = ({ isOpen, onClose, onCreated }: CrearMetodoPagoProps) =
     try {
       await createMetodoPago(newMetodo);
       onCreated();
-      onClose();
     } catch (err: any) {
       setError(err.message || "Error al crear el método de pago");
     } finally {
@@ -49,11 +46,11 @@ const CrearMetodoPago = ({ isOpen, onClose, onCreated }: CrearMetodoPagoProps) =
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Crear Nuevo Método de Pago</DialogTitle>
-        </DialogHeader>
+    <Card>
+      <CardHeader>
+        <CardTitle>Crear Nuevo Método de Pago</CardTitle>
+      </CardHeader>
+      <CardContent>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -90,8 +87,8 @@ const CrearMetodoPago = ({ isOpen, onClose, onCreated }: CrearMetodoPagoProps) =
             <Button type="submit" disabled={loading}>{loading ? "Creando..." : "Crear"}</Button>
           </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </CardContent>
+    </Card>
   );
 };
 

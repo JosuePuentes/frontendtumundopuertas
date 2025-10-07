@@ -9,7 +9,7 @@ import ModificarMetodoPago from "./ModificarMetodoPago";
 
 const MetodosPago = () => {
   const { metodos, loading, error, removeMetodoPago, fetchMetodosPago } = useMetodosPago();
-  const [isCreateModalOpen, setCreateModalOpen] = useState(false);
+
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [selectedMetodo, setSelectedMetodo] = useState<MetodoPago | null>(null);
 
@@ -28,7 +28,7 @@ const MetodosPago = () => {
     <Card>
       <CardHeader>
         <CardTitle>Métodos de Pago</CardTitle>
-        <Button onClick={() => setCreateModalOpen(true)}>Agregar Método de Pago</Button>
+
       </CardHeader>
       <CardContent>
         {loading && <p>Cargando...</p>}
