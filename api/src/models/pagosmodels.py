@@ -3,8 +3,8 @@ from typing import Optional
 
 class MetodoPago(BaseModel):
     nombre: str
-    banco: Optional[str] = None
-    numero_cuenta: Optional[str] = None
-    titular: Optional[str] = None
+    banco: str
+    numero_cuenta: str
+    titular: str
     cedula: Optional[str] = None
-    tipo: str # e.g., "Transferencia", "Zelle", "Efectivo"
+    moneda: str
