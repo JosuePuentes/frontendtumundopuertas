@@ -120,7 +120,7 @@ const ResumenVentaDiaria: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {Object.entries(data.ingresos_por_metodo).map(([metodo, total]) => (
+                      {Object.entries(data.ingresos_por_metodo || {}).map(([metodo, total]) => (
                         <TableRow key={metodo}>
                           <TableCell>{metodo}</TableCell>
                           <TableCell>${total.toFixed(2)}</TableCell>

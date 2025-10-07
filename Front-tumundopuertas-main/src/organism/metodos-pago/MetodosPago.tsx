@@ -65,11 +65,7 @@ const MetodosPago = () => {
           </TableBody>
         </Table>
 
-        <CrearMetodoPago
-          isOpen={isCreateModalOpen}
-          onClose={() => setCreateModalOpen(false)}
-          onCreated={fetchMetodosPago}
-        />
+        <CrearMetodoPago onCreated={fetchMetodosPago} />
 
         {selectedMetodo && (
           <ModificarMetodoPago

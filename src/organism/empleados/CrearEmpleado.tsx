@@ -1,5 +1,10 @@
-import { getApiUrl } from "@/lib/api";
-// import { useEmpleado } from "@/hooks/useEmpleado";
+import { useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import api from "@/lib/api";
+
 interface empleado {
     id: string;
   nombreCompleto: string;
@@ -48,21 +53,15 @@ const CrearEmpleado: React.FC = () => {
             setErrorMsg("Completa todos los campos obligatorios.");
             return;
         }
-        const apiUrl = getApiUrl();
         try {
-            const response = await fetch(`${apiUrl}/empleados/`, {
+            await api("/empleados/", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     identificador: empleado.id,
                     nombreCompleto: empleado.nombreCompleto,
                     permisos: empleado.permisos,
                 }),
             });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || "Error de red o servidor.");
-            }
             setMensaje("Empleado creado correctamente ✅");
             setEmpleado({ id: "", nombreCompleto: "", permisos: [] });
         } catch (err: any) {
