@@ -121,10 +121,6 @@ const CrearPedido: React.FC = () => {
     fetchItems(`${apiUrl}/inventario/all`);
   }, []);
 
-  useEffect(() => {
-    console.log("Metodos de pago:", metodosPago);
-  }, [metodosPago]);
-
   // === Helpers de totales ===
   const totalItems = selectedItems.reduce(
     (acc, item) => acc + (item.confirmed ? item.cantidad : 0),
@@ -717,6 +713,8 @@ const CrearPedido: React.FC = () => {
           </div>
 
           <Separator />
+
+          <pre>{JSON.stringify(metodosPago, null, 2)}</pre>
 
           {/* Abonos */}
           <div>
