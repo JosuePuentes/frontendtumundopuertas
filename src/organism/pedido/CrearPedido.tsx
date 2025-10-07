@@ -17,6 +17,8 @@ import { usePedido } from "@/hooks/usePedido";
 import { useClientes } from "@/hooks/useClientes";
 import { useItems } from "@/hooks/useItems";
 import ImageDisplay from "@/upfile/ImageDisplay";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMetodosPago } from "@/hooks/useMetodosPago";
 
 // Tipos locales para el payload
 interface PedidoItem {
@@ -41,6 +43,12 @@ interface PedidoSeguimiento {
   fecha_fin?: string | null;
 }
 
+interface RegistroPago {
+  fecha: string;
+  monto: number;
+  metodo: string;
+}
+
 interface PedidoPayload {
   cliente_id: string;
   cliente_nombre: string;
@@ -50,6 +58,9 @@ interface PedidoPayload {
   creado_por?: string;
   items: PedidoItem[];
   seguimiento: PedidoSeguimiento[];
+  pago: string;
+  historial_pagos: RegistroPago[];
+  total_abonado: number;
 }
 
 type SelectedItem = {
@@ -85,6 +96,9 @@ const CrearPedido: React.FC = () => {
   const [mensaje, setMensaje] = useState<string>("");
   const [mensajeTipo, setMensajeTipo] = useState<"error" | "success" | "">("");
   const [enviando, setEnviando] = useState(false);
+  const [abono, setAbono] = useState<number>(0);
+  const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<string>("");
+  const [pagos, setPagos] = useState<RegistroPago[]>([]);
 
   const { fetchPedido } = usePedido();
   const {
@@ -94,6 +108,7 @@ const CrearPedido: React.FC = () => {
     fetchClientes,
   } = useClientes();
   const { data: itemsData, loading: itemsLoading, fetchItems } = useItems();
+  const { metodos: metodosPago, loading: metodosLoading } = useMetodosPago();
 
   const blurTimeouts = useRef<Record<number, number>>({});
   const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
@@ -106,6 +121,10 @@ const CrearPedido: React.FC = () => {
     fetchItems(`${apiUrl}/inventario/all`);
   }, []);
 
+  useEffect(() => {
+    console.log("Metodos de pago:", metodosPago);
+  }, [metodosPago]);
+
   // === Helpers de totales ===
   const totalItems = selectedItems.reduce(
     (acc, item) => acc + (item.confirmed ? item.cantidad : 0),
@@ -116,6 +135,29 @@ const CrearPedido: React.FC = () => {
       acc + (item.confirmed && item.precio ? item.cantidad * item.precio : 0),
     0
   );
+  const totalAbonado = pagos.reduce((acc, pago) => acc + pago.monto, 0);
+
+  // === Handlers ===
+  const handleAddPago = () => {
+    if (abono <= 0) {
+      setMensaje("El monto del abono debe ser mayor a cero.");
+      setMensajeTipo("error");
+      return;
+    }
+    if (!metodoPagoSeleccionado) {
+      setMensaje("Debe seleccionar un método de pago.");
+      setMensajeTipo("error");
+      return;
+    }
+    const newPago: RegistroPago = {
+      fecha: new Date().toISOString(),
+      monto: abono,
+      metodo: metodoPagoSeleccionado,
+    };
+    setPagos([...pagos, newPago]);
+    setAbono(0);
+    setMetodoPagoSeleccionado("");
+  };
 
   // === Handlers ===
   const handleAddItem = () => {
@@ -263,12 +305,21 @@ const CrearPedido: React.FC = () => {
 
     const user = JSON.parse(localStorage.getItem("user") || "{}");
 
+    const totalAbonado = pagos.reduce((acc, pago) => acc + pago.monto, 0);
+    const pagoStatus =
+      totalAbonado >= totalMonto
+        ? "pagado"
+        : totalAbonado > 0
+        ? "abonado"
+        : "sin pago";
+
     const pedidoPayload: PedidoPayload = {
       cliente_id: String(clienteId),
       cliente_nombre: clienteObj?.nombre || "",
       fecha_creacion: fechaISO,
       fecha_actualizacion: fechaISO,
       estado_general: "pendiente",
+      creado_por: user?.usuario,
       items: selectedItems.map((item) => {
         const itemData = Array.isArray(itemsData)
           ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
@@ -289,20 +340,24 @@ const CrearPedido: React.FC = () => {
         };
       }),
       seguimiento,
+      pago: pagoStatus,
+      historial_pagos: pagos,
+      total_abonado: totalAbonado,
     };
 
     try {
       const resultado = await fetchPedido(`/pedidos/`, {
         method: "POST",
-        body: pedidoPayload,
+        body: JSON.stringify(pedidoPayload),
       });
 
-      if (resultado?.success) {
+      if (resultado?.id) {
         setMensaje("✅ Pedido creado correctamente.");
         setMensajeTipo("success");
         setClienteId(0);
         setClienteSearch("");
         setSelectedItems([]);
+        setPagos([]);
         setFecha(new Date().toISOString().slice(0, 10));
       } else {
         setMensaje(resultado?.error || "Ocurrió un error al crear el pedido.");
@@ -657,6 +712,60 @@ const CrearPedido: React.FC = () => {
                     </span>
                   </p>
                 </Card>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Abonos */}
+          <div>
+            <Label className="text-lg font-semibold text-gray-800">
+              Abonos
+            </Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+              <Input
+                type="number"
+                placeholder="Monto a abonar"
+                value={abono}
+                onChange={(e) => setAbono(Number(e.target.value))}
+              />
+              <Select
+                value={metodoPagoSeleccionado}
+                onValueChange={setMetodoPagoSeleccionado}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar método de pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  {metodosLoading ? (
+                    <SelectItem value="loading" disabled>
+                      Cargando...
+                    </SelectItem>
+                  ) : (
+                    metodosPago.map((metodo) => (
+                      <SelectItem key={metodo._id} value={metodo.nombre}>
+                        {metodo.nombre}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+              <Button type="button" onClick={handleAddPago}>
+                Agregar Abono
+              </Button>
+            </div>
+            {pagos.length > 0 && (
+              <div className="mt-4">
+                <h3 className="font-semibold">Abonos registrados:</h3>
+                <ul>
+                  {pagos.map((pago, index) => (
+                    <li key={index}>
+                      {pago.monto} - {pago.metodo}
+                    </li>
+                  ))}
+                </ul>
+                <p className="font-bold mt-2">Total Abonado: ${totalAbonado.toFixed(2)}</p>
               </div>
             )}
           </div>
