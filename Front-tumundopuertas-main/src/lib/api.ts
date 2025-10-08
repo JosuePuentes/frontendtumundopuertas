@@ -61,7 +61,11 @@ export const getPresignedUrl = async (
 
 
 export const getMetodosPago = async () => {
-  return api('/metodos-pago');
+  const metodos = await api('/metodos-pago');
+  return metodos.map((metodo: any) => ({
+    ...metodo,
+    id: metodo._id,
+  }));
 };
 
 export const createMetodoPago = async (data: any) => {
