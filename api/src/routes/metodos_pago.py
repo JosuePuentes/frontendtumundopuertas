@@ -3,17 +3,27 @@ from typing import List
 from bson import ObjectId
 from ..config.mongodb import db
 from ..models.pagosmodels import MetodoPago
+from ..models.transaccionmodels import Transaccion
+from pydantic import BaseModel
 
 router = APIRouter()
 metodos_pago_collection = db["metodos_pago"]
+transacciones_collection = db["transacciones"]
 
-def object_id_to_str(metodo):
-    metodo["_id"] = str(metodo["_id"])
-    return metodo
+def object_id_to_str(data):
+    if "_id" in data:
+        data["id"] = str(data["_id"])
+        del data["_id"]
+    return data
+
+class MontoRequest(BaseModel):
+    monto: float
 
 @router.post("/", response_model=MetodoPago)
 async def create_metodo_pago(metodo_pago: MetodoPago):
-    metodo_pago_dict = metodo_pago.dict()
+    metodo_pago_dict = metodo_pago.dict(by_alias=True)
+    if "id" in metodo_pago_dict:
+        del metodo_pago_dict["id"]
     result = metodos_pago_collection.insert_one(metodo_pago_dict)
     created_metodo = metodos_pago_collection.find_one({"_id": result.inserted_id})
     return object_id_to_str(created_metodo)
@@ -32,9 +42,13 @@ async def get_metodo_pago(id: str):
 
 @router.put("/{id}", response_model=MetodoPago)
 async def update_metodo_pago(id: str, metodo_pago: MetodoPago):
+    metodo_pago_dict = metodo_pago.dict(by_alias=True, exclude_unset=True)
+    if "id" in metodo_pago_dict:
+        del metodo_pago_dict["id"]
+
     updated_metodo = metodos_pago_collection.find_one_and_update(
         {"_id": ObjectId(id)},
-        {"$set": metodo_pago.dict()},
+        {"$set": metodo_pago_dict},
         return_document=True
     )
     if updated_metodo:
@@ -47,3 +61,61 @@ async def delete_metodo_pago(id: str):
     if result.deleted_count == 1:
         return {"message": "Método de pago eliminado correctamente"}
     raise HTTPException(status_code=404, detail="Método de pago no encontrado")
+
+@router.post("/{id}/cargar", response_model=MetodoPago)
+async def cargar_dinero(id: str, request: MontoRequest):
+    # Incrementar el saldo
+    updated_metodo = metodos_pago_collection.find_one_and_update(
+        {"_id": ObjectId(id)},
+        {"$inc": {"saldo": request.monto}},
+        return_document=True
+    )
+    if not updated_metodo:
+        raise HTTPException(status_code=404, detail="Método de pago no encontrado")
+
+    # Registrar la transaccion
+    transaccion = Transaccion(
+        metodo_pago_id=id,
+        tipo="carga",
+        monto=request.monto
+    )
+    transaccion_dict = transaccion.dict(by_alias=True)
+    if "id" in transaccion_dict:
+        del transaccion_dict["id"]
+    transacciones_collection.insert_one(transaccion_dict)
+
+    return object_id_to_str(updated_metodo)
+
+@router.post("/{id}/transferir", response_model=MetodoPago)
+async def transferir_dinero(id: str, request: MontoRequest):
+    # Verificar saldo suficiente
+    metodo = metodos_pago_collection.find_one({"_id": ObjectId(id)})
+    if not metodo:
+        raise HTTPException(status_code=404, detail="Método de pago no encontrado")
+    if metodo.get("saldo", 0) < request.monto:
+        raise HTTPException(status_code=400, detail="Saldo insuficiente")
+
+    # Disminuir el saldo
+    updated_metodo = metodos_pago_collection.find_one_and_update(
+        {"_id": ObjectId(id)},
+        {"$inc": {"saldo": -request.monto}},
+        return_document=True
+    )
+
+    # Registrar la transaccion
+    transaccion = Transaccion(
+        metodo_pago_id=id,
+        tipo="transferencia",
+        monto=request.monto
+    )
+    transaccion_dict = transaccion.dict(by_alias=True)
+    if "id" in transaccion_dict:
+        del transaccion_dict["id"]
+    transacciones_collection.insert_one(transaccion_dict)
+
+    return object_id_to_str(updated_metodo)
+
+@router.get("/{id}/transacciones", response_model=List[Transaccion])
+async def get_transacciones(id: str):
+    transacciones = list(transacciones_collection.find({"metodo_pago_id": id}))
+    return [object_id_to_str(t) for t in transacciones]
