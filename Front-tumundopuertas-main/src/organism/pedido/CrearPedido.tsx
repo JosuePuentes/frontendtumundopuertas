@@ -694,8 +694,8 @@ const CrearPedido: React.FC = () => {
                       <SelectValue placeholder="Método de pago" />
                     </SelectTrigger>
                     <SelectContent>
-                      {metodosPago.filter(metodo => metodo._id).map((metodo) => (
-                        <SelectItem key={metodo._id} value={metodo._id!}>
+                      {metodosPago.filter(metodo => metodo.id).map((metodo) => (
+                        <SelectItem key={metodo.id} value={metodo.id!}>
                           {metodo.nombre}
                         </SelectItem>
                       ))}

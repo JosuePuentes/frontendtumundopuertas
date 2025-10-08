@@ -18,6 +18,7 @@ const CrearMetodoPago = ({ onCreated }: CrearMetodoPagoProps) => {
     titular: "",
     numero_cuenta: "",
     moneda: "dolar",
+    saldo: 0,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -6,14 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import CrearMetodoPago from "./CrearMetodoPago";
 import ModificarMetodoPago from "./ModificarMetodoPago";
-
 import CargarDinero from "./CargarDinero";
+import TransferirDinero from "./TransferirDinero";
 
 const MetodosPago = () => {
   const { metodos, loading, error, removeMetodoPago, fetchMetodosPago, updateMetodoSaldo } = useMetodosPago();
 
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isCargarModalOpen, setCargarModalOpen] = useState(false);
+  const [isTransferirModalOpen, setTransferirModalOpen] = useState(false);
   const [selectedMetodo, setSelectedMetodo] = useState<MetodoPago | null>(null);
 
   const handleEdit = (metodo: MetodoPago) => {
@@ -24,6 +25,11 @@ const MetodosPago = () => {
   const handleCargar = (metodo: MetodoPago) => {
     setSelectedMetodo(metodo);
     setCargarModalOpen(true);
+  };
+
+  const handleTransferir = (metodo: MetodoPago) => {
+    setSelectedMetodo(metodo);
+    setTransferirModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -93,7 +99,7 @@ const MetodosPago = () => {
           <CargarDinero
             isOpen={isCargarModalOpen}
             onClose={() => setCargarModalOpen(false)}
-            onSuccess={(updatedMetodo) => {
+            onSuccess={(updatedMetodo: MetodoPago) => {
               updateMetodoSaldo(selectedMetodo.id!, updatedMetodo);
             }}
             metodo={selectedMetodo}
@@ -104,7 +110,7 @@ const MetodosPago = () => {
           <TransferirDinero
             isOpen={isTransferirModalOpen}
             onClose={() => setTransferirModalOpen(false)}
-            onSuccess={(updatedMetodo) => {
+            onSuccess={(updatedMetodo: MetodoPago) => {
               updateMetodoSaldo(selectedMetodo.id!, updatedMetodo);
             }}
             metodo={selectedMetodo}
