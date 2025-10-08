@@ -24,7 +24,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { usePedido } from "@/hooks/usePedido";
 import { useClientes } from "@/hooks/useClientes";
 import { useItems } from "@/hooks/useItems";
-import { useMetodosPago } from "@/hooks/useMetodosPago";
+import api from "@/lib/api";
 import ImageDisplay from "@/upfile/ImageDisplay";
 
 // Tipos locales para el payload
