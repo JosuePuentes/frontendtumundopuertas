@@ -105,7 +105,7 @@ const CrearPedido: React.FC = () => {
     fetchClientes,
   } = useClientes();
   const { data: itemsData, loading: itemsLoading, fetchItems } = useItems();
-  const { metodos: metodosPago } = useMetodosPago();
+  const [metodosPago, setMetodosPago] = useState<any[]>([]);
 
   const blurTimeouts = useRef<Record<number, number>>({});
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
@@ -116,6 +116,22 @@ const CrearPedido: React.FC = () => {
 
   useEffect(() => {
     fetchItems(`${apiUrl}/inventario/all`);
+  }, []);
+
+  useEffect(() => {
+    const fetchMetodosPago = async () => {
+      try {
+        const response = await api("/metodos-pago");
+        const mappedMetodos = response.map((metodo: any) => ({
+          ...metodo,
+          id: metodo._id
+        }));
+        setMetodosPago(mappedMetodos);
+      } catch (error) {
+        console.error("Error fetching payment methods:", error);
+      }
+    };
+    fetchMetodosPago();
   }, []);
 
   // === Helpers de totales ===

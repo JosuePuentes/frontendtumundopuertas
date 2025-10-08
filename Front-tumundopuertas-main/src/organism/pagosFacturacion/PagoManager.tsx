@@ -27,7 +27,12 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
     const fetchMetodosPago = async () => {
       try {
         const response = await api("/metodos-pago");
-        setMetodosPago(response);
+        // Añadimos el mapeo de _id a id aquí mismo
+        const mappedMetodos = response.map((metodo: any) => ({
+          ...metodo,
+          id: metodo._id
+        }));
+        setMetodosPago(mappedMetodos);
       } catch (error) {
         console.error("Error fetching payment methods:", error);
       }
