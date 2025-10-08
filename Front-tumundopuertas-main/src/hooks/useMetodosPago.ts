@@ -21,7 +21,11 @@ export function useMetodosPago() {
     setError(null);
     try {
       const data = await getMetodosPago();
-      setMetodos(data);
+      const metodosConSaldo = data.map((metodo: MetodoPago) => ({
+        ...metodo,
+        saldo: metodo.saldo || 0,
+      }));
+      setMetodos(metodosConSaldo);
     } catch (err: any) {
       setError(err.message || "Error desconocido");
     } finally {
