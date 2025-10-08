@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { getMetodosPago, deleteMetodoPago } from "../lib/api";
 
 export interface MetodoPago {
-  _id?: string;
+  id?: string;
   nombre: string;
   banco: string;
   titular: string;
   numero_cuenta: string;
   moneda: "dolar" | "bs";
+  saldo: number;
 }
 
 export function useMetodosPago() {
@@ -33,7 +34,7 @@ export function useMetodosPago() {
     setError(null);
     try {
       await deleteMetodoPago(id);
-      setMetodos(metodos.filter((m) => m._id !== id));
+      setMetodos(metodos.filter((m) => m.id !== id));
     } catch (err: any) {
       setError(err.message || "Error desconocido");
     } finally {
@@ -41,9 +42,13 @@ export function useMetodosPago() {
     }
   };
 
+  const updateMetodoSaldo = (id: string, updatedMetodo: MetodoPago) => {
+    setMetodos(metodos.map((m) => (m.id === id ? updatedMetodo : m)));
+  };
+
   useEffect(() => {
     fetchMetodosPago();
   }, []);
 
-  return { metodos, loading, error, fetchMetodosPago, removeMetodoPago };
+  return { metodos, loading, error, fetchMetodosPago, removeMetodoPago, updateMetodoSaldo };
 }

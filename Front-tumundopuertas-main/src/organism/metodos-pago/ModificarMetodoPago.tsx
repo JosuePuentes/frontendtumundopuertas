@@ -37,7 +37,7 @@ const ModificarMetodoPago = ({ isOpen, onClose, onUpdated, metodo }: ModificarMe
     setLoading(true);
     setError(null);
     try {
-      await updateMetodoPago(updatedMetodo._id!, updatedMetodo);
+      await updateMetodoPago(updatedMetodo.id!, updatedMetodo);
       onUpdated();
       onClose();
     } catch (err: any) {

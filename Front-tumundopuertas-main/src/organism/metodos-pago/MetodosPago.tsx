@@ -7,10 +7,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import CrearMetodoPago from "./CrearMetodoPago";
 import ModificarMetodoPago from "./ModificarMetodoPago";
 
+import CargarDinero from "./CargarDinero";
+
 const MetodosPago = () => {
-  const { metodos, loading, error, removeMetodoPago, fetchMetodosPago } = useMetodosPago();
+  const { metodos, loading, error, removeMetodoPago, fetchMetodosPago, updateMetodoSaldo } = useMetodosPago();
 
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
+  const [isCargarModalOpen, setCargarModalOpen] = useState(false);
   const [selectedMetodo, setSelectedMetodo] = useState<MetodoPago | null>(null);
 
   const handleEdit = (metodo: MetodoPago) => {
@@ -18,9 +21,14 @@ const MetodosPago = () => {
     setUpdateModalOpen(true);
   };
 
+  const handleCargar = (metodo: MetodoPago) => {
+    setSelectedMetodo(metodo);
+    setCargarModalOpen(true);
+  };
+
   const handleDelete = async (id: string) => {
     if (window.confirm("¿Estás seguro de que quieres eliminar este método de pago?")) {
-      await removeMetodoPago(id);
+      await removeMetodoPago(id!);
     }
   };
 
@@ -41,24 +49,29 @@ const MetodosPago = () => {
               <TableHead>Titular</TableHead>
               <TableHead>Nro. Cuenta</TableHead>
               <TableHead>Moneda</TableHead>
+              <TableHead>Saldo</TableHead>
               <TableHead>Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {metodos.map((metodo) => (
-              <TableRow key={metodo._id}>
+              <TableRow key={metodo.id}>
                 <TableCell>{metodo.nombre}</TableCell>
                 <TableCell>{metodo.banco}</TableCell>
                 <TableCell>{metodo.titular}</TableCell>
                 <TableCell>{metodo.numero_cuenta}</TableCell>
                 <TableCell>{metodo.moneda}</TableCell>
+                <TableCell>{metodo.saldo.toFixed(2)}</TableCell>
                 <TableCell>
                   <Button variant="outline" size="sm" onClick={() => handleEdit(metodo)}>
                     Editar
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDelete(metodo._id!)}>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(metodo.id!)}>
                     Eliminar
                   </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleCargar(metodo)}>Cargar</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleTransferir(metodo)}>Transferir</Button>
+                  <Button variant="outline" size="sm">Historial</Button>
                 </TableCell>
               </TableRow>
             ))}
@@ -72,6 +85,28 @@ const MetodosPago = () => {
             isOpen={isUpdateModalOpen}
             onClose={() => setUpdateModalOpen(false)}
             onUpdated={fetchMetodosPago}
+            metodo={selectedMetodo}
+          />
+        )}
+
+        {selectedMetodo && (
+          <CargarDinero
+            isOpen={isCargarModalOpen}
+            onClose={() => setCargarModalOpen(false)}
+            onSuccess={(updatedMetodo) => {
+              updateMetodoSaldo(selectedMetodo.id!, updatedMetodo);
+            }}
+            metodo={selectedMetodo}
+          />
+        )}
+
+        {selectedMetodo && (
+          <TransferirDinero
+            isOpen={isTransferirModalOpen}
+            onClose={() => setTransferirModalOpen(false)}
+            onSuccess={(updatedMetodo) => {
+              updateMetodoSaldo(selectedMetodo.id!, updatedMetodo);
+            }}
             metodo={selectedMetodo}
           />
         )}
