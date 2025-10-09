@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMetodosPago } from "../../hooks/useMetodosPago";
 import type { MetodoPago } from "../../hooks/useMetodosPago";
 import { Button } from "../../components/ui/button";
@@ -11,6 +11,27 @@ import TransferirDinero from "./TransferirDinero";
 
 const MetodosPago = () => {
   const { metodos, loading, error, removeMetodoPago, fetchMetodosPago, updateMetodoSaldo } = useMetodosPago();
+
+  // Refrescar métodos de pago automáticamente cada 30 segundos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchMetodosPago();
+    }, 30000); // 30 segundos
+
+    // Refrescar cuando el usuario regresa a la página
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchMetodosPago();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchMetodosPago]);
 
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isCargarModalOpen, setCargarModalOpen] = useState(false);
@@ -41,8 +62,17 @@ const MetodosPago = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Métodos de Pago</CardTitle>
-
+        <div className="flex justify-between items-center">
+          <CardTitle>Métodos de Pago</CardTitle>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={fetchMetodosPago}
+            disabled={loading}
+          >
+            {loading ? "Cargando..." : "Refrescar"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {loading && <p>Cargando...</p>}
