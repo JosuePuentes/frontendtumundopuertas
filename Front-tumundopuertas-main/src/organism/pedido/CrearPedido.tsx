@@ -741,8 +741,8 @@ const CrearPedido: React.FC = () => {
                     type="number"
                     min={0}
                     step="0.01"
-                    value={montoAbonar}
-                    onChange={(e) => setMontoAbonar(Number(e.target.value))}
+                    value={abono}
+                    onChange={(e) => setAbono(Number(e.target.value))}
                     placeholder="0.00"
                     className="w-32 focus:ring-2 focus:ring-blue-400"
                     disabled={!selectedMetodoPago}
