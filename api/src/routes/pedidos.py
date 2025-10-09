@@ -764,3 +764,11 @@ async def get_venta_diaria(
         "abonos": abonos,
         "ingresos_por_metodo": ingresos_por_metodo,
     }
+
+@router.get("/venta-diaria", include_in_schema=False)
+async def get_venta_diaria_no_slash(
+    fecha_inicio: Optional[str] = Query(None, description="Fecha inicio en formato YYYY-MM-DD"),
+    fecha_fin: Optional[str] = Query(None, description="Fecha fin en formato YYYY-MM-DD"),
+):
+    """Endpoint alternativo sin barra final para compatibilidad"""
+    return await get_venta_diaria(fecha_inicio, fecha_fin)
