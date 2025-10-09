@@ -93,7 +93,7 @@ const PagoManager: React.FC<{
           className="text-xs w-24"
           disabled={loading}
         />
-        <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago}>
+        <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago || ""}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Método de pago" />
           </SelectTrigger>

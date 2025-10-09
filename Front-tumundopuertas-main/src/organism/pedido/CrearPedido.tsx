@@ -94,7 +94,6 @@ const CrearPedido: React.FC = () => {
   const [mensaje, setMensaje] = useState<string>("");
   const [mensajeTipo, setMensajeTipo] = useState<"error" | "success" | "">("");
   const [enviando, setEnviando] = useState(false);
-  const [montoAbonar, setMontoAbonar] = useState<number>(0);
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
   const [abono, setAbono] = useState<number>(0);
   const [pagos, setPagos] = useState<RegistroPago[]>([]);
