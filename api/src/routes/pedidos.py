@@ -635,6 +635,26 @@ async def actualizar_pago(
             {"_id": ObjectId(pedido_id)},
             update
         )
+
+        # Si hay un método de pago y un monto, incrementar el saldo del método
+        if metodo and monto is not None and monto > 0:
+            print(f"DEBUG PAGO: Incrementando saldo del método '{metodo}' en {monto}")
+            try:
+                # Buscar el método de pago por nombre
+                metodo_pago = metodos_pago_collection.find_one({"nombre": metodo})
+                if metodo_pago:
+                    nuevo_saldo = metodo_pago.get("saldo", 0.0) + monto
+                    metodos_pago_collection.update_one(
+                        {"_id": metodo_pago["_id"]},
+                        {"$set": {"saldo": nuevo_saldo}}
+                    )
+                    print(f"DEBUG PAGO: Saldo actualizado de {metodo_pago.get('saldo', 0.0)} a {nuevo_saldo}")
+                else:
+                    print(f"DEBUG PAGO: Método de pago '{metodo}' no encontrado")
+            except Exception as e:
+                print(f"DEBUG PAGO: Error al actualizar saldo: {e}")
+                # No lanzamos excepción para no interrumpir el flujo principal
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en la DB: {e}")
 
