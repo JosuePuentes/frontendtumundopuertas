@@ -21,12 +21,33 @@ class MontoRequest(BaseModel):
 
 @router.post("/", response_model=MetodoPago)
 async def create_metodo_pago(metodo_pago: MetodoPago):
-    metodo_pago_dict = metodo_pago.dict(by_alias=True)
-    if "id" in metodo_pago_dict:
-        del metodo_pago_dict["id"]
-    result = metodos_pago_collection.insert_one(metodo_pago_dict)
-    created_metodo = metodos_pago_collection.find_one({"_id": result.inserted_id})
-    return object_id_to_str(created_metodo)
+    try:
+        metodo_pago_dict = metodo_pago.dict(by_alias=True)
+        if "id" in metodo_pago_dict:
+            del metodo_pago_dict["id"]
+        
+        # Verificar si ya existe un método con el mismo nombre
+        existing = metodos_pago_collection.find_one({"nombre": metodo_pago.nombre})
+        if existing:
+            raise HTTPException(status_code=400, detail="Ya existe un método de pago con este nombre")
+        
+        result = metodos_pago_collection.insert_one(metodo_pago_dict)
+        created_metodo = metodos_pago_collection.find_one({"_id": result.inserted_id})
+        
+        if not created_metodo:
+            raise HTTPException(status_code=500, detail="Error al crear el método de pago")
+            
+        return object_id_to_str(created_metodo)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
+
+@router.post("", response_model=MetodoPago, include_in_schema=False)
+async def create_metodo_pago_no_slash(metodo_pago: MetodoPago):
+    """Endpoint alternativo sin barra final para compatibilidad"""
+    return await create_metodo_pago(metodo_pago)
 
 @router.get("/", response_model=List[MetodoPago])
 async def get_all_metodos_pago():
