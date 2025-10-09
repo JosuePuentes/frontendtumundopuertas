@@ -32,6 +32,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
           ...metodo,
           id: metodo._id || metodo.id
         }));
+        console.log("PagoManager - Métodos de pago cargados:", mappedMetodos);
         setMetodosPago(mappedMetodos);
       } catch (error) {
         console.error("Error fetching payment methods:", error);
@@ -95,11 +96,14 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
           <SelectValue placeholder="Método de pago" />
         </SelectTrigger>
         <SelectContent className="bg-white">
-          {metodosPago.filter(metodo => metodo.id && metodo.nombre).map((metodo) => (
-            <SelectItem key={metodo.id} value={metodo.id}>
-              {metodo.nombre}
-            </SelectItem>
-          ))}
+          {(() => {
+            console.log("PagoManager - Renderizando SelectContent, metodosPago:", metodosPago);
+            return metodosPago.map((metodo) => (
+              <SelectItem key={metodo.id || metodo._id} value={metodo.id || metodo._id}>
+                {metodo.nombre || 'Sin nombre'}
+              </SelectItem>
+            ));
+          })()}
         </SelectContent>
       </Select>
 

@@ -127,6 +127,7 @@ const CrearPedido: React.FC = () => {
           id: metodo._id || metodo.id
         }));
         console.log("Métodos de pago cargados:", mappedMetodos);
+        console.log("Métodos filtrados:", mappedMetodos.filter(metodo => metodo.id && metodo.nombre));
         setMetodosPago(mappedMetodos);
       } catch (error) {
         console.error("Error fetching payment methods:", error);
@@ -707,22 +708,28 @@ const CrearPedido: React.FC = () => {
                     className="w-32 focus:ring-2 focus:ring-blue-400"
                     disabled={!selectedMetodoPago}
                   />
-                  <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago || ""}>
+                  <Select onValueChange={(value) => {
+                    console.log("Método seleccionado:", value);
+                    setSelectedMetodoPago(value);
+                  }} value={selectedMetodoPago || ""}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Método de pago" />
                     </SelectTrigger>
                     <SelectContent>
-                      {metodosPago.length === 0 ? (
-                        <SelectItem value="no-methods" disabled>
-                          No hay métodos de pago disponibles
-                        </SelectItem>
-                      ) : (
-                        metodosPago.filter(metodo => metodo.id && metodo.nombre).map((metodo) => (
-                          <SelectItem key={metodo.id} value={metodo.id}>
-                            {metodo.nombre}
+                      {(() => {
+                        console.log("Renderizando SelectContent, metodosPago:", metodosPago);
+                        return metodosPago.length === 0 ? (
+                          <SelectItem value="no-methods" disabled>
+                            No hay métodos de pago disponibles
                           </SelectItem>
-                        ))
-                      )}
+                        ) : (
+                          metodosPago.map((metodo) => (
+                            <SelectItem key={metodo.id || metodo._id} value={metodo.id || metodo._id}>
+                              {metodo.nombre || 'Sin nombre'}
+                            </SelectItem>
+                          ))
+                        );
+                      })()}
                     </SelectContent>
                   </Select>
                   <Button
