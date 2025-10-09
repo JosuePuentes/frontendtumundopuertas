@@ -85,7 +85,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
         </SelectTrigger>
         <SelectContent className="bg-white">
           {metodosPago.map((metodo) => (
-            <SelectItem key={metodo._id} value={metodo.nombre}>
+            <SelectItem key={metodo._id} value={metodo._id}>
               {metodo.nombre} - {metodo.banco}
             </SelectItem>
           ))}

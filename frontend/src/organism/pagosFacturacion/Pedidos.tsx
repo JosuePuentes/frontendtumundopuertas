@@ -111,7 +111,7 @@ const PagoManager: React.FC<{
         >
           <option value="">Método</option>
           {metodosPago.map((metodo) => (
-            <option key={metodo._id} value={metodo.nombre}>
+            <option key={metodo._id} value={metodo._id}>
               {metodo.nombre}
             </option>
           ))}

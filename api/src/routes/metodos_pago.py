@@ -272,6 +272,12 @@ async def transferir_dinero(id: str, request: MontoRequest):
 
     return object_id_to_str(updated_metodo)
 
+@router.get("/all", response_model=List[MetodoPago])
+async def get_all_metodos_pago_all():
+    """Endpoint específico para obtener todos los métodos de pago"""
+    metodos = list(metodos_pago_collection.find())
+    return [object_id_to_str(metodo) for metodo in metodos]
+
 @router.get("/{id}/transacciones", response_model=List[Transaccion])
 async def get_transacciones(id: str):
     transacciones = list(transacciones_collection.find({"metodo_pago_id": id}))
