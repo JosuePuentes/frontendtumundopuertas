@@ -718,8 +718,14 @@ async def get_venta_diaria(
         {
             "$lookup": {
                 "from": "metodos_pago",
-                "localField": "historial_pagos.metodo",
-                "foreignField": "_id",
+                "let": {"metodo_id": {"$toObjectId": "$historial_pagos.metodo"}},
+                "pipeline": [
+                    {
+                        "$match": {
+                            "$expr": {"$eq": ["$_id", "$$metodo_id"]}
+                        }
+                    }
+                ],
                 "as": "metodo_pago_info"
             }
         },
