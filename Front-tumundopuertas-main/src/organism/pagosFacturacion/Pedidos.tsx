@@ -98,11 +98,14 @@ const PagoManager: React.FC<{
             <SelectValue placeholder="Método de pago" />
           </SelectTrigger>
           <SelectContent>
-            {metodosPago.map((metodo) => (
-              <SelectItem key={metodo._id} value={metodo._id}>
-                {metodo.nombre}
-              </SelectItem>
-            ))}
+            {metodosPago.map((metodo: any, index: number) => {
+              const metodoId = metodo._id || metodo.id || metodo.nombre || `metodo-${index}`;
+              return (
+                <SelectItem key={metodoId} value={metodoId}>
+                  {metodo.nombre || 'Sin nombre'}
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
         <Button
