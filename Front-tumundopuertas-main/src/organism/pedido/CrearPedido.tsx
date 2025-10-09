@@ -753,16 +753,22 @@ const CrearPedido: React.FC = () => {
                     <SelectContent>
                       {(() => {
                         console.log("Renderizando SelectContent, metodosPago:", metodosPago);
+                        console.log("Primer método estructura:", metodosPago[0]);
                         return metodosPago.length === 0 ? (
                           <SelectItem value="no-methods" disabled>
                             No hay métodos de pago disponibles
                           </SelectItem>
                         ) : (
-                          metodosPago.map((metodo: any) => (
-                            <SelectItem key={metodo._id} value={metodo._id}>
-                              {metodo.nombre || 'Sin nombre'}
-                            </SelectItem>
-                          ))
+                          metodosPago.map((metodo: any) => {
+                            console.log("Mapeando método:", metodo);
+                            const metodoId = metodo._id || metodo.id;
+                            console.log("ID del método:", metodoId);
+                            return (
+                              <SelectItem key={metodoId} value={metodoId}>
+                                {metodo.nombre || 'Sin nombre'}
+                              </SelectItem>
+                            );
+                          })
                         );
                       })()}
                     </SelectContent>
