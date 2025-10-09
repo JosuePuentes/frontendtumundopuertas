@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from .routes.auth import router as auth_router
 from .routes.clientes import router as cliente_router
 from .routes.empleados import router as empleado_router
@@ -32,11 +33,15 @@ app = FastAPI(
 # Middleware para confiar en los encabezados de proxy
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
-# Habilitar CORS
+# Middleware para hosts confiables
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
+
+# Habilitar CORS con configuración más robusta
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://crafteo-three.vercel.app",
+        "https://crafteo-three-git-main-josuepuentes.vercel.app",
         "https://crafteo-three-git-main-josuepuentes.vercel.app",
         "http://localhost:3000",
         "http://localhost:5173",
@@ -45,7 +50,7 @@ app.add_middleware(
         "*"  # Fallback para desarrollo
     ],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
     allow_headers=[
         "Accept",
         "Accept-Language",
@@ -56,6 +61,14 @@ app.add_middleware(
         "Origin",
         "Access-Control-Request-Method",
         "Access-Control-Request-Headers",
+        "Access-Control-Allow-Origin",
+        "Access-Control-Allow-Methods",
+        "Access-Control-Allow-Headers",
+    ],
+    expose_headers=[
+        "Access-Control-Allow-Origin",
+        "Access-Control-Allow-Methods", 
+        "Access-Control-Allow-Headers",
     ],
 )
 
@@ -67,6 +80,20 @@ async def health_check():
         "message": "API funcionando correctamente",
         "cors": "configurado"
     }
+
+# Endpoint de prueba para CORS con PUT
+@app.put("/test-cors")
+async def test_cors_put():
+    return {
+        "status": "ok",
+        "message": "CORS PUT funcionando correctamente",
+        "method": "PUT"
+    }
+
+# Endpoint OPTIONS para preflight requests
+@app.options("/{path:path}")
+async def options_handler(path: str):
+    return {"message": "OK"}
 
 # Incluir routers segmentados
 app.include_router(auth_router, prefix="/auth", tags=["Autenticación"])

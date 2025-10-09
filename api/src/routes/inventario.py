@@ -39,17 +39,36 @@ async def create_item(item: Item):
 @router.put("/id/{item_id}/")
 async def update_item(item_id: str, item: Item):
     try:
-        item_obj_id = ObjectId(item_id)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"item_id no es un ObjectId válido: {str(e)}")
+        # Validar ObjectId
+        try:
+            item_obj_id = ObjectId(item_id)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"item_id no es un ObjectId válido: {str(e)}")
 
-    result = items_collection.update_one(
-        {"_id": item_obj_id},
-        {"$set": item.dict(exclude_unset=True, by_alias=True, exclude={"_id"})}
-    )
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Item no encontrado")
-    return {"message": "Item actualizado correctamente", "id": item_id}
+        # Preparar datos para actualización
+        update_data = item.dict(exclude_unset=True, by_alias=True, exclude={"_id", "id"})
+        
+        # Verificar que hay datos para actualizar
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+
+        # Realizar la actualización
+        result = items_collection.update_one(
+            {"_id": item_obj_id},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Item no encontrado")
+            
+        return {"message": "Item actualizado correctamente", "id": item_id}
+        
+    except HTTPException:
+        # Re-lanzar HTTPExceptions (errores conocidos)
+        raise
+    except Exception as e:
+        # Capturar cualquier otro error inesperado
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
 @router.post("/upload-excel", status_code=status.HTTP_201_CREATED)
 async def upload_inventory_excel(file: UploadFile = File(...)):
