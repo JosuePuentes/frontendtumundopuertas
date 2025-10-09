@@ -46,7 +46,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pago, monto, metodo_pago_id: selectedMetodoPago }),
+        body: JSON.stringify({ pago, monto, metodo: selectedMetodoPago }),
       });
 
       if (!res.ok) throw new Error("Error actualizando pago");
