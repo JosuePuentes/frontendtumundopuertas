@@ -21,11 +21,35 @@ async def get_cliente(cliente_id: str):
 
 @router.post("/")
 async def create_cliente(cliente: Cliente):
-    existing_client = clientes_collection.find_one({"nombre": cliente.nombre})
-    if existing_client:
-        raise HTTPException(status_code=400, detail="El cliente ya existe")
-    result = clientes_collection.insert_one(cliente.dict())
-    return {"message": "Cliente creado correctamente", "id": str(result.inserted_id)}
+    try:
+        # Preparar datos para inserción
+        cliente_dict = cliente.dict(by_alias=True)
+        if "id" in cliente_dict:
+            del cliente_dict["id"]
+        
+        # Verificar si ya existe un cliente con el mismo nombre
+        existing_client = clientes_collection.find_one({"nombre": cliente.nombre})
+        if existing_client:
+            raise HTTPException(status_code=400, detail="Ya existe un cliente con este nombre")
+        
+        result = clientes_collection.insert_one(cliente_dict)
+        
+        if not result.inserted_id:
+            raise HTTPException(status_code=500, detail="Error al crear el cliente")
+            
+        return {"message": "Cliente creado correctamente", "id": str(result.inserted_id)}
+        
+    except HTTPException:
+        # Re-lanzar HTTPExceptions (errores conocidos)
+        raise
+    except Exception as e:
+        # Capturar cualquier otro error inesperado
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
+
+@router.post("", include_in_schema=False)
+async def create_cliente_no_slash(cliente: Cliente):
+    """Endpoint alternativo sin barra final para compatibilidad"""
+    return await create_cliente(cliente)
 
 @router.put("/id/{cliente_id}/")
 async def update_cliente(cliente_id: str, cliente: Cliente):
