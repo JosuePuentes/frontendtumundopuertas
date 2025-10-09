@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -11,6 +11,7 @@ import {
 import { Loader2, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useMetodosPago } from "@/hooks/useMetodosPago";
 // Componente para gestionar pagos y abonos
 const PagoManager: React.FC<{
   pedidoId: string;
@@ -19,9 +20,17 @@ const PagoManager: React.FC<{
 }> = ({ pedidoId, pagoInicial, onSuccess }) => {
   const [monto, setMonto] = useState("");
   const [estado, setEstado] = useState(pagoInicial || "sin pago");
+  const [metodoPago, setMetodoPago] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const { data: metodosPago, loading: metodosLoading, fetchMetodosPago } = useMetodosPago();
+
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_API_URL || "https://localhost:3000";
+    fetchMetodosPago(`${apiUrl}/metodos-pago/all`);
+  }, []);
 
   // Actualizar solo el estado del pago
   const actualizarEstado = async (nuevoEstado: string) => {
@@ -47,6 +56,11 @@ const PagoManager: React.FC<{
 
   // Registrar abono (actualiza estado y agrega al historial)
   const registrarAbono = async () => {
+    if (!metodoPago) {
+      setError("Selecciona un método de pago");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -54,11 +68,12 @@ const PagoManager: React.FC<{
       const res = await fetch(`${import.meta.env.VITE_API_URL}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pago: estado, monto: parseFloat(monto) }),
+        body: JSON.stringify({ pago: estado, monto: parseFloat(monto), metodo: metodoPago }),
       });
       if (!res.ok) throw new Error("Error al registrar abono");
       setSuccess("Abono registrado");
       setMonto("");
+      setMetodoPago("");
       if (onSuccess) onSuccess();
     } catch (err: any) {
       setError(err.message || "Error desconocido");
@@ -88,11 +103,24 @@ const PagoManager: React.FC<{
           className="text-xs w-24"
           disabled={loading}
         />
+        <select
+          value={metodoPago}
+          onChange={e => setMetodoPago(e.target.value)}
+          className="text-xs border rounded px-1 py-0.5 w-32"
+          disabled={loading || metodosLoading}
+        >
+          <option value="">Método</option>
+          {metodosPago.map((metodo) => (
+            <option key={metodo._id} value={metodo.nombre}>
+              {metodo.nombre}
+            </option>
+          ))}
+        </select>
         <Button
           size="sm"
           className="text-xs px-2 py-1"
           onClick={registrarAbono}
-          disabled={loading || !monto || isNaN(Number(monto))}
+          disabled={loading || !monto || isNaN(Number(monto)) || !metodoPago}
         >
           Abonar
         </Button>
