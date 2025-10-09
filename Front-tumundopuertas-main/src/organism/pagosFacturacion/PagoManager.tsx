@@ -30,7 +30,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
         // Añadimos el mapeo de _id a id aquí mismo
         const mappedMetodos = response.map((metodo: any) => ({
           ...metodo,
-          id: metodo._id
+          id: metodo._id || metodo.id
         }));
         setMetodosPago(mappedMetodos);
       } catch (error) {
@@ -90,12 +90,12 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
         disabled={loading}
       />
 
-      <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago} disabled={loading}>
+      <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago || ""} disabled={loading}>
         <SelectTrigger className="w-full">
           <SelectValue placeholder="Método de pago" />
         </SelectTrigger>
         <SelectContent className="bg-white">
-          {metodosPago.map((metodo) => (
+          {metodosPago.filter(metodo => metodo.id && metodo.nombre).map((metodo) => (
             <SelectItem key={metodo.id} value={metodo.id}>
               {metodo.nombre}
             </SelectItem>

@@ -124,8 +124,9 @@ const CrearPedido: React.FC = () => {
         const response = await api("/metodos-pago");
         const mappedMetodos = response.map((metodo: any) => ({
           ...metodo,
-          id: metodo._id
+          id: metodo._id || metodo.id
         }));
+        console.log("Métodos de pago cargados:", mappedMetodos);
         setMetodosPago(mappedMetodos);
       } catch (error) {
         console.error("Error fetching payment methods:", error);
@@ -704,17 +705,24 @@ const CrearPedido: React.FC = () => {
                     onChange={(e) => setMontoAbonar(Number(e.target.value))}
                     placeholder="0.00"
                     className="w-32 focus:ring-2 focus:ring-blue-400"
+                    disabled={!selectedMetodoPago}
                   />
-                  <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago}>
+                  <Select onValueChange={setSelectedMetodoPago} value={selectedMetodoPago || ""}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Método de pago" />
                     </SelectTrigger>
                     <SelectContent>
-                      {metodosPago.filter(metodo => metodo.id).map((metodo) => (
-                        <SelectItem key={metodo.id} value={metodo.id!}>
-                          {metodo.nombre}
+                      {metodosPago.length === 0 ? (
+                        <SelectItem value="no-methods" disabled>
+                          No hay métodos de pago disponibles
                         </SelectItem>
-                      ))}
+                      ) : (
+                        metodosPago.filter(metodo => metodo.id && metodo.nombre).map((metodo) => (
+                          <SelectItem key={metodo.id} value={metodo.id}>
+                            {metodo.nombre}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <Button
@@ -722,7 +730,7 @@ const CrearPedido: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setMontoAbonar(totalMonto)}
-                    disabled={totalMonto === 0}
+                    disabled={totalMonto === 0 || !selectedMetodoPago}
                   >
                     <FaMoneyBillWave className="mr-2" /> Total
                   </Button>
