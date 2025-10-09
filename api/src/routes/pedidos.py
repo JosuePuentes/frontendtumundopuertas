@@ -2,11 +2,12 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Body, Depends
 from bson import ObjectId
 from datetime import datetime, timedelta, timezone
-from ..config.mongodb import pedidos_collection
+from ..config.mongodb import pedidos_collection, db
 from ..models.authmodels import Pedido
 from ..auth.auth import get_current_user
 
 router = APIRouter()
+metodos_pago_collection = db["metodos_pago"]
 
 @router.get("/all/")
 async def get_all_pedidos():
@@ -718,11 +719,17 @@ async def get_venta_diaria(
         {
             "$lookup": {
                 "from": "metodos_pago",
-                "let": {"metodo_id": {"$toObjectId": "$historial_pagos.metodo"}},
+                "let": {"metodo_id": "$historial_pagos.metodo"},
                 "pipeline": [
                     {
                         "$match": {
-                            "$expr": {"$eq": ["$_id", "$$metodo_id"]}
+                            "$expr": {
+                                "$or": [
+                                    {"$eq": ["$_id", {"$toObjectId": "$$metodo_id"}]},
+                                    {"$eq": [{"$toString": "$_id"}, "$$metodo_id"]},
+                                    {"$eq": ["$nombre", "$$metodo_id"]}
+                                ]
+                            }
                         }
                     }
                 ],
@@ -778,3 +785,27 @@ async def get_venta_diaria_no_slash(
 ):
     """Endpoint alternativo sin barra final para compatibilidad"""
     return await get_venta_diaria(fecha_inicio, fecha_fin)
+
+@router.get("/debug-historial-pagos/{pedido_id}")
+async def debug_historial_pagos(pedido_id: str):
+    """Endpoint de debug para ver el historial de pagos de un pedido específico"""
+    try:
+        pedido = pedidos_collection.find_one({"_id": ObjectId(pedido_id)})
+        if not pedido:
+            raise HTTPException(status_code=404, detail="Pedido no encontrado")
+        
+        historial = pedido.get("historial_pagos", [])
+        
+        # También obtener todos los métodos de pago para comparar
+        metodos_pago = list(metodos_pago_collection.find())
+        
+        return {
+            "pedido_id": pedido_id,
+            "historial_pagos": historial,
+            "metodos_pago_disponibles": [
+                {"_id": str(m["_id"]), "nombre": m["nombre"]} 
+                for m in metodos_pago
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
