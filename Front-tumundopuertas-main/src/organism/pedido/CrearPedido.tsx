@@ -168,9 +168,8 @@ const CrearPedido: React.FC = () => {
     
     // Crear el nuevo pago
     const newPago: RegistroPago = {
-      id: Date.now().toString(), // ID temporal
       monto: abono,
-      metodo_pago: selectedMetodoPago,
+      metodo_pago_id: selectedMetodoPago,
       fecha: new Date().toISOString(),
       estado: 'confirmado'
     };
