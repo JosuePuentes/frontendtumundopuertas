@@ -55,6 +55,10 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
       setPago(data.pago);
       setMonto(0); // reset campo monto
       setSelectedMetodoPago(""); // reset metodo de pago
+      
+      // Refrescar métodos de pago para actualizar saldos
+      const refreshResponse = await api("/metodos-pago");
+      setMetodosPago(refreshResponse);
     } catch (err: any) {
       console.error(err);
       alert("No se pudo actualizar el pago");

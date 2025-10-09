@@ -64,6 +64,11 @@ const PagoManager: React.FC<{
       if (!res.ok) throw new Error("Error al registrar abono");
       setSuccess("Abono registrado");
       setMonto("");
+      
+      // Refrescar métodos de pago para actualizar saldos
+      const refreshResponse = await api("/metodos-pago");
+      setMetodosPago(refreshResponse);
+      
       if (onSuccess) onSuccess();
     } catch (err: any) {
       setError(err.message || "Error desconocido");
