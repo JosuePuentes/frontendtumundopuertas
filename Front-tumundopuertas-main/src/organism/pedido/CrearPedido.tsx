@@ -166,7 +166,18 @@ const CrearPedido: React.FC = () => {
       return;
     }
     
-    // Aquí deberías agregar la lógica para procesar el abono
+    // Crear el nuevo pago
+    const newPago: RegistroPago = {
+      id: Date.now().toString(), // ID temporal
+      monto: abono,
+      metodo_pago: selectedMetodoPago,
+      fecha: new Date().toISOString(),
+      estado: 'confirmado'
+    };
+    
+    // Agregar el pago al array
+    setPagos([...pagos, newPago]);
+    
     console.log("Abono procesado:", { monto: abono, metodo: selectedMetodoPago });
     setMensaje("Abono agregado exitosamente.");
     setMensajeTipo("success");
