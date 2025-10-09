@@ -56,7 +56,7 @@ interface RegistroPago {
   fecha: string;
   monto: number;
   estado: string;
-  metodo_pago_id: string;
+  metodo: string;
 }
 
 interface PedidoPayload {
