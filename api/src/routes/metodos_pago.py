@@ -33,6 +33,11 @@ async def get_all_metodos_pago():
     metodos = list(metodos_pago_collection.find())
     return [object_id_to_str(metodo) for metodo in metodos]
 
+@router.get("", response_model=List[MetodoPago], include_in_schema=False)
+async def get_all_metodos_pago_no_slash():
+    metodos = list(metodos_pago_collection.find())
+    return [object_id_to_str(metodo) for metodo in metodos]
+
 @router.get("/{id}", response_model=MetodoPago)
 async def get_metodo_pago(id: str):
     metodo = metodos_pago_collection.find_one({"_id": ObjectId(id)})
