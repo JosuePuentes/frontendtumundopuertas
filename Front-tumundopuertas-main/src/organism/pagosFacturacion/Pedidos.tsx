@@ -66,8 +66,7 @@ const PagoManager: React.FC<{
       setMonto("");
       
       // Refrescar métodos de pago para actualizar saldos
-      const refreshResponse = await api("/metodos-pago");
-      setMetodosPago(refreshResponse);
+      // Nota: Los métodos de pago se refrescan desde el componente padre
       
       if (onSuccess) onSuccess();
     } catch (err: any) {
@@ -164,7 +163,7 @@ const Pedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { metodos: metodosPago } = useMetodosPago();
+  const { metodos: metodosPago, fetchMetodosPago } = useMetodosPago();
 
   // Fechas de filtro
   const [fechaInicio, setFechaInicio] = useState<string>("");
@@ -172,6 +171,13 @@ const Pedidos: React.FC = () => {
 
   // Filtro local por cliente
   const [clienteFiltro, setClienteFiltro] = useState<string>("");
+
+  const refreshData = async () => {
+    await Promise.all([
+      fetchPedidos(),
+      fetchMetodosPago()
+    ]);
+  };
 
   const fetchPedidos = async () => {
     setLoading(true);
@@ -320,7 +326,7 @@ const Pedidos: React.FC = () => {
                           <PagoManager
                             pedidoId={pedido._id}
                             pagoInicial={pedido.pago}
-                            onSuccess={fetchPedidos}
+                            onSuccess={refreshData}
                             metodosPago={metodosPago}
                           />
                         </div>
