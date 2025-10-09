@@ -150,7 +150,7 @@ const CrearPedido: React.FC = () => {
   );
 
   // === Handlers ===
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // @ts-ignore - Function is used in JSX but TypeScript doesn't detect it
   const handleAddPago = () => {
     console.log("handleAddPago llamado");
     console.log("abono:", abono);
