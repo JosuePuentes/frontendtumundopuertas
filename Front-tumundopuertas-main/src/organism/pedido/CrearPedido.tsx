@@ -96,6 +96,8 @@ const CrearPedido: React.FC = () => {
   const [enviando, setEnviando] = useState(false);
   const [montoAbonar, setMontoAbonar] = useState<number>(0);
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
+  const [abono, setAbono] = useState<number>(0);
+  const [pagos, setPagos] = useState<RegistroPago[]>([]);
 
   const { fetchPedido } = usePedido();
   const {
@@ -146,6 +148,31 @@ const CrearPedido: React.FC = () => {
       acc + (item.confirmed && item.precio ? item.cantidad * item.precio : 0),
     0
   );
+
+  // === Handlers ===
+  const handleAddPago = () => {
+    console.log("handleAddPago llamado");
+    console.log("abono:", abono);
+    console.log("selectedMetodoPago:", selectedMetodoPago);
+    
+    if (abono <= 0) {
+      setMensaje("El monto del abono debe ser mayor a cero.");
+      setMensajeTipo("error");
+      return;
+    }
+    if (!selectedMetodoPago) {
+      setMensaje("Debe seleccionar un método de pago.");
+      setMensajeTipo("error");
+      return;
+    }
+    
+    // Aquí deberías agregar la lógica para procesar el abono
+    console.log("Abono procesado:", { monto: abono, metodo: selectedMetodoPago });
+    setMensaje("Abono agregado exitosamente.");
+    setMensajeTipo("success");
+    setAbono(0);
+    setSelectedMetodoPago("");
+  };
 
   // === Handlers ===
   const handleAddItem = () => {
@@ -238,29 +265,6 @@ const CrearPedido: React.FC = () => {
     }
   };
 
-  const handleAddPago = () => {
-    console.log("handleAddPago llamado");
-    console.log("abono:", abono);
-    console.log("selectedMetodoPago:", selectedMetodoPago);
-    
-    if (abono <= 0) {
-      setMensaje("El monto del abono debe ser mayor a cero.");
-      setMensajeTipo("error");
-      return;
-    }
-    if (!selectedMetodoPago) {
-      setMensaje("Debe seleccionar un método de pago.");
-      setMensajeTipo("error");
-      return;
-    }
-    
-    // Aquí deberías agregar la lógica para procesar el abono
-    console.log("Abono procesado:", { monto: abono, metodo: selectedMetodoPago });
-    setMensaje("Abono agregado exitosamente.");
-    setMensajeTipo("success");
-    setAbono(0);
-    setSelectedMetodoPago("");
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
