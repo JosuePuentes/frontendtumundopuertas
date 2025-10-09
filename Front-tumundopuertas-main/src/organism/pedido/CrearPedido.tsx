@@ -238,6 +238,30 @@ const CrearPedido: React.FC = () => {
     }
   };
 
+  const handleAddPago = () => {
+    console.log("handleAddPago llamado");
+    console.log("abono:", abono);
+    console.log("selectedMetodoPago:", selectedMetodoPago);
+    
+    if (abono <= 0) {
+      setMensaje("El monto del abono debe ser mayor a cero.");
+      setMensajeTipo("error");
+      return;
+    }
+    if (!selectedMetodoPago) {
+      setMensaje("Debe seleccionar un método de pago.");
+      setMensajeTipo("error");
+      return;
+    }
+    
+    // Aquí deberías agregar la lógica para procesar el abono
+    console.log("Abono procesado:", { monto: abono, metodo: selectedMetodoPago });
+    setMensaje("Abono agregado exitosamente.");
+    setMensajeTipo("success");
+    setAbono(0);
+    setSelectedMetodoPago("");
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMensaje("");
@@ -710,7 +734,9 @@ const CrearPedido: React.FC = () => {
                   />
                   <Select onValueChange={(value) => {
                     console.log("Método seleccionado:", value);
+                    console.log("Estado anterior selectedMetodoPago:", selectedMetodoPago);
                     setSelectedMetodoPago(value);
+                    console.log("Nuevo estado después de setSelectedMetodoPago:", value);
                   }} value={selectedMetodoPago || ""}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Método de pago" />
@@ -736,7 +762,12 @@ const CrearPedido: React.FC = () => {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setMontoAbonar(totalMonto)}
+                    onClick={() => {
+                      console.log("Botón Total clickeado");
+                      console.log("totalMonto:", totalMonto);
+                      console.log("selectedMetodoPago:", selectedMetodoPago);
+                      setAbono(totalMonto);
+                    }}
                     disabled={totalMonto === 0 || !selectedMetodoPago}
                   >
                     <FaMoneyBillWave className="mr-2" /> Total
