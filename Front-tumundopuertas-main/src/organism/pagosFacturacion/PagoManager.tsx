@@ -94,9 +94,9 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
           {(() => {
             console.log("PagoManager - Renderizando SelectContent, metodosPago:", metodosPago);
             console.log("PagoManager - Primer método estructura:", metodosPago[0]);
-            return metodosPago.map((metodo: any) => {
+            return metodosPago.map((metodo: any, index: number) => {
               console.log("PagoManager - Mapeando método:", metodo);
-              const metodoId = metodo._id || metodo.id;
+              const metodoId = metodo._id || metodo.id || metodo.nombre || `metodo-${index}`;
               console.log("PagoManager - ID del método:", metodoId);
               return (
                 <SelectItem key={metodoId} value={metodoId}>

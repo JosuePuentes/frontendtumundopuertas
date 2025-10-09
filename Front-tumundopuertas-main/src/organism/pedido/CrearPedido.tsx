@@ -759,9 +759,9 @@ const CrearPedido: React.FC = () => {
                             No hay métodos de pago disponibles
                           </SelectItem>
                         ) : (
-                          metodosPago.map((metodo: any) => {
+                          metodosPago.map((metodo: any, index: number) => {
                             console.log("Mapeando método:", metodo);
-                            const metodoId = metodo._id || metodo.id;
+                            const metodoId = metodo._id || metodo.id || metodo.nombre || `metodo-${index}`;
                             console.log("ID del método:", metodoId);
                             return (
                               <SelectItem key={metodoId} value={metodoId}>
