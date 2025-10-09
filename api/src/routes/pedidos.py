@@ -640,8 +640,8 @@ async def actualizar_pago(
         if metodo and monto is not None and monto > 0:
             print(f"DEBUG PAGO: Incrementando saldo del método '{metodo}' en {monto}")
             try:
-                # Buscar el método de pago por nombre
-                metodo_pago = metodos_pago_collection.find_one({"nombre": metodo})
+                # Buscar el método de pago por _id
+                metodo_pago = metodos_pago_collection.find_one({"_id": ObjectId(metodo)})
                 if metodo_pago:
                     nuevo_saldo = metodo_pago.get("saldo", 0.0) + monto
                     metodos_pago_collection.update_one(
