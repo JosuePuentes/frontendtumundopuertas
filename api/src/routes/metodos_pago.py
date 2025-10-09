@@ -22,49 +22,64 @@ class MontoRequest(BaseModel):
 @router.post("/", response_model=MetodoPago)
 async def create_metodo_pago(metodo_pago: MetodoPago):
     try:
-        # Validar que los campos requeridos no estén vacíos
-        if not metodo_pago.nombre or metodo_pago.nombre.strip() == "":
+        # Log de entrada para debug
+        print(f"DEBUG: Recibido método de pago: {metodo_pago.dict()}")
+        
+        # Validaciones básicas más simples
+        if not metodo_pago.nombre:
             raise HTTPException(status_code=400, detail="El nombre del método de pago es requerido")
         
-        if not metodo_pago.banco or metodo_pago.banco.strip() == "":
+        if not metodo_pago.banco:
             raise HTTPException(status_code=400, detail="El banco es requerido")
         
-        if not metodo_pago.numero_cuenta or metodo_pago.numero_cuenta.strip() == "":
+        if not metodo_pago.numero_cuenta:
             raise HTTPException(status_code=400, detail="El número de cuenta es requerido")
         
-        if not metodo_pago.titular or metodo_pago.titular.strip() == "":
+        if not metodo_pago.titular:
             raise HTTPException(status_code=400, detail="El titular es requerido")
         
-        if not metodo_pago.moneda or metodo_pago.moneda.strip() == "":
+        if not metodo_pago.moneda:
             raise HTTPException(status_code=400, detail="La moneda es requerida")
         
-        # Preparar datos para inserción
-        metodo_pago_dict = metodo_pago.dict(by_alias=True)
-        if "id" in metodo_pago_dict:
-            del metodo_pago_dict["id"]
+        # Preparar datos para inserción de forma más simple
+        metodo_pago_dict = {
+            "nombre": metodo_pago.nombre.strip(),
+            "banco": metodo_pago.banco.strip(),
+            "numero_cuenta": metodo_pago.numero_cuenta.strip(),
+            "titular": metodo_pago.titular.strip(),
+            "cedula": metodo_pago.cedula.strip() if metodo_pago.cedula else None,
+            "moneda": metodo_pago.moneda.strip(),
+            "saldo": float(metodo_pago.saldo) if metodo_pago.saldo is not None else 0.0
+        }
+        
+        print(f"DEBUG: Datos preparados para inserción: {metodo_pago_dict}")
         
         # Verificar si ya existe un método con el mismo nombre
-        existing = metodos_pago_collection.find_one({"nombre": metodo_pago.nombre.strip()})
+        existing = metodos_pago_collection.find_one({"nombre": metodo_pago_dict["nombre"]})
         if existing:
-            raise HTTPException(status_code=400, detail=f"Ya existe un método de pago con el nombre '{metodo_pago.nombre}'")
+            raise HTTPException(status_code=400, detail=f"Ya existe un método de pago con el nombre '{metodo_pago_dict['nombre']}'")
         
-        # Asegurar que el saldo sea un número válido
-        if metodo_pago_dict.get("saldo") is None:
-            metodo_pago_dict["saldo"] = 0.0
-        
+        # Insertar en la base de datos
         result = metodos_pago_collection.insert_one(metodo_pago_dict)
-        created_metodo = metodos_pago_collection.find_one({"_id": result.inserted_id})
+        print(f"DEBUG: Resultado de inserción: {result.inserted_id}")
         
+        # Obtener el documento creado
+        created_metodo = metodos_pago_collection.find_one({"_id": result.inserted_id})
         if not created_metodo:
-            raise HTTPException(status_code=500, detail="Error al crear el método de pago")
-            
+            raise HTTPException(status_code=500, detail="Error al recuperar el método de pago creado")
+        
+        print(f"DEBUG: Método creado exitosamente: {created_metodo}")
         return object_id_to_str(created_metodo)
         
     except HTTPException:
         # Re-lanzar HTTPExceptions (errores conocidos)
         raise
     except Exception as e:
-        # Capturar cualquier otro error inesperado
+        # Log del error para debug
+        print(f"ERROR: Error interno al crear método de pago: {str(e)}")
+        print(f"ERROR: Tipo de error: {type(e).__name__}")
+        import traceback
+        print(f"ERROR: Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
 @router.post("", response_model=MetodoPago, include_in_schema=False)
@@ -93,6 +108,25 @@ async def debug_create_metodo_pago(metodo_pago: MetodoPago):
         }
     except Exception as e:
         return {"error": str(e), "type": type(e).__name__}
+
+@router.get("/test-db", include_in_schema=False)
+async def test_database_connection():
+    """Endpoint para probar la conexión a la base de datos"""
+    try:
+        # Probar conexión básica
+        count = metodos_pago_collection.count_documents({})
+        return {
+            "status": "success",
+            "message": "Conexión a la base de datos exitosa",
+            "total_methods": count,
+            "collection_name": metodos_pago_collection.name
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error de conexión a la base de datos: {str(e)}",
+            "error_type": type(e).__name__
+        }
 
 @router.get("/", response_model=List[MetodoPago])
 async def get_all_metodos_pago():
