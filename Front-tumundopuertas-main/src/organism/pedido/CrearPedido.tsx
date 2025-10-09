@@ -150,6 +150,7 @@ const CrearPedido: React.FC = () => {
   );
 
   // === Handlers ===
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleAddPago = () => {
     console.log("handleAddPago llamado");
     console.log("abono:", abono);
