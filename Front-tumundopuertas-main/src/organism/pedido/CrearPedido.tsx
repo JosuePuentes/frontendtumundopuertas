@@ -347,16 +347,16 @@ const CrearPedido: React.FC = () => {
         };
       }),
       seguimiento,
-      pago: montoAbonar > 0 ? "abonado" : "sin pago",
-      historial_pagos: montoAbonar > 0 ? [
+      pago: abono > 0 ? "abonado" : "sin pago",
+      historial_pagos: abono > 0 ? [
         {
           fecha: fechaISO,
-          monto: montoAbonar,
+          monto: abono,
           estado: "abonado",
           metodo_pago_id: selectedMetodoPago,
         },
       ] : [],
-      total_abonado: montoAbonar,
+      total_abonado: abono,
     };
 
     try {
@@ -372,7 +372,7 @@ const CrearPedido: React.FC = () => {
         setClienteSearch("");
         setSelectedItems([]);
         setFecha(new Date().toISOString().slice(0, 10));
-        setMontoAbonar(0); // Reset montoAbonar
+        setAbono(0); // Reset abono
       } else {
         setMensaje(resultado?.error || "Ocurrió un error al crear el pedido.");
         setMensajeTipo("error");
