@@ -348,7 +348,7 @@ const CrearPedido: React.FC = () => {
           fecha: fechaISO,
           monto: abono,
           estado: "abonado",
-          metodo_pago_id: selectedMetodoPago,
+          metodo: selectedMetodoPago,
         },
       ] : [],
       total_abonado: abono,
