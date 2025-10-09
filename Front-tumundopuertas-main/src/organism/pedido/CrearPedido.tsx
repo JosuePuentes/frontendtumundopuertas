@@ -164,7 +164,7 @@ const CrearPedido: React.FC = () => {
     // Crear el nuevo pago
     const newPago: RegistroPago = {
       monto: abono,
-      metodo_pago_id: selectedMetodoPago,
+      metodo: selectedMetodoPago,
       fecha: new Date().toISOString(),
       estado: 'confirmado'
     };
