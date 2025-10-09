@@ -716,13 +716,27 @@ async def get_venta_diaria(
     
     pipeline.extend([
         {
+            "$lookup": {
+                "from": "metodos_pago",
+                "localField": "historial_pagos.metodo",
+                "foreignField": "_id",
+                "as": "metodo_pago_info"
+            }
+        },
+        {
             "$project": {
                 "_id": 0,
                 "pedido_id": "$_id",
                 "cliente_nombre": "$cliente_nombre",
                 "fecha": "$historial_pagos.fecha",
                 "monto": "$historial_pagos.monto",
-                "metodo": "$historial_pagos.metodo",
+                "metodo": {
+                    "$cond": {
+                        "if": {"$gt": [{"$size": "$metodo_pago_info"}, 0]},
+                        "then": {"$arrayElemAt": ["$metodo_pago_info.nombre", 0]},
+                        "else": "$historial_pagos.metodo"
+                    }
+                },
             }
         },
         {"$sort": {"fecha": -1}},
