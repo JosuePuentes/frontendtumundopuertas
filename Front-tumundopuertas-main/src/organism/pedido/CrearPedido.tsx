@@ -127,7 +127,7 @@ const CrearPedido: React.FC = () => {
           id: metodo._id || metodo.id
         }));
         console.log("Métodos de pago cargados:", mappedMetodos);
-        console.log("Métodos filtrados:", mappedMetodos.filter(metodo => metodo.id && metodo.nombre));
+        console.log("Métodos filtrados:", mappedMetodos.filter((metodo: any) => metodo.id && metodo.nombre));
         setMetodosPago(mappedMetodos);
       } catch (error) {
         console.error("Error fetching payment methods:", error);
@@ -723,7 +723,7 @@ const CrearPedido: React.FC = () => {
                             No hay métodos de pago disponibles
                           </SelectItem>
                         ) : (
-                          metodosPago.map((metodo) => (
+                          metodosPago.map((metodo: any) => (
                             <SelectItem key={metodo.id || metodo._id} value={metodo.id || metodo._id}>
                               {metodo.nombre || 'Sin nombre'}
                             </SelectItem>

@@ -98,7 +98,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
         <SelectContent className="bg-white">
           {(() => {
             console.log("PagoManager - Renderizando SelectContent, metodosPago:", metodosPago);
-            return metodosPago.map((metodo) => (
+            return metodosPago.map((metodo: any) => (
               <SelectItem key={metodo.id || metodo._id} value={metodo.id || metodo._id}>
                 {metodo.nombre || 'Sin nombre'}
               </SelectItem>
