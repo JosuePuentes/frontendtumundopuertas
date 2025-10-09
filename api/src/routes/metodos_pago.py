@@ -22,14 +22,35 @@ class MontoRequest(BaseModel):
 @router.post("/", response_model=MetodoPago)
 async def create_metodo_pago(metodo_pago: MetodoPago):
     try:
+        # Validar que los campos requeridos no estén vacíos
+        if not metodo_pago.nombre or metodo_pago.nombre.strip() == "":
+            raise HTTPException(status_code=400, detail="El nombre del método de pago es requerido")
+        
+        if not metodo_pago.banco or metodo_pago.banco.strip() == "":
+            raise HTTPException(status_code=400, detail="El banco es requerido")
+        
+        if not metodo_pago.numero_cuenta or metodo_pago.numero_cuenta.strip() == "":
+            raise HTTPException(status_code=400, detail="El número de cuenta es requerido")
+        
+        if not metodo_pago.titular or metodo_pago.titular.strip() == "":
+            raise HTTPException(status_code=400, detail="El titular es requerido")
+        
+        if not metodo_pago.moneda or metodo_pago.moneda.strip() == "":
+            raise HTTPException(status_code=400, detail="La moneda es requerida")
+        
+        # Preparar datos para inserción
         metodo_pago_dict = metodo_pago.dict(by_alias=True)
         if "id" in metodo_pago_dict:
             del metodo_pago_dict["id"]
         
         # Verificar si ya existe un método con el mismo nombre
-        existing = metodos_pago_collection.find_one({"nombre": metodo_pago.nombre})
+        existing = metodos_pago_collection.find_one({"nombre": metodo_pago.nombre.strip()})
         if existing:
-            raise HTTPException(status_code=400, detail="Ya existe un método de pago con este nombre")
+            raise HTTPException(status_code=400, detail=f"Ya existe un método de pago con el nombre '{metodo_pago.nombre}'")
+        
+        # Asegurar que el saldo sea un número válido
+        if metodo_pago_dict.get("saldo") is None:
+            metodo_pago_dict["saldo"] = 0.0
         
         result = metodos_pago_collection.insert_one(metodo_pago_dict)
         created_metodo = metodos_pago_collection.find_one({"_id": result.inserted_id})
@@ -40,14 +61,38 @@ async def create_metodo_pago(metodo_pago: MetodoPago):
         return object_id_to_str(created_metodo)
         
     except HTTPException:
+        # Re-lanzar HTTPExceptions (errores conocidos)
         raise
     except Exception as e:
+        # Capturar cualquier otro error inesperado
         raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
 @router.post("", response_model=MetodoPago, include_in_schema=False)
 async def create_metodo_pago_no_slash(metodo_pago: MetodoPago):
     """Endpoint alternativo sin barra final para compatibilidad"""
     return await create_metodo_pago(metodo_pago)
+
+@router.post("/debug", include_in_schema=False)
+async def debug_create_metodo_pago(metodo_pago: MetodoPago):
+    """Endpoint de debug para diagnosticar problemas al crear métodos de pago"""
+    try:
+        return {
+            "received_data": metodo_pago.dict(),
+            "validation_checks": {
+                "nombre": metodo_pago.nombre if hasattr(metodo_pago, 'nombre') else "MISSING",
+                "banco": metodo_pago.banco if hasattr(metodo_pago, 'banco') else "MISSING",
+                "numero_cuenta": metodo_pago.numero_cuenta if hasattr(metodo_pago, 'numero_cuenta') else "MISSING",
+                "titular": metodo_pago.titular if hasattr(metodo_pago, 'titular') else "MISSING",
+                "moneda": metodo_pago.moneda if hasattr(metodo_pago, 'moneda') else "MISSING",
+                "saldo": metodo_pago.saldo if hasattr(metodo_pago, 'saldo') else "MISSING",
+            },
+            "existing_methods": [
+                {"nombre": m["nombre"], "_id": str(m["_id"])} 
+                for m in metodos_pago_collection.find({}, {"nombre": 1})
+            ]
+        }
+    except Exception as e:
+        return {"error": str(e), "type": type(e).__name__}
 
 @router.get("/", response_model=List[MetodoPago])
 async def get_all_metodos_pago():
