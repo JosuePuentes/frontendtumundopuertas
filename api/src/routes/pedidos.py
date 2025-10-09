@@ -809,3 +809,53 @@ async def debug_historial_pagos(pedido_id: str):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@router.get("/debug-venta-diaria-simple")
+async def debug_venta_diaria_simple():
+    """Endpoint simplificado para debug del resumen de venta diaria"""
+    try:
+        # Obtener todos los pedidos con historial de pagos
+        pedidos_con_pagos = list(pedidos_collection.find(
+            {"historial_pagos": {"$exists": True, "$ne": []}},
+            {"historial_pagos": 1, "cliente_nombre": 1}
+        ))
+        
+        # Obtener todos los métodos de pago
+        metodos_pago = list(metodos_pago_collection.find({}))
+        
+        # Procesar manualmente para debug
+        debug_data = []
+        for pedido in pedidos_con_pagos:
+            for pago in pedido.get("historial_pagos", []):
+                metodo_id = pago.get("metodo")
+                
+                # Buscar el método de pago manualmente
+                metodo_encontrado = None
+                for metodo in metodos_pago:
+                    if (str(metodo["_id"]) == str(metodo_id) or 
+                        metodo["nombre"] == metodo_id or
+                        str(metodo_id) == metodo["nombre"]):
+                        metodo_encontrado = metodo
+                        break
+                
+                debug_data.append({
+                    "pedido_id": str(pedido["_id"]),
+                    "cliente": pedido.get("cliente_nombre"),
+                    "metodo_id_original": metodo_id,
+                    "metodo_id_tipo": type(metodo_id).__name__,
+                    "metodo_encontrado": metodo_encontrado["nombre"] if metodo_encontrado else "NO ENCONTRADO",
+                    "monto": pago.get("monto"),
+                    "fecha": pago.get("fecha")
+                })
+        
+        return {
+            "total_registros": len(debug_data),
+            "metodos_pago_disponibles": [
+                {"_id": str(m["_id"]), "nombre": m["nombre"]} 
+                for m in metodos_pago
+            ],
+            "debug_data": debug_data
+        }
+        
+    except Exception as e:
+        return {"error": str(e), "type": type(e).__name__}

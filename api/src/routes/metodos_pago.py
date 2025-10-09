@@ -82,6 +82,58 @@ async def create_metodo_pago(metodo_pago: MetodoPago):
         print(f"ERROR: Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error interno del servidor: {str(e)}")
 
+@router.post("/simple", include_in_schema=False)
+async def create_metodo_pago_simple(request_data: dict):
+    """Endpoint simplificado que acepta cualquier JSON para debug"""
+    try:
+        print(f"DEBUG SIMPLE: Datos recibidos: {request_data}")
+        
+        # Validaciones básicas
+        if not request_data.get("nombre"):
+            raise HTTPException(status_code=400, detail="El nombre es requerido")
+        
+        if not request_data.get("banco"):
+            raise HTTPException(status_code=400, detail="El banco es requerido")
+        
+        if not request_data.get("numero_cuenta"):
+            raise HTTPException(status_code=400, detail="El número de cuenta es requerido")
+        
+        if not request_data.get("titular"):
+            raise HTTPException(status_code=400, detail="El titular es requerido")
+        
+        if not request_data.get("moneda"):
+            raise HTTPException(status_code=400, detail="La moneda es requerida")
+        
+        # Preparar datos
+        metodo_pago_dict = {
+            "nombre": str(request_data["nombre"]).strip(),
+            "banco": str(request_data["banco"]).strip(),
+            "numero_cuenta": str(request_data["numero_cuenta"]).strip(),
+            "titular": str(request_data["titular"]).strip(),
+            "cedula": str(request_data.get("cedula", "")).strip() if request_data.get("cedula") else None,
+            "moneda": str(request_data["moneda"]).strip(),
+            "saldo": float(request_data.get("saldo", 0))
+        }
+        
+        print(f"DEBUG SIMPLE: Datos preparados: {metodo_pago_dict}")
+        
+        # Verificar duplicados
+        existing = metodos_pago_collection.find_one({"nombre": metodo_pago_dict["nombre"]})
+        if existing:
+            raise HTTPException(status_code=400, detail=f"Ya existe un método con el nombre '{metodo_pago_dict['nombre']}'")
+        
+        # Insertar
+        result = metodos_pago_collection.insert_one(metodo_pago_dict)
+        created_metodo = metodos_pago_collection.find_one({"_id": result.inserted_id})
+        
+        return object_id_to_str(created_metodo)
+        
+    except Exception as e:
+        print(f"ERROR SIMPLE: {str(e)}")
+        import traceback
+        print(f"TRACEBACK SIMPLE: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
 @router.post("", response_model=MetodoPago, include_in_schema=False)
 async def create_metodo_pago_no_slash(metodo_pago: MetodoPago):
     """Endpoint alternativo sin barra final para compatibilidad"""
