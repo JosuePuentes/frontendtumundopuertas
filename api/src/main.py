@@ -23,7 +23,11 @@ load_dotenv(dotenv_path)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Inicializar FastAPI
-app = FastAPI()
+app = FastAPI(
+    title="Crafteo API",
+    description="API para el sistema de gestión de Crafteo",
+    version="1.0.0"
+)
 
 # Middleware para confiar en los encabezados de proxy
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
@@ -31,11 +35,38 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 # Habilitar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://crafteo-three.vercel.app",
+        "https://crafteo-three-git-main-josuepuentes.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "*"  # Fallback para desarrollo
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+    ],
 )
+
+# Endpoint de prueba para verificar CORS
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "ok", 
+        "message": "API funcionando correctamente",
+        "cors": "configurado"
+    }
 
 # Incluir routers segmentados
 app.include_router(auth_router, prefix="/auth", tags=["Autenticación"])
