@@ -600,6 +600,11 @@ async def actualizar_pago(
     monto = data.get("monto")
     metodo = data.get("metodo")
 
+    # Debug: Log de los datos recibidos
+    print(f"DEBUG PAGO: Pedido {pedido_id}")
+    print(f"DEBUG PAGO: Datos recibidos: {data}")
+    print(f"DEBUG PAGO: Método recibido: {metodo} (tipo: {type(metodo).__name__})")
+
     if pago not in ["sin pago", "abonado", "pagado"]:
         raise HTTPException(status_code=400, detail="Valor de pago inválido")
 
@@ -613,6 +618,7 @@ async def actualizar_pago(
         }
         if metodo:
             registro["metodo"] = metodo
+            print(f"DEBUG PAGO: Método guardado en registro: {registro['metodo']}")
         update["$push"] = {"historial_pagos": registro}
 
     try:
