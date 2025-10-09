@@ -123,13 +123,8 @@ const CrearPedido: React.FC = () => {
     const fetchMetodosPago = async () => {
       try {
         const response = await api("/metodos-pago");
-        const mappedMetodos = response.map((metodo: any) => ({
-          ...metodo,
-          id: metodo._id || metodo.id
-        }));
-        console.log("Métodos de pago cargados:", mappedMetodos);
-        console.log("Métodos filtrados:", mappedMetodos.filter((metodo: any) => metodo.id && metodo.nombre));
-        setMetodosPago(mappedMetodos);
+        console.log("Métodos de pago cargados:", response);
+        setMetodosPago(response);
       } catch (error) {
         console.error("Error fetching payment methods:", error);
       }
@@ -764,7 +759,7 @@ const CrearPedido: React.FC = () => {
                           </SelectItem>
                         ) : (
                           metodosPago.map((metodo: any) => (
-                            <SelectItem key={metodo.id || metodo._id} value={metodo.id || metodo._id}>
+                            <SelectItem key={metodo._id} value={metodo._id}>
                               {metodo.nombre || 'Sin nombre'}
                             </SelectItem>
                           ))

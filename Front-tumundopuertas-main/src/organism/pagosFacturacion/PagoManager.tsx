@@ -27,13 +27,8 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
     const fetchMetodosPago = async () => {
       try {
         const response = await api("/metodos-pago");
-        // Añadimos el mapeo de _id a id aquí mismo
-        const mappedMetodos = response.map((metodo: any) => ({
-          ...metodo,
-          id: metodo._id || metodo.id
-        }));
-        console.log("PagoManager - Métodos de pago cargados:", mappedMetodos);
-        setMetodosPago(mappedMetodos);
+        console.log("PagoManager - Métodos de pago cargados:", response);
+        setMetodosPago(response);
       } catch (error) {
         console.error("Error fetching payment methods:", error);
       }
@@ -99,7 +94,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
           {(() => {
             console.log("PagoManager - Renderizando SelectContent, metodosPago:", metodosPago);
             return metodosPago.map((metodo: any) => (
-              <SelectItem key={metodo.id || metodo._id} value={metodo.id || metodo._id}>
+              <SelectItem key={metodo._id} value={metodo._id}>
                 {metodo.nombre || 'Sin nombre'}
               </SelectItem>
             ));
