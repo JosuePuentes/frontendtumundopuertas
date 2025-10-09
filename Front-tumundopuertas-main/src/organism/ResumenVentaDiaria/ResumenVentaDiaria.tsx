@@ -23,7 +23,7 @@ interface Abono {
   cliente_nombre: string;
   fecha: string;
   monto: number;
-  metodo_pago_nombre?: string;
+  metodo?: string;
 }
 
 interface VentaDiariaResponse {
@@ -153,7 +153,7 @@ const ResumenVentaDiaria: React.FC = () => {
                       <TableCell>
                         {new Date(abono.fecha).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>{abono.metodo_pago_nombre || "N/A"}</TableCell>
+                      <TableCell>{abono.metodo || "N/A"}</TableCell>
                       <TableCell>${(abono.monto || 0).toFixed(2)}</TableCell>
                     </TableRow>
                   ))}
