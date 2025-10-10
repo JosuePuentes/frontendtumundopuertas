@@ -30,7 +30,29 @@ const TerminarAsignacion: React.FC = () => {
   const identificador = localStorage.getItem("identificador");
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:8002").replace('http://', 'https://');
 
-  const { terminarEmpleado } = useTerminarEmpleado()
+  const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
+    onSuccess: () => {
+      // Recargar las asignaciones después de terminar exitosamente
+      const fetchAsignaciones = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch(
+            `${apiUrl}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
+          );
+          const data = await res.json();
+          setAsignaciones(data);
+        } catch (err) {
+          console.error('Error al recargar asignaciones:', err);
+        }
+        setLoading(false);
+      };
+      if (identificador) fetchAsignaciones();
+    },
+    onError: (error) => {
+      console.error('Error al terminar asignación:', error);
+      alert('Error al terminar la asignación: ' + error.message);
+    }
+  })
 
   useEffect(() => {
     const fetchAsignaciones = async () => {
@@ -113,19 +135,21 @@ const TerminarAsignacion: React.FC = () => {
                     <div className="pt-4">
                       <button
                         onClick={async () => {
-                          await terminarEmpleado({
-                            orden: asig.orden,
-                            pedido_id: asig.pedido_id,
-                            item_id: asig.item_id,
-                            empleado_id: identificador,
-                            estado: "terminado",
-                            fecha_fin: new Date().toISOString(),
-                          });
-                          window.location.reload();
+                          if (confirm(`¿Estás seguro de que quieres marcar como terminado el artículo "${asig.descripcionitem}"?`)) {
+                            await terminarEmpleado({
+                              orden: asig.orden,
+                              pedido_id: asig.pedido_id,
+                              item_id: asig.item_id,
+                              empleado_id: identificador,
+                              estado: "terminado",
+                              fecha_fin: new Date().toISOString(),
+                            });
+                          }
                         }}
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                        disabled={terminando}
+                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Marcar como Terminado
+                        {terminando ? "Terminando..." : "Marcar como Terminado"}
                       </button>
                     </div>
                   </CardContent>

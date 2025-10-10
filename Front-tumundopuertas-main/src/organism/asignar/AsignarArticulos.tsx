@@ -216,17 +216,19 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                   {/* Botón para terminar asignación de este artículo */}
                   <button
                     type="button"
-                    className="bg-red-600 text-white px-2 py-1 rounded shadow hover:bg-red-700 w-fit mt-1"
+                    className="bg-red-600 text-white px-2 py-1 rounded shadow hover:bg-red-700 w-fit mt-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={loadingTerminar}
                     onClick={async () => {
-                      await terminarEmpleado({
-                        pedido_id: pedidoId,
-                        item_id: item.id,
-                        empleado_id: asignadoPrevio.empleadoId,
-                        estado: "terminado",
-                        fecha_fin: new Date().toISOString(),
-                        orden: numeroOrden,
-                      });
+                      if (confirm(`¿Estás seguro de que quieres terminar la asignación del artículo "${item.descripcion}"?`)) {
+                        await terminarEmpleado({
+                          pedido_id: pedidoId,
+                          item_id: item.id,
+                          empleado_id: asignadoPrevio.empleadoId,
+                          estado: "terminado",
+                          fecha_fin: new Date().toISOString(),
+                          orden: numeroOrden,
+                        });
+                      }
                     }}
                   >
                     {loadingTerminar ? "Terminando..." : "Terminar asignación"}
