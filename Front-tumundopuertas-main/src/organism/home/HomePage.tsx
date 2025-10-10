@@ -107,74 +107,125 @@ const HomePage: React.FC = () => {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white overflow-hidden">
-                {/* Background Effects */}
-                <div className="absolute inset-0 opacity-20">
-                    <div className="absolute inset-0" style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                        backgroundSize: '60px 60px'
+            <div className="min-h-screen bg-black text-white overflow-hidden relative">
+                {/* Background Effects - Circuit Lines */}
+                <div className="absolute inset-0">
+                    {/* Horizontal Circuit Lines */}
+                    <div className="absolute top-20 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60"></div>
+                    <div className="absolute top-40 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent opacity-40"></div>
+                    <div className="absolute bottom-40 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
+                    <div className="absolute bottom-20 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent opacity-30"></div>
+                    
+                    {/* Vertical Circuit Lines */}
+                    <div className="absolute left-20 top-0 w-px h-full bg-gradient-to-b from-transparent via-cyan-400 to-transparent opacity-40"></div>
+                    <div className="absolute right-20 top-0 w-px h-full bg-gradient-to-b from-transparent via-cyan-300 to-transparent opacity-30"></div>
+                    
+                    {/* Grid Pattern */}
+                    <div className="absolute inset-0 opacity-5" style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M0 0h40v40H0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                        backgroundSize: '40px 40px'
                     }}></div>
                 </div>
                 
                 {/* Header */}
                 <header className="relative z-10 p-6">
                     <div className="max-w-7xl mx-auto flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <img src="/puertalogo.PNG" alt="Logo Tu Mundo Puertas" className="w-12 h-12" />
-                            <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                                TU MUNDO PUERTAS
-                            </span>
+                        <div className="flex items-center space-x-6">
+                            {/* New Logo */}
+                            <div className="relative">
+                                <div className="w-16 h-16 rounded-full border-2 border-cyan-400 bg-gradient-to-br from-gray-800 to-black flex items-center justify-center shadow-lg shadow-cyan-400/30">
+                                    <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center">
+                                        <div className="text-cyan-400 font-bold text-lg">
+                                            <div className="text-xs leading-none">T</div>
+                                            <div className="text-xs leading-none">M</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="absolute inset-0 rounded-full border border-cyan-400 animate-pulse opacity-50"></div>
+                            </div>
+                            
+                            <div className="flex flex-col">
+                                <span className="text-2xl font-bold text-white tracking-wide">
+                                    TU MUNDO PUERTAS
+                                </span>
+                                <div className="w-full h-px bg-gradient-to-r from-cyan-400 to-transparent mt-1"></div>
+                                <span className="text-sm text-gray-300 mt-1">
+                                    DISEÑO, CALIDAD Y PROTECCIÓN
+                                </span>
+                            </div>
                         </div>
                         
                         <nav className="hidden md:flex space-x-8">
-                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Inicio</a>
-                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Productos</a>
-                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Proyectos</a>
-                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Servicios</a>
-                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Contacto</a>
+                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+                                Inicio
+                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                            </a>
+                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+                                Productos
+                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                            </a>
+                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+                                Proyectos
+                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                            </a>
+                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+                                Servicios
+                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                            </a>
+                            <a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+                                Contacto
+                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                            </a>
                         </nav>
                         
                         <Button 
                             onClick={() => navigate('/login')}
-                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25"
+                            className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-bold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50"
                         >
-                            Solicitar Presupuesto
+                            SOLICITAR PRESUPUESTO
                         </Button>
                     </div>
                 </header>
 
+                {/* Banner Section - Space for banner */}
+                <section className="relative z-10 py-8 px-6">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-cyan-400/30 rounded-lg p-8 backdrop-blur-sm">
+                            <div className="text-center">
+                                <h2 className="text-3xl font-bold text-white mb-4">Banner Promocional</h2>
+                                <p className="text-gray-300 mb-6">Espacio reservado para contenido promocional o anuncios</p>
+                                <div className="w-full h-32 bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-400/30 rounded-lg flex items-center justify-center">
+                                    <span className="text-cyan-400 font-semibold">Contenido del Banner</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Hero Section */}
-                <main className="relative z-10 flex flex-col items-center justify-center min-h-[80vh] px-6">
+                <main className="relative z-10 flex flex-col items-center justify-center min-h-[60vh] px-6">
                     <div className="text-center max-w-4xl mx-auto">
                         {/* Main Title */}
-                        <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent leading-tight">
+                        <h1 className="text-6xl md:text-8xl font-bold mb-6 text-white leading-tight">
                             TU MUNDO<br />
-                            <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                            <span className="text-cyan-400">
                                 PUERTAS
                             </span>
                         </h1>
                         
                         {/* Subtitle */}
                         <p className="text-xl md:text-2xl text-gray-300 mb-8 font-light">
-                            Diseño, Calidad y Protección
+                            Diseño, Calidad y Protección: El Estándar de la Ingeniería
                         </p>
                         
                         {/* CTA Button */}
                         <Button 
                             onClick={() => navigate('/login')}
-                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25 flex items-center space-x-2 mx-auto"
+                            className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black px-8 py-4 text-lg font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50 flex items-center space-x-2 mx-auto"
                         >
-                            <span>Explora Nuestros Productos</span>
+                            <span>EXPLORA NUESTROS PRODUCTOS</span>
                             <ArrowRight className="w-5 h-5" />
                         </Button>
-                    </div>
-                    
-                    {/* Circuit Lines */}
-                    <div className="absolute inset-0 pointer-events-none">
-                        <div className="absolute top-1/4 left-10 w-32 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60"></div>
-                        <div className="absolute top-1/3 right-10 w-24 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60"></div>
-                        <div className="absolute bottom-1/4 left-20 w-40 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60"></div>
-                        <div className="absolute bottom-1/3 right-20 w-28 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60"></div>
                     </div>
                 </main>
 
@@ -190,7 +241,7 @@ const HomePage: React.FC = () => {
                                 const IconComponent = value.icon;
                                 return (
                                     <div key={index} className="text-center group">
-                                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-blue-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
+                                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
                                             <IconComponent className="w-10 h-10 text-cyan-400" />
                                         </div>
                                         <h3 className="text-2xl font-bold text-white mb-3">{value.title}</h3>
@@ -202,6 +253,51 @@ const HomePage: React.FC = () => {
                     </div>
                 </section>
 
+                {/* Product Gallery Section */}
+                <section className="relative z-10 py-20 px-6">
+                    <div className="max-w-6xl mx-auto">
+                        <h2 className="text-4xl font-bold text-white text-center mb-12">Innovación y Tradición en Cada Apertura</h2>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {/* Product 1 */}
+                            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
+                                <div className="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
+                                    <span className="text-cyan-400 font-semibold">Boccion</span>
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Boccion</h3>
+                                <p className="text-gray-300 mb-4">Puerta de seguridad robusta</p>
+                                <Button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-semibold py-2 rounded-lg transition-all duration-300">
+                                    Ver Más
+                                </Button>
+                            </div>
+                            
+                            {/* Product 2 */}
+                            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
+                                <div className="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
+                                    <span className="text-cyan-400 font-semibold">Aluminium</span>
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Aluminium</h3>
+                                <p className="text-gray-300 mb-4">Puerta de aluminio moderna</p>
+                                <Button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-semibold py-2 rounded-lg transition-all duration-300">
+                                    Ver Más
+                                </Button>
+                            </div>
+                            
+                            {/* Product 3 */}
+                            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
+                                <div className="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
+                                    <span className="text-cyan-400 font-semibold">Yar Mes</span>
+                                </div>
+                                <h3 className="text-xl font-bold text-white mb-2">Yar Mes</h3>
+                                <p className="text-gray-300 mb-4">Puerta de madera elegante</p>
+                                <Button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-semibold py-2 rounded-lg transition-all duration-300">
+                                    Ver Más
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Contact Section */}
                 <section className="relative z-10 py-20 px-6">
                     <div className="max-w-4xl mx-auto text-center">
@@ -209,7 +305,7 @@ const HomePage: React.FC = () => {
                         <p className="text-xl text-gray-300 mb-8">Contáctanos y descubre cómo podemos transformar tu espacio</p>
                         <Button 
                             onClick={() => navigate('/login')}
-                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25"
+                            className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black px-8 py-4 text-lg font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50"
                         >
                             Contáctanos
                         </Button>

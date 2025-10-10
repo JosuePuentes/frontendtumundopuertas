@@ -52,23 +52,52 @@ const Login: React.FC = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white overflow-hidden">
-			{/* Background Effects */}
-			<div className="absolute inset-0 opacity-20">
-				<div className="absolute inset-0" style={{
-					backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-					backgroundSize: '60px 60px'
+		<div className="min-h-screen bg-black text-white overflow-hidden relative">
+			{/* Background Effects - Circuit Lines */}
+			<div className="absolute inset-0">
+				{/* Horizontal Circuit Lines */}
+				<div className="absolute top-20 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60"></div>
+				<div className="absolute top-40 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent opacity-40"></div>
+				<div className="absolute bottom-40 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
+				<div className="absolute bottom-20 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent opacity-30"></div>
+				
+				{/* Vertical Circuit Lines */}
+				<div className="absolute left-20 top-0 w-px h-full bg-gradient-to-b from-transparent via-cyan-400 to-transparent opacity-40"></div>
+				<div className="absolute right-20 top-0 w-px h-full bg-gradient-to-b from-transparent via-cyan-300 to-transparent opacity-30"></div>
+				
+				{/* Grid Pattern */}
+				<div className="absolute inset-0 opacity-5" style={{
+					backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M0 0h40v40H0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+					backgroundSize: '40px 40px'
 				}}></div>
 			</div>
 			
 			{/* Header */}
 			<header className="relative z-10 p-6">
 				<div className="max-w-7xl mx-auto flex items-center justify-between">
-					<div className="flex items-center space-x-4">
-						<img src="/puertalogo.PNG" alt="Logo Tu Mundo Puertas" className="w-12 h-12" />
-						<span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-							TU MUNDO PUERTAS
-						</span>
+					<div className="flex items-center space-x-6">
+						{/* New Logo */}
+						<div className="relative">
+							<div className="w-16 h-16 rounded-full border-2 border-cyan-400 bg-gradient-to-br from-gray-800 to-black flex items-center justify-center shadow-lg shadow-cyan-400/30">
+								<div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center">
+									<div className="text-cyan-400 font-bold text-lg">
+										<div className="text-xs leading-none">T</div>
+										<div className="text-xs leading-none">M</div>
+									</div>
+								</div>
+							</div>
+							<div className="absolute inset-0 rounded-full border border-cyan-400 animate-pulse opacity-50"></div>
+						</div>
+						
+						<div className="flex flex-col">
+							<span className="text-2xl font-bold text-white tracking-wide">
+								TU MUNDO PUERTAS
+							</span>
+							<div className="w-full h-px bg-gradient-to-r from-cyan-400 to-transparent mt-1"></div>
+							<span className="text-sm text-gray-300 mt-1">
+								DISEÑO, CALIDAD Y PROTECCIÓN
+							</span>
+						</div>
 					</div>
 					
 					{/* Mobile Menu Button */}
@@ -81,11 +110,26 @@ const Login: React.FC = () => {
 					
 					{/* Desktop Navigation */}
 					<nav className="hidden md:flex space-x-8">
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Inicio</a>
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Productos</a>
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Proyectos</a>
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Servicios</a>
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Contacto</a>
+						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+							Inicio
+							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+						</a>
+						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+							Productos
+							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+						</a>
+						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+							Proyectos
+							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+						</a>
+						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+							Servicios
+							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+						</a>
+						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+							Contacto
+							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+						</a>
 					</nav>
 				</div>
 				
