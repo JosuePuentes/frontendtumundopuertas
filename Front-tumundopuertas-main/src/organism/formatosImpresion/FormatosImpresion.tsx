@@ -298,7 +298,7 @@ const FormatosImpresion: React.FC = () => {
 
       {/* Modal de Creación/Edición */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle>
               {modoEdicion === 'crear' ? 'Crear Nuevo Formato' : 'Editar Formato'}
@@ -341,7 +341,7 @@ const FormatosImpresion: React.FC = () => {
 
       {/* Modal de Vista Previa */}
       <Dialog open={isVistaPreviaOpen} onOpenChange={setIsVistaPreviaOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
           <DialogHeader>
             <DialogTitle>Vista Previa - {formatoSeleccionado?.nombre}</DialogTitle>
           </DialogHeader>
