@@ -53,7 +53,14 @@ const TerminarAsignacion: React.FC = () => {
             const data = await res.json();
             console.log('Asignaciones actualizadas:', data);
             console.log('Cantidad de asignaciones:', data.length);
-            setAsignaciones(data);
+            
+            // Filtrar asignaciones terminadas del backend
+            const asignacionesActivas = data.filter((asig: any) => 
+              asig.estado_subestado === "en_proceso" && asig.estado !== "terminado"
+            );
+            console.log('Asignaciones activas después del filtro:', asignacionesActivas.length);
+            
+            setAsignaciones(asignacionesActivas);
           } catch (err) {
             console.error('Error al recargar asignaciones:', err);
           }
@@ -108,22 +115,18 @@ const TerminarAsignacion: React.FC = () => {
         <ul className="space-y-6">
           {asignaciones
             .filter((asig) => {
-              const isEnProceso = asig.estado_subestado === "en_proceso";
-              const isNotTerminado = asig.estado !== "terminado";
+              // Solo mostrar artículos que no estén terminados localmente
               const isNotTerminadoLocal = articuloTerminado !== asig.item_id;
-              const shouldShow = isEnProceso && isNotTerminado && isNotTerminadoLocal;
               
               console.log(`Artículo ${asig.item_id}:`, {
-                isEnProceso,
-                isNotTerminado,
                 isNotTerminadoLocal,
-                shouldShow,
                 articuloTerminado,
                 estado_subestado: asig.estado_subestado,
-                estado: asig.estado
+                estado: asig.estado,
+                shouldShow: isNotTerminadoLocal
               });
               
-              return shouldShow;
+              return isNotTerminadoLocal;
             })
             .map((asig, idx) => (
               <li key={idx}>
