@@ -63,6 +63,16 @@ export interface ConfiguracionFormato {
     mostrar: boolean;
     texto: string;
   };
+  papel: {
+    tamaño: 'carta' | 'media_carta' | 'oficio' | 'a4';
+    orientacion: 'vertical' | 'horizontal';
+    margenes: {
+      superior: number;
+      inferior: number;
+      izquierdo: number;
+      derecho: number;
+    };
+  };
 }
 
 const FormatosImpresion: React.FC = () => {
@@ -119,6 +129,16 @@ const FormatosImpresion: React.FC = () => {
     pie: {
       mostrar: true,
       texto: 'Gracias por su preferencia'
+    },
+    papel: {
+      tamaño: 'carta',
+      orientacion: 'vertical',
+      margenes: {
+        superior: 20,
+        inferior: 20,
+        izquierdo: 20,
+        derecho: 20
+      }
     }
   };
 

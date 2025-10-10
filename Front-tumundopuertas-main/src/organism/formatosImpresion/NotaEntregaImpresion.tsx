@@ -42,10 +42,67 @@ const NotaEntregaImpresion: React.FC<NotaEntregaImpresionProps> = ({
   const handleImprimir = () => {
     if (!formatoSeleccionado) return;
     
+    // Aplicar estilos CSS según configuración de papel
+    const config = formatoSeleccionado.configuracion;
+    const papel = config.papel;
+    
+    // Crear estilos CSS dinámicos
+    const estilosPapel = `
+      @page {
+        size: ${papel.tamaño === 'carta' ? 'letter' : 
+                papel.tamaño === 'media_carta' ? '5.5in 8.5in' :
+                papel.tamaño === 'oficio' ? '8.5in 13in' : 'A4'};
+        margin: ${papel.margenes.superior}mm ${papel.margenes.derecho}mm ${papel.margenes.inferior}mm ${papel.margenes.izquierdo}mm;
+      }
+      
+      @media print {
+        body {
+          width: 100%;
+          height: 100%;
+          margin: 0;
+          padding: 0;
+        }
+        
+        .print-container {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: ${papel.orientacion === 'horizontal' ? 'row' : 'column'};
+        }
+      }
+    `;
+    
     // Crear ventana de impresión
     const ventanaImpresion = window.open('', '_blank');
     if (ventanaImpresion) {
-      ventanaImpresion.document.write(generarHTMLImpresion());
+      const htmlCompleto = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Nota de Entrega</title>
+          <style>
+            ${estilosPapel}
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .logo { max-height: 80px; }
+            .document-title { font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0; }
+            .info-section { margin: 20px 0; }
+            .client-info { margin: 20px 0; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+            .totals { text-align: right; margin-top: 20px; }
+            .footer { text-align: center; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="print-container">
+            ${generarHTMLImpresion()}
+          </div>
+        </body>
+        </html>
+      `;
+      ventanaImpresion.document.write(htmlCompleto);
       ventanaImpresion.document.close();
       ventanaImpresion.focus();
       ventanaImpresion.print();

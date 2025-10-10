@@ -63,6 +63,16 @@ export const FormatosProvider: React.FC<FormatosProviderProps> = ({ children }) 
     pie: {
       mostrar: true,
       texto: 'Gracias por su preferencia'
+    },
+    papel: {
+      tamaño: 'carta',
+      orientacion: 'vertical',
+      margenes: {
+        superior: 20,
+        inferior: 20,
+        izquierdo: 20,
+        derecho: 20
+      }
     }
   };
 

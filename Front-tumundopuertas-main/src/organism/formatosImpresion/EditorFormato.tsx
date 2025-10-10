@@ -60,6 +60,23 @@ const EditorFormato: React.FC<EditorFormatoProps> = ({
     actualizarConfiguracion('pie', campo, valor);
   };
 
+  const actualizarConfiguracionPapel = (campo: string, valor: any) => {
+    actualizarConfiguracion('papel', campo, valor);
+  };
+
+  const actualizarConfiguracionMargenes = (campo: string, valor: any) => {
+    setConfiguracion(prev => ({
+      ...prev,
+      papel: {
+        ...prev.papel,
+        margenes: {
+          ...prev.papel.margenes,
+          [campo]: valor
+        }
+      }
+    }));
+  };
+
   const secciones = [
     { id: 'empresa', nombre: 'Información de Empresa', icono: '🏢' },
     { id: 'logo', nombre: 'Logo', icono: '🖼️' },
@@ -67,7 +84,8 @@ const EditorFormato: React.FC<EditorFormatoProps> = ({
     { id: 'documento', nombre: 'Documento', icono: '📄' },
     { id: 'items', nombre: 'Items', icono: '📦' },
     { id: 'totales', nombre: 'Totales', icono: '💰' },
-    { id: 'pie', nombre: 'Pie de Página', icono: '📝' }
+    { id: 'pie', nombre: 'Pie de Página', icono: '📝' },
+    { id: 'papel', nombre: 'Configuración de Papel', icono: '📋' }
   ];
 
   const renderizarSeccionEmpresa = () => (
@@ -395,6 +413,90 @@ const EditorFormato: React.FC<EditorFormatoProps> = ({
     </div>
   );
 
+  const renderizarSeccionPapel = () => (
+    <div className="space-y-4">
+      <div>
+        <Label htmlFor="tamaño-papel">Tamaño de Papel</Label>
+        <Select
+          value={configuracion.papel.tamaño}
+          onValueChange={(value) => actualizarConfiguracionPapel('tamaño', value)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="carta">Carta (8.5" x 11")</SelectItem>
+            <SelectItem value="media_carta">Media Carta (8.5" x 5.5")</SelectItem>
+            <SelectItem value="oficio">Oficio (8.5" x 13")</SelectItem>
+            <SelectItem value="a4">A4 (210mm x 297mm)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label htmlFor="orientacion-papel">Orientación</Label>
+        <Select
+          value={configuracion.papel.orientacion}
+          onValueChange={(value) => actualizarConfiguracionPapel('orientacion', value)}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="vertical">Vertical (Portrait)</SelectItem>
+            <SelectItem value="horizontal">Horizontal (Landscape)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label>Márgenes (mm)</Label>
+        <div className="grid grid-cols-2 gap-4 mt-2">
+          <div>
+            <Label htmlFor="margen-superior">Superior</Label>
+            <Input
+              id="margen-superior"
+              type="number"
+              value={configuracion.papel.margenes.superior}
+              onChange={(e) => actualizarConfiguracionMargenes('superior', parseInt(e.target.value) || 0)}
+              min="0"
+            />
+          </div>
+          <div>
+            <Label htmlFor="margen-inferior">Inferior</Label>
+            <Input
+              id="margen-inferior"
+              type="number"
+              value={configuracion.papel.margenes.inferior}
+              onChange={(e) => actualizarConfiguracionMargenes('inferior', parseInt(e.target.value) || 0)}
+              min="0"
+            />
+          </div>
+          <div>
+            <Label htmlFor="margen-izquierdo">Izquierdo</Label>
+            <Input
+              id="margen-izquierdo"
+              type="number"
+              value={configuracion.papel.margenes.izquierdo}
+              onChange={(e) => actualizarConfiguracionMargenes('izquierdo', parseInt(e.target.value) || 0)}
+              min="0"
+            />
+          </div>
+          <div>
+            <Label htmlFor="margen-derecho">Derecho</Label>
+            <Input
+              id="margen-derecho"
+              type="number"
+              value={configuracion.papel.margenes.derecho}
+              onChange={(e) => actualizarConfiguracionMargenes('derecho', parseInt(e.target.value) || 0)}
+              min="0"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderizarContenidoSeccion = () => {
     switch (seccionActiva) {
       case 'empresa':
@@ -411,6 +513,8 @@ const EditorFormato: React.FC<EditorFormatoProps> = ({
         return renderizarSeccionTotales();
       case 'pie':
         return renderizarSeccionPie();
+      case 'papel':
+        return renderizarSeccionPapel();
       default:
         return null;
     }
