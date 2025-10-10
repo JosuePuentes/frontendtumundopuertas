@@ -104,7 +104,20 @@ const TerminarAsignacion: React.FC = () => {
   }, [identificador]);
 
   if (loading) return <div>Cargando asignaciones...</div>;
-  console.log(asignaciones.forEach((a) => console.log(a.cliente.cliente_nombre)));
+  
+  // Debug: Log de asignaciones actuales
+  console.log('=== ESTADO ACTUAL ===');
+  console.log('Asignaciones en estado:', asignaciones.length);
+  console.log('Articulo terminado local:', articuloTerminado);
+  asignaciones.forEach((a, index) => {
+    console.log(`Asignación ${index}:`, {
+      item_id: a.item_id,
+      estado_subestado: a.estado_subestado,
+      estado: a.estado,
+      cliente: a.cliente?.cliente_nombre
+    });
+  });
+  
   document.querySelectorAll('input[type="number"].no-mouse-wheel');
   return (
     <div className="max-w-3xl mx-auto mt-8">
