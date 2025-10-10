@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { getTransacciones } from '../lib/api';
+import { getHistorialMetodo } from '../lib/api';
 
 export interface Transaccion {
   id?: string;
   metodo_pago_id: string;
-  tipo: 'carga' | 'transferencia';
+  tipo: 'deposito' | 'transferir';
   monto: number;
+  concepto: string;
   fecha: string;
 }
 
@@ -21,7 +22,7 @@ export function useHistorial(metodoId: string | null) {
       setLoading(true);
       setError(null);
       try {
-        const data = await getTransacciones(metodoId);
+        const data = await getHistorialMetodo(metodoId);
         setTransacciones(data);
       } catch (err: any) {
         setError(err.message || "Error desconocido");
