@@ -91,18 +91,27 @@ const HomePage: React.FC = () => {
         // Cargar configuración inicial
         loadConfig();
 
-        // Escuchar cambios en localStorage
+        // Escuchar cambios en localStorage (entre pestañas)
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'home-config') {
                 loadConfig();
             }
         };
 
+        // Escuchar cambios en localStorage (misma pestaña)
+        const handleCustomStorageChange = (e: CustomEvent) => {
+            if (e.detail?.key === 'home-config') {
+                loadConfig();
+            }
+        };
+
         window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('customStorageChange', handleCustomStorageChange as EventListener);
 
         // Cleanup
         return () => {
             window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('customStorageChange', handleCustomStorageChange as EventListener);
         };
     }, []);
 

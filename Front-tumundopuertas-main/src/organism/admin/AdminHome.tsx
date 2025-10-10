@@ -170,10 +170,24 @@ const AdminHome: React.FC = () => {
   const saveConfig = () => {
     setLoading(true);
     localStorage.setItem('home-config', JSON.stringify(config));
+    
+    // Disparar evento storage para notificar cambios (entre pestañas)
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'home-config',
+      newValue: JSON.stringify(config),
+      oldValue: localStorage.getItem('home-config'),
+      storageArea: localStorage
+    }));
+    
+    // Disparar evento personalizado para notificar cambios (misma pestaña)
+    window.dispatchEvent(new CustomEvent('customStorageChange', {
+      detail: { key: 'home-config', value: config }
+    }));
+    
     setTimeout(() => {
       setLoading(false);
-      // Aquí podrías enviar la configuración al backend
-    }, 1000);
+      alert('Configuración guardada exitosamente!');
+    }, 500);
   };
 
   // Actualizar configuración
