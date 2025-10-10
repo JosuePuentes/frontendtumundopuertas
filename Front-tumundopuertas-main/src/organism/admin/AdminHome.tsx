@@ -6,6 +6,18 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { 
+  Eye, 
+  RefreshCw, 
+  Save, 
+  Image as ImageIcon, 
+  Settings, 
+  Type, 
+  Palette, 
+  Trash2, 
+  Upload, 
+  Plus 
+} from "lucide-react";
 import HomePreview from './HomePreview';
 
 interface HomeConfig {
@@ -144,7 +156,6 @@ const AdminHome: React.FC = () => {
     }
   });
 
-  const [previewMode, setPreviewMode] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -244,7 +255,7 @@ const AdminHome: React.FC = () => {
         <Tabs defaultValue="banner" className="w-full">
           <TabsList className="grid w-full grid-cols-6 bg-gray-800 border-gray-700">
             <TabsTrigger value="banner" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Image className="w-4 h-4 mr-2" />
+              <ImageIcon className="w-4 h-4 mr-2" />
               Banner
             </TabsTrigger>
             <TabsTrigger value="logo" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
@@ -256,7 +267,7 @@ const AdminHome: React.FC = () => {
               Valores
             </TabsTrigger>
             <TabsTrigger value="products" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Image className="w-4 h-4 mr-2" />
+              <ImageIcon className="w-4 h-4 mr-2" />
               Productos
             </TabsTrigger>
             <TabsTrigger value="contact" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
@@ -274,7 +285,7 @@ const AdminHome: React.FC = () => {
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-gray-200 flex items-center">
-                  <Image className="w-5 h-5 mr-2" />
+                  <ImageIcon className="w-5 h-5 mr-2" />
                   Configuración del Banner
                 </CardTitle>
               </CardHeader>
@@ -561,7 +572,7 @@ const AdminHome: React.FC = () => {
               <CardHeader>
                 <CardTitle className="text-gray-200 flex items-center justify-between">
                   <div className="flex items-center">
-                    <Image className="w-5 h-5 mr-2" />
+                    <ImageIcon className="w-5 h-5 mr-2" />
                     Configuración de Productos
                   </div>
                   <Button
