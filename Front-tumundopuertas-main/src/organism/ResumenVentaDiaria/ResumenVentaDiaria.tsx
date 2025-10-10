@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, Download, FileText } from "lucide-react";
 import api from "@/lib/api"; // Import the centralized api function
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 interface Abono {
@@ -64,7 +64,10 @@ const ResumenVentaDiaria: React.FC = () => {
   };
 
   const exportToPDF = () => {
-    if (!data) return;
+    if (!data) {
+      alert('No hay datos para exportar. Por favor, busca un resumen primero.');
+      return;
+    }
 
     const doc = new jsPDF();
     
@@ -89,7 +92,7 @@ const ResumenVentaDiaria: React.FC = () => {
       `$${total.toFixed(2)}`
     ]);
     
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: 65,
       head: [['Método de Pago', 'Total']],
       body: metodoPagoData,
@@ -109,7 +112,7 @@ const ResumenVentaDiaria: React.FC = () => {
       `$${abono.monto.toFixed(2)}`
     ]);
     
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 25,
       head: [['ID Pedido', 'Cliente', 'Fecha', 'Método', 'Monto']],
       body: abonosData,
@@ -125,7 +128,10 @@ const ResumenVentaDiaria: React.FC = () => {
   };
 
   const exportToExcel = () => {
-    if (!data) return;
+    if (!data) {
+      alert('No hay datos para exportar. Por favor, busca un resumen primero.');
+      return;
+    }
 
     // Crear workbook
     const wb = XLSX.utils.book_new();
