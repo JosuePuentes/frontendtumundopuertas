@@ -169,6 +169,9 @@ const AdminHome: React.FC = () => {
   // Guardar configuración
   const saveConfig = () => {
     setLoading(true);
+    console.log('Guardando configuración:', config);
+    console.log('Banner habilitado:', config.banner.enabled);
+    
     localStorage.setItem('home-config', JSON.stringify(config));
     
     // Disparar evento storage para notificar cambios (entre pestañas)

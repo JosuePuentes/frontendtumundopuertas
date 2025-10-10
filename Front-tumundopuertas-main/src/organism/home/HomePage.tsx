@@ -81,10 +81,15 @@ const HomePage: React.FC = () => {
             const savedConfig = localStorage.getItem('home-config');
             if (savedConfig) {
                 try {
-                    setConfig(JSON.parse(savedConfig));
+                    const parsedConfig = JSON.parse(savedConfig);
+                    console.log('Configuración cargada:', parsedConfig);
+                    console.log('Banner habilitado:', parsedConfig.banner?.enabled);
+                    setConfig(parsedConfig);
                 } catch (error) {
                     console.error('Error parsing home config:', error);
                 }
+            } else {
+                console.log('No hay configuración guardada, usando configuración por defecto');
             }
         };
 
@@ -94,6 +99,7 @@ const HomePage: React.FC = () => {
         // Escuchar cambios en localStorage (entre pestañas)
         const handleStorageChange = (e: StorageEvent) => {
             if (e.key === 'home-config') {
+                console.log('Cambio detectado en localStorage (entre pestañas)');
                 loadConfig();
             }
         };
@@ -101,6 +107,7 @@ const HomePage: React.FC = () => {
         // Escuchar cambios en localStorage (misma pestaña)
         const handleCustomStorageChange = (e: CustomEvent) => {
             if (e.detail?.key === 'home-config') {
+                console.log('Cambio detectado en localStorage (misma pestaña)');
                 loadConfig();
             }
         };
