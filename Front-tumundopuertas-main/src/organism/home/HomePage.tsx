@@ -14,16 +14,12 @@ import {
   Shield,
   Zap,
   Star,
-  ArrowRight,
-  Menu,
-  X
+  ArrowRight
 } from "lucide-react";
-import { useState } from 'react';
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const isAuthenticated = !!localStorage.getItem("usuario");
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const modules = [
         {
