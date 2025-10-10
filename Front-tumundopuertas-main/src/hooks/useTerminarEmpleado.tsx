@@ -50,6 +50,7 @@ function useTerminarEmpleado<T = any>(
                 throw new Error(errorMsg);
             }
             const data: T = await response.json();
+            console.log('Response from server:', data);
             setData(data);
             options?.onSuccess?.(data);
         } catch (err: any) {

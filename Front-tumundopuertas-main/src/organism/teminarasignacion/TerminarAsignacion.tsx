@@ -28,10 +28,15 @@ interface Asignacion {
 const TerminarAsignacion: React.FC = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mensaje, setMensaje] = useState<string>("");
   const identificador = localStorage.getItem("identificador");
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Asignación terminada exitosamente:', data);
+      setMensaje("¡Asignación terminada exitosamente!");
+      setTimeout(() => setMensaje(""), 3000);
+      
       // Recargar las asignaciones después de terminar exitosamente
       const fetchAsignaciones = async () => {
         setLoading(true);
@@ -40,6 +45,7 @@ const TerminarAsignacion: React.FC = () => {
             `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
           );
           const data = await res.json();
+          console.log('Asignaciones actualizadas:', data);
           setAsignaciones(data);
         } catch (err) {
           console.error('Error al recargar asignaciones:', err);
@@ -50,7 +56,8 @@ const TerminarAsignacion: React.FC = () => {
     },
     onError: (error) => {
       console.error('Error al terminar asignación:', error);
-      alert('Error al terminar la asignación: ' + error.message);
+      setMensaje("Error al terminar la asignación: " + error.message);
+      setTimeout(() => setMensaje(""), 5000);
     }
   })
 
@@ -76,12 +83,23 @@ const TerminarAsignacion: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto mt-8">
       <h2 className="text-2xl font-bold mb-6">Asignaciones en proceso</h2>
+      
+      {mensaje && (
+        <div className={`mb-4 p-3 rounded ${
+          mensaje.includes("Error") 
+            ? "bg-red-100 text-red-700 border border-red-300" 
+            : "bg-green-100 text-green-700 border border-green-300"
+        }`}>
+          {mensaje}
+        </div>
+      )}
+      
       {asignaciones.length === 0 ? (
         <div className="text-gray-500">No tienes asignaciones en proceso.</div>
       ) : (
         <ul className="space-y-6">
           {asignaciones
-            .filter((asig) => asig.estado_subestado === "en_proceso")
+            .filter((asig) => asig.estado_subestado === "en_proceso" && asig.estado !== "terminado")
             .map((asig, idx) => (
               <li key={idx}>
                 <Card className="border border-gray-200 shadow-sm">
