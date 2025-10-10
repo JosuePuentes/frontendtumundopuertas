@@ -29,6 +29,7 @@ const TerminarAsignacion: React.FC = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<string>("");
+  const [articuloTerminado, setArticuloTerminado] = useState<string | null>(null);
   const identificador = localStorage.getItem("identificador");
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
@@ -38,21 +39,28 @@ const TerminarAsignacion: React.FC = () => {
       setTimeout(() => setMensaje(""), 3000);
       
       // Recargar las asignaciones después de terminar exitosamente
-      const fetchAsignaciones = async () => {
-        setLoading(true);
-        try {
-          const res = await fetch(
-            `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
-          );
-          const data = await res.json();
-          console.log('Asignaciones actualizadas:', data);
-          setAsignaciones(data);
-        } catch (err) {
-          console.error('Error al recargar asignaciones:', err);
-        }
-        setLoading(false);
-      };
-      if (identificador) fetchAsignaciones();
+      setTimeout(() => {
+        const fetchAsignaciones = async () => {
+          setLoading(true);
+          try {
+            console.log('Recargando asignaciones...');
+            const res = await fetch(
+              `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
+            );
+            if (!res.ok) {
+              throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            const data = await res.json();
+            console.log('Asignaciones actualizadas:', data);
+            console.log('Cantidad de asignaciones:', data.length);
+            setAsignaciones(data);
+          } catch (err) {
+            console.error('Error al recargar asignaciones:', err);
+          }
+          setLoading(false);
+        };
+        if (identificador) fetchAsignaciones();
+      }, 1000); // Esperar 1 segundo para que el backend procese
     },
     onError: (error) => {
       console.error('Error al terminar asignación:', error);
@@ -99,7 +107,11 @@ const TerminarAsignacion: React.FC = () => {
       ) : (
         <ul className="space-y-6">
           {asignaciones
-            .filter((asig) => asig.estado_subestado === "en_proceso" && asig.estado !== "terminado")
+            .filter((asig) => 
+              asig.estado_subestado === "en_proceso" && 
+              asig.estado !== "terminado" && 
+              articuloTerminado !== asig.item_id
+            )
             .map((asig, idx) => (
               <li key={idx}>
                 <Card className="border border-gray-200 shadow-sm">
@@ -154,6 +166,9 @@ const TerminarAsignacion: React.FC = () => {
                       <button
                         onClick={async () => {
                           if (confirm(`¿Estás seguro de que quieres marcar como terminado el artículo "${asig.descripcionitem}"?`)) {
+                            // Marcar inmediatamente como terminado en la UI
+                            setArticuloTerminado(asig.item_id);
+                            
                             await terminarEmpleado({
                               orden: asig.orden,
                               pedido_id: asig.pedido_id,
@@ -164,10 +179,10 @@ const TerminarAsignacion: React.FC = () => {
                             });
                           }
                         }}
-                        disabled={terminando}
+                        disabled={terminando || articuloTerminado === asig.item_id}
                         className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {terminando ? "Terminando..." : "Marcar como Terminado"}
+                        {terminando && articuloTerminado === asig.item_id ? "Terminando..." : "Marcar como Terminado"}
                       </button>
                     </div>
                   </CardContent>
