@@ -13,8 +13,7 @@ import {
   Printer,
   Shield,
   Zap,
-  Star,
-  ArrowRight
+  Star
 } from "lucide-react";
 
 const HomePage: React.FC = () => {
@@ -87,23 +86,6 @@ const HomePage: React.FC = () => {
         }
     ];
 
-    const values = [
-        {
-            icon: Star,
-            title: "Diseño",
-            description: "Soluciones arquitectónicas innovadoras"
-        },
-        {
-            icon: Shield,
-            title: "Calidad",
-            description: "Materiales de primera calidad"
-        },
-        {
-            icon: Zap,
-            title: "Protección",
-            description: "Seguridad y durabilidad garantizada"
-        }
-    ];
 
     if (!isAuthenticated) {
         return (
