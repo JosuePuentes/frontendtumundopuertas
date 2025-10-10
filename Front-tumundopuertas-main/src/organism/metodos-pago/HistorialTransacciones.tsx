@@ -4,6 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../componen
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { getHistorialMetodo } from "../../lib/api";
 import type { MetodoPago } from "../../hooks/useMetodosPago";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface Transaccion {
   id: string;
@@ -63,11 +66,116 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
     return tipo === "deposito" ? "text-green-600" : "text-red-600";
   };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(16);
+    doc.text(`Historial de Transacciones - ${metodo.nombre}`, 14, 22);
+    
+    // Información del método
+    doc.setFontSize(10);
+    doc.text(`Banco: ${metodo.banco}`, 14, 30);
+    doc.text(`Titular: ${metodo.titular}`, 14, 35);
+    doc.text(`Número de Cuenta: ${metodo.numero_cuenta}`, 14, 40);
+    doc.text(`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`, 14, 45);
+    
+    // Preparar datos para la tabla
+    const tableData = transacciones.map(transaccion => [
+      formatFecha(transaccion.fecha),
+      transaccion.tipo.charAt(0).toUpperCase() + transaccion.tipo.slice(1),
+      formatMonto(transaccion.monto, transaccion.tipo),
+      transaccion.concepto
+    ]);
+    
+    // Crear tabla
+    (doc as any).autoTable({
+      head: [['Fecha', 'Tipo', 'Monto', 'Concepto']],
+      body: tableData,
+      startY: 55,
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+    });
+    
+    // Guardar archivo
+    doc.save(`historial_${metodo.nombre}_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const exportToExcel = () => {
+    // Preparar datos
+    const excelData = transacciones.map(transaccion => ({
+      'Fecha': formatFecha(transaccion.fecha),
+      'Tipo': transaccion.tipo.charAt(0).toUpperCase() + transaccion.tipo.slice(1),
+      'Monto': formatMonto(transaccion.monto, transaccion.tipo),
+      'Concepto': transaccion.concepto
+    }));
+    
+    // Crear workbook
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    const wb = XLSX.utils.book_new();
+    
+    // Agregar información del método como primera fila
+    const infoData = [
+      [`Historial de Transacciones - ${metodo.nombre}`],
+      [`Banco: ${metodo.banco}`],
+      [`Titular: ${metodo.titular}`],
+      [`Número de Cuenta: ${metodo.numero_cuenta}`],
+      [`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`],
+      [''], // Fila vacía
+    ];
+    
+    // Insertar información al inicio
+    XLSX.utils.sheet_add_aoa(ws, infoData, { origin: 'A1' });
+    
+    // Ajustar ancho de columnas
+    ws['!cols'] = [
+      { wch: 20 }, // Fecha
+      { wch: 12 }, // Tipo
+      { wch: 15 }, // Monto
+      { wch: 30 }, // Concepto
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Historial');
+    
+    // Guardar archivo
+    XLSX.writeFile(wb, `historial_${metodo.nombre}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-white max-w-4xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Historial de Transacciones - {metodo.nombre}</DialogTitle>
+          <div className="flex justify-between items-center">
+            <DialogTitle>Historial de Transacciones - {metodo.nombre}</DialogTitle>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={exportToPDF}
+                disabled={transacciones.length === 0}
+              >
+                Exportar PDF
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={exportToExcel}
+                disabled={transacciones.length === 0}
+              >
+                Exportar Excel
+              </Button>
+            </div>
+          </div>
         </DialogHeader>
         
         <div className="overflow-auto max-h-[60vh]">
