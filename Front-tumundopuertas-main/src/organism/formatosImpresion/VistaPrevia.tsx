@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
+import { Printer, Download } from 'lucide-react';
 import type { ConfiguracionFormato } from './FormatosImpresion';
 
 interface VistaPreviaProps {

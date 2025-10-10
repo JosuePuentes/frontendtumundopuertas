@@ -349,7 +349,6 @@ const FormatosImpresion: React.FC = () => {
           {formatoSeleccionado && (
             <VistaPrevia
               configuracion={formatoSeleccionado.configuracion}
-              tipo={formatoSeleccionado.tipo}
             />
           )}
         </DialogContent>
