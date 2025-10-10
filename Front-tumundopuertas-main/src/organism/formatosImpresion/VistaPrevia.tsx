@@ -3,6 +3,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Printer, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
 import type { ConfiguracionFormato } from './FormatosImpresion';
 
 interface VistaPreviaProps {
@@ -37,8 +38,154 @@ const VistaPrevia: React.FC<VistaPreviaProps> = ({ configuracion }) => {
   };
 
   const handleDescargar = () => {
-    // Aquí se implementaría la descarga del documento
-    console.log('Descargar documento');
+    const doc = new jsPDF();
+    let yPosition = 20;
+
+    // Configurar fuente
+    doc.setFontSize(12);
+
+    // Empresa
+    if (configuracion.empresa.mostrar) {
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(configuracion.empresa.nombre, 105, yPosition, { align: 'center' });
+      yPosition += 10;
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`RIF: ${configuracion.empresa.rif}`, 105, yPosition, { align: 'center' });
+      yPosition += 6;
+      doc.text(configuracion.empresa.direccion, 105, yPosition, { align: 'center' });
+      yPosition += 15;
+    }
+
+    // Documento
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(configuracion.documento.titulo, 20, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Número: ${configuracion.documento.numeroDocumento}`, 20, yPosition);
+    doc.text(`Fecha: ${configuracion.documento.fecha}`, 150, yPosition);
+    yPosition += 15;
+
+    // Cliente
+    if (configuracion.cliente.mostrar) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DATOS DEL CLIENTE:', 20, yPosition);
+      yPosition += 8;
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Nombre: ${datosEjemplo.cliente.nombre}`, 20, yPosition);
+      yPosition += 6;
+      doc.text(`Cédula: ${datosEjemplo.cliente.cedula}`, 20, yPosition);
+      yPosition += 6;
+      doc.text(`Dirección: ${datosEjemplo.cliente.direccion}`, 20, yPosition);
+      yPosition += 6;
+      doc.text(`Teléfono: ${datosEjemplo.cliente.telefono}`, 20, yPosition);
+      yPosition += 15;
+    }
+
+    // Items
+    if (configuracion.items.mostrar) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ITEMS:', 20, yPosition);
+      yPosition += 8;
+
+      // Headers de la tabla
+      let xPosition = 20;
+      if (configuracion.items.columnas.includes('descripcion')) {
+        doc.text('Descripción', xPosition, yPosition);
+        xPosition += 80;
+      }
+      if (configuracion.items.columnas.includes('cantidad')) {
+        doc.text('Cant.', xPosition, yPosition);
+        xPosition += 20;
+      }
+      if (configuracion.items.columnas.includes('precio')) {
+        doc.text('Precio Unit.', xPosition, yPosition);
+        xPosition += 30;
+      }
+      if (configuracion.items.columnas.includes('subtotal')) {
+        doc.text('Subtotal', xPosition, yPosition);
+      }
+      yPosition += 8;
+
+      // Línea separadora
+      doc.line(20, yPosition, 190, yPosition);
+      yPosition += 5;
+
+      // Items
+      datosEjemplo.items.forEach((item) => {
+        xPosition = 20;
+        if (configuracion.items.columnas.includes('descripcion')) {
+          doc.text(item.descripcion, xPosition, yPosition);
+          xPosition += 80;
+        }
+        if (configuracion.items.columnas.includes('cantidad')) {
+          doc.text(item.cantidad.toString(), xPosition, yPosition);
+          xPosition += 20;
+        }
+        if (configuracion.items.columnas.includes('precio')) {
+          doc.text(`Bs. ${item.precio.toLocaleString()}`, xPosition, yPosition);
+          xPosition += 30;
+        }
+        if (configuracion.items.columnas.includes('subtotal')) {
+          doc.text(`Bs. ${item.subtotal.toLocaleString()}`, xPosition, yPosition);
+        }
+        yPosition += 6;
+      });
+      yPosition += 10;
+    }
+
+    // Totales
+    if (configuracion.totales.mostrar) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTALES:', 20, yPosition);
+      yPosition += 8;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      if (configuracion.totales.incluirSubtotal) {
+        doc.text(`Subtotal: Bs. ${datosEjemplo.totales.subtotal.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+      }
+      if (configuracion.totales.incluirIva) {
+        doc.text(`IVA (16%): Bs. ${datosEjemplo.totales.iva.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+      }
+      if (configuracion.totales.incluirTotal) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total: Bs. ${datosEjemplo.totales.total.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+        doc.setFont('helvetica', 'normal');
+      }
+      if (configuracion.totales.incluirAbonado) {
+        doc.text(`Abonado: Bs. ${datosEjemplo.totales.abonado.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+      }
+      if (configuracion.totales.incluirRestante) {
+        doc.text(`Restante: Bs. ${datosEjemplo.totales.restante.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+      }
+    }
+
+    // Pie de página
+    if (configuracion.pie.mostrar) {
+      yPosition += 20;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'italic');
+      doc.text(configuracion.pie.texto, 105, yPosition, { align: 'center' });
+    }
+
+    // Descargar el PDF
+    doc.save('documento-preliminar.pdf');
   };
 
   const renderizarEmpresa = () => {

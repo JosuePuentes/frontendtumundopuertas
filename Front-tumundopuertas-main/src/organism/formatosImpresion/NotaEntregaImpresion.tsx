@@ -6,6 +6,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
 import { Printer, Download } from 'lucide-react';
+import jsPDF from 'jspdf';
 import type { FormatoImpresion, ConfiguracionFormato } from './FormatosImpresion';
 import { useFormatos } from '../../context/FormatosContext';
 
@@ -111,10 +112,176 @@ const NotaEntregaImpresion: React.FC<NotaEntregaImpresionProps> = ({
   };
 
   const handleDescargar = () => {
-    if (!formatoSeleccionado) return;
+    if (!formatoSeleccionado || !pedido) return;
     
-    // Aquí se implementaría la descarga del PDF
-    console.log('Descargar PDF de la nota de entrega');
+    const doc = new jsPDF();
+    let yPosition = 20;
+    const config = formatoSeleccionado.configuracion;
+
+    // Configurar fuente
+    doc.setFontSize(12);
+
+    // Empresa
+    if (config.empresa.mostrar) {
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(config.empresa.nombre, 105, yPosition, { align: 'center' });
+      yPosition += 10;
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`RIF: ${config.empresa.rif}`, 105, yPosition, { align: 'center' });
+      yPosition += 6;
+      doc.text(config.empresa.direccion, 105, yPosition, { align: 'center' });
+      yPosition += 15;
+    }
+
+    // Documento
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(config.documento.titulo, 20, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Número: ${config.documento.numeroDocumento}`, 20, yPosition);
+    doc.text(`Fecha: ${config.documento.fecha}`, 150, yPosition);
+    yPosition += 15;
+
+    // Cliente
+    if (config.cliente.mostrar) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DATOS DEL CLIENTE:', 20, yPosition);
+      yPosition += 8;
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Nombre: ${pedido.cliente?.nombre || 'N/A'}`, 20, yPosition);
+      yPosition += 6;
+      doc.text(`Cédula: ${pedido.cliente?.cedula || 'N/A'}`, 20, yPosition);
+      yPosition += 6;
+      doc.text(`Dirección: ${pedido.cliente?.direccion || 'N/A'}`, 20, yPosition);
+      yPosition += 6;
+      doc.text(`Teléfono: ${pedido.cliente?.telefono || 'N/A'}`, 20, yPosition);
+      yPosition += 15;
+    }
+
+    // Items
+    if (config.items.mostrar && pedido.items && pedido.items.length > 0) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ITEMS ENTREGADOS:', 20, yPosition);
+      yPosition += 8;
+
+      // Headers de la tabla
+      let xPosition = 20;
+      if (config.items.columnas.includes('descripcion')) {
+        doc.text('Descripción', xPosition, yPosition);
+        xPosition += 80;
+      }
+      if (config.items.columnas.includes('cantidad')) {
+        doc.text('Cant.', xPosition, yPosition);
+        xPosition += 20;
+      }
+      if (config.items.columnas.includes('precio')) {
+        doc.text('Precio Unit.', xPosition, yPosition);
+        xPosition += 30;
+      }
+      if (config.items.columnas.includes('subtotal')) {
+        doc.text('Subtotal', xPosition, yPosition);
+      }
+      yPosition += 8;
+
+      // Línea separadora
+      doc.line(20, yPosition, 190, yPosition);
+      yPosition += 5;
+
+      // Items
+      pedido.items.forEach((item: any) => {
+        xPosition = 20;
+        if (config.items.columnas.includes('descripcion')) {
+          doc.text(item.descripcion || item.nombre || 'N/A', xPosition, yPosition);
+          xPosition += 80;
+        }
+        if (config.items.columnas.includes('cantidad')) {
+          doc.text((item.cantidad || 1).toString(), xPosition, yPosition);
+          xPosition += 20;
+        }
+        if (config.items.columnas.includes('precio')) {
+          doc.text(`Bs. ${(item.precio || 0).toLocaleString()}`, xPosition, yPosition);
+          xPosition += 30;
+        }
+        if (config.items.columnas.includes('subtotal')) {
+          doc.text(`Bs. ${((item.precio || 0) * (item.cantidad || 1)).toLocaleString()}`, xPosition, yPosition);
+        }
+        yPosition += 6;
+      });
+      yPosition += 10;
+    }
+
+    // Totales
+    if (config.totales.mostrar) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTALES:', 20, yPosition);
+      yPosition += 8;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      if (config.totales.incluirSubtotal) {
+        doc.text(`Subtotal: Bs. ${(pedido.subtotal || 0).toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+      }
+      if (config.totales.incluirIva) {
+        doc.text(`IVA (16%): Bs. ${(pedido.iva || 0).toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+      }
+      if (config.totales.incluirTotal) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Total: Bs. ${(pedido.total || 0).toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+        doc.setFont('helvetica', 'normal');
+      }
+      if (config.totales.incluirAbonado) {
+        doc.text(`Abonado: Bs. ${(pedido.abonado || 0).toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+      }
+      if (config.totales.incluirRestante) {
+        doc.text(`Restante: Bs. ${((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+      }
+    }
+
+    // Firmas
+    yPosition += 20;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FIRMAS:', 20, yPosition);
+    yPosition += 15;
+
+    // Firma del cliente
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Cliente:', 20, yPosition);
+    doc.line(50, yPosition + 5, 120, yPosition + 5);
+    doc.text('Nombre y Cédula', 70, yPosition + 10, { align: 'center' });
+
+    // Firma de la empresa
+    doc.text('Empresa:', 130, yPosition);
+    doc.line(160, yPosition + 5, 190, yPosition + 5);
+    doc.text('Nombre y Cédula', 175, yPosition + 10, { align: 'center' });
+
+    // Pie de página
+    if (config.pie.mostrar) {
+      yPosition += 30;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'italic');
+      doc.text(config.pie.texto, 105, yPosition, { align: 'center' });
+    }
+
+    // Descargar el PDF
+    doc.save(`nota-entrega-${pedido.numero || 'N/A'}.pdf`);
   };
 
   const generarHTMLImpresion = () => {
