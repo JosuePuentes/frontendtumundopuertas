@@ -89,23 +89,41 @@ const HomePage: React.FC = () => {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-600 text-white overflow-hidden relative">
-                {/* Background Effects - Circuit Lines */}
+            <div className="min-h-screen bg-gray-600 text-white overflow-hidden relative">
+                {/* Glitch Background Effects */}
                 <div className="absolute inset-0">
-                    {/* Horizontal Circuit Lines */}
-                    <div className="absolute top-20 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-60"></div>
-                    <div className="absolute top-40 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent opacity-40"></div>
-                    <div className="absolute bottom-40 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50"></div>
-                    <div className="absolute bottom-20 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-300 to-transparent opacity-30"></div>
+                    {/* Glitch Circuit Lines - Broken/Distorted */}
+                    <div className="absolute top-20 left-0 w-full h-px bg-cyan-400 opacity-60" style={{
+                        clipPath: 'polygon(0% 0%, 15% 0%, 25% 100%, 35% 0%, 50% 0%, 60% 100%, 70% 0%, 85% 0%, 100% 0%)'
+                    }}></div>
+                    <div className="absolute top-40 left-0 w-full h-px bg-cyan-400 opacity-40" style={{
+                        clipPath: 'polygon(0% 0%, 20% 0%, 30% 100%, 45% 0%, 55% 100%, 65% 0%, 80% 0%, 100% 0%)'
+                    }}></div>
+                    <div className="absolute bottom-40 left-0 w-full h-px bg-cyan-400 opacity-50" style={{
+                        clipPath: 'polygon(0% 0%, 10% 0%, 20% 100%, 40% 0%, 50% 100%, 60% 0%, 75% 0%, 90% 0%, 100% 0%)'
+                    }}></div>
+                    <div className="absolute bottom-20 left-0 w-full h-px bg-cyan-400 opacity-30" style={{
+                        clipPath: 'polygon(0% 0%, 25% 0%, 35% 100%, 50% 0%, 65% 100%, 75% 0%, 100% 0%)'
+                    }}></div>
                     
-                    {/* Vertical Circuit Lines */}
-                    <div className="absolute left-20 top-0 w-px h-full bg-gradient-to-b from-transparent via-cyan-400 to-transparent opacity-40"></div>
-                    <div className="absolute right-20 top-0 w-px h-full bg-gradient-to-b from-transparent via-cyan-300 to-transparent opacity-30"></div>
+                    {/* Vertical Glitch Lines */}
+                    <div className="absolute left-20 top-0 w-px h-full bg-cyan-400 opacity-40" style={{
+                        clipPath: 'polygon(0% 0%, 100% 15%, 0% 25%, 100% 35%, 0% 50%, 100% 60%, 0% 70%, 100% 85%, 0% 100%)'
+                    }}></div>
+                    <div className="absolute right-20 top-0 w-px h-full bg-cyan-400 opacity-30" style={{
+                        clipPath: 'polygon(0% 0%, 100% 20%, 0% 30%, 100% 45%, 0% 55%, 100% 65%, 0% 80%, 100% 100%)'
+                    }}></div>
                     
-                    {/* Grid Pattern */}
+                    {/* Glitch Grid Pattern */}
+                    <div className="absolute inset-0 opacity-10" style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.2'%3E%3Cpath d='M0 0h20v20H0z'/%3E%3Cpath d='M40 0h20v20H40z'/%3E%3Cpath d='M20 20h20v20H20z'/%3E%3Cpath d='M0 40h20v20H0z'/%3E%3Cpath d='M40 40h20v20H40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                        backgroundSize: '60px 60px'
+                    }}></div>
+                    
+                    {/* Glitch Noise Overlay */}
                     <div className="absolute inset-0 opacity-5" style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M0 0h40v40H0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                        backgroundSize: '40px 40px'
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.1'%3E%3Cpath d='M0 0h2v2H0z'/%3E%3Cpath d='M10 5h2v2h-2z'/%3E%3Cpath d='M25 15h2v2h-2z'/%3E%3Cpath d='M40 8h2v2h-2z'/%3E%3Cpath d='M60 20h2v2h-2z'/%3E%3Cpath d='M80 12h2v2h-2z'/%3E%3Cpath d='M95 25h2v2h-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                        backgroundSize: '100px 100px'
                     }}></div>
                 </div>
                 
@@ -113,22 +131,26 @@ const HomePage: React.FC = () => {
                 <header className="relative z-10 p-6">
                     <div className="max-w-7xl mx-auto flex items-center justify-between">
                         <div className="flex items-center space-x-6">
-                            {/* Correct Logo */}
+                            {/* Correct Logo - TM Portal with World */}
                             <div className="relative">
-                                <div className="w-20 h-20 rounded-full border-2 border-cyan-400 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center shadow-lg shadow-cyan-400/30">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center relative">
-                                        {/* Circuit pattern background */}
-                                        <div className="absolute inset-0 opacity-30" style={{
-                                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.3'%3E%3Cpath d='M0 0h20v20H0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                                            backgroundSize: '20px 20px'
+                                <div className="w-20 h-20 rounded-full border-2 border-cyan-400 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg shadow-cyan-400/30">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
+                                        {/* World/Globe pattern background */}
+                                        <div className="absolute inset-0 opacity-40" style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.4'%3E%3Cpath d='M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z'/%3E%3Cpath d='M8 2c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                                            backgroundSize: '16px 16px'
                                         }}></div>
-                                        {/* TM Letters */}
+                                        {/* TM Letters - Portal Style */}
                                         <div className="relative z-10">
-                                            <div className="text-cyan-400 font-bold text-sm leading-none">
-                                                <div className="text-xs">T</div>
-                                                <div className="text-xs">M</div>
+                                            <div className="text-cyan-400 font-bold text-lg leading-none">
+                                                <div className="text-sm font-black">T</div>
+                                                <div className="text-sm font-black">M</div>
                                             </div>
                                         </div>
+                                        {/* Portal effect lines */}
+                                        <div className="absolute inset-0 border border-cyan-400/30 rounded-lg"></div>
+                                        <div className="absolute top-1 left-1 right-1 h-px bg-cyan-400/50"></div>
+                                        <div className="absolute bottom-1 left-1 right-1 h-px bg-cyan-400/50"></div>
                                     </div>
                                 </div>
                                 <div className="absolute inset-0 rounded-full border border-cyan-400 animate-pulse opacity-50"></div>
@@ -177,15 +199,15 @@ const HomePage: React.FC = () => {
                     </div>
                 </header>
 
-                {/* Banner Section */}
-                <section className="relative z-10 py-8 px-6">
+                {/* Banner Section - Larger with Blue Outlines */}
+                <section className="relative z-10 py-12 px-6">
                     <div className="max-w-7xl mx-auto">
-                        <div className="bg-gradient-to-r from-gray-700/50 to-gray-800/50 border border-cyan-400/30 rounded-lg p-8 backdrop-blur-sm">
+                        <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-12 backdrop-blur-sm">
                             <div className="text-center">
-                                <h2 className="text-3xl font-bold text-white mb-4">Banner Promocional</h2>
-                                <p className="text-gray-300 mb-6">Espacio reservado para contenido promocional o anuncios</p>
-                                <div className="w-full h-32 bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 border border-cyan-400/30 rounded-lg flex items-center justify-center">
-                                    <span className="text-cyan-400 font-semibold">Contenido del Banner</span>
+                                <h2 className="text-4xl font-bold text-white mb-6">Banner Promocional</h2>
+                                <p className="text-gray-300 mb-8 text-lg">Espacio reservado para contenido promocional o anuncios</p>
+                                <div className="w-full h-48 bg-gradient-to-r from-gray-600 to-gray-700 border-2 border-cyan-400 rounded-lg flex items-center justify-center">
+                                    <span className="text-cyan-400 font-semibold text-xl">Contenido del Banner</span>
                                 </div>
                             </div>
                         </div>
@@ -234,9 +256,9 @@ const HomePage: React.FC = () => {
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {/* Product 1 */}
-                            <div className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
-                                <div className="w-full h-48 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
-                                    <span className="text-cyan-400 font-semibold">Boccion</span>
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
+                                <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
+                                    <span className="text-cyan-400 font-semibold text-lg">Boccion</span>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Boccion</h3>
                                 <p className="text-gray-300 mb-4">Puerta de seguridad robusta</p>
@@ -246,9 +268,9 @@ const HomePage: React.FC = () => {
                             </div>
                             
                             {/* Product 2 */}
-                            <div className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
-                                <div className="w-full h-48 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
-                                    <span className="text-cyan-400 font-semibold">Aluminium</span>
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
+                                <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
+                                    <span className="text-cyan-400 font-semibold text-lg">Aluminium</span>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Aluminium</h3>
                                 <p className="text-gray-300 mb-4">Puerta de aluminio moderna</p>
@@ -258,9 +280,9 @@ const HomePage: React.FC = () => {
                             </div>
                             
                             {/* Product 3 */}
-                            <div className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
-                                <div className="w-full h-48 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
-                                    <span className="text-cyan-400 font-semibold">Yar Mes</span>
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
+                                <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
+                                    <span className="text-cyan-400 font-semibold text-lg">Yar Mes</span>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Yar Mes</h3>
                                 <p className="text-gray-300 mb-4">Puerta de madera elegante</p>
