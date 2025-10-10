@@ -15,8 +15,11 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Download, FileText } from "lucide-react";
 import api from "@/lib/api"; // Import the centralized api function
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface Abono {
   pedido_id: string;
@@ -60,15 +63,148 @@ const ResumenVentaDiaria: React.FC = () => {
     }
   };
 
+  const exportToPDF = () => {
+    if (!data) return;
+
+    const doc = new jsPDF();
+    
+    // Título del documento
+    doc.setFontSize(20);
+    doc.text('Resumen de Venta Diaria', 14, 22);
+    
+    // Información del rango de fechas
+    doc.setFontSize(12);
+    doc.text(`Período: ${fechaInicio} - ${fechaFin}`, 14, 32);
+    
+    // Total de ingresos
+    doc.setFontSize(16);
+    doc.text(`Total Ingresos: $${data.total_ingresos.toFixed(2)}`, 14, 45);
+    
+    // Tabla de ingresos por método de pago
+    doc.setFontSize(14);
+    doc.text('Ingresos por Método de Pago', 14, 60);
+    
+    const metodoPagoData = Object.entries(data.ingresos_por_metodo || {}).map(([metodo, total]) => [
+      metodo,
+      `$${total.toFixed(2)}`
+    ]);
+    
+    (doc as any).autoTable({
+      startY: 65,
+      head: [['Método de Pago', 'Total']],
+      body: metodoPagoData,
+      theme: 'grid',
+      headStyles: { fillColor: [66, 139, 202] },
+    });
+    
+    // Tabla de abonos detallados
+    doc.setFontSize(14);
+    doc.text('Detalle de Abonos', 14, (doc as any).lastAutoTable.finalY + 20);
+    
+    const abonosData = (data.abonos || []).map(abono => [
+      abono.pedido_id,
+      abono.cliente_nombre,
+      new Date(abono.fecha).toLocaleDateString(),
+      abono.metodo || "N/A",
+      `$${abono.monto.toFixed(2)}`
+    ]);
+    
+    (doc as any).autoTable({
+      startY: (doc as any).lastAutoTable.finalY + 25,
+      head: [['ID Pedido', 'Cliente', 'Fecha', 'Método', 'Monto']],
+      body: abonosData,
+      theme: 'grid',
+      headStyles: { fillColor: [66, 139, 202] },
+      columnStyles: {
+        4: { halign: 'right' }
+      }
+    });
+    
+    // Guardar el PDF
+    doc.save(`resumen-venta-diaria-${fechaInicio}-${fechaFin}.pdf`);
+  };
+
+  const exportToExcel = () => {
+    if (!data) return;
+
+    // Crear workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Hoja 1: Resumen general
+    const resumenData = [
+      ['Resumen de Venta Diaria'],
+      ['Período:', `${fechaInicio} - ${fechaFin}`],
+      ['Total Ingresos:', `$${data.total_ingresos.toFixed(2)}`],
+      [''],
+      ['Ingresos por Método de Pago'],
+      ['Método de Pago', 'Total']
+    ];
+    
+    // Agregar datos de métodos de pago
+    Object.entries(data.ingresos_por_metodo || {}).forEach(([metodo, total]) => {
+      resumenData.push([metodo, `$${total.toFixed(2)}`]);
+    });
+    
+    const ws1 = XLSX.utils.aoa_to_sheet(resumenData);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+    
+    // Hoja 2: Detalle de abonos
+    const abonosData = [
+      ['ID Pedido', 'Cliente', 'Fecha', 'Método', 'Monto']
+    ];
+    
+    (data.abonos || []).forEach(abono => {
+      abonosData.push([
+        abono.pedido_id,
+        abono.cliente_nombre,
+        new Date(abono.fecha).toLocaleDateString(),
+        abono.metodo || "N/A",
+        abono.monto
+      ]);
+    });
+    
+    const ws2 = XLSX.utils.aoa_to_sheet(abonosData);
+    XLSX.utils.book_append_sheet(wb, ws2, 'Detalle Abonos');
+    
+    // Guardar el archivo Excel
+    XLSX.writeFile(wb, `resumen-venta-diaria-${fechaInicio}-${fechaFin}.xlsx`);
+  };
+
   return (
     <Card className="w-full shadow-md rounded-2xl">
       <CardHeader>
-        <CardTitle className="text-xl font-bold text-gray-800">
-          Resumen de Venta Diaria
-        </CardTitle>
-        <p className="text-sm text-gray-500">
-          Consulta los ingresos por abonos en un rango de fechas.
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-xl font-bold text-gray-800">
+              Resumen de Venta Diaria
+            </CardTitle>
+            <p className="text-sm text-gray-500">
+              Consulta los ingresos por abonos en un rango de fechas.
+            </p>
+          </div>
+          {data && (
+            <div className="flex gap-2">
+              <Button
+                onClick={exportToPDF}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Exportar PDF
+              </Button>
+              <Button
+                onClick={exportToExcel}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Exportar Excel
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">

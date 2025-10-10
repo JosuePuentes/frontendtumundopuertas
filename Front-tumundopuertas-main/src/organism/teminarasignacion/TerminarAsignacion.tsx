@@ -37,6 +37,10 @@ const TerminarAsignacion: React.FC = () => {
   console.log('🚀🚀🚀 CÓDIGO ACTUALIZADO EJECUTÁNDOSE - VERSIÓN CON LOGS DETALLADOS 🚀🚀🚀');
   console.log('🔧 VERSIÓN: 2.0 - CON FILTROS MEJORADOS');
   console.log('📅 TIMESTAMP:', new Date().toISOString());
+  
+  // FORZAR DESPLIEGUE - CAMBIO DRÁSTICO
+  const VERSION_ACTUAL = "3.0-FORZAR-DESPLIEGUE";
+  console.log('🔥 VERSIÓN ACTUAL:', VERSION_ACTUAL);
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
     onSuccess: (data) => {
@@ -130,10 +134,11 @@ const TerminarAsignacion: React.FC = () => {
       <h2 className="text-2xl font-bold mb-6">Asignaciones en proceso</h2>
       
       {/* Debug: Confirmar que el código actualizado se está ejecutando */}
-      <div className="mb-4 p-4 bg-green-100 text-green-800 rounded border-2 border-green-500">
-        <strong>🚀🚀🚀 VERSIÓN 2.0 DESPLEGADA 🚀🚀🚀</strong><br/>
-        <strong>🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje verde, el código con logs detallados se está ejecutando correctamente.<br/>
-        <strong>📅 TIMESTAMP:</strong> {new Date().toISOString()}
+      <div className="mb-4 p-6 bg-red-100 text-red-800 rounded border-4 border-red-500 shadow-lg">
+        <strong className="text-2xl">🔥🔥🔥 VERSIÓN 3.0 DESPLEGADA 🔥🔥🔥</strong><br/>
+        <strong className="text-lg">🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje ROJO, el código con logs detallados se está ejecutando correctamente.<br/>
+        <strong className="text-lg">📅 TIMESTAMP:</strong> {new Date().toISOString()}<br/>
+        <strong className="text-lg">🚀 VERSIÓN:</strong> 3.0-FORZAR-DESPLIEGUE
       </div>
       
       {mensaje && (
