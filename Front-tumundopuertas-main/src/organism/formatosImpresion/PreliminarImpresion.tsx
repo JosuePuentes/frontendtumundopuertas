@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Card, CardContent } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
-import { Printer, Download, Eye } from 'lucide-react';
+import { Printer, Download } from 'lucide-react';
 import type { FormatoImpresion, ConfiguracionFormato } from './FormatosImpresion';
 
 interface PreliminarImpresionProps {
@@ -21,7 +21,6 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
 }) => {
   const [formatos, setFormatos] = useState<FormatoImpresion[]>([]);
   const [formatoSeleccionado, setFormatoSeleccionado] = useState<FormatoImpresion | null>(null);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {

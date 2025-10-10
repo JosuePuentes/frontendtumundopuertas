@@ -8,9 +8,8 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import api from "@/lib/api";
-import PreliminarImpresion from "@/organism/formatosImpresion/PreliminarImpresion";
 
 interface PagoManagerProps {
   pedidoId: string;
@@ -18,13 +17,12 @@ interface PagoManagerProps {
   pedidoData?: any; // Datos completos del pedido para el preliminar
 }
 
-const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial, pedidoData }) => {
+const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
   const [pago, setPago] = useState<string>(pagoInicial || "sin pago");
   const [monto, setMonto] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [metodosPago, setMetodosPago] = useState<any[]>([]);
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
-  const [isPreliminarOpen, setIsPreliminarOpen] = useState(false);
 
   useEffect(() => {
     const fetchMetodosPago = async () => {
