@@ -108,11 +108,11 @@ const Login: React.FC = () => {
 						</div>
 						
 						<div className="flex flex-col">
-							<span className="text-2xl font-bold text-white tracking-wide">
+							<span className="text-2xl font-bold text-gray-200 tracking-wide">
 								TU MUNDO PUERTAS
 							</span>
 							<div className="w-full h-px bg-gradient-to-r from-cyan-400 to-transparent mt-1"></div>
-							<span className="text-sm text-gray-300 mt-1">
+							<span className="text-sm text-gray-200 mt-1">
 								DISEÑO, CALIDAD Y PROTECCIÓN
 							</span>
 						</div>
@@ -121,30 +121,30 @@ const Login: React.FC = () => {
 					{/* Mobile Menu Button */}
 					<button
 						onClick={() => setIsMenuOpen(!isMenuOpen)}
-						className="md:hidden text-white hover:text-cyan-400 transition-colors duration-300"
+						className="md:hidden text-gray-200 hover:text-cyan-400 transition-colors duration-300"
 					>
 						{isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
 					</button>
 					
 					{/* Desktop Navigation */}
 					<nav className="hidden md:flex space-x-8">
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
 							Inicio
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
 							Productos
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
 							Proyectos
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
 							Servicios
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
-						<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300 relative group">
+						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
 							Contacto
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
@@ -155,11 +155,11 @@ const Login: React.FC = () => {
 				{isMenuOpen && (
 					<div className="md:hidden mt-4 bg-gray-800/50 backdrop-blur-sm rounded-lg p-4">
 						<nav className="flex flex-col space-y-4">
-							<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Inicio</a>
-							<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Productos</a>
-							<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Proyectos</a>
-							<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Servicios</a>
-							<a href="#" className="text-gray-300 hover:text-cyan-400 transition-colors duration-300">Contacto</a>
+							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Inicio</a>
+							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Productos</a>
+							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Proyectos</a>
+							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Servicios</a>
+							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Contacto</a>
 						</nav>
 					</div>
 				)}
@@ -169,50 +169,50 @@ const Login: React.FC = () => {
 			<main className="relative z-10 flex items-center justify-center min-h-[80vh] px-6">
 				<Card className="w-full max-w-md bg-gray-800/50 border-gray-700 backdrop-blur-sm">
 					<CardHeader className="text-center">
-						<CardTitle className="text-3xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+						<CardTitle className="text-3xl font-bold text-gray-200">
 							Iniciar Sesión
 						</CardTitle>
-						<p className="text-gray-300 mt-2">Accede a tu cuenta</p>
+						<p className="text-gray-200 mt-2">Accede a tu cuenta</p>
 					</CardHeader>
 					<CardContent>
 						<form onSubmit={handleSubmit} className="space-y-6">
 							<div className="space-y-2">
-								<Label htmlFor="usuario" className="text-gray-300">Usuario</Label>
+								<Label htmlFor="usuario" className="text-gray-200">Usuario</Label>
 								<Input
 									id="usuario"
-									type="text"
-									value={usuario}
-									onChange={e => setUsuario(e.target.value)}
+						type="text"
+						value={usuario}
+						onChange={e => setUsuario(e.target.value)}
 									className="bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
 									placeholder="Ingresa tu usuario"
-									required
-								/>
-							</div>
+						required
+					/>
+				</div>
 							<div className="space-y-2">
-								<Label htmlFor="password" className="text-gray-300">Contraseña</Label>
+								<Label htmlFor="password" className="text-gray-200">Contraseña</Label>
 								<Input
 									id="password"
-									type="password"
-									value={password}
-									onChange={e => setPassword(e.target.value)}
+						type="password"
+						value={password}
+						onChange={e => setPassword(e.target.value)}
 									className="bg-gray-700/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400/20"
 									placeholder="Ingresa tu contraseña"
-									required
-								/>
-							</div>
+						required
+					/>
+				</div>
 							{error && (
 								<div className="text-red-400 text-center bg-red-900/20 border border-red-500/30 rounded-lg p-3">
 									{error}
 								</div>
 							)}
 							<Button
-								type="submit"
+					type="submit"
 								className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25"
-								disabled={loading}
-							>
-								{loading ? "Ingresando..." : "Ingresar"}
+					disabled={loading}
+				>
+					{loading ? "Ingresando..." : "Ingresar"}
 							</Button>
-						</form>
+			</form>
 					</CardContent>
 				</Card>
 			</main>
