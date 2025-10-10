@@ -89,7 +89,7 @@ const HomePage: React.FC = () => {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen bg-slate-700 text-white overflow-hidden relative">
+            <div className="min-h-screen bg-gradient-to-br from-gray-300 via-gray-400 to-gray-500 text-white overflow-hidden relative">
                 {/* Futuristic Glitch Background - Crack Lines */}
                 <div className="absolute inset-0">
                     {/* Horizontal Crack Lines - Futuristic */}
