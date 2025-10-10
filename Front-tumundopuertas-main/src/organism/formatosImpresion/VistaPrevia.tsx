@@ -231,8 +231,8 @@ const VistaPrevia: React.FC<VistaPreviaProps> = ({ configuracion }) => {
       </div>
 
       {/* Vista previa del documento */}
-      <Card className="print:shadow-none print:border-0">
-        <CardContent className="p-8 print:p-4">
+      <Card className="print:shadow-none print:border-0 w-full">
+        <CardContent className="p-8 print:p-4 min-h-[600px]">
           {renderizarEmpresa()}
           {renderizarDocumento()}
           {renderizarCliente()}

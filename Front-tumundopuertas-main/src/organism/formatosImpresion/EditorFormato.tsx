@@ -521,7 +521,7 @@ const EditorFormato: React.FC<EditorFormatoProps> = ({
   };
 
   return (
-    <div className="flex h-[600px]">
+    <div className="flex h-[70vh] min-h-[600px]">
       {/* Sidebar de secciones */}
       <div className="w-64 border-r p-4">
         <h3 className="font-semibold mb-4">Configuración</h3>

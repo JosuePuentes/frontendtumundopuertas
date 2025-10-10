@@ -390,7 +390,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white">
+      <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle>Preliminar de Pago</DialogTitle>
         </DialogHeader>
@@ -423,8 +423,8 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
           {formatoSeleccionado && (
             <div>
               <h3 className="text-lg font-semibold mb-3">Vista Previa</h3>
-              <Card>
-                <CardContent className="p-6">
+              <Card className="w-full">
+                <CardContent className="p-6 min-h-[500px]">
                   {renderizarVistaPrevia()}
                 </CardContent>
               </Card>
