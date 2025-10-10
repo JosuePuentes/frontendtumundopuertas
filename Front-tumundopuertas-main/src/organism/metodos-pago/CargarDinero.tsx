@@ -21,10 +21,30 @@ const CargarDinero = ({ isOpen, onClose, onSuccess, metodo }: CargarDineroProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validar que el método tenga ID
+    if (!metodo.id || metodo.id === 'undefined') {
+      setError("Error: Método de pago no válido. Por favor, recarga la página.");
+      return;
+    }
+    
+    // Validar monto
+    if (monto <= 0) {
+      setError("El monto debe ser mayor a cero.");
+      return;
+    }
+    
+    // Validar concepto
+    if (!concepto.trim()) {
+      setError("El concepto es obligatorio.");
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     try {
-      const updatedMetodo = await depositarDinero(metodo.id!, monto, concepto);
+      console.log("Depositando:", { metodoId: metodo.id, monto, concepto });
+      const updatedMetodo = await depositarDinero(metodo.id, monto, concepto);
       onSuccess(updatedMetodo);
       setMonto(0);
       setConcepto("");
