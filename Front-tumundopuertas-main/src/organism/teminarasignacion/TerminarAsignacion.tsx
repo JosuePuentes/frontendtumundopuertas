@@ -26,7 +26,7 @@ interface Asignacion {
 }
 
 const TerminarAsignacion: React.FC = () => {
-  // VERSION ACTUALIZADA - FORZAR DESPLIEGUE
+  // VERSION ACTUALIZADA - FORZAR DESPLIEGUE COMPLETO
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<string>("");
@@ -34,7 +34,9 @@ const TerminarAsignacion: React.FC = () => {
   const identificador = localStorage.getItem("identificador");
   
   // Debug: Verificar que el código actualizado se está ejecutando
-  console.log('🚀 CÓDIGO ACTUALIZADO EJECUTÁNDOSE - VERSIÓN CON LOGS DETALLADOS');
+  console.log('🚀🚀🚀 CÓDIGO ACTUALIZADO EJECUTÁNDOSE - VERSIÓN CON LOGS DETALLADOS 🚀🚀🚀');
+  console.log('🔧 VERSIÓN: 2.0 - CON FILTROS MEJORADOS');
+  console.log('📅 TIMESTAMP:', new Date().toISOString());
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
     onSuccess: (data) => {
@@ -128,8 +130,10 @@ const TerminarAsignacion: React.FC = () => {
       <h2 className="text-2xl font-bold mb-6">Asignaciones en proceso</h2>
       
       {/* Debug: Confirmar que el código actualizado se está ejecutando */}
-      <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded border border-blue-300">
-        <strong>🔧 VERSIÓN ACTUALIZADA:</strong> Si ves este mensaje, el código con logs detallados se está ejecutando correctamente.
+      <div className="mb-4 p-4 bg-green-100 text-green-800 rounded border-2 border-green-500">
+        <strong>🚀🚀🚀 VERSIÓN 2.0 DESPLEGADA 🚀🚀🚀</strong><br/>
+        <strong>🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje verde, el código con logs detallados se está ejecutando correctamente.<br/>
+        <strong>📅 TIMESTAMP:</strong> {new Date().toISOString()}
       </div>
       
       {mensaje && (
