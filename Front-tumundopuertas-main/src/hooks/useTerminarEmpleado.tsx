@@ -33,7 +33,11 @@ function useTerminarEmpleado<T = any>(
         setLoading(true);
         setError(null);
         try {
-            const response = await fetch(`${getApiUrl()}/pedidos/asignacion/terminar`, {
+            const apiUrl = getApiUrl();
+            console.log('API URL being used:', apiUrl);
+            console.log('Payload being sent:', payload);
+            
+            const response = await fetch(`${apiUrl}/pedidos/asignacion/terminar`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

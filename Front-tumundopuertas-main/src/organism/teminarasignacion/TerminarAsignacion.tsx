@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import useTerminarEmpleado from "@/hooks/useTerminarEmpleado";
 import ImageDisplay from "@/upfile/ImageDisplay";
+import { getApiUrl } from "@/lib/api";
 interface Asignacion {
   pedido_id: string;
   item_id: string;
@@ -28,7 +29,6 @@ const TerminarAsignacion: React.FC = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [loading, setLoading] = useState(false);
   const identificador = localStorage.getItem("identificador");
-  const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:8002").replace('http://', 'https://');
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
     onSuccess: () => {
@@ -37,7 +37,7 @@ const TerminarAsignacion: React.FC = () => {
         setLoading(true);
         try {
           const res = await fetch(
-            `${apiUrl}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
+            `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
           );
           const data = await res.json();
           setAsignaciones(data);
@@ -60,7 +60,7 @@ const TerminarAsignacion: React.FC = () => {
       try {
         // Consulta asignaciones en proceso para el usuario logueado
         const res = await fetch(
-          `${apiUrl}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
+          `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
         );
         const data = await res.json();
         setAsignaciones(data);
@@ -68,7 +68,7 @@ const TerminarAsignacion: React.FC = () => {
       setLoading(false);
     };
     if (identificador) fetchAsignaciones();
-  }, [identificador, apiUrl]);
+  }, [identificador]);
 
   if (loading) return <div>Cargando asignaciones...</div>;
   console.log(asignaciones.forEach((a) => console.log(a.cliente.cliente_nombre)));
