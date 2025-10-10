@@ -284,59 +284,69 @@ const FormatosImpresion: React.FC = () => {
 
       {/* Modal de Creación/Edición */}
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-y-auto bg-white">
-          <DialogHeader>
-            <DialogTitle>
-              {modoEdicion === 'crear' ? 'Crear Nuevo Formato' : 'Editar Formato'}
-            </DialogTitle>
-          </DialogHeader>
-          
-          {modoEdicion === 'crear' && (
-            <div className="space-y-4 mb-6">
-              <div>
-                <Label htmlFor="nombre">Nombre del Formato</Label>
-                <Input
-                  id="nombre"
-                  value={nuevoFormato.nombre}
-                  onChange={(e) => setNuevoFormato({ ...nuevoFormato, nombre: e.target.value })}
-                  placeholder="Ej: Preliminar Estándar"
+        <DialogContent className="w-[98vw] h-[98vh] max-w-none max-h-none overflow-hidden bg-white p-0">
+          <div className="flex flex-col h-full">
+            <DialogHeader className="p-6 border-b">
+              <DialogTitle>
+                {modoEdicion === 'crear' ? 'Crear Nuevo Formato' : 'Editar Formato'}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-hidden">
+              {modoEdicion === 'crear' && (
+                <div className="p-6 border-b space-y-4">
+                  <div>
+                    <Label htmlFor="nombre">Nombre del Formato</Label>
+                    <Input
+                      id="nombre"
+                      value={nuevoFormato.nombre}
+                      onChange={(e) => setNuevoFormato({ ...nuevoFormato, nombre: e.target.value })}
+                      placeholder="Ej: Preliminar Estándar"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="tipo">Tipo de Formato</Label>
+                    <select
+                      id="tipo"
+                      value={nuevoFormato.tipo}
+                      onChange={(e) => setNuevoFormato({ ...nuevoFormato, tipo: e.target.value as 'preliminar' | 'nota_entrega' })}
+                      className="w-full p-2 border rounded-md"
+                    >
+                      <option value="preliminar">Preliminar de Pago</option>
+                      <option value="nota_entrega">Nota de Entrega</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              <div className="h-full">
+                <EditorFormato
+                  configuracionInicial={formatoSeleccionado?.configuracion || configuracionPorDefecto}
+                  onGuardar={handleGuardarFormato}
+                  onCancelar={() => setIsEditorOpen(false)}
                 />
               </div>
-              <div>
-                <Label htmlFor="tipo">Tipo de Formato</Label>
-                <select
-                  id="tipo"
-                  value={nuevoFormato.tipo}
-                  onChange={(e) => setNuevoFormato({ ...nuevoFormato, tipo: e.target.value as 'preliminar' | 'nota_entrega' })}
-                  className="w-full p-2 border rounded-md"
-                >
-                  <option value="preliminar">Preliminar de Pago</option>
-                  <option value="nota_entrega">Nota de Entrega</option>
-                </select>
-              </div>
             </div>
-          )}
-
-          <EditorFormato
-            configuracionInicial={formatoSeleccionado?.configuracion || configuracionPorDefecto}
-            onGuardar={handleGuardarFormato}
-            onCancelar={() => setIsEditorOpen(false)}
-          />
+          </div>
         </DialogContent>
       </Dialog>
 
       {/* Modal de Vista Previa */}
       <Dialog open={isVistaPreviaOpen} onOpenChange={setIsVistaPreviaOpen}>
-        <DialogContent className="max-w-7xl w-[95vw] max-h-[95vh] overflow-y-auto bg-white">
-          <DialogHeader>
-            <DialogTitle>Vista Previa - {formatoSeleccionado?.nombre}</DialogTitle>
-          </DialogHeader>
-          
-          {formatoSeleccionado && (
-            <VistaPrevia
-              configuracion={formatoSeleccionado.configuracion}
-            />
-          )}
+        <DialogContent className="w-[98vw] h-[98vh] max-w-none max-h-none overflow-hidden bg-white p-0">
+          <div className="flex flex-col h-full">
+            <DialogHeader className="p-6 border-b">
+              <DialogTitle>Vista Previa - {formatoSeleccionado?.nombre}</DialogTitle>
+            </DialogHeader>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              {formatoSeleccionado && (
+                <VistaPrevia
+                  configuracion={formatoSeleccionado.configuracion}
+                />
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -521,9 +521,9 @@ const EditorFormato: React.FC<EditorFormatoProps> = ({
   };
 
   return (
-    <div className="flex h-[70vh] min-h-[600px]">
+    <div className="flex h-full">
       {/* Sidebar de secciones */}
-      <div className="w-64 border-r p-4">
+      <div className="w-64 border-r p-4 overflow-y-auto">
         <h3 className="font-semibold mb-4">Configuración</h3>
         <div className="space-y-2">
           {secciones.map((seccion) => (
@@ -546,7 +546,7 @@ const EditorFormato: React.FC<EditorFormatoProps> = ({
       </div>
 
       {/* Contenido principal */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 overflow-y-auto">
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-2">
             {secciones.find(s => s.id === seccionActiva)?.nombre}
