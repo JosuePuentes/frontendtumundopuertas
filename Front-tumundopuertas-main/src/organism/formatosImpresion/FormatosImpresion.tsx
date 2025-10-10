@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../..
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Badge } from '../../components/ui/badge';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import EditorFormato from './EditorFormato';
@@ -67,7 +66,6 @@ export interface ConfiguracionFormato {
 
 const FormatosImpresion: React.FC = () => {
   const [formatos, setFormatos] = useState<FormatoImpresion[]>([]);
-  const [loading, setLoading] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isVistaPreviaOpen, setIsVistaPreviaOpen] = useState(false);
   const [formatoSeleccionado, setFormatoSeleccionado] = useState<FormatoImpresion | null>(null);
@@ -128,7 +126,6 @@ const FormatosImpresion: React.FC = () => {
   }, []);
 
   const cargarFormatos = async () => {
-    setLoading(true);
     try {
       // Simular carga de formatos (en producción sería una llamada a la API)
       const formatosSimulados: FormatoImpresion[] = [
@@ -160,8 +157,8 @@ const FormatosImpresion: React.FC = () => {
       setFormatos(formatosSimulados);
     } catch (error) {
       console.error('Error al cargar formatos:', error);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error al cargar formatos:', error);
     }
   };
 

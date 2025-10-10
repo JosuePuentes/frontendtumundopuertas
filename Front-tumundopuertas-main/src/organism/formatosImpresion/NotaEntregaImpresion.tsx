@@ -29,7 +29,6 @@ const NotaEntregaImpresion: React.FC<NotaEntregaImpresionProps> = ({
   }, [isOpen]);
 
   const cargarFormatos = async () => {
-    setLoading(true);
     try {
       // Simular carga de formatos activos para notas de entrega
       const formatosSimulados: FormatoImpresion[] = [
@@ -92,8 +91,8 @@ const NotaEntregaImpresion: React.FC<NotaEntregaImpresionProps> = ({
       }
     } catch (error) {
       console.error('Error al cargar formatos:', error);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error al cargar formatos:', error);
     }
   };
 

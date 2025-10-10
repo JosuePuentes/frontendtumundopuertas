@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../componen
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Card, CardContent } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { Badge } from '../../components/ui/badge';
 import { Printer, Download } from 'lucide-react';
 import type { FormatoImpresion, ConfiguracionFormato } from './FormatosImpresion';
 
@@ -29,7 +28,6 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
   }, [isOpen]);
 
   const cargarFormatos = async () => {
-    setLoading(true);
     try {
       // Simular carga de formatos activos para preliminares
       const formatosSimulados: FormatoImpresion[] = [
@@ -92,8 +90,8 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       }
     } catch (error) {
       console.error('Error al cargar formatos:', error);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Error al cargar formatos:', error);
     }
   };
 
