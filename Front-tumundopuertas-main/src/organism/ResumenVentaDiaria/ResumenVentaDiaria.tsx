@@ -159,7 +159,7 @@ const ResumenVentaDiaria: React.FC = () => {
         abono.cliente_nombre,
         new Date(abono.fecha).toLocaleDateString(),
         abono.metodo || "N/A",
-        abono.monto
+        abono.monto.toFixed(2)
       ]);
     });
     
