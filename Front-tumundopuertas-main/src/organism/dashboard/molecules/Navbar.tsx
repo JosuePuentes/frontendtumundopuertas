@@ -28,6 +28,7 @@ const defaultLinks = [
   { label: "Resumen Venta Diaria", href: "/resumen-venta-diaria" },
   { label: "Metodos de Pago", href: "/metodos-pago" },
   { label: "Formatos de Impresión", href: "/formatos-impresion" },
+  { label: "Administrar Home", href: "/admin-home" },
   { label: "Dashboard", href: "/dashboard" },
   { label: "Crear Empleado", href: "/crearempleado" },
   { label: "Modificar Empleado", href: "/modificarempleado" },
@@ -60,6 +61,7 @@ const permisosRuta: Record<string, string | null> = {
   "/resumen-venta-diaria": "resumenVentaDiaria",
   "/metodos-pago": "metodos_pago",
   "/formatos-impresion": "admin",
+  "/admin-home": "admin",
   "/home": null,
   "/": null,
 };

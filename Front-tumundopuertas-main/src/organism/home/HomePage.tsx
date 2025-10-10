@@ -71,6 +71,13 @@ const HomePage: React.FC = () => {
             href: "/formatos-impresion"
         },
         {
+            title: "Administrar Home",
+            description: "Personalizar página principal",
+            icon: Settings,
+            color: "from-cyan-400 to-blue-500",
+            href: "/admin-home"
+        },
+        {
             title: "Reportes",
             description: "Ver resúmenes y estadísticas",
             icon: BarChart3,
