@@ -90,8 +90,6 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       }
     } catch (error) {
       console.error('Error al cargar formatos:', error);
-    } catch (error) {
-      console.error('Error al cargar formatos:', error);
     }
   };
 

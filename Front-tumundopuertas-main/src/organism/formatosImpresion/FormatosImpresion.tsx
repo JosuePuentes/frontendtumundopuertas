@@ -157,8 +157,6 @@ const FormatosImpresion: React.FC = () => {
       setFormatos(formatosSimulados);
     } catch (error) {
       console.error('Error al cargar formatos:', error);
-    } catch (error) {
-      console.error('Error al cargar formatos:', error);
     }
   };
 

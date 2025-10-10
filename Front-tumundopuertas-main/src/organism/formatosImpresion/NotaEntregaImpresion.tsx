@@ -91,8 +91,6 @@ const NotaEntregaImpresion: React.FC<NotaEntregaImpresionProps> = ({
       }
     } catch (error) {
       console.error('Error al cargar formatos:', error);
-    } catch (error) {
-      console.error('Error al cargar formatos:', error);
     }
   };
 
