@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,9 +16,169 @@ import {
   Star
 } from "lucide-react";
 
+interface HomeConfig {
+  banner: {
+    title: string;
+    subtitle: string;
+    image: string;
+    enabled: boolean;
+  };
+  logo: {
+    text: string;
+    slogan: string;
+    image: string;
+    enabled: boolean;
+  };
+  values: {
+    diseño: {
+      title: string;
+      description: string;
+      icon: string;
+    };
+    calidad: {
+      title: string;
+      description: string;
+      icon: string;
+    };
+    proteccion: {
+      title: string;
+      description: string;
+      icon: string;
+    };
+  };
+  products: {
+    title: string;
+    items: Array<{
+      id: string;
+      name: string;
+      description: string;
+      image: string;
+      enabled: boolean;
+    }>;
+  };
+  contact: {
+    title: string;
+    subtitle: string;
+    enabled: boolean;
+  };
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    text: string;
+  };
+}
+
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const isAuthenticated = !!localStorage.getItem("usuario");
+    const [config, setConfig] = useState<HomeConfig | null>(null);
+
+    // Cargar configuración desde localStorage
+    useEffect(() => {
+        const loadConfig = () => {
+            const savedConfig = localStorage.getItem('home-config');
+            if (savedConfig) {
+                try {
+                    setConfig(JSON.parse(savedConfig));
+                } catch (error) {
+                    console.error('Error parsing home config:', error);
+                }
+            }
+        };
+
+        // Cargar configuración inicial
+        loadConfig();
+
+        // Escuchar cambios en localStorage
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'home-config') {
+                loadConfig();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        // Cleanup
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+
+    // Configuración por defecto
+    const defaultConfig: HomeConfig = {
+        banner: {
+            title: "TU MUNDO PUERTAS",
+            subtitle: "Diseño, Calidad y Protección",
+            image: "",
+            enabled: true
+        },
+        logo: {
+            text: "TU MUNDO PUERTAS",
+            slogan: "Diseño, Calidad y Protección",
+            image: "",
+            enabled: true
+        },
+        values: {
+            diseño: {
+                title: "Diseño",
+                description: "Soluciones arquitectónicas innovadoras",
+                icon: "Star"
+            },
+            calidad: {
+                title: "Calidad",
+                description: "Materiales de primera calidad",
+                icon: "Shield"
+            },
+            proteccion: {
+                title: "Protección",
+                description: "Seguridad y durabilidad garantizada",
+                icon: "Zap"
+            }
+        },
+        products: {
+            title: "Innovación y Tradición en Cada Apertura",
+            items: [
+                {
+                    id: "1",
+                    name: "Boccion",
+                    description: "Puertas de alta calidad",
+                    image: "",
+                    enabled: true
+                },
+                {
+                    id: "2",
+                    name: "Aluminium",
+                    description: "Ventanas modernas",
+                    image: "",
+                    enabled: true
+                },
+                {
+                    id: "3",
+                    name: "Yar Mes",
+                    description: "Soluciones personalizadas",
+                    image: "",
+                    enabled: true
+                }
+            ]
+        },
+        contact: {
+            title: "Contáctanos",
+            subtitle: "Para más información sobre nuestros productos",
+            enabled: true
+        },
+        colors: {
+            primary: "#06b6d4",
+            secondary: "#0891b2",
+            accent: "#22d3ee",
+            background: "#000000",
+            text: "#e5e7eb"
+        }
+    };
+
+    // Usar configuración guardada o por defecto
+    const currentConfig = config || defaultConfig;
 
     const modules = [
         {
@@ -138,38 +298,40 @@ const HomePage: React.FC = () => {
                 <header className="relative z-10 p-6">
                     <div className="max-w-7xl mx-auto flex items-center justify-between">
                         <div className="flex items-center space-x-6">
-                            {/* Correct Logo - TM Portal with World */}
-                            <div className="relative">
-                                <div className="w-20 h-20 rounded-full border-2 border-cyan-400 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg shadow-cyan-400/30">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
-                                        {/* World/Globe pattern background */}
-                                        <div className="absolute inset-0 opacity-40" style={{
-                                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.4'%3E%3Cpath d='M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z'/%3E%3Cpath d='M8 2c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                                            backgroundSize: '16px 16px'
-                                        }}></div>
-                                        {/* TM Letters - Portal Style */}
-                                        <div className="relative z-10">
-                                            <div className="text-cyan-400 font-bold text-lg leading-none">
-                                                <div className="text-sm font-black">T</div>
-                                                <div className="text-sm font-black">M</div>
+                            {/* Dynamic Logo */}
+                            {currentConfig.logo.enabled && (
+                                <div className="relative">
+                                    <div className="w-20 h-20 rounded-full border-2 border-cyan-400 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg shadow-cyan-400/30">
+                                        <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
+                                            {/* World/Globe pattern background */}
+                                            <div className="absolute inset-0 opacity-40" style={{
+                                                backgroundImage: `url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.4'%3E%3Cpath d='M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z'/%3E%3Cpath d='M8 2c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                                                backgroundSize: '16px 16px'
+                                            }}></div>
+                                            {/* TM Letters - Portal Style */}
+                                            <div className="relative z-10">
+                                                <div className="text-cyan-400 font-bold text-lg leading-none">
+                                                    <div className="text-sm font-black">T</div>
+                                                    <div className="text-sm font-black">M</div>
+                                                </div>
                                             </div>
-                                        </div>
-                                        {/* Portal effect lines */}
-                                        <div className="absolute inset-0 border border-cyan-400/30 rounded-lg"></div>
+                                            {/* Portal effect lines */}
+                                            <div className="absolute inset-0 border border-cyan-400/30 rounded-lg"></div>
                                         <div className="absolute top-1 left-1 right-1 h-px bg-cyan-400/50"></div>
-                                        <div className="absolute bottom-1 left-1 right-1 h-px bg-cyan-400/50"></div>
+                                        <div className="absolute bottom-1 left-1 right-1 h-px bg-cyan-400/50">                                        </div>
                                     </div>
                                 </div>
                                 <div className="absolute inset-0 rounded-full border border-cyan-400 animate-pulse opacity-50"></div>
                             </div>
+                            )}
                             
                             <div className="flex flex-col">
                                 <span className="text-3xl font-bold text-gray-200 tracking-wide">
-                                    TU MUNDO PUERTAS
+                                    {currentConfig.logo.text}
                                 </span>
                                 <div className="w-full h-px bg-gradient-to-r from-cyan-400 to-transparent mt-2"></div>
                                 <span className="text-sm text-gray-200 mt-2">
-                                    DISEÑO, CALIDAD Y PROTECCIÓN
+                                    {currentConfig.logo.slogan}
                                 </span>
                             </div>
                         </div>
@@ -206,22 +368,26 @@ const HomePage: React.FC = () => {
                     </div>
                 </header>
 
-                {/* Banner Section - Larger with Blue Outlines */}
-                <section className="relative z-10 py-12 px-6">
-                    <div className="max-w-7xl mx-auto">
-                        <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-12 backdrop-blur-sm">
-                            <div className="text-center">
-                                <h2 className="text-4xl font-bold text-gray-200 mb-6">Banner Promocional</h2>
-                                <p className="text-gray-200 mb-8 text-lg">Espacio reservado para contenido promocional o anuncios</p>
-                                <div className="w-full h-48 bg-gradient-to-r from-gray-600 to-gray-700 border-2 border-cyan-400 rounded-lg flex items-center justify-center">
-                                    <span className="text-cyan-400 font-semibold text-xl">Contenido del Banner</span>
+                {/* Dynamic Banner Section */}
+                {currentConfig.banner.enabled && (
+                    <section className="relative z-10 py-12 px-6">
+                        <div className="max-w-7xl mx-auto">
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-12 backdrop-blur-sm">
+                                <div className="text-center">
+                                    <h2 className="text-4xl font-bold text-gray-200 mb-6">{currentConfig.banner.title}</h2>
+                                    <p className="text-gray-200 mb-8 text-lg">{currentConfig.banner.subtitle}</p>
+                                    {currentConfig.banner.image && (
+                                        <div className="w-full h-48 bg-gradient-to-r from-gray-600 to-gray-700 border-2 border-cyan-400 rounded-lg flex items-center justify-center">
+                                            <img src={currentConfig.banner.image} alt="Banner" className="w-full h-full object-cover rounded-lg" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                )}
 
-                {/* Values Section */}
+                {/* Dynamic Values Section */}
                 <section className="relative z-10 py-20 px-6">
                     <div className="max-w-6xl mx-auto">
                         {/* Separator */}
@@ -231,26 +397,32 @@ const HomePage: React.FC = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                             <div className="text-center group">
                                 <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
-                                    <Star className="w-10 h-10 text-cyan-400" />
+                                    {currentConfig.values.diseño.icon === 'Star' && <Star className="w-10 h-10 text-cyan-400" />}
+                                    {currentConfig.values.diseño.icon === 'Shield' && <Shield className="w-10 h-10 text-cyan-400" />}
+                                    {currentConfig.values.diseño.icon === 'Zap' && <Zap className="w-10 h-10 text-cyan-400" />}
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-200 mb-3">Diseño</h3>
-                                <p className="text-gray-200 text-lg">Soluciones arquitectónicas innovadoras</p>
+                                <h3 className="text-2xl font-bold text-gray-200 mb-3">{currentConfig.values.diseño.title}</h3>
+                                <p className="text-gray-200 text-lg">{currentConfig.values.diseño.description}</p>
                             </div>
                             
                             <div className="text-center group">
                                 <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
-                                    <Shield className="w-10 h-10 text-cyan-400" />
+                                    {currentConfig.values.calidad.icon === 'Star' && <Star className="w-10 h-10 text-cyan-400" />}
+                                    {currentConfig.values.calidad.icon === 'Shield' && <Shield className="w-10 h-10 text-cyan-400" />}
+                                    {currentConfig.values.calidad.icon === 'Zap' && <Zap className="w-10 h-10 text-cyan-400" />}
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-200 mb-3">Calidad</h3>
-                                <p className="text-gray-200 text-lg">Materiales de primera calidad</p>
+                                <h3 className="text-2xl font-bold text-gray-200 mb-3">{currentConfig.values.calidad.title}</h3>
+                                <p className="text-gray-200 text-lg">{currentConfig.values.calidad.description}</p>
                             </div>
                             
                             <div className="text-center group">
                                 <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
-                                    <Zap className="w-10 h-10 text-cyan-400" />
+                                    {currentConfig.values.proteccion.icon === 'Star' && <Star className="w-10 h-10 text-cyan-400" />}
+                                    {currentConfig.values.proteccion.icon === 'Shield' && <Shield className="w-10 h-10 text-cyan-400" />}
+                                    {currentConfig.values.proteccion.icon === 'Zap' && <Zap className="w-10 h-10 text-cyan-400" />}
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-200 mb-3">Protección</h3>
-                                <p className="text-gray-200 text-lg">Seguridad y durabilidad garantizada</p>
+                                <h3 className="text-2xl font-bold text-gray-200 mb-3">{currentConfig.values.proteccion.title}</h3>
+                                <p className="text-gray-200 text-lg">{currentConfig.values.proteccion.description}</p>
                             </div>
                         </div>
                     </div>
@@ -259,61 +431,44 @@ const HomePage: React.FC = () => {
                 {/* Product Gallery Section */}
                 <section className="relative z-10 py-20 px-6">
                     <div className="max-w-6xl mx-auto">
-                        <h2 className="text-4xl font-bold text-gray-200 text-center mb-12">Innovación y Tradición en Cada Apertura</h2>
+                        <h2 className="text-4xl font-bold text-gray-200 text-center mb-12">{currentConfig.products.title}</h2>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {/* Product 1 */}
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
-                                <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
-                                    <span className="text-cyan-400 font-semibold text-lg">Boccion</span>
+                            {currentConfig.products.items.filter(item => item.enabled).map((product, index) => (
+                                <div key={product.id} className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
+                                    <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
+                                        {product.image ? (
+                                            <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded-lg" />
+                                        ) : (
+                                            <span className="text-cyan-400 font-semibold text-lg">{product.name}</span>
+                                        )}
+                                    </div>
+                                    <h3 className="text-xl font-bold text-gray-200 mb-2">{product.name}</h3>
+                                    <p className="text-gray-200 mb-4">{product.description}</p>
+                                    <Button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-semibold py-2 rounded-lg transition-all duration-300">
+                                        Ver Más
+                                    </Button>
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-200 mb-2">Boccion</h3>
-                                <p className="text-gray-200 mb-4">Puerta de seguridad robusta</p>
-                                <Button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-semibold py-2 rounded-lg transition-all duration-300">
-                                    Ver Más
-                                </Button>
-                            </div>
-                            
-                            {/* Product 2 */}
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
-                                <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
-                                    <span className="text-cyan-400 font-semibold text-lg">Aluminium</span>
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-200 mb-2">Aluminium</h3>
-                                <p className="text-gray-200 mb-4">Puerta de aluminio moderna</p>
-                                <Button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-semibold py-2 rounded-lg transition-all duration-300">
-                                    Ver Más
-                                </Button>
-                            </div>
-                            
-                            {/* Product 3 */}
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
-                                <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
-                                    <span className="text-cyan-400 font-semibold text-lg">Yar Mes</span>
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-200 mb-2">Yar Mes</h3>
-                                <p className="text-gray-200 mb-4">Puerta de madera elegante</p>
-                                <Button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-semibold py-2 rounded-lg transition-all duration-300">
-                                    Ver Más
-                                </Button>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </section>
 
-                {/* Contact Section */}
-                <section className="relative z-10 py-20 px-6">
-                    <div className="max-w-4xl mx-auto text-center">
-                        <h2 className="text-4xl font-bold text-gray-200 mb-8">¿Listo para tu próximo proyecto?</h2>
-                        <p className="text-xl text-gray-200 mb-8">Contáctanos y descubre cómo podemos transformar tu espacio</p>
-                        <Button 
-                            onClick={() => navigate('/login')}
-                            className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black px-8 py-4 text-lg font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50"
-                        >
-                            Contáctanos
-                        </Button>
-                    </div>
-                </section>
+                {/* Dynamic Contact Section */}
+                {currentConfig.contact.enabled && (
+                    <section className="relative z-10 py-20 px-6">
+                        <div className="max-w-4xl mx-auto text-center">
+                            <h2 className="text-4xl font-bold text-gray-200 mb-6">{currentConfig.contact.title}</h2>
+                            <p className="text-gray-200 text-lg mb-8">{currentConfig.contact.subtitle}</p>
+                            <Button 
+                                onClick={() => navigate('/login')}
+                                className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-bold px-12 py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50"
+                            >
+                                CONTÁCTANOS
+                            </Button>
+                        </div>
+                    </section>
+                )}
             </div>
         );
     }
