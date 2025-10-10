@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import type { FormatoImpresion, ConfiguracionFormato } from '../organism/formatosImpresion/FormatosImpresion';
 
 interface FormatosContextType {

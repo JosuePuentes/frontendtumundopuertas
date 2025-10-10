@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
@@ -163,7 +163,7 @@ const FormatosImpresion: React.FC = () => {
 
   const handleGuardarFormato = (configuracion: ConfiguracionFormato) => {
     if (modoEdicion === 'crear') {
-      const nuevoFormato: FormatoImpresion = {
+      const formatoCreado: FormatoImpresion = {
         id: Date.now().toString(),
         nombre: nuevoFormato.nombre || "Nuevo Formato",
         tipo: nuevoFormato.tipo,
@@ -172,7 +172,7 @@ const FormatosImpresion: React.FC = () => {
         fechaCreacion: new Date().toISOString(),
         fechaModificacion: new Date().toISOString()
       };
-      guardarFormato(nuevoFormato);
+      guardarFormato(formatoCreado);
     } else if (formatoSeleccionado) {
       const formatoActualizado: FormatoImpresion = {
         ...formatoSeleccionado,
