@@ -52,7 +52,7 @@ const Login: React.FC = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-gray-800 text-white overflow-hidden relative">
+		<div className="min-h-screen bg-slate-700 text-white overflow-hidden relative">
 			{/* Futuristic Glitch Background - Crack Lines */}
 			<div className="absolute inset-0">
 				{/* Horizontal Crack Lines - Futuristic */}
