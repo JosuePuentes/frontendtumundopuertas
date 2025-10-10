@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Badge } from '../../components/ui/badge';
 import { Printer, Download } from 'lucide-react';
 import type { FormatoImpresion, ConfiguracionFormato } from './FormatosImpresion';
+import { useFormatos } from '../../context/FormatosContext';
 
 interface NotaEntregaImpresionProps {
   isOpen: boolean;
@@ -19,80 +20,24 @@ const NotaEntregaImpresion: React.FC<NotaEntregaImpresionProps> = ({
   onClose,
   pedido
 }) => {
-  const [formatos, setFormatos] = useState<FormatoImpresion[]>([]);
+  const { formatos, obtenerFormatoPorTipo } = useFormatos();
   const [formatoSeleccionado, setFormatoSeleccionado] = useState<FormatoImpresion | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      cargarFormatos();
-    }
-  }, [isOpen]);
-
-  const cargarFormatos = async () => {
-    try {
-      // Simular carga de formatos activos para notas de entrega
-      const formatosSimulados: FormatoImpresion[] = [
-        {
-          id: '2',
-          nombre: 'Nota de Entrega Estándar',
-          tipo: 'nota_entrega',
-          activo: true,
-          configuracion: {
-            empresa: {
-              mostrar: true,
-              nombre: 'Tu Mundo Puertas',
-              rif: 'J-12345678-9',
-              direccion: 'Av. Principal #123, Caracas',
-              telefono: '+58 123-456-7890',
-              email: 'info@tumundopuertas.com'
-            },
-            logo: {
-              mostrar: true,
-              url: '/puertalogo.PNG',
-              posicion: 'izquierda',
-              tamaño: 'mediano'
-            },
-            cliente: {
-              mostrar: true,
-              incluirNombre: true,
-              incluirDireccion: true,
-              incluirCedula: true,
-              incluirTelefono: true
-            },
-            documento: {
-              titulo: 'Nota de Entrega',
-              numeroDocumento: `NE-${pedido?.numero || '001'}`,
-              fecha: new Date().toLocaleDateString('es-ES')
-            },
-            items: {
-              mostrar: true,
-              columnas: ['descripcion', 'cantidad', 'estado']
-            },
-            totales: {
-              mostrar: false,
-              incluirSubtotal: false,
-              incluirIva: false,
-              incluirTotal: false,
-              incluirAbonado: false,
-              incluirRestante: false
-            },
-            pie: {
-              mostrar: true,
-              texto: 'Recibí conforme los artículos listados en esta nota de entrega'
-            }
-          },
-          fechaCreacion: '2024-01-15',
-          fechaModificacion: '2024-01-15'
+      // Obtener formato activo para notas de entrega
+      const formatoNotaEntrega = obtenerFormatoPorTipo('nota_entrega');
+      if (formatoNotaEntrega) {
+        setFormatoSeleccionado(formatoNotaEntrega);
+      } else {
+        // Si no hay formato específico, usar el primero disponible
+        const formatosNotaEntrega = formatos.filter(f => f.tipo === 'nota_entrega' && f.activo);
+        if (formatosNotaEntrega.length > 0) {
+          setFormatoSeleccionado(formatosNotaEntrega[0]);
         }
-      ];
-      setFormatos(formatosSimulados);
-      if (formatosSimulados.length > 0) {
-        setFormatoSeleccionado(formatosSimulados[0]);
       }
-    } catch (error) {
-      console.error('Error al cargar formatos:', error);
     }
-  };
+  }, [isOpen, formatos, obtenerFormatoPorTipo]);
 
   const handleImprimir = () => {
     if (!formatoSeleccionado) return;
@@ -375,7 +320,7 @@ const NotaEntregaImpresion: React.FC<NotaEntregaImpresionProps> = ({
                 <SelectValue placeholder="Selecciona un formato" />
               </SelectTrigger>
               <SelectContent>
-                {formatos.map((formato) => (
+                {formatos.filter(f => f.tipo === 'nota_entrega' && f.activo).map((formato) => (
                   <SelectItem key={formato.id} value={formato.id}>
                     {formato.nombre}
                   </SelectItem>

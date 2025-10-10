@@ -8,6 +8,7 @@ import { Badge } from '../../components/ui/badge';
 import { Plus, Edit, Trash2, Eye } from 'lucide-react';
 import EditorFormato from './EditorFormato';
 import VistaPrevia from './VistaPrevia';
+import { useFormatos } from '../../context/FormatosContext';
 
 export interface FormatoImpresion {
   id: string;
@@ -65,7 +66,7 @@ export interface ConfiguracionFormato {
 }
 
 const FormatosImpresion: React.FC = () => {
-  const [formatos, setFormatos] = useState<FormatoImpresion[]>([]);
+  const { formatos, guardarFormato, actualizarFormato, eliminarFormato } = useFormatos();
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isVistaPreviaOpen, setIsVistaPreviaOpen] = useState(false);
   const [formatoSeleccionado, setFormatoSeleccionado] = useState<FormatoImpresion | null>(null);
@@ -121,44 +122,7 @@ const FormatosImpresion: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    cargarFormatos();
-  }, []);
-
-  const cargarFormatos = async () => {
-    try {
-      // Simular carga de formatos (en producción sería una llamada a la API)
-      const formatosSimulados: FormatoImpresion[] = [
-        {
-          id: '1',
-          nombre: 'Preliminar Estándar',
-          tipo: 'preliminar',
-          activo: true,
-          configuracion: configuracionPorDefecto,
-          fechaCreacion: '2024-01-15',
-          fechaModificacion: '2024-01-15'
-        },
-        {
-          id: '2',
-          nombre: 'Nota de Entrega Básica',
-          tipo: 'nota_entrega',
-          activo: true,
-          configuracion: {
-            ...configuracionPorDefecto,
-            documento: {
-              ...configuracionPorDefecto.documento,
-              titulo: 'Nota de Entrega'
-            }
-          },
-          fechaCreacion: '2024-01-15',
-          fechaModificacion: '2024-01-15'
-        }
-      ];
-      setFormatos(formatosSimulados);
-    } catch (error) {
-      console.error('Error al cargar formatos:', error);
-    }
-  };
+  // Los formatos se cargan automáticamente desde el contexto
 
   const handleCrearFormato = () => {
     setModoEdicion('crear');
@@ -181,21 +145,21 @@ const FormatosImpresion: React.FC = () => {
     if (modoEdicion === 'crear') {
       const nuevoFormato: FormatoImpresion = {
         id: Date.now().toString(),
-        nombre: "Nuevo Formato",
-        tipo: "preliminar",
+        nombre: nuevoFormato.nombre || "Nuevo Formato",
+        tipo: nuevoFormato.tipo,
         activo: true,
         configuracion,
         fechaCreacion: new Date().toISOString(),
         fechaModificacion: new Date().toISOString()
       };
-      setFormatos([...formatos, nuevoFormato]);
+      guardarFormato(nuevoFormato);
     } else if (formatoSeleccionado) {
-      const formatosActualizados = formatos.map(f => 
-        f.id === formatoSeleccionado.id 
-          ? { ...f, configuracion, fechaModificacion: new Date().toISOString() }
-          : f
-      );
-      setFormatos(formatosActualizados);
+      const formatoActualizado: FormatoImpresion = {
+        ...formatoSeleccionado,
+        configuracion,
+        fechaModificacion: new Date().toISOString()
+      };
+      actualizarFormato(formatoSeleccionado.id, formatoActualizado);
     }
     setIsEditorOpen(false);
     setNuevoFormato({ nombre: '', tipo: 'preliminar' });
@@ -203,14 +167,16 @@ const FormatosImpresion: React.FC = () => {
 
   const handleEliminarFormato = (id: string) => {
     if (window.confirm('¿Estás seguro de que quieres eliminar este formato?')) {
-      setFormatos(formatos.filter(f => f.id !== id));
+      eliminarFormato(id);
     }
   };
 
   const handleToggleActivo = (id: string) => {
-    setFormatos(formatos.map(f => 
-      f.id === id ? { ...f, activo: !f.activo } : f
-    ));
+    const formato = formatos.find(f => f.id === id);
+    if (formato) {
+      const formatoActualizado = { ...formato, activo: !formato.activo };
+      actualizarFormato(id, formatoActualizado);
+    }
   };
 
   return (

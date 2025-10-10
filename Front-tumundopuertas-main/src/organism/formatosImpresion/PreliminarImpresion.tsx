@@ -6,6 +6,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Printer, Download } from 'lucide-react';
 import type { FormatoImpresion, ConfiguracionFormato } from './FormatosImpresion';
+import { useFormatos } from '../../context/FormatosContext';
 
 interface PreliminarImpresionProps {
   isOpen: boolean;
@@ -18,80 +19,24 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
   onClose,
   pedido
 }) => {
-  const [formatos, setFormatos] = useState<FormatoImpresion[]>([]);
+  const { formatos, obtenerFormatoPorTipo } = useFormatos();
   const [formatoSeleccionado, setFormatoSeleccionado] = useState<FormatoImpresion | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      cargarFormatos();
-    }
-  }, [isOpen]);
-
-  const cargarFormatos = async () => {
-    try {
-      // Simular carga de formatos activos para preliminares
-      const formatosSimulados: FormatoImpresion[] = [
-        {
-          id: '1',
-          nombre: 'Preliminar Estándar',
-          tipo: 'preliminar',
-          activo: true,
-          configuracion: {
-            empresa: {
-              mostrar: true,
-              nombre: 'Tu Mundo Puertas',
-              rif: 'J-12345678-9',
-              direccion: 'Av. Principal #123, Caracas',
-              telefono: '+58 123-456-7890',
-              email: 'info@tumundopuertas.com'
-            },
-            logo: {
-              mostrar: true,
-              url: '/puertalogo.PNG',
-              posicion: 'izquierda',
-              tamaño: 'mediano'
-            },
-            cliente: {
-              mostrar: true,
-              incluirNombre: true,
-              incluirDireccion: true,
-              incluirCedula: true,
-              incluirTelefono: false
-            },
-            documento: {
-              titulo: 'Preliminar de Pago',
-              numeroDocumento: `PREL-${pedido?.numero || '001'}`,
-              fecha: new Date().toLocaleDateString('es-ES')
-            },
-            items: {
-              mostrar: true,
-              columnas: ['descripcion', 'cantidad', 'precio', 'subtotal']
-            },
-            totales: {
-              mostrar: true,
-              incluirSubtotal: true,
-              incluirIva: false,
-              incluirTotal: true,
-              incluirAbonado: true,
-              incluirRestante: true
-            },
-            pie: {
-              mostrar: true,
-              texto: 'Gracias por su preferencia'
-            }
-          },
-          fechaCreacion: '2024-01-15',
-          fechaModificacion: '2024-01-15'
+      // Obtener formato activo para preliminares
+      const formatoPreliminar = obtenerFormatoPorTipo('preliminar');
+      if (formatoPreliminar) {
+        setFormatoSeleccionado(formatoPreliminar);
+      } else {
+        // Si no hay formato específico, usar el primero disponible
+        const formatosPreliminares = formatos.filter(f => f.tipo === 'preliminar' && f.activo);
+        if (formatosPreliminares.length > 0) {
+          setFormatoSeleccionado(formatosPreliminares[0]);
         }
-      ];
-      setFormatos(formatosSimulados);
-      if (formatosSimulados.length > 0) {
-        setFormatoSeleccionado(formatosSimulados[0]);
       }
-    } catch (error) {
-      console.error('Error al cargar formatos:', error);
     }
-  };
+  }, [isOpen, formatos, obtenerFormatoPorTipo]);
 
   const handleImprimir = () => {
     if (!formatoSeleccionado) return;
@@ -408,7 +353,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
                 <SelectValue placeholder="Selecciona un formato" />
               </SelectTrigger>
               <SelectContent>
-                {formatos.map((formato) => (
+                {formatos.filter(f => f.tipo === 'preliminar' && f.activo).map((formato) => (
                   <SelectItem key={formato.id} value={formato.id}>
                     {formato.nombre}
                   </SelectItem>
