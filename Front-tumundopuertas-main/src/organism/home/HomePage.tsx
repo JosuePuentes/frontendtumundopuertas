@@ -107,7 +107,7 @@ const HomePage: React.FC = () => {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen bg-black text-white overflow-hidden relative">
+            <div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-600 text-white overflow-hidden relative">
                 {/* Background Effects - Circuit Lines */}
                 <div className="absolute inset-0">
                     {/* Horizontal Circuit Lines */}
@@ -127,17 +127,25 @@ const HomePage: React.FC = () => {
                     }}></div>
                 </div>
                 
-                {/* Header */}
+                {/* Header with Logo and Company Name */}
                 <header className="relative z-10 p-6">
                     <div className="max-w-7xl mx-auto flex items-center justify-between">
                         <div className="flex items-center space-x-6">
-                            {/* New Logo */}
+                            {/* Correct Logo */}
                             <div className="relative">
-                                <div className="w-16 h-16 rounded-full border-2 border-cyan-400 bg-gradient-to-br from-gray-800 to-black flex items-center justify-center shadow-lg shadow-cyan-400/30">
-                                    <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center">
-                                        <div className="text-cyan-400 font-bold text-lg">
-                                            <div className="text-xs leading-none">T</div>
-                                            <div className="text-xs leading-none">M</div>
+                                <div className="w-20 h-20 rounded-full border-2 border-cyan-400 bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center shadow-lg shadow-cyan-400/30">
+                                    <div className="w-16 h-16 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center relative">
+                                        {/* Circuit pattern background */}
+                                        <div className="absolute inset-0 opacity-30" style={{
+                                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.3'%3E%3Cpath d='M0 0h20v20H0z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+                                            backgroundSize: '20px 20px'
+                                        }}></div>
+                                        {/* TM Letters */}
+                                        <div className="relative z-10">
+                                            <div className="text-cyan-400 font-bold text-sm leading-none">
+                                                <div className="text-xs">T</div>
+                                                <div className="text-xs">M</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -145,11 +153,11 @@ const HomePage: React.FC = () => {
                             </div>
                             
                             <div className="flex flex-col">
-                                <span className="text-2xl font-bold text-white tracking-wide">
+                                <span className="text-3xl font-bold text-white tracking-wide">
                                     TU MUNDO PUERTAS
                                 </span>
-                                <div className="w-full h-px bg-gradient-to-r from-cyan-400 to-transparent mt-1"></div>
-                                <span className="text-sm text-gray-300 mt-1">
+                                <div className="w-full h-px bg-gradient-to-r from-cyan-400 to-transparent mt-2"></div>
+                                <span className="text-sm text-gray-300 mt-2">
                                     DISEÑO, CALIDAD Y PROTECCIÓN
                                 </span>
                             </div>
@@ -187,47 +195,20 @@ const HomePage: React.FC = () => {
                     </div>
                 </header>
 
-                {/* Banner Section - Space for banner */}
+                {/* Banner Section */}
                 <section className="relative z-10 py-8 px-6">
                     <div className="max-w-7xl mx-auto">
-                        <div className="bg-gradient-to-r from-gray-800/50 to-gray-900/50 border border-cyan-400/30 rounded-lg p-8 backdrop-blur-sm">
+                        <div className="bg-gradient-to-r from-gray-700/50 to-gray-800/50 border border-cyan-400/30 rounded-lg p-8 backdrop-blur-sm">
                             <div className="text-center">
                                 <h2 className="text-3xl font-bold text-white mb-4">Banner Promocional</h2>
                                 <p className="text-gray-300 mb-6">Espacio reservado para contenido promocional o anuncios</p>
-                                <div className="w-full h-32 bg-gradient-to-r from-cyan-500/20 to-blue-600/20 border border-cyan-400/30 rounded-lg flex items-center justify-center">
+                                <div className="w-full h-32 bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 border border-cyan-400/30 rounded-lg flex items-center justify-center">
                                     <span className="text-cyan-400 font-semibold">Contenido del Banner</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
-
-                {/* Hero Section */}
-                <main className="relative z-10 flex flex-col items-center justify-center min-h-[60vh] px-6">
-                    <div className="text-center max-w-4xl mx-auto">
-                        {/* Main Title */}
-                        <h1 className="text-6xl md:text-8xl font-bold mb-6 text-white leading-tight">
-                            TU MUNDO<br />
-                            <span className="text-cyan-400">
-                                PUERTAS
-                            </span>
-                        </h1>
-                        
-                        {/* Subtitle */}
-                        <p className="text-xl md:text-2xl text-gray-300 mb-8 font-light">
-                            Diseño, Calidad y Protección: El Estándar de la Ingeniería
-                        </p>
-                        
-                        {/* CTA Button */}
-                        <Button 
-                            onClick={() => navigate('/login')}
-                            className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black px-8 py-4 text-lg font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50 flex items-center space-x-2 mx-auto"
-                        >
-                            <span>EXPLORA NUESTROS PRODUCTOS</span>
-                            <ArrowRight className="w-5 h-5" />
-                        </Button>
-                    </div>
-                </main>
 
                 {/* Values Section */}
                 <section className="relative z-10 py-20 px-6">
@@ -236,19 +217,30 @@ const HomePage: React.FC = () => {
                         <div className="w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent mb-16"></div>
                         
                         {/* Values Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {values.map((value, index) => {
-                                const IconComponent = value.icon;
-                                return (
-                                    <div key={index} className="text-center group">
-                                        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
-                                            <IconComponent className="w-10 h-10 text-cyan-400" />
-                                        </div>
-                                        <h3 className="text-2xl font-bold text-white mb-3">{value.title}</h3>
-                                        <p className="text-gray-400 text-lg">{value.description}</p>
-                                    </div>
-                                );
-                            })}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                            <div className="text-center group">
+                                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
+                                    <Star className="w-10 h-10 text-cyan-400" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-3">Diseño</h3>
+                                <p className="text-gray-300 text-lg">Soluciones arquitectónicas innovadoras</p>
+                            </div>
+                            
+                            <div className="text-center group">
+                                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
+                                    <Shield className="w-10 h-10 text-cyan-400" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-3">Calidad</h3>
+                                <p className="text-gray-300 text-lg">Materiales de primera calidad</p>
+                            </div>
+                            
+                            <div className="text-center group">
+                                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
+                                    <Zap className="w-10 h-10 text-cyan-400" />
+                                </div>
+                                <h3 className="text-2xl font-bold text-white mb-3">Protección</h3>
+                                <p className="text-gray-300 text-lg">Seguridad y durabilidad garantizada</p>
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -260,8 +252,8 @@ const HomePage: React.FC = () => {
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             {/* Product 1 */}
-                            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
-                                <div className="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
+                            <div className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
+                                <div className="w-full h-48 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
                                     <span className="text-cyan-400 font-semibold">Boccion</span>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Boccion</h3>
@@ -272,8 +264,8 @@ const HomePage: React.FC = () => {
                             </div>
                             
                             {/* Product 2 */}
-                            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
-                                <div className="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
+                            <div className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
+                                <div className="w-full h-48 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
                                     <span className="text-cyan-400 font-semibold">Aluminium</span>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Aluminium</h3>
@@ -284,8 +276,8 @@ const HomePage: React.FC = () => {
                             </div>
                             
                             {/* Product 3 */}
-                            <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
-                                <div className="w-full h-48 bg-gradient-to-br from-gray-700 to-gray-800 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
+                            <div className="bg-gradient-to-br from-gray-700/50 to-gray-800/50 border border-cyan-400/30 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400/60 transition-all duration-300">
+                                <div className="w-full h-48 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg mb-4 flex items-center justify-center border border-cyan-400/20">
                                     <span className="text-cyan-400 font-semibold">Yar Mes</span>
                                 </div>
                                 <h3 className="text-xl font-bold text-white mb-2">Yar Mes</h3>

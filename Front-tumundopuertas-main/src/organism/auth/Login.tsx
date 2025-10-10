@@ -52,7 +52,7 @@ const Login: React.FC = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-black text-white overflow-hidden relative">
+		<div className="min-h-screen bg-gradient-to-br from-gray-800 via-gray-700 to-gray-600 text-white overflow-hidden relative">
 			{/* Background Effects - Circuit Lines */}
 			<div className="absolute inset-0">
 				{/* Horizontal Circuit Lines */}
