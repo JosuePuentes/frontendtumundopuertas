@@ -434,7 +434,7 @@ const HomePage: React.FC = () => {
                         <h2 className="text-4xl font-bold text-gray-200 text-center mb-12">{currentConfig.products.title}</h2>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {currentConfig.products.items.filter(item => item.enabled).map((product, index) => (
+                            {currentConfig.products.items.filter(item => item.enabled).map((product) => (
                                 <div key={product.id} className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
                                     <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
                                         {product.image ? (
