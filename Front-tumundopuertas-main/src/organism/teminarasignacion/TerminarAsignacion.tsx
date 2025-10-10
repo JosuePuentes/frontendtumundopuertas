@@ -26,11 +26,15 @@ interface Asignacion {
 }
 
 const TerminarAsignacion: React.FC = () => {
+  // VERSION ACTUALIZADA - FORZAR DESPLIEGUE
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<string>("");
   const [articuloTerminado, setArticuloTerminado] = useState<string | null>(null);
   const identificador = localStorage.getItem("identificador");
+  
+  // Debug: Verificar que el código actualizado se está ejecutando
+  console.log('🚀 CÓDIGO ACTUALIZADO EJECUTÁNDOSE - VERSIÓN CON LOGS DETALLADOS');
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
     onSuccess: (data) => {
@@ -122,6 +126,11 @@ const TerminarAsignacion: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto mt-8">
       <h2 className="text-2xl font-bold mb-6">Asignaciones en proceso</h2>
+      
+      {/* Debug: Confirmar que el código actualizado se está ejecutando */}
+      <div className="mb-4 p-3 bg-blue-100 text-blue-800 rounded border border-blue-300">
+        <strong>🔧 VERSIÓN ACTUALIZADA:</strong> Si ves este mensaje, el código con logs detallados se está ejecutando correctamente.
+      </div>
       
       {mensaje && (
         <div className={`mb-4 p-3 rounded ${
