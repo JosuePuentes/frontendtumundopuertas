@@ -85,8 +85,19 @@ const TerminarAsignacion: React.FC = () => {
           `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
         );
         const data = await res.json();
-        setAsignaciones(data);
-      } catch (err) {}
+        
+        // Filtrar asignaciones terminadas del backend
+        const asignacionesActivas = data.filter((asig: any) => 
+          asig.estado_subestado === "en_proceso" && asig.estado !== "terminado"
+        );
+        
+        console.log('Asignaciones iniciales:', data.length);
+        console.log('Asignaciones activas iniciales:', asignacionesActivas.length);
+        
+        setAsignaciones(asignacionesActivas);
+      } catch (err) {
+        console.error('Error al cargar asignaciones:', err);
+      }
       setLoading(false);
     };
     if (identificador) fetchAsignaciones();
@@ -183,7 +194,14 @@ const TerminarAsignacion: React.FC = () => {
                         onClick={async () => {
                           if (confirm(`¿Estás seguro de que quieres marcar como terminado el artículo "${asig.descripcionitem}"?`)) {
                             // Marcar inmediatamente como terminado en la UI
+                            console.log('=== INICIANDO TERMINACIÓN ===');
                             console.log('Marcando artículo como terminado:', asig.item_id);
+                            console.log('Estado actual del artículo:', {
+                              item_id: asig.item_id,
+                              estado_subestado: asig.estado_subestado,
+                              estado: asig.estado
+                            });
+                            
                             setArticuloTerminado(asig.item_id);
                             console.log('Estado articuloTerminado actualizado a:', asig.item_id);
                             
@@ -195,6 +213,8 @@ const TerminarAsignacion: React.FC = () => {
                               estado: "terminado",
                               fecha_fin: new Date().toISOString(),
                             });
+                            
+                            console.log('=== TERMINACIÓN COMPLETADA ===');
                           }
                         }}
                         disabled={terminando || articuloTerminado === asig.item_id}
