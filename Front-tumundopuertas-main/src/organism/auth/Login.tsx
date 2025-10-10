@@ -52,41 +52,41 @@ const Login: React.FC = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-gray-600 text-white overflow-hidden relative">
-			{/* Glitch Background Effects */}
+		<div className="min-h-screen bg-gray-900 text-white overflow-hidden relative">
+			{/* Futuristic Glitch Background - Crack Lines */}
 			<div className="absolute inset-0">
-				{/* Glitch Circuit Lines - Broken/Distorted */}
-				<div className="absolute top-20 left-0 w-full h-px bg-cyan-400 opacity-60" style={{
-					clipPath: 'polygon(0% 0%, 15% 0%, 25% 100%, 35% 0%, 50% 0%, 60% 100%, 70% 0%, 85% 0%, 100% 0%)'
+				{/* Horizontal Crack Lines - Futuristic */}
+				<div className="absolute top-20 left-0 w-full h-px bg-cyan-400 opacity-70" style={{
+					clipPath: 'polygon(0% 0%, 20% 0%, 25% 100%, 30% 0%, 45% 0%, 50% 100%, 55% 0%, 70% 0%, 75% 100%, 80% 0%, 100% 0%)'
 				}}></div>
-				<div className="absolute top-40 left-0 w-full h-px bg-cyan-400 opacity-40" style={{
-					clipPath: 'polygon(0% 0%, 20% 0%, 30% 100%, 45% 0%, 55% 100%, 65% 0%, 80% 0%, 100% 0%)'
+				<div className="absolute top-40 left-0 w-full h-px bg-cyan-400 opacity-50" style={{
+					clipPath: 'polygon(0% 0%, 15% 0%, 20% 100%, 35% 0%, 40% 100%, 45% 0%, 60% 0%, 65% 100%, 70% 0%, 85% 0%, 100% 0%)'
 				}}></div>
-				<div className="absolute bottom-40 left-0 w-full h-px bg-cyan-400 opacity-50" style={{
-					clipPath: 'polygon(0% 0%, 10% 0%, 20% 100%, 40% 0%, 50% 100%, 60% 0%, 75% 0%, 90% 0%, 100% 0%)'
+				<div className="absolute bottom-40 left-0 w-full h-px bg-cyan-400 opacity-60" style={{
+					clipPath: 'polygon(0% 0%, 10% 0%, 15% 100%, 30% 0%, 35% 100%, 40% 0%, 55% 0%, 60% 100%, 65% 0%, 80% 0%, 85% 100%, 100% 0%)'
 				}}></div>
-				<div className="absolute bottom-20 left-0 w-full h-px bg-cyan-400 opacity-30" style={{
-					clipPath: 'polygon(0% 0%, 25% 0%, 35% 100%, 50% 0%, 65% 100%, 75% 0%, 100% 0%)'
-				}}></div>
-				
-				{/* Vertical Glitch Lines */}
-				<div className="absolute left-20 top-0 w-px h-full bg-cyan-400 opacity-40" style={{
-					clipPath: 'polygon(0% 0%, 100% 15%, 0% 25%, 100% 35%, 0% 50%, 100% 60%, 0% 70%, 100% 85%, 0% 100%)'
-				}}></div>
-				<div className="absolute right-20 top-0 w-px h-full bg-cyan-400 opacity-30" style={{
-					clipPath: 'polygon(0% 0%, 100% 20%, 0% 30%, 100% 45%, 0% 55%, 100% 65%, 0% 80%, 100% 100%)'
+				<div className="absolute bottom-20 left-0 w-full h-px bg-cyan-400 opacity-40" style={{
+					clipPath: 'polygon(0% 0%, 25% 0%, 30% 100%, 35% 0%, 50% 0%, 55% 100%, 60% 0%, 75% 0%, 80% 100%, 100% 0%)'
 				}}></div>
 				
-				{/* Glitch Grid Pattern */}
-				<div className="absolute inset-0 opacity-10" style={{
-					backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.2'%3E%3Cpath d='M0 0h20v20H0z'/%3E%3Cpath d='M40 0h20v20H40z'/%3E%3Cpath d='M20 20h20v20H20z'/%3E%3Cpath d='M0 40h20v20H0z'/%3E%3Cpath d='M40 40h20v20H40z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-					backgroundSize: '60px 60px'
+				{/* Vertical Crack Lines - Futuristic */}
+				<div className="absolute left-20 top-0 w-px h-full bg-cyan-400 opacity-50" style={{
+					clipPath: 'polygon(0% 0%, 100% 20%, 0% 25%, 100% 40%, 0% 45%, 100% 60%, 0% 65%, 100% 80%, 0% 100%)'
+				}}></div>
+				<div className="absolute right-20 top-0 w-px h-full bg-cyan-400 opacity-40" style={{
+					clipPath: 'polygon(0% 0%, 100% 15%, 0% 20%, 100% 35%, 0% 40%, 100% 55%, 0% 60%, 100% 75%, 0% 80%, 100% 100%)'
 				}}></div>
 				
-				{/* Glitch Noise Overlay */}
-				<div className="absolute inset-0 opacity-5" style={{
-					backgroundImage: `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.1'%3E%3Cpath d='M0 0h2v2H0z'/%3E%3Cpath d='M10 5h2v2h-2z'/%3E%3Cpath d='M25 15h2v2h-2z'/%3E%3Cpath d='M40 8h2v2h-2z'/%3E%3Cpath d='M60 20h2v2h-2z'/%3E%3Cpath d='M80 12h2v2h-2z'/%3E%3Cpath d='M95 25h2v2h-2z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-					backgroundSize: '100px 100px'
+				{/* Futuristic Grid Pattern - Minimal */}
+				<div className="absolute inset-0 opacity-8" style={{
+					backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.1'%3E%3Cpath d='M0 0h1v1H0z'/%3E%3Cpath d='M20 20h1v1h-1z'/%3E%3Cpath d='M40 40h1v1h-1z'/%3E%3Cpath d='M60 60h1v1h-1z'/%3E%3Cpath d='M79 79h1v1h-1z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+					backgroundSize: '80px 80px'
+				}}></div>
+				
+				{/* Subtle Glitch Noise */}
+				<div className="absolute inset-0 opacity-3" style={{
+					backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.05'%3E%3Cpath d='M0 0h1v1H0z'/%3E%3Cpath d='M50 25h1v1h-1z'/%3E%3Cpath d='M100 75h1v1h-1z'/%3E%3Cpath d='M150 125h1v1h-1z'/%3E%3Cpath d='M199 199h1v1h-1z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+					backgroundSize: '200px 200px'
 				}}></div>
 			</div>
 			
