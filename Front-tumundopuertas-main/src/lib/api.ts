@@ -88,22 +88,26 @@ export const deleteMetodoPago = async (id: string) => {
   });
 };
 
-export const cargarDinero = async (id: string, monto: number) => {
-  return api(`/metodos-pago/${id}/cargar`, {
+export const depositarDinero = async (id: string, monto: number, concepto: string) => {
+  return api(`/metodos-pago/${id}/deposito`, {
     method: 'POST',
-    body: JSON.stringify({ monto }),
+    body: JSON.stringify({ monto, concepto }),
   });
 };
 
-export const transferirDinero = async (id: string, monto: number) => {
+export const transferirDinero = async (id: string, monto: number, concepto: string) => {
   return api(`/metodos-pago/${id}/transferir`, {
     method: 'POST',
-    body: JSON.stringify({ monto }),
+    body: JSON.stringify({ monto, concepto }),
   });
 };
 
-export const getTransacciones = async (id: string) => {
-  return api(`/metodos-pago/${id}/transacciones`);
+export const getHistorialMetodo = async (id: string) => {
+  return api(`/metodos-pago/${id}/historial`);
+};
+
+export const getHistorialCompleto = async () => {
+  return api(`/metodos-pago/historial-completo`);
 };
 
 

@@ -15,6 +15,7 @@ interface TransferirDineroProps {
 
 const TransferirDinero = ({ isOpen, onClose, onSuccess, metodo }: TransferirDineroProps) => {
   const [monto, setMonto] = useState(0);
+  const [concepto, setConcepto] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,8 +24,10 @@ const TransferirDinero = ({ isOpen, onClose, onSuccess, metodo }: TransferirDine
     setLoading(true);
     setError(null);
     try {
-      const updatedMetodo = await transferirDinero(metodo.id!, monto);
+      const updatedMetodo = await transferirDinero(metodo.id!, monto, concepto);
       onSuccess(updatedMetodo);
+      setMonto(0);
+      setConcepto("");
       onClose();
     } catch (err: any) {
       setError(err.message || "Error al transferir dinero");
@@ -35,7 +38,7 @@ const TransferirDinero = ({ isOpen, onClose, onSuccess, metodo }: TransferirDine
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="bg-white">
         <DialogHeader>
           <DialogTitle>Transferir Dinero de {metodo.nombre}</DialogTitle>
         </DialogHeader>
@@ -43,12 +46,36 @@ const TransferirDinero = ({ isOpen, onClose, onSuccess, metodo }: TransferirDine
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="monto" className="text-right">Monto</Label>
-              <Input id="monto" type="number" value={monto} onChange={(e) => setMonto(Number(e.target.value))} className="col-span-3" />
+              <Input 
+                id="monto" 
+                type="number" 
+                value={monto} 
+                onChange={(e) => setMonto(Number(e.target.value))} 
+                className="col-span-3" 
+                required
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="concepto" className="text-right">Concepto</Label>
+              <Input 
+                id="concepto" 
+                type="text" 
+                value={concepto} 
+                onChange={(e) => setConcepto(e.target.value)} 
+                className="col-span-3" 
+                placeholder="Ej: Pago a proveedor"
+                required
+              />
             </div>
           </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
-          <div className="flex justify-end">
-            <Button type="submit" disabled={loading}>{loading ? "Transfiriendo..." : "Transferir"}</Button>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Transfiriendo..." : "Transferir"}
+            </Button>
           </div>
         </form>
       </DialogContent>

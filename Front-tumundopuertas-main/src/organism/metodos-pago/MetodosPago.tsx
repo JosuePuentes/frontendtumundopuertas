@@ -8,6 +8,7 @@ import CrearMetodoPago from "./CrearMetodoPago";
 import ModificarMetodoPago from "./ModificarMetodoPago";
 import CargarDinero from "./CargarDinero";
 import TransferirDinero from "./TransferirDinero";
+import HistorialTransacciones from "./HistorialTransacciones";
 
 const MetodosPago = () => {
   const { metodos, loading, error, removeMetodoPago, fetchMetodosPago, updateMetodoSaldo } = useMetodosPago();
@@ -36,6 +37,7 @@ const MetodosPago = () => {
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
   const [isCargarModalOpen, setCargarModalOpen] = useState(false);
   const [isTransferirModalOpen, setTransferirModalOpen] = useState(false);
+  const [isHistorialModalOpen, setHistorialModalOpen] = useState(false);
   const [selectedMetodo, setSelectedMetodo] = useState<MetodoPago | null>(null);
 
   const handleEdit = (metodo: MetodoPago) => {
@@ -51,6 +53,11 @@ const MetodosPago = () => {
   const handleTransferir = (metodo: MetodoPago) => {
     setSelectedMetodo(metodo);
     setTransferirModalOpen(true);
+  };
+
+  const handleHistorial = (metodo: MetodoPago) => {
+    setSelectedMetodo(metodo);
+    setHistorialModalOpen(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -99,15 +106,23 @@ const MetodosPago = () => {
                 <TableCell>{metodo.moneda}</TableCell>
                 <TableCell>{metodo.saldo.toFixed(2)}</TableCell>
                 <TableCell>
-                  <Button variant="outline" size="sm" onClick={() => handleEdit(metodo)}>
-                    Editar
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDelete(metodo.id!)}>
-                    Eliminar
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => handleCargar(metodo)}>Cargar</Button>
-                  <Button variant="outline" size="sm" onClick={() => handleTransferir(metodo)}>Transferir</Button>
-                  <Button variant="outline" size="sm">Historial</Button>
+                  <div className="flex gap-1 flex-wrap">
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(metodo)}>
+                      Editar
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(metodo.id!)}>
+                      Eliminar
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCargar(metodo)}>
+                      Depositar
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleTransferir(metodo)}>
+                      Transferir
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleHistorial(metodo)}>
+                      Historial
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -143,6 +158,14 @@ const MetodosPago = () => {
             onSuccess={(updatedMetodo: MetodoPago) => {
               updateMetodoSaldo(selectedMetodo.id!, updatedMetodo);
             }}
+            metodo={selectedMetodo}
+          />
+        )}
+
+        {selectedMetodo && (
+          <HistorialTransacciones
+            isOpen={isHistorialModalOpen}
+            onClose={() => setHistorialModalOpen(false)}
             metodo={selectedMetodo}
           />
         )}

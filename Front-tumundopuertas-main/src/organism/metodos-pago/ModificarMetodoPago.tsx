@@ -49,7 +49,7 @@ const ModificarMetodoPago = ({ isOpen, onClose, onUpdated, metodo }: ModificarMe
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="bg-white">
         <DialogHeader>
           <DialogTitle>Modificar Método de Pago</DialogTitle>
         </DialogHeader>
