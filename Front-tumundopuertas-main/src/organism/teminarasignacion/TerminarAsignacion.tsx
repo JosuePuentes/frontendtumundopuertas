@@ -107,11 +107,24 @@ const TerminarAsignacion: React.FC = () => {
       ) : (
         <ul className="space-y-6">
           {asignaciones
-            .filter((asig) => 
-              asig.estado_subestado === "en_proceso" && 
-              asig.estado !== "terminado" && 
-              articuloTerminado !== asig.item_id
-            )
+            .filter((asig) => {
+              const isEnProceso = asig.estado_subestado === "en_proceso";
+              const isNotTerminado = asig.estado !== "terminado";
+              const isNotTerminadoLocal = articuloTerminado !== asig.item_id;
+              const shouldShow = isEnProceso && isNotTerminado && isNotTerminadoLocal;
+              
+              console.log(`Artículo ${asig.item_id}:`, {
+                isEnProceso,
+                isNotTerminado,
+                isNotTerminadoLocal,
+                shouldShow,
+                articuloTerminado,
+                estado_subestado: asig.estado_subestado,
+                estado: asig.estado
+              });
+              
+              return shouldShow;
+            })
             .map((asig, idx) => (
               <li key={idx}>
                 <Card className="border border-gray-200 shadow-sm">
@@ -167,7 +180,9 @@ const TerminarAsignacion: React.FC = () => {
                         onClick={async () => {
                           if (confirm(`¿Estás seguro de que quieres marcar como terminado el artículo "${asig.descripcionitem}"?`)) {
                             // Marcar inmediatamente como terminado en la UI
+                            console.log('Marcando artículo como terminado:', asig.item_id);
                             setArticuloTerminado(asig.item_id);
+                            console.log('Estado articuloTerminado actualizado a:', asig.item_id);
                             
                             await terminarEmpleado({
                               orden: asig.orden,
