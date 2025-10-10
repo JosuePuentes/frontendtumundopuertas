@@ -217,7 +217,7 @@ const VistaPrevia: React.FC<VistaPreviaProps> = ({ configuracion }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 h-full flex flex-col">
       {/* Botones de acción */}
       <div className="flex justify-end gap-3 mb-6">
         <Button variant="outline" onClick={handleDescargar}>
@@ -231,16 +231,20 @@ const VistaPrevia: React.FC<VistaPreviaProps> = ({ configuracion }) => {
       </div>
 
       {/* Vista previa del documento */}
-      <Card className="print:shadow-none print:border-0 w-full">
-        <CardContent className="p-8 print:p-4 min-h-[600px]">
-          {renderizarEmpresa()}
-          {renderizarDocumento()}
-          {renderizarCliente()}
-          {renderizarItems()}
-          {renderizarTotales()}
-          {renderizarPie()}
-        </CardContent>
-      </Card>
+      <div className="flex-1 overflow-y-auto">
+        <Card className="print:shadow-none print:border-0 w-full h-full">
+          <CardContent className="p-8 print:p-4 min-h-full">
+            <div className="max-w-4xl mx-auto">
+              {renderizarEmpresa()}
+              {renderizarDocumento()}
+              {renderizarCliente()}
+              {renderizarItems()}
+              {renderizarTotales()}
+              {renderizarPie()}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Información adicional */}
       <div className="text-sm text-gray-500 text-center">

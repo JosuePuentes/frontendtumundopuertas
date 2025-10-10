@@ -364,7 +364,7 @@ const NotaEntregaImpresion: React.FC<NotaEntregaImpresionProps> = ({
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="space-y-6">
+            <div className="space-y-6 h-full flex flex-col">
               {/* Selector de formato */}
               <div>
                 <label className="block text-sm font-medium mb-2">Formato de Impresión</label>
@@ -390,13 +390,17 @@ const NotaEntregaImpresion: React.FC<NotaEntregaImpresionProps> = ({
 
               {/* Vista previa */}
               {formatoSeleccionado && (
-                <div>
+                <div className="flex-1 flex flex-col">
                   <h3 className="text-lg font-semibold mb-3">Vista Previa</h3>
-                  <Card className="w-full">
-                    <CardContent className="p-6 min-h-[600px]">
-                      {renderizarVistaPrevia()}
-                    </CardContent>
-                  </Card>
+                  <div className="flex-1 overflow-y-auto">
+                    <Card className="w-full h-full">
+                      <CardContent className="p-6 min-h-full">
+                        <div className="max-w-4xl mx-auto">
+                          {renderizarVistaPrevia()}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               )}
 
