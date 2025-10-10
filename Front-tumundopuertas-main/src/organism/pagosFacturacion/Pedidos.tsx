@@ -349,6 +349,18 @@ const Pedidos: React.FC = () => {
           </div>
         )}
       </CardContent>
+      
+      {/* Modal de Preliminar */}
+      {pedidoSeleccionado && (
+        <PreliminarImpresion
+          isOpen={isPreliminarOpen}
+          onClose={() => {
+            setIsPreliminarOpen(false);
+            setPedidoSeleccionado(null);
+          }}
+          pedido={pedidoSeleccionado}
+        />
+      )}
     </Card>
   );
 };
