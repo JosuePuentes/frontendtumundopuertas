@@ -46,73 +46,113 @@ export const useDashboardAsignaciones = () => {
     try {
       console.log('🔍 Intentando obtener datos de producción...');
       
-      // Intentar diferentes endpoints para obtener datos
-      const endpoints = [
-        `${getApiUrl()}/pedidos/comisiones/produccion/enproceso`,
-        `${getApiUrl()}/pedidos/comisiones/produccion`,
-        `${getApiUrl()}/pedidos/produccion/enproceso`,
-        `${getApiUrl()}/pedidos/enproceso`
+      // Obtener datos de los módulos específicos donde ya hay asignaciones
+      console.log('🔍 Obteniendo datos de módulos específicos con asignaciones...');
+      
+      const [herreriaRes, masillarRes, prepararRes] = await Promise.all([
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=herreria`).catch(() => ({ ok: false })),
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=masillar`).catch(() => ({ ok: false })),
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=preparar`).catch(() => ({ ok: false }))
+      ]);
+
+      console.log('📊 Respuestas de módulos:', {
+        herreria: { status: herreriaRes.ok ? (herreriaRes as Response).status : 'error', ok: herreriaRes.ok },
+        masillar: { status: masillarRes.ok ? (masillarRes as Response).status : 'error', ok: masillarRes.ok },
+        preparar: { status: prepararRes.ok ? (prepararRes as Response).status : 'error', ok: prepararRes.ok }
+      });
+
+      const [herreriaData, masillarData, prepararData] = await Promise.all([
+        herreriaRes.ok ? (herreriaRes as Response).json() : Promise.resolve([]),
+        masillarRes.ok ? (masillarRes as Response).json() : Promise.resolve([]),
+        prepararRes.ok ? (prepararRes as Response).json() : Promise.resolve([])
+      ]);
+
+      console.log('📋 Datos recibidos por módulo:', {
+        herreria: Array.isArray(herreriaData) ? herreriaData.length : 'No es array',
+        masillar: Array.isArray(masillarData) ? masillarData.length : 'No es array',
+        preparar: Array.isArray(prepararData) ? prepararData.length : 'No es array'
+      });
+
+      // Combinar todos los datos de los módulos
+      const datosEncontrados = [
+        ...(Array.isArray(herreriaData) ? herreriaData : []),
+        ...(Array.isArray(masillarData) ? masillarData : []),
+        ...(Array.isArray(prepararData) ? prepararData : [])
       ];
-      
-      let datosEncontrados = [];
-      
-      for (const endpoint of endpoints) {
-        try {
-          console.log(`🔍 Probando endpoint: ${endpoint}`);
-          const response = await fetch(endpoint);
-          console.log(`📊 Respuesta del endpoint ${endpoint}:`, response.status, response.ok);
-          
-          if (response.ok) {
-            const data = await response.json();
-            console.log(`📋 Datos recibidos de ${endpoint}:`, data);
-            
-            // Verificar si los datos están en formato de respuesta con asignaciones
-            let datosArray = [];
-            if (data.asignaciones && Array.isArray(data.asignaciones)) {
-              datosArray = data.asignaciones;
-              console.log(`📦 Datos encontrados en data.asignaciones:`, datosArray.length, 'elementos');
-            } else if (Array.isArray(data)) {
-              datosArray = data;
-              console.log(`📦 Datos encontrados como array directo:`, datosArray.length, 'elementos');
-            }
-            
-            if (datosArray.length > 0) {
-              datosEncontrados = datosArray;
-              console.log(`✅ Datos encontrados en ${endpoint}:`, datosArray.length, 'elementos');
-              break;
-            }
-          }
-        } catch (err) {
-          console.log(`❌ Error en endpoint ${endpoint}:`, err);
-        }
-      }
       
       if (datosEncontrados.length === 0) {
         console.log('⚠️ No se encontraron datos en ningún endpoint');
         return [];
       }
       
-      // Normalizar los datos encontrados
-      const asignacionesNormalizadas = datosEncontrados.map((item: any) => {
-        console.log('🔍 Normalizando item:', item);
-        
-        return {
-          _id: item._id || `${item.pedido_id}_${item.item_id}`,
-          pedido_id: item.pedido_id,
-          item_id: item.item_id,
-          empleado_id: item.empleado_id || item.empleado?.identificador || item.empleado?.id,
-          empleado_nombre: item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar",
-          modulo: item.modulo || item.estado_subestado || item.subestado || "herreria",
-          estado: item.estado || item.estado_asignacion || "en_proceso",
-          fecha_asignacion: item.fecha_asignacion || item.fecha || item.created_at || new Date().toISOString(),
-          fecha_fin: item.fecha_fin || item.finished_at,
-          descripcionitem: item.descripcionitem || item.descripcion || item.item_descripcion || "Sin descripción",
-          detalleitem: item.detalleitem || item.detalle || item.item_detalle,
-          cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || item.cliente?.nombre || "Sin cliente",
-          costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
-          imagenes: item.imagenes || item.images || []
-        };
-      });
+      // Normalizar los datos encontrados con información del módulo
+      const asignacionesNormalizadas = [];
+      
+      // Procesar datos de herreria
+      if (Array.isArray(herreriaData)) {
+        herreriaData.forEach((item: any) => {
+          asignacionesNormalizadas.push({
+            _id: item._id || `${item.pedido_id}_${item.item_id}`,
+            pedido_id: item.pedido_id,
+            item_id: item.item_id,
+            empleado_id: item.empleado_id || item.empleado?.identificador || item.empleado?.id,
+            empleado_nombre: item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar",
+            modulo: "herreria",
+            estado: item.estado || item.estado_asignacion || "en_proceso",
+            fecha_asignacion: item.fecha_asignacion || item.fecha || item.created_at || new Date().toISOString(),
+            fecha_fin: item.fecha_fin || item.finished_at,
+            descripcionitem: item.descripcionitem || item.descripcion || item.item_descripcion || "Sin descripción",
+            detalleitem: item.detalleitem || item.detalle || item.item_detalle,
+            cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || item.cliente?.nombre || "Sin cliente",
+            costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
+            imagenes: item.imagenes || item.images || []
+          });
+        });
+      }
+      
+      // Procesar datos de masillar
+      if (Array.isArray(masillarData)) {
+        masillarData.forEach((item: any) => {
+          asignacionesNormalizadas.push({
+            _id: item._id || `${item.pedido_id}_${item.item_id}`,
+            pedido_id: item.pedido_id,
+            item_id: item.item_id,
+            empleado_id: item.empleado_id || item.empleado?.identificador || item.empleado?.id,
+            empleado_nombre: item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar",
+            modulo: "masillar",
+            estado: item.estado || item.estado_asignacion || "en_proceso",
+            fecha_asignacion: item.fecha_asignacion || item.fecha || item.created_at || new Date().toISOString(),
+            fecha_fin: item.fecha_fin || item.finished_at,
+            descripcionitem: item.descripcionitem || item.descripcion || item.item_descripcion || "Sin descripción",
+            detalleitem: item.detalleitem || item.detalle || item.item_detalle,
+            cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || item.cliente?.nombre || "Sin cliente",
+            costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
+            imagenes: item.imagenes || item.images || []
+          });
+        });
+      }
+      
+      // Procesar datos de preparar
+      if (Array.isArray(prepararData)) {
+        prepararData.forEach((item: any) => {
+          asignacionesNormalizadas.push({
+            _id: item._id || `${item.pedido_id}_${item.item_id}`,
+            pedido_id: item.pedido_id,
+            item_id: item.item_id,
+            empleado_id: item.empleado_id || item.empleado?.identificador || item.empleado?.id,
+            empleado_nombre: item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar",
+            modulo: "preparar",
+            estado: item.estado || item.estado_asignacion || "en_proceso",
+            fecha_asignacion: item.fecha_asignacion || item.fecha || item.created_at || new Date().toISOString(),
+            fecha_fin: item.fecha_fin || item.finished_at,
+            descripcionitem: item.descripcionitem || item.descripcion || item.item_descripcion || "Sin descripción",
+            detalleitem: item.detalleitem || item.detalle || item.item_detalle,
+            cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || item.cliente?.nombre || "Sin cliente",
+            costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
+            imagenes: item.imagenes || item.images || []
+          });
+        });
+      }
       
       console.log('✅ Asignaciones normalizadas:', asignacionesNormalizadas.length);
       return asignacionesNormalizadas;

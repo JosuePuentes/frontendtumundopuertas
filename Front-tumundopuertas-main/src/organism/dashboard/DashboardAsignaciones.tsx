@@ -131,16 +131,12 @@ const DashboardAsignaciones: React.FC = () => {
   // Función para probar endpoints manualmente
   const probarEndpoints = async () => {
     const endpoints = [
-      '/pedidos/comisiones/produccion/enproceso',
-      '/pedidos/comisiones/produccion',
-      '/pedidos/produccion/enproceso',
-      '/pedidos/enproceso',
       '/pedidos/comisiones/produccion/enproceso/?modulo=herreria',
       '/pedidos/comisiones/produccion/enproceso/?modulo=masillar',
       '/pedidos/comisiones/produccion/enproceso/?modulo=preparar'
     ];
     
-    console.log('🔍 PROBANDO ENDPOINTS MANUALMENTE...');
+    console.log('🔍 PROBANDO ENDPOINTS DE MÓDULOS ESPECÍFICOS...');
     
     for (const endpoint of endpoints) {
       try {
