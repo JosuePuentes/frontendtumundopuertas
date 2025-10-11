@@ -107,6 +107,24 @@ export const useDashboardAsignaciones = () => {
           primerItem: todasAsignaciones[0],
           segundoItem: todasAsignaciones[1] || 'No hay segundo item'
         });
+        
+        // Mostrar estructura completa del primer item
+        console.log('🔍 Estructura completa del primer item:', JSON.stringify(todasAsignaciones[0], null, 2));
+        
+        // Buscar items que tengan información de empleado
+        const itemsConEmpleado = todasAsignaciones.filter(item => 
+          item.empleado_id || 
+          item.empleado_nombre || 
+          item.empleado || 
+          item.empleado?.id || 
+          item.empleado?.identificador ||
+          item.empleado?.nombre
+        );
+        
+        console.log('🔍 Items que podrían tener empleado:', itemsConEmpleado.length);
+        if (itemsConEmpleado.length > 0) {
+          console.log('🔍 Primer item con posible empleado:', JSON.stringify(itemsConEmpleado[0], null, 2));
+        }
       }
       
       // Normalizar las asignaciones
@@ -158,6 +176,19 @@ export const useDashboardAsignaciones = () => {
         // Log para debugging de empleados
         if (empleado_nombre !== "Sin asignar") {
           console.log(`👤 Empleado encontrado: ${empleado_nombre} (ID: ${empleado_id})`);
+        } else {
+          // Log detallado cuando NO se encuentra empleado (solo los primeros 3 para evitar spam)
+          const index = todasAsignaciones.indexOf(item);
+          if (index < 3) {
+            console.log(`❌ Sin empleado - Item ${index + 1}:`, {
+              pedido_id: item.pedido_id,
+              item_id: item.item_id,
+              empleado_id: item.empleado_id,
+              empleado_nombre: item.empleado_nombre,
+              empleado: item.empleado,
+              keys: Object.keys(item)
+            });
+          }
         }
         
         return asignacionNormalizada;
