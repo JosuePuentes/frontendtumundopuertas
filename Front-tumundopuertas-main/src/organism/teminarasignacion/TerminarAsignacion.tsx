@@ -44,8 +44,10 @@ const TerminarAsignacion: React.FC = () => {
   const VERSION_ACTUAL = "4.0-BOTON-REFRESCAR-Y-LOGS";
   console.log('🔥 VERSIÓN ACTUAL:', VERSION_ACTUAL);
   
-  // FORZAR ALERT VISUAL
-  alert('🚀 VERSIÓN 4.0 DESPLEGADA - CON BOTÓN REFRESCAR Y LOGS DETALLADOS');
+  // FORZAR ALERT VISUAL - CAMBIO DRÁSTICO
+  useEffect(() => {
+    alert('🚀🚀🚀 VERSIÓN 4.0 DESPLEGADA 🚀🚀🚀\n\nSi ves este mensaje, el código actualizado se está ejecutando correctamente.\n\nDeberías ver:\n- Mensaje azul en la página\n- Botón "Refrescar" en la parte superior derecha\n- Logs detallados en la consola');
+  }, []);
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
     onSuccess: (data) => {
@@ -174,13 +176,16 @@ const TerminarAsignacion: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto mt-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Asignaciones en proceso</h2>
+        <div>
+          <h2 className="text-2xl font-bold">Asignaciones en proceso</h2>
+          <p className="text-sm text-blue-600 font-bold">🚀 VERSIÓN 4.0 - CON BOTÓN REFRESCAR Y LOGS DETALLADOS</p>
+        </div>
         <Button
           onClick={fetchAsignaciones}
           disabled={loading}
           variant="outline"
           size="sm"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-blue-500 text-white hover:bg-blue-600"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refrescar
