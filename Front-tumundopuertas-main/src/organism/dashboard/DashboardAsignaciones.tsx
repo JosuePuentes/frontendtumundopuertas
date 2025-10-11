@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RefreshCw, Eye, CheckCircle, Clock, AlertCircle, TrendingUp, Package } from "lucide-react";
 import { useDashboardAsignaciones } from "@/hooks/useDashboardAsignaciones";
 import ImageDisplay from "@/upfile/ImageDisplay";
@@ -115,7 +117,8 @@ const DashboardAsignaciones: React.FC = () => {
   const [verificandoPin, setVerificandoPin] = useState(false);
   
   // Estados para filtros
-  const [filtroEmpleado, setFiltroEmpleado] = useState("");
+  const [modulosSeleccionados, setModulosSeleccionados] = useState<string[]>([]);
+  const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState("");
   const [filtroFecha, setFiltroFecha] = useState("");
   
   const {
@@ -158,7 +161,7 @@ const DashboardAsignaciones: React.FC = () => {
     try {
       const data = await fetchAsignaciones();
       setAsignaciones(data);
-      aplicarFiltros(data, filtroEmpleado, filtroFecha);
+      aplicarFiltros(data, modulosSeleccionados, empleadoSeleccionado, filtroFecha);
       setMensaje(`Cargadas ${data.length} asignaciones`);
       setTimeout(() => setMensaje(""), 3000);
     } catch (err) {
@@ -169,41 +172,21 @@ const DashboardAsignaciones: React.FC = () => {
   };
 
   // Función para aplicar filtros
-  const aplicarFiltros = (datos: Asignacion[], empleado: string, fecha: string) => {
+  const aplicarFiltros = (datos: Asignacion[], modulos: string[], empleado: string, fecha: string) => {
     let filtrados = [...datos];
 
-    // Filtro por empleado
+    // Filtro por módulos
+    if (modulos.length > 0) {
+      filtrados = filtrados.filter(asignacion => 
+        modulos.includes(asignacion.modulo)
+      );
+    }
+
+    // Filtro por empleado específico
     if (empleado.trim()) {
-      console.log(`🔍 Filtrando por empleado: "${empleado}"`);
-      console.log(`📊 Total asignaciones antes del filtro: ${filtrados.length}`);
-      
-      // Mostrar algunos nombres de empleados para debugging
-      const nombresEmpleados = filtrados.map(a => a.empleado_nombre).slice(0, 5);
-      console.log(`👥 Primeros 5 nombres de empleados:`, nombresEmpleados);
-      
-      filtrados = filtrados.filter(asignacion => {
-        const nombreEmpleado = asignacion.empleado_nombre.toLowerCase();
-        const filtroEmpleado = empleado.toLowerCase().trim();
-        
-        // Buscar coincidencias más precisas
-        // Opción 1: Búsqueda exacta por palabra completa
-        const palabrasNombre = nombreEmpleado.split(' ');
-        const coincideExacta = palabrasNombre.some(palabra => palabra === filtroEmpleado);
-        
-        // Opción 2: Búsqueda que empiece con el filtro (más precisa)
-        const coincideInicio = palabrasNombre.some(palabra => palabra.startsWith(filtroEmpleado));
-        
-        // Usar la búsqueda más precisa
-        const coincide = coincideExacta || coincideInicio;
-        
-        if (coincide) {
-          console.log(`✅ Coincidencia encontrada: "${asignacion.empleado_nombre}" (buscando: "${filtroEmpleado}")`);
-        }
-        
-        return coincide;
-      });
-      
-      console.log(`📊 Asignaciones después del filtro: ${filtrados.length}`);
+      filtrados = filtrados.filter(asignacion => 
+        asignacion.empleado_nombre === empleado
+      );
     }
 
     // Filtro por fecha
@@ -219,27 +202,52 @@ const DashboardAsignaciones: React.FC = () => {
       });
     }
 
-    console.log(`🔄 Actualizando asignaciones filtradas: ${filtrados.length} asignaciones`);
     setAsignacionesFiltradas(filtrados);
   };
 
   // Manejar cambios en filtros
-  const handleFiltroEmpleadoChange = (value: string) => {
-    console.log(`🎯 Cambiando filtro de empleado a: "${value}"`);
-    setFiltroEmpleado(value);
-    aplicarFiltros(asignaciones, value, filtroFecha);
+  const handleModuloChange = (modulo: string, checked: boolean) => {
+    let nuevosModulos = [...modulosSeleccionados];
+    if (checked) {
+      nuevosModulos.push(modulo);
+    } else {
+      nuevosModulos = nuevosModulos.filter(m => m !== modulo);
+    }
+    setModulosSeleccionados(nuevosModulos);
+    aplicarFiltros(asignaciones, nuevosModulos, empleadoSeleccionado, filtroFecha);
+  };
+
+  const handleEmpleadoChange = (value: string) => {
+    setEmpleadoSeleccionado(value);
+    aplicarFiltros(asignaciones, modulosSeleccionados, value, filtroFecha);
   };
 
   const handleFiltroFechaChange = (value: string) => {
     setFiltroFecha(value);
-    aplicarFiltros(asignaciones, filtroEmpleado, value);
+    aplicarFiltros(asignaciones, modulosSeleccionados, empleadoSeleccionado, value);
   };
 
   // Limpiar filtros
   const limpiarFiltros = () => {
-    setFiltroEmpleado("");
+    setModulosSeleccionados([]);
+    setEmpleadoSeleccionado("");
     setFiltroFecha("");
     setAsignacionesFiltradas(asignaciones);
+  };
+
+  // Obtener empleados únicos de los módulos seleccionados
+  const obtenerEmpleadosDisponibles = () => {
+    if (modulosSeleccionados.length === 0) {
+      return [];
+    }
+    
+    const empleados = asignaciones
+      .filter(a => modulosSeleccionados.includes(a.modulo))
+      .map(a => a.empleado_nombre)
+      .filter((nombre, index, arr) => arr.indexOf(nombre) === index && nombre !== "Sin asignar")
+      .sort();
+    
+    return empleados;
   };
 
   useEffect(() => {
@@ -253,13 +261,6 @@ const DashboardAsignaciones: React.FC = () => {
     }
   }, [asignaciones]);
 
-  // Monitorear cambios en asignaciones filtradas
-  useEffect(() => {
-    console.log(`📊 Estado actual de asignaciones filtradas: ${asignacionesFiltradas.length} asignaciones`);
-    if (asignacionesFiltradas.length > 0) {
-      console.log(`👥 Primeros 3 empleados filtrados:`, asignacionesFiltradas.slice(0, 3).map(a => a.empleado_nombre));
-    }
-  }, [asignacionesFiltradas]);
 
   const handleTerminarAsignacion = (asignacion: Asignacion) => {
     setPinModal({ isOpen: true, asignacion });
@@ -373,26 +374,58 @@ const DashboardAsignaciones: React.FC = () => {
       {/* Filtros */}
       <div className="bg-gray-50 p-4 rounded-lg mb-6">
         <h3 className="text-lg font-semibold mb-4">Filtros</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        {/* Filtro por módulos */}
+        <div className="mb-4">
+          <Label className="text-sm font-medium mb-2 block">Módulos de Producción</Label>
+          <div className="flex gap-4 flex-wrap">
+            {['herreria', 'masillar', 'preparar'].map((modulo) => (
+              <div key={modulo} className="flex items-center space-x-2">
+                <Checkbox
+                  id={`modulo-${modulo}`}
+                  checked={modulosSeleccionados.includes(modulo)}
+                  onCheckedChange={(checked) => handleModuloChange(modulo, checked as boolean)}
+                />
+                <Label htmlFor={`modulo-${modulo}`} className="text-sm">
+                  {modulo.toUpperCase()}
+                </Label>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Filtro por empleado */}
           <div>
             <Label htmlFor="filtro-empleado" className="text-sm font-medium">
-              Filtrar por empleado
+              Empleado
             </Label>
-            <Input
-              id="filtro-empleado"
-              type="text"
-              placeholder="Nombre del empleado..."
-              value={filtroEmpleado}
-              onChange={(e) => handleFiltroEmpleadoChange(e.target.value)}
-              className="mt-1"
-            />
+            <Select
+              value={empleadoSeleccionado}
+              onValueChange={handleEmpleadoChange}
+              disabled={modulosSeleccionados.length === 0}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder={
+                  modulosSeleccionados.length === 0 
+                    ? "Selecciona módulos primero" 
+                    : "Selecciona un empleado"
+                } />
+              </SelectTrigger>
+              <SelectContent>
+                {obtenerEmpleadosDisponibles().map((empleado) => (
+                  <SelectItem key={empleado} value={empleado}>
+                    {empleado}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Filtro por fecha */}
           <div>
             <Label htmlFor="filtro-fecha" className="text-sm font-medium">
-              Filtrar por fecha
+              Fecha de asignación
             </Label>
             <Input
               id="filtro-fecha"
@@ -402,25 +435,27 @@ const DashboardAsignaciones: React.FC = () => {
               className="mt-1"
             />
           </div>
+        </div>
 
-          {/* Botón limpiar filtros */}
-          <div className="flex items-end">
-            <Button
-              onClick={limpiarFiltros}
-              variant="outline"
-              className="w-full"
-              disabled={!filtroEmpleado && !filtroFecha}
-            >
-              Limpiar Filtros
-            </Button>
-          </div>
+        {/* Botón limpiar filtros */}
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={limpiarFiltros}
+            variant="outline"
+            disabled={modulosSeleccionados.length === 0 && !empleadoSeleccionado && !filtroFecha}
+          >
+            Limpiar Filtros
+          </Button>
         </div>
 
         {/* Información de filtros activos */}
-        {(filtroEmpleado || filtroFecha) && (
+        {(modulosSeleccionados.length > 0 || empleadoSeleccionado || filtroFecha) && (
           <div className="mt-3 p-2 bg-blue-50 rounded text-sm text-blue-700">
             <strong>Filtros activos:</strong>
-            {filtroEmpleado && <span> Empleado: "{filtroEmpleado}"</span>}
+            {modulosSeleccionados.length > 0 && (
+              <span> Módulos: {modulosSeleccionados.map(m => m.toUpperCase()).join(', ')}</span>
+            )}
+            {empleadoSeleccionado && <span> Empleado: "{empleadoSeleccionado}"</span>}
             {filtroFecha && <span> Fecha: {new Date(filtroFecha).toLocaleDateString()}</span>}
             <span className="ml-2">
               ({asignacionesFiltradas.length} de {asignaciones.length} asignaciones)
