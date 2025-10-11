@@ -42,20 +42,7 @@ const ResumenVentaDiaria: React.FC = () => {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
 
-  // Función para convertir fecha ISO a formato latinoamericano (DD/MM/YYYY)
-  const convertirFechaLatino = (fechaISO: string): string => {
-    const fecha = new Date(fechaISO);
-    const dia = fecha.getDate().toString().padStart(2, '0');
-    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-    const año = fecha.getFullYear();
-    return `${dia}/${mes}/${año}`;
-  };
-
-  // Función para convertir fecha ISO a formato que coincida con la base de datos
-  const convertirFechaParaBackend = (fechaISO: string): string => {
-    // El backend espera fechas en formato DD/MM/YYYY para comparar con fechas ISO de la BD
-    return convertirFechaLatino(fechaISO);
-  };
+  // El backend espera fechas en formato YYYY-MM-DD directamente
 
   const fetchVentaDiaria = async () => {
     if (!fechaInicio || !fechaFin) {
@@ -66,18 +53,13 @@ const ResumenVentaDiaria: React.FC = () => {
     console.log('🔍 Iniciando consulta de resumen de venta diaria...');
     console.log('📅 Fechas seleccionadas (ISO):', { fechaInicio, fechaFin });
     
-    // Convertir fechas al formato que espera el backend (DD/MM/YYYY)
-    const fechaInicioBackend = convertirFechaParaBackend(fechaInicio);
-    const fechaFinBackend = convertirFechaParaBackend(fechaFin);
-    
-    console.log('📅 Fechas convertidas para backend:', { fechaInicioBackend, fechaFinBackend });
-    
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      params.append("start_date", fechaInicioBackend);
-      params.append("end_date", fechaFinBackend);
+      // El backend espera fecha_inicio y fecha_fin en formato YYYY-MM-DD
+      params.append("fecha_inicio", fechaInicio);
+      params.append("fecha_fin", fechaFin);
 
       const url = `/pedidos/venta-diaria?${params.toString()}`;
       console.log('🌐 URL de consulta:', url);
@@ -85,11 +67,39 @@ const ResumenVentaDiaria: React.FC = () => {
       const responseData: VentaDiariaResponse = await api(url);
       console.log('📊 Datos recibidos del backend:', responseData);
       
-      if (responseData) {
+      if (responseData && responseData.abonos) {
         console.log('✅ Datos procesados:', {
           total_ingresos: responseData.total_ingresos,
           cantidad_abonos: responseData.abonos?.length || 0,
           metodos_pago: Object.keys(responseData.ingresos_por_metodo || {}).length
+        });
+        
+        // Verificar las fechas de los primeros 5 abonos para debugging
+        console.log('🔍 Fechas de los primeros 5 abonos:');
+        responseData.abonos.slice(0, 5).forEach((abono, index) => {
+          const fechaAbono = new Date(abono.fecha);
+          const fechaISO = fechaAbono.toISOString().split('T')[0];
+          const fechaLatino = `${fechaAbono.getDate().toString().padStart(2, '0')}/${(fechaAbono.getMonth() + 1).toString().padStart(2, '0')}/${fechaAbono.getFullYear()}`;
+          console.log(`  ${index + 1}. ${fechaISO} (${fechaLatino}) - ${abono.cliente_nombre} - $${abono.monto}`);
+        });
+        
+        // Verificar si las fechas están en el rango solicitado
+        const fechaInicioDate = new Date(fechaInicio);
+        const fechaFinDate = new Date(fechaFin);
+        console.log('🎯 Rango solicitado:', {
+          inicio: fechaInicioDate.toISOString().split('T')[0],
+          fin: fechaFinDate.toISOString().split('T')[0]
+        });
+        
+        const abonosEnRango = responseData.abonos.filter(abono => {
+          const fechaAbono = new Date(abono.fecha);
+          return fechaAbono >= fechaInicioDate && fechaAbono <= fechaFinDate;
+        });
+        
+        console.log('📊 Análisis de filtrado:', {
+          total_abonos: responseData.abonos.length,
+          abonos_en_rango_solicitado: abonosEnRango.length,
+          filtro_funciona: abonosEnRango.length === responseData.abonos.length ? '❌ NO' : '✅ SÍ'
         });
       }
       
@@ -143,48 +153,24 @@ const ResumenVentaDiaria: React.FC = () => {
   const probarEndpoints = async () => {
     console.log('🔍 Probando diferentes endpoints y formatos de fecha...');
     
-    // Probar endpoint base sin parámetros
-    try {
-      console.log(`📡 Probando endpoint base: /pedidos/venta-diaria`);
-      const responseBase = await api('/pedidos/venta-diaria');
-      console.log(`✅ Base - Respuesta:`, responseBase);
-    } catch (err: any) {
-      console.log(`❌ Base - Error:`, err.message);
-    }
+    const fechaPrueba = '2025-09-15'; // Usar una fecha que sabemos que tiene datos
     
-    // Probar diferentes formatos de parámetros de fecha
-    const fechaInicioLatino = convertirFechaLatino(fechaInicio);
-    const fechaFinLatino = convertirFechaLatino(fechaFin);
-    
-    const formatosFecha = [
-      // Formato ISO (actual)
-      `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`,
-      // Formato latinoamericano (DD/MM/YYYY)
-      `fecha_inicio=${fechaInicioLatino}&fecha_fin=${fechaFinLatino}`,
-      // Formato con start_date y end_date (ISO)
-      `start_date=${fechaInicio}&end_date=${fechaFin}`,
-      // Formato con start_date y end_date (Latino)
-      `start_date=${fechaInicioLatino}&end_date=${fechaFinLatino}`,
-      // Formato con from y to (ISO)
-      `from=${fechaInicio}&to=${fechaFin}`,
-      // Formato con from y to (Latino)
-      `from=${fechaInicioLatino}&to=${fechaFinLatino}`,
-      // Formato con date_start y date_end (ISO)
-      `date_start=${fechaInicio}&date_end=${fechaFin}`,
-      // Formato con date_start y date_end (Latino)
-      `date_start=${fechaInicioLatino}&date_end=${fechaFinLatino}`
+    const endpoints = [
+      `/pedidos/venta-diaria`,
+      `/pedidos/venta-diaria?fecha_inicio=${fechaPrueba}&fecha_fin=${fechaPrueba}`,
+      `/pedidos/venta-diaria?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`
     ];
     
-    for (const formato of formatosFecha) {
+    for (const endpoint of endpoints) {
       try {
-        console.log(`📡 Probando formato: ${formato}`);
-        const response = await api(`/pedidos/venta-diaria?${formato}`);
-        console.log(`✅ ${formato} - Respuesta:`, {
+        console.log(`📡 Probando: ${endpoint}`);
+        const response = await api(endpoint);
+        console.log(`✅ ${endpoint} - Respuesta:`, {
           total_ingresos: response.total_ingresos,
           cantidad_abonos: response.abonos?.length || 0
         });
-      } catch (err: any) {
-        console.log(`❌ ${formato} - Error:`, err.message);
+      } catch (error) {
+        console.log(`❌ ${endpoint} - Error:`, error);
       }
     }
   };
