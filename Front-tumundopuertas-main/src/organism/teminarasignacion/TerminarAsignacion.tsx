@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import useTerminarEmpleado from "@/hooks/useTerminarEmpleado";
 import ImageDisplay from "@/upfile/ImageDisplay";
 import { getApiUrl } from "@/lib/api";
+import { RefreshCw } from "lucide-react";
 interface Asignacion {
   pedido_id: string;
   item_id: string;
@@ -44,72 +46,109 @@ const TerminarAsignacion: React.FC = () => {
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
     onSuccess: (data) => {
-      console.log('Asignación terminada exitosamente:', data);
+      console.log('✅ Asignación terminada exitosamente:', data);
       setMensaje("¡Asignación terminada exitosamente!");
       setTimeout(() => setMensaje(""), 3000);
       
-      // Recargar las asignaciones después de terminar exitosamente
-      setTimeout(() => {
-        const fetchAsignaciones = async () => {
-          setLoading(true);
-          try {
-            console.log('Recargando asignaciones...');
-            const res = await fetch(
-              `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
-            );
-            if (!res.ok) {
-              throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const data = await res.json();
-            console.log('Asignaciones actualizadas:', data);
-            console.log('Cantidad de asignaciones:', data.length);
-            
-            // Filtrar asignaciones terminadas del backend
-            const asignacionesActivas = data.filter((asig: any) => 
-              asig.estado_subestado === "en_proceso" && asig.estado !== "terminado"
-            );
-            console.log('Asignaciones activas después del filtro:', asignacionesActivas.length);
-            
-            setAsignaciones(asignacionesActivas);
-          } catch (err) {
-            console.error('Error al recargar asignaciones:', err);
+      // Recargar las asignaciones inmediatamente y luego cada 2 segundos por 10 segundos
+      const fetchAsignaciones = async () => {
+        setLoading(true);
+        try {
+          console.log('🔄 Recargando asignaciones...');
+          const res = await fetch(
+            `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
+          );
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
           }
-          setLoading(false);
-        };
+          const data = await res.json();
+          console.log('📊 Asignaciones del backend:', data);
+          console.log('📈 Cantidad total:', data.length);
+          
+          // Filtrar asignaciones terminadas del backend
+          const asignacionesActivas = data.filter((asig: any) => 
+            asig.estado_subestado === "en_proceso" && asig.estado !== "terminado"
+          );
+          console.log('✅ Asignaciones activas después del filtro:', asignacionesActivas.length);
+          
+          // Mostrar detalles de cada asignación
+          asignacionesActivas.forEach((asig: any, index: number) => {
+            console.log(`📋 Asignación ${index + 1}:`, {
+              item_id: asig.item_id,
+              estado_subestado: asig.estado_subestado,
+              estado: asig.estado,
+              descripcion: asig.descripcionitem
+            });
+          });
+          
+          setAsignaciones(asignacionesActivas);
+        } catch (err) {
+          console.error('❌ Error al recargar asignaciones:', err);
+        }
+        setLoading(false);
+      };
+      
+      // Recargar inmediatamente
+      if (identificador) fetchAsignaciones();
+      
+      // Recargar cada 2 segundos por 10 segundos para asegurar sincronización
+      const intervalId = setInterval(() => {
         if (identificador) fetchAsignaciones();
-      }, 1000); // Esperar 1 segundo para que el backend procese
+      }, 2000);
+      
+      setTimeout(() => {
+        clearInterval(intervalId);
+        console.log('⏰ Deteniendo recargas automáticas');
+      }, 10000);
     },
     onError: (error) => {
-      console.error('Error al terminar asignación:', error);
+      console.error('❌ Error al terminar asignación:', error);
       setMensaje("Error al terminar la asignación: " + error.message);
       setTimeout(() => setMensaje(""), 5000);
     }
   })
 
-  useEffect(() => {
-    const fetchAsignaciones = async () => {
-      setLoading(true);
-      try {
-        // Consulta asignaciones en proceso para el usuario logueado
-        const res = await fetch(
-          `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
-        );
-        const data = await res.json();
-        
-        // Filtrar asignaciones terminadas del backend
-        const asignacionesActivas = data.filter((asig: any) => 
-          asig.estado_subestado === "en_proceso" && asig.estado !== "terminado"
-        );
-        
-        console.log('Asignaciones iniciales:', data.length);
-        console.log('Asignaciones activas iniciales:', asignacionesActivas.length);
-        
-        setAsignaciones(asignacionesActivas);
-      } catch (err) {
-        console.error('Error al cargar asignaciones:', err);
+  const fetchAsignaciones = async () => {
+    setLoading(true);
+    try {
+      console.log('🔄 Cargando asignaciones para empleado:', identificador);
+      const res = await fetch(
+        `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?empleado_id=${identificador}`
+      );
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
       }
-      setLoading(false);
-    };
+      const data = await res.json();
+      
+      console.log('📊 Respuesta del backend:', data);
+      console.log('📈 Total de asignaciones:', data.length);
+      
+      // Filtrar asignaciones terminadas del backend
+      const asignacionesActivas = data.filter((asig: any) => 
+        asig.estado_subestado === "en_proceso" && asig.estado !== "terminado"
+      );
+      
+      console.log('✅ Asignaciones activas:', asignacionesActivas.length);
+      
+      // Mostrar detalles de cada asignación
+      asignacionesActivas.forEach((asig: any, index: number) => {
+        console.log(`📋 Asignación ${index + 1}:`, {
+          item_id: asig.item_id,
+          estado_subestado: asig.estado_subestado,
+          estado: asig.estado,
+          descripcion: asig.descripcionitem,
+          pedido_id: asig.pedido_id
+        });
+      });
+      
+      setAsignaciones(asignacionesActivas);
+    } catch (err) {
+      console.error('❌ Error al cargar asignaciones:', err);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
     if (identificador) fetchAsignaciones();
   }, [identificador]);
 
@@ -131,7 +170,19 @@ const TerminarAsignacion: React.FC = () => {
   document.querySelectorAll('input[type="number"].no-mouse-wheel');
   return (
     <div className="max-w-3xl mx-auto mt-8">
-      <h2 className="text-2xl font-bold mb-6">Asignaciones en proceso</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Asignaciones en proceso</h2>
+        <Button
+          onClick={fetchAsignaciones}
+          disabled={loading}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          Refrescar
+        </Button>
+      </div>
       
       {/* Debug: Confirmar que el código actualizado se está ejecutando */}
       <div className="mb-4 p-6 bg-red-100 text-red-800 rounded border-4 border-red-500 shadow-lg">
