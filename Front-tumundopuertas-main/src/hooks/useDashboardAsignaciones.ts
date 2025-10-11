@@ -86,7 +86,7 @@ export const useDashboardAsignaciones = () => {
       }
       
       // Normalizar los datos encontrados con información del módulo
-      const asignacionesNormalizadas = [];
+      const asignacionesNormalizadas: Asignacion[] = [];
       
       // Procesar datos de herreria
       if (Array.isArray(herreriaData)) {
