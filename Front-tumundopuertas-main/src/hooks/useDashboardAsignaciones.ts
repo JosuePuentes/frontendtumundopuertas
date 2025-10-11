@@ -46,9 +46,9 @@ export const useDashboardAsignaciones = () => {
     try {
       // Obtener asignaciones de todos los módulos de producción
       const [herreriaRes, masillarRes, prepararRes] = await Promise.all([
-        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=herreria`),
-        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=masillar`),
-        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=preparar`)
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=herreria`).catch(() => ({ ok: false })),
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=masillar`).catch(() => ({ ok: false })),
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=preparar`).catch(() => ({ ok: false }))
       ]);
 
       const [herreriaData, masillarData, prepararData] = await Promise.all([
@@ -57,9 +57,23 @@ export const useDashboardAsignaciones = () => {
         prepararRes.ok ? prepararRes.json() : []
       ]);
 
+      // Validar que los datos sean arrays
+      const herreriaArray = Array.isArray(herreriaData) ? herreriaData : [];
+      const masillarArray = Array.isArray(masillarData) ? masillarData : [];
+      const prepararArray = Array.isArray(prepararData) ? prepararData : [];
+
+      console.log('Datos recibidos:', {
+        herreria: herreriaArray.length,
+        masillar: masillarArray.length,
+        preparar: prepararArray.length,
+        herreriaData: herreriaData,
+        masillarData: masillarData,
+        prepararData: prepararData
+      });
+
       // Combinar todas las asignaciones y normalizar la estructura
       const todasAsignaciones = [
-        ...herreriaData.map((item: any) => ({
+        ...herreriaArray.map((item: any) => ({
           _id: item._id || `${item.pedido_id}_${item.item_id}`,
           pedido_id: item.pedido_id,
           item_id: item.item_id,
@@ -75,7 +89,7 @@ export const useDashboardAsignaciones = () => {
           costo_produccion: item.costo_produccion || 0,
           imagenes: item.imagenes || []
         })),
-        ...masillarData.map((item: any) => ({
+        ...masillarArray.map((item: any) => ({
           _id: item._id || `${item.pedido_id}_${item.item_id}`,
           pedido_id: item.pedido_id,
           item_id: item.item_id,
@@ -91,7 +105,7 @@ export const useDashboardAsignaciones = () => {
           costo_produccion: item.costo_produccion || 0,
           imagenes: item.imagenes || []
         })),
-        ...prepararData.map((item: any) => ({
+        ...prepararArray.map((item: any) => ({
           _id: item._id || `${item.pedido_id}_${item.item_id}`,
           pedido_id: item.pedido_id,
           item_id: item.item_id,

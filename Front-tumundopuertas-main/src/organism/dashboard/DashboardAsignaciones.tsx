@@ -181,17 +181,17 @@ const DashboardAsignaciones: React.FC = () => {
 
   // Estadísticas generales
   const estadisticasGenerales = {
-    total: asignaciones.length,
-    enProceso: asignaciones.filter(a => a.estado === 'en_proceso').length,
-    terminadas: asignaciones.filter(a => a.estado === 'terminado').length,
-    costoTotal: asignaciones.reduce((sum, a) => sum + a.costo_produccion, 0)
+    total: Array.isArray(asignaciones) ? asignaciones.length : 0,
+    enProceso: Array.isArray(asignaciones) ? asignaciones.filter(a => a.estado === 'en_proceso').length : 0,
+    terminadas: Array.isArray(asignaciones) ? asignaciones.filter(a => a.estado === 'terminado').length : 0,
+    costoTotal: Array.isArray(asignaciones) ? asignaciones.reduce((sum, a) => sum + (a.costo_produccion || 0), 0) : 0
   };
 
   const estadisticasPorModulo = {
-    herreria: obtenerEstadisticasModulo(asignaciones, 'herreria'),
-    masillar: obtenerEstadisticasModulo(asignaciones, 'masillar'),
-    preparar: obtenerEstadisticasModulo(asignaciones, 'preparar'),
-    listo_facturar: obtenerEstadisticasModulo(asignaciones, 'listo_facturar')
+    herreria: obtenerEstadisticasModulo(Array.isArray(asignaciones) ? asignaciones : [], 'herreria'),
+    masillar: obtenerEstadisticasModulo(Array.isArray(asignaciones) ? asignaciones : [], 'masillar'),
+    preparar: obtenerEstadisticasModulo(Array.isArray(asignaciones) ? asignaciones : [], 'preparar'),
+    listo_facturar: obtenerEstadisticasModulo(Array.isArray(asignaciones) ? asignaciones : [], 'listo_facturar')
   };
 
   const getEstadoIcon = (estado: string) => {
@@ -318,7 +318,7 @@ const DashboardAsignaciones: React.FC = () => {
         </div>
       )}
 
-      {asignaciones.length === 0 ? (
+      {Array.isArray(asignaciones) && asignaciones.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <Eye className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -332,7 +332,7 @@ const DashboardAsignaciones: React.FC = () => {
         </Card>
       ) : (
         <div className="grid gap-6">
-          {asignaciones.map((asignacion) => (
+          {Array.isArray(asignaciones) && asignaciones.map((asignacion) => (
             <Card key={asignacion._id} className="border-l-4 border-l-blue-500">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
