@@ -42,6 +42,21 @@ const ResumenVentaDiaria: React.FC = () => {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
 
+  // Función para convertir fecha ISO a formato latinoamericano (DD/MM/YYYY)
+  const convertirFechaLatino = (fechaISO: string): string => {
+    const fecha = new Date(fechaISO);
+    const dia = fecha.getDate().toString().padStart(2, '0');
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+    const año = fecha.getFullYear();
+    return `${dia}/${mes}/${año}`;
+  };
+
+  // Función para convertir fecha ISO a formato que coincida con la base de datos
+  const convertirFechaParaBackend = (fechaISO: string): string => {
+    // El backend espera fechas en formato DD/MM/YYYY para comparar con fechas ISO de la BD
+    return convertirFechaLatino(fechaISO);
+  };
+
   const fetchVentaDiaria = async () => {
     if (!fechaInicio || !fechaFin) {
       setError("Por favor, selecciona un rango de fechas.");
@@ -49,14 +64,20 @@ const ResumenVentaDiaria: React.FC = () => {
     }
     
     console.log('🔍 Iniciando consulta de resumen de venta diaria...');
-    console.log('📅 Fechas seleccionadas:', { fechaInicio, fechaFin });
+    console.log('📅 Fechas seleccionadas (ISO):', { fechaInicio, fechaFin });
+    
+    // Convertir fechas al formato que espera el backend (DD/MM/YYYY)
+    const fechaInicioBackend = convertirFechaParaBackend(fechaInicio);
+    const fechaFinBackend = convertirFechaParaBackend(fechaFin);
+    
+    console.log('📅 Fechas convertidas para backend:', { fechaInicioBackend, fechaFinBackend });
     
     setLoading(true);
     setError(null);
     try {
       const params = new URLSearchParams();
-      params.append("fecha_inicio", fechaInicio);
-      params.append("fecha_fin", fechaFin);
+      params.append("fecha_inicio", fechaInicioBackend);
+      params.append("fecha_fin", fechaFinBackend);
 
       const url = `/pedidos/venta-diaria?${params.toString()}`;
       console.log('🌐 URL de consulta:', url);
@@ -95,21 +116,26 @@ const ResumenVentaDiaria: React.FC = () => {
     }
     
     // Probar diferentes formatos de parámetros de fecha
+    const fechaInicioLatino = convertirFechaLatino(fechaInicio);
+    const fechaFinLatino = convertirFechaLatino(fechaFin);
+    
     const formatosFecha = [
-      // Formato actual
+      // Formato ISO (actual)
       `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`,
-      // Formato con fechas en español
-      `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`,
-      // Formato con start_date y end_date
+      // Formato latinoamericano (DD/MM/YYYY)
+      `fecha_inicio=${fechaInicioLatino}&fecha_fin=${fechaFinLatino}`,
+      // Formato con start_date y end_date (ISO)
       `start_date=${fechaInicio}&end_date=${fechaFin}`,
-      // Formato con from y to
+      // Formato con start_date y end_date (Latino)
+      `start_date=${fechaInicioLatino}&end_date=${fechaFinLatino}`,
+      // Formato con from y to (ISO)
       `from=${fechaInicio}&to=${fechaFin}`,
-      // Formato con date_start y date_end
+      // Formato con from y to (Latino)
+      `from=${fechaInicioLatino}&to=${fechaFinLatino}`,
+      // Formato con date_start y date_end (ISO)
       `date_start=${fechaInicio}&date_end=${fechaFin}`,
-      // Formato con fechas en formato ISO
-      `fecha_inicio=${fechaInicio}T00:00:00Z&fecha_fin=${fechaFin}T23:59:59Z`,
-      // Formato con fechas en timestamp
-      `fecha_inicio=${new Date(fechaInicio).getTime()}&fecha_fin=${new Date(fechaFin).getTime()}`
+      // Formato con date_start y date_end (Latino)
+      `date_start=${fechaInicioLatino}&date_end=${fechaFinLatino}`
     ];
     
     for (const formato of formatosFecha) {
