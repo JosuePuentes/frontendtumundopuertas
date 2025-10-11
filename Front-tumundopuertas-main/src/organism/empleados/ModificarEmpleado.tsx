@@ -38,12 +38,6 @@ const empleadoSchema = z.object({
   nombreCompleto: z.string().min(1, "Nombre requerido"),
   permisos: z.array(z.string()),
   pin: z.string().min(4, "PIN debe tener 4 dígitos").max(4, "PIN debe tener 4 dígitos").regex(/^\d{4}$/, "PIN debe contener solo números"),
-}).refine((data) => {
-  // Validación personalizada para PIN único se hará en el componente
-  return true;
-}, {
-  message: "PIN debe ser único",
-  path: ["pin"],
 });
 
 type EmpleadoForm = z.infer<typeof empleadoSchema>;

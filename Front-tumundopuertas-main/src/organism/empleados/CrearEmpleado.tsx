@@ -33,7 +33,6 @@ const CrearEmpleado: React.FC = () => {
     const [mensaje, setMensaje] = useState<string>("");
     const [errorMsg, setErrorMsg] = useState<string>("");
     const [empleadosExistentes, setEmpleadosExistentes] = useState<any[]>([]);
-    const [loadingEmpleados, setLoadingEmpleados] = useState<boolean>(true);
     
     // Cargar empleados existentes para validar PIN único
     useEffect(() => {
@@ -43,8 +42,6 @@ const CrearEmpleado: React.FC = () => {
                 setEmpleadosExistentes(data);
             } catch (err) {
                 console.error("Error al cargar empleados:", err);
-            } finally {
-                setLoadingEmpleados(false);
             }
         };
         fetchEmpleados();
