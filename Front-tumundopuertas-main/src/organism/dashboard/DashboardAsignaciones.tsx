@@ -174,9 +174,26 @@ const DashboardAsignaciones: React.FC = () => {
 
     // Filtro por empleado
     if (empleado.trim()) {
-      filtrados = filtrados.filter(asignacion =>
-        asignacion.empleado_nombre.toLowerCase().includes(empleado.toLowerCase())
-      );
+      console.log(`🔍 Filtrando por empleado: "${empleado}"`);
+      console.log(`📊 Total asignaciones antes del filtro: ${filtrados.length}`);
+      
+      // Mostrar algunos nombres de empleados para debugging
+      const nombresEmpleados = filtrados.map(a => a.empleado_nombre).slice(0, 5);
+      console.log(`👥 Primeros 5 nombres de empleados:`, nombresEmpleados);
+      
+      filtrados = filtrados.filter(asignacion => {
+        const nombreEmpleado = asignacion.empleado_nombre.toLowerCase();
+        const filtroEmpleado = empleado.toLowerCase();
+        const coincide = nombreEmpleado.includes(filtroEmpleado);
+        
+        if (coincide) {
+          console.log(`✅ Coincidencia encontrada: "${asignacion.empleado_nombre}"`);
+        }
+        
+        return coincide;
+      });
+      
+      console.log(`📊 Asignaciones después del filtro: ${filtrados.length}`);
     }
 
     // Filtro por fecha
