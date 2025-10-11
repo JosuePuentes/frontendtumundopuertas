@@ -95,7 +95,7 @@ const CrearEmpleado: React.FC = () => {
         }
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
         try {
-            const response = await fetch(`${apiUrl}/empleados`, {
+            const response = await fetch(`${apiUrl}/empleados/crear`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
