@@ -683,8 +683,8 @@ const DashboardAsignaciones: React.FC = () => {
                 
                 {asignacion.detalleitem && (
                   <div className="mb-4">
-                    <p className="text-sm text-gray-600">Detalles:</p>
-                    <p className="text-sm bg-gray-50 p-2 rounded">
+                    <p className="text-sm font-semibold text-gray-700 mb-2">Detalles:</p>
+                    <p className="text-base bg-blue-50 border border-blue-200 p-3 rounded-lg text-gray-800 font-medium">
                       {asignacion.detalleitem}
                     </p>
                   </div>

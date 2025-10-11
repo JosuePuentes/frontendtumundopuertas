@@ -215,6 +215,13 @@ export const useDashboardAsignaciones = () => {
           });
         }
         
+        // Si no hay imágenes en la asignación, intentar obtenerlas del item
+        if (!asignacionNormalizada.imagenes || asignacionNormalizada.imagenes.length === 0) {
+          console.log(`🔍 No hay imágenes en asignación, buscando en item: ${item.item_id}`);
+          // Aquí podrías hacer una llamada adicional para obtener las imágenes del item
+          // Por ahora, vamos a usar las imágenes que vengan del backend
+        }
+        
         // Log para debugging de empleados
         if (empleado_nombre !== "Sin asignar") {
           console.log(`👤 Empleado encontrado: ${empleado_nombre} (ID: ${empleado_id})`);
