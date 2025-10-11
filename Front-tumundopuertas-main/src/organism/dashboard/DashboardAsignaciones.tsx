@@ -106,12 +106,17 @@ const PinVerification: React.FC<PinVerificationProps> = ({
 
 const DashboardAsignaciones: React.FC = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
+  const [asignacionesFiltradas, setAsignacionesFiltradas] = useState<Asignacion[]>([]);
   const [mensaje, setMensaje] = useState("");
   const [pinModal, setPinModal] = useState<{
     isOpen: boolean;
     asignacion: Asignacion | null;
   }>({ isOpen: false, asignacion: null });
   const [verificandoPin, setVerificandoPin] = useState(false);
+  
+  // Estados para filtros
+  const [filtroEmpleado, setFiltroEmpleado] = useState("");
+  const [filtroFecha, setFiltroFecha] = useState("");
   
   const {
     loading,
@@ -157,14 +162,71 @@ const DashboardAsignaciones: React.FC = () => {
     try {
       const data = await fetchAsignaciones();
       setAsignaciones(data);
+      aplicarFiltros(data, filtroEmpleado, filtroFecha);
+      setMensaje(`Cargadas ${data.length} asignaciones`);
+      setTimeout(() => setMensaje(""), 3000);
     } catch (err) {
       console.error('Error al cargar asignaciones:', err);
+      setMensaje(`Error al cargar asignaciones`);
+      setTimeout(() => setMensaje(""), 5000);
     }
+  };
+
+  // Función para aplicar filtros
+  const aplicarFiltros = (datos: Asignacion[], empleado: string, fecha: string) => {
+    let filtrados = [...datos];
+
+    // Filtro por empleado
+    if (empleado.trim()) {
+      filtrados = filtrados.filter(asignacion =>
+        asignacion.empleado_nombre.toLowerCase().includes(empleado.toLowerCase())
+      );
+    }
+
+    // Filtro por fecha
+    if (fecha) {
+      filtrados = filtrados.filter(asignacion => {
+        const fechaAsignacion = new Date(asignacion.fecha_asignacion);
+        const fechaFiltro = new Date(fecha);
+        
+        // Comparar solo año, mes y día (ignorar hora)
+        return fechaAsignacion.getFullYear() === fechaFiltro.getFullYear() &&
+               fechaAsignacion.getMonth() === fechaFiltro.getMonth() &&
+               fechaAsignacion.getDate() === fechaFiltro.getDate();
+      });
+    }
+
+    setAsignacionesFiltradas(filtrados);
+  };
+
+  // Manejar cambios en filtros
+  const handleFiltroEmpleadoChange = (value: string) => {
+    setFiltroEmpleado(value);
+    aplicarFiltros(asignaciones, value, filtroFecha);
+  };
+
+  const handleFiltroFechaChange = (value: string) => {
+    setFiltroFecha(value);
+    aplicarFiltros(asignaciones, filtroEmpleado, value);
+  };
+
+  // Limpiar filtros
+  const limpiarFiltros = () => {
+    setFiltroEmpleado("");
+    setFiltroFecha("");
+    setAsignacionesFiltradas(asignaciones);
   };
 
   useEffect(() => {
     cargarAsignaciones();
   }, []);
+
+  // Inicializar asignaciones filtradas cuando cambien las asignaciones
+  useEffect(() => {
+    if (asignaciones.length > 0 && asignacionesFiltradas.length === 0) {
+      setAsignacionesFiltradas(asignaciones);
+    }
+  }, [asignaciones]);
 
   const handleTerminarAsignacion = (asignacion: Asignacion) => {
     setPinModal({ isOpen: true, asignacion });
@@ -210,19 +272,19 @@ const DashboardAsignaciones: React.FC = () => {
     }
   };
 
-  // Estadísticas generales
+  // Estadísticas generales (usando asignaciones filtradas)
   const estadisticasGenerales = {
-    total: Array.isArray(asignaciones) ? asignaciones.length : 0,
-    enProceso: Array.isArray(asignaciones) ? asignaciones.filter(a => a.estado === 'en_proceso').length : 0,
-    terminadas: Array.isArray(asignaciones) ? asignaciones.filter(a => a.estado === 'terminado').length : 0,
-    costoTotal: Array.isArray(asignaciones) ? asignaciones.reduce((sum, a) => sum + (a.costo_produccion || 0), 0) : 0
+    total: Array.isArray(asignacionesFiltradas) ? asignacionesFiltradas.length : 0,
+    enProceso: Array.isArray(asignacionesFiltradas) ? asignacionesFiltradas.filter(a => a.estado === 'en_proceso').length : 0,
+    terminadas: Array.isArray(asignacionesFiltradas) ? asignacionesFiltradas.filter(a => a.estado === 'terminado').length : 0,
+    costoTotal: Array.isArray(asignacionesFiltradas) ? asignacionesFiltradas.reduce((sum, a) => sum + (a.costo_produccion || 0), 0) : 0
   };
 
   const estadisticasPorModulo = {
-    herreria: obtenerEstadisticasModulo(Array.isArray(asignaciones) ? asignaciones : [], 'herreria'),
-    masillar: obtenerEstadisticasModulo(Array.isArray(asignaciones) ? asignaciones : [], 'masillar'),
-    preparar: obtenerEstadisticasModulo(Array.isArray(asignaciones) ? asignaciones : [], 'preparar'),
-    listo_facturar: obtenerEstadisticasModulo(Array.isArray(asignaciones) ? asignaciones : [], 'listo_facturar')
+    herreria: obtenerEstadisticasModulo(Array.isArray(asignacionesFiltradas) ? asignacionesFiltradas : [], 'herreria'),
+    masillar: obtenerEstadisticasModulo(Array.isArray(asignacionesFiltradas) ? asignacionesFiltradas : [], 'masillar'),
+    preparar: obtenerEstadisticasModulo(Array.isArray(asignacionesFiltradas) ? asignacionesFiltradas : [], 'preparar'),
+    listo_facturar: obtenerEstadisticasModulo(Array.isArray(asignacionesFiltradas) ? asignacionesFiltradas : [], 'listo_facturar')
   };
 
   const getEstadoIcon = (estado: string) => {
@@ -273,6 +335,65 @@ const DashboardAsignaciones: React.FC = () => {
             Refrescar
           </Button>
         </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="bg-gray-50 p-4 rounded-lg mb-6">
+        <h3 className="text-lg font-semibold mb-4">Filtros</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Filtro por empleado */}
+          <div>
+            <Label htmlFor="filtro-empleado" className="text-sm font-medium">
+              Filtrar por empleado
+            </Label>
+            <Input
+              id="filtro-empleado"
+              type="text"
+              placeholder="Nombre del empleado..."
+              value={filtroEmpleado}
+              onChange={(e) => handleFiltroEmpleadoChange(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          {/* Filtro por fecha */}
+          <div>
+            <Label htmlFor="filtro-fecha" className="text-sm font-medium">
+              Filtrar por fecha
+            </Label>
+            <Input
+              id="filtro-fecha"
+              type="date"
+              value={filtroFecha}
+              onChange={(e) => handleFiltroFechaChange(e.target.value)}
+              className="mt-1"
+            />
+          </div>
+
+          {/* Botón limpiar filtros */}
+          <div className="flex items-end">
+            <Button
+              onClick={limpiarFiltros}
+              variant="outline"
+              className="w-full"
+              disabled={!filtroEmpleado && !filtroFecha}
+            >
+              Limpiar Filtros
+            </Button>
+          </div>
+        </div>
+
+        {/* Información de filtros activos */}
+        {(filtroEmpleado || filtroFecha) && (
+          <div className="mt-3 p-2 bg-blue-50 rounded text-sm text-blue-700">
+            <strong>Filtros activos:</strong>
+            {filtroEmpleado && <span> Empleado: "{filtroEmpleado}"</span>}
+            {filtroFecha && <span> Fecha: {new Date(filtroFecha).toLocaleDateString()}</span>}
+            <span className="ml-2">
+              ({asignacionesFiltradas.length} de {asignaciones.length} asignaciones)
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Estadísticas Generales */}
@@ -359,21 +480,24 @@ const DashboardAsignaciones: React.FC = () => {
         </div>
       )}
 
-      {Array.isArray(asignaciones) && asignaciones.length === 0 ? (
+      {Array.isArray(asignacionesFiltradas) && asignacionesFiltradas.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
             <Eye className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-600 mb-2">
-              No hay asignaciones
+              {asignaciones.length === 0 ? "No hay asignaciones" : "No hay resultados"}
             </h3>
             <p className="text-gray-500">
-              No se encontraron asignaciones de producción.
+              {asignaciones.length === 0 
+                ? "No se encontraron asignaciones de producción."
+                : "No se encontraron asignaciones que coincidan con los filtros aplicados."
+              }
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-6">
-          {Array.isArray(asignaciones) && asignaciones.map((asignacion) => (
+          {Array.isArray(asignacionesFiltradas) && asignacionesFiltradas.map((asignacion) => (
             <Card key={asignacion._id} className="border-l-4 border-l-blue-500">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
