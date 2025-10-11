@@ -56,9 +56,21 @@ export const useDashboardAsignaciones = () => {
       ]);
 
       console.log('📊 Respuestas de módulos:', {
-        herreria: { status: herreriaRes.ok ? (herreriaRes as Response).status : 'error', ok: herreriaRes.ok },
-        masillar: { status: masillarRes.ok ? (masillarRes as Response).status : 'error', ok: masillarRes.ok },
-        preparar: { status: prepararRes.ok ? (prepararRes as Response).status : 'error', ok: prepararRes.ok }
+        herreria: { 
+          status: herreriaRes.ok ? (herreriaRes as Response).status : 'error', 
+          ok: herreriaRes.ok,
+          url: `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=herreria`
+        },
+        masillar: { 
+          status: masillarRes.ok ? (masillarRes as Response).status : 'error', 
+          ok: masillarRes.ok,
+          url: `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=masillar`
+        },
+        preparar: { 
+          status: prepararRes.ok ? (prepararRes as Response).status : 'error', 
+          ok: prepararRes.ok,
+          url: `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=preparar`
+        }
       });
 
       const [herreriaData, masillarData, prepararData] = await Promise.all([
@@ -73,6 +85,17 @@ export const useDashboardAsignaciones = () => {
         preparar: Array.isArray(prepararData) ? prepararData.length : 'No es array'
       });
 
+      // Log detallado de los datos recibidos
+      if (Array.isArray(herreriaData) && herreriaData.length > 0) {
+        console.log('🔍 Datos de herrería:', herreriaData[0]);
+      }
+      if (Array.isArray(masillarData) && masillarData.length > 0) {
+        console.log('🔍 Datos de masillar:', masillarData[0]);
+      }
+      if (Array.isArray(prepararData) && prepararData.length > 0) {
+        console.log('🔍 Datos de preparar:', prepararData[0]);
+      }
+
       // Combinar todos los datos de los módulos
       const datosEncontrados = [
         ...(Array.isArray(herreriaData) ? herreriaData : []),
@@ -81,6 +104,60 @@ export const useDashboardAsignaciones = () => {
       ];
       
       if (datosEncontrados.length === 0) {
+        console.log('⚠️ No se encontraron datos en endpoints específicos, probando endpoint general...');
+        
+        // Fallback: probar endpoint general
+        try {
+          const generalResponse = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso`);
+          console.log('📊 Respuesta endpoint general:', generalResponse.status, generalResponse.ok);
+          
+          if (generalResponse.ok) {
+            const generalData = await generalResponse.json();
+            console.log('📋 Datos endpoint general:', generalData);
+            
+            // Verificar si tiene asignaciones
+            if (generalData.asignaciones && Array.isArray(generalData.asignaciones)) {
+              console.log('✅ Encontrados datos en generalData.asignaciones:', generalData.asignaciones.length);
+              return generalData.asignaciones.map((item: any) => ({
+                _id: item._id || `${item.pedido_id}_${item.item_id}`,
+                pedido_id: item.pedido_id,
+                item_id: item.item_id,
+                empleado_id: item.empleado_id || item.empleado?.identificador || item.empleado?.id,
+                empleado_nombre: item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar",
+                modulo: item.modulo || item.estado_subestado || item.subestado || "herreria",
+                estado: item.estado || item.estado_asignacion || "en_proceso",
+                fecha_asignacion: item.fecha_asignacion || item.fecha || item.created_at || new Date().toISOString(),
+                fecha_fin: item.fecha_fin || item.finished_at,
+                descripcionitem: item.descripcionitem || item.descripcion || item.item_descripcion || "Sin descripción",
+                detalleitem: item.detalleitem || item.detalle || item.item_detalle,
+                cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || item.cliente?.nombre || "Sin cliente",
+                costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
+                imagenes: item.imagenes || item.images || []
+              }));
+            } else if (Array.isArray(generalData)) {
+              console.log('✅ Encontrados datos como array directo:', generalData.length);
+              return generalData.map((item: any) => ({
+                _id: item._id || `${item.pedido_id}_${item.item_id}`,
+                pedido_id: item.pedido_id,
+                item_id: item.item_id,
+                empleado_id: item.empleado_id || item.empleado?.identificador || item.empleado?.id,
+                empleado_nombre: item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar",
+                modulo: item.modulo || item.estado_subestado || item.subestado || "herreria",
+                estado: item.estado || item.estado_asignacion || "en_proceso",
+                fecha_asignacion: item.fecha_asignacion || item.fecha || item.created_at || new Date().toISOString(),
+                fecha_fin: item.fecha_fin || item.finished_at,
+                descripcionitem: item.descripcionitem || item.descripcion || item.item_descripcion || "Sin descripción",
+                detalleitem: item.detalleitem || item.detalle || item.item_detalle,
+                cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || item.cliente?.nombre || "Sin cliente",
+                costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
+                imagenes: item.imagenes || item.images || []
+              }));
+            }
+          }
+        } catch (err) {
+          console.log('❌ Error en endpoint general:', err);
+        }
+        
         console.log('⚠️ No se encontraron datos en ningún endpoint');
         return [];
       }
