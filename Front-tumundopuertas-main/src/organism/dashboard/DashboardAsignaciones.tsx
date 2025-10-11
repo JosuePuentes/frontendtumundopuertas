@@ -128,7 +128,8 @@ const DashboardAsignaciones: React.FC = () => {
     terminarAsignacion,
     obtenerColorModulo,
     obtenerIconoModulo,
-    obtenerEstadisticasModulo
+    obtenerEstadisticasModulo,
+    obtenerSiguienteModulo
   } = useDashboardAsignaciones();
   
   // Función para probar endpoints manualmente
@@ -269,6 +270,17 @@ const DashboardAsignaciones: React.FC = () => {
   const handleConfirmarPin = async (pin: string) => {
     if (!pinModal.asignacion) return;
 
+    console.log('🔄 Iniciando proceso de terminación de asignación...');
+    console.log('📋 Datos de la asignación:', {
+      pedido_id: pinModal.asignacion.pedido_id,
+      item_id: pinModal.asignacion.item_id,
+      empleado_id: pinModal.asignacion.empleado_id,
+      empleado_nombre: pinModal.asignacion.empleado_nombre,
+      modulo_actual: pinModal.asignacion.modulo,
+      descripcion: pinModal.asignacion.descripcionitem,
+      costo_produccion: pinModal.asignacion.costo_produccion
+    });
+
     setVerificandoPin(true);
     try {
       const result = await terminarAsignacion({
@@ -280,27 +292,43 @@ const DashboardAsignaciones: React.FC = () => {
         pin: pin,
       });
 
+      console.log('✅ Respuesta del backend:', result);
+
       let mensajeExito = "¡Asignación terminada exitosamente!";
       
       if (result.asignacion_actualizada?.siguiente_modulo) {
-        mensajeExito += ` El artículo ahora está en ${result.asignacion_actualizada.siguiente_modulo}.`;
+        const siguienteModulo = result.asignacion_actualizada.siguiente_modulo;
+        mensajeExito += ` El artículo ahora está en ${siguienteModulo}.`;
+        console.log(`🔄 Artículo movido de ${pinModal.asignacion.modulo} a ${siguienteModulo}`);
       }
       
       if (result.asignacion_actualizada?.comision_registrada) {
         mensajeExito += " Comisión registrada en el reporte.";
+        console.log(`💰 Comisión registrada: $${pinModal.asignacion.costo_produccion} para ${pinModal.asignacion.empleado_nombre}`);
       }
+
+      console.log('📊 Flujo de producción completado:', {
+        modulo_anterior: pinModal.asignacion.modulo,
+        modulo_siguiente: result.asignacion_actualizada?.siguiente_modulo,
+        empleado: pinModal.asignacion.empleado_nombre,
+        costo_comision: pinModal.asignacion.costo_produccion,
+        comision_registrada: result.asignacion_actualizada?.comision_registrada
+      });
 
       setMensaje(mensajeExito);
       setTimeout(() => setMensaje(""), 5000);
       
-      // Recargar asignaciones
+      // Recargar asignaciones para reflejar los cambios
+      console.log('🔄 Recargando asignaciones para mostrar cambios...');
       cargarAsignaciones();
       
       // Cerrar modal
       setPinModal({ isOpen: false, asignacion: null });
       
     } catch (err: any) {
-      console.error('Error al terminar asignación:', err);
+      console.error('❌ Error al terminar asignación:', err);
+      setMensaje(`Error al terminar asignación: ${err.message}`);
+      setTimeout(() => setMensaje(""), 5000);
     } finally {
       setVerificandoPin(false);
     }
@@ -464,6 +492,31 @@ const DashboardAsignaciones: React.FC = () => {
         )}
       </div>
 
+      {/* Flujo de Producción */}
+      <div className="bg-white p-4 rounded-lg mb-6 border">
+        <h3 className="text-lg font-semibold mb-4">Flujo de Producción</h3>
+        <div className="flex items-center justify-center space-x-4 text-sm">
+          <div className="flex items-center space-x-2">
+            <Badge className="bg-blue-100 text-blue-800">🔨 HERRERÍA</Badge>
+            <span className="text-gray-400">→</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge className="bg-green-100 text-green-800">🎨 MASILLAR</Badge>
+            <span className="text-gray-400">→</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge className="bg-yellow-100 text-yellow-800">⚙️ PREPARAR</Badge>
+            <span className="text-gray-400">→</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge className="bg-purple-100 text-purple-800">✅ LISTO FACTURAR</Badge>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          Cada empleado termina su trabajo y el artículo pasa al siguiente módulo automáticamente
+        </p>
+      </div>
+
       {/* Estadísticas Generales */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
@@ -591,6 +644,14 @@ const DashboardAsignaciones: React.FC = () => {
                     <p className="text-sm text-gray-500">
                       ${asignacion.costo_produccion.toFixed(2)}
                     </p>
+                    {asignacion.estado === "en_proceso" && (
+                      <div className="mt-2">
+                        <p className="text-xs text-gray-500">Próximo módulo:</p>
+                        <Badge className={obtenerColorModulo(obtenerSiguienteModulo(asignacion.modulo))}>
+                          {obtenerIconoModulo(obtenerSiguienteModulo(asignacion.modulo))} {obtenerSiguienteModulo(asignacion.modulo).toUpperCase()}
+                        </Badge>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardHeader>
