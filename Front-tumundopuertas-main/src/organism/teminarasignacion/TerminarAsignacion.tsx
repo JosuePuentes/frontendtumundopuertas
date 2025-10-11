@@ -37,12 +37,15 @@ const TerminarAsignacion: React.FC = () => {
   
   // Debug: Verificar que el código actualizado se está ejecutando
   console.log('🚀🚀🚀 CÓDIGO ACTUALIZADO EJECUTÁNDOSE - VERSIÓN CON LOGS DETALLADOS 🚀🚀🚀');
-  console.log('🔧 VERSIÓN: 2.0 - CON FILTROS MEJORADOS');
+  console.log('🔧 VERSIÓN: 4.0 - CON BOTÓN REFRESCAR Y LOGS DETALLADOS');
   console.log('📅 TIMESTAMP:', new Date().toISOString());
   
   // FORZAR DESPLIEGUE - CAMBIO DRÁSTICO
-  const VERSION_ACTUAL = "3.0-FORZAR-DESPLIEGUE";
+  const VERSION_ACTUAL = "4.0-BOTON-REFRESCAR-Y-LOGS";
   console.log('🔥 VERSIÓN ACTUAL:', VERSION_ACTUAL);
+  
+  // FORZAR ALERT VISUAL
+  alert('🚀 VERSIÓN 4.0 DESPLEGADA - CON BOTÓN REFRESCAR Y LOGS DETALLADOS');
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
     onSuccess: (data) => {
@@ -185,11 +188,12 @@ const TerminarAsignacion: React.FC = () => {
       </div>
       
       {/* Debug: Confirmar que el código actualizado se está ejecutando */}
-      <div className="mb-4 p-6 bg-red-100 text-red-800 rounded border-4 border-red-500 shadow-lg">
-        <strong className="text-2xl">🔥🔥🔥 VERSIÓN 3.0 DESPLEGADA 🔥🔥🔥</strong><br/>
-        <strong className="text-lg">🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje ROJO, el código con logs detallados se está ejecutando correctamente.<br/>
+      <div className="mb-4 p-6 bg-blue-100 text-blue-800 rounded border-4 border-blue-500 shadow-lg">
+        <strong className="text-2xl">🚀🚀🚀 VERSIÓN 4.0 DESPLEGADA 🚀🚀🚀</strong><br/>
+        <strong className="text-lg">🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje AZUL, el código con botón refrescar y logs detallados se está ejecutando correctamente.<br/>
         <strong className="text-lg">📅 TIMESTAMP:</strong> {new Date().toISOString()}<br/>
-        <strong className="text-lg">🚀 VERSIÓN:</strong> 3.0-FORZAR-DESPLIEGUE
+        <strong className="text-lg">🚀 VERSIÓN:</strong> 4.0-BOTON-REFRESCAR-Y-LOGS<br/>
+        <strong className="text-lg">🔄 BOTÓN REFRESCAR:</strong> Deberías ver un botón "Refrescar" en la parte superior derecha
       </div>
       
       {mensaje && (
