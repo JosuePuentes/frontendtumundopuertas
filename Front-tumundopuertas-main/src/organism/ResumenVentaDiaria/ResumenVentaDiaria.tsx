@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle, Download, FileText } from "lucide-react";
+import { Loader2, AlertCircle, Download, FileText, Search } from "lucide-react";
 import api from "@/lib/api"; // Import the centralized api function
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -47,6 +47,10 @@ const ResumenVentaDiaria: React.FC = () => {
       setError("Por favor, selecciona un rango de fechas.");
       return;
     }
+    
+    console.log('🔍 Iniciando consulta de resumen de venta diaria...');
+    console.log('📅 Fechas seleccionadas:', { fechaInicio, fechaFin });
+    
     setLoading(true);
     setError(null);
     try {
@@ -54,12 +58,50 @@ const ResumenVentaDiaria: React.FC = () => {
       params.append("fecha_inicio", fechaInicio);
       params.append("fecha_fin", fechaFin);
 
-      const responseData: VentaDiariaResponse = await api(`/pedidos/venta-diaria?${params.toString()}`);
+      const url = `/pedidos/venta-diaria?${params.toString()}`;
+      console.log('🌐 URL de consulta:', url);
+
+      const responseData: VentaDiariaResponse = await api(url);
+      console.log('📊 Datos recibidos del backend:', responseData);
+      
+      if (responseData) {
+        console.log('✅ Datos procesados:', {
+          total_ingresos: responseData.total_ingresos,
+          cantidad_abonos: responseData.abonos?.length || 0,
+          metodos_pago: Object.keys(responseData.ingresos_por_metodo || {}).length
+        });
+      }
+      
       setData(responseData);
     } catch (err: any) {
+      console.error('❌ Error al obtener resumen de venta diaria:', err);
       setError(err.message || "Error desconocido");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Función para probar diferentes endpoints
+  const probarEndpoints = async () => {
+    console.log('🔍 Probando diferentes endpoints de resumen de venta...');
+    
+    const endpoints = [
+      '/pedidos/venta-diaria',
+      '/pedidos/resumen-venta',
+      '/pedidos/abonos/resumen',
+      '/pedidos/ingresos-diarios',
+      '/venta-diaria',
+      '/resumen-venta'
+    ];
+    
+    for (const endpoint of endpoints) {
+      try {
+        console.log(`📡 Probando endpoint: ${endpoint}`);
+        const response = await api(endpoint);
+        console.log(`✅ ${endpoint} - Respuesta:`, response);
+      } catch (err: any) {
+        console.log(`❌ ${endpoint} - Error:`, err.message);
+      }
     }
   };
 
@@ -231,6 +273,15 @@ const ResumenVentaDiaria: React.FC = () => {
           <Button onClick={fetchVentaDiaria} className="sm:w-auto w-full">
             Buscar
           </Button>
+          <Button 
+            onClick={probarEndpoints} 
+            variant="outline" 
+            className="sm:w-auto w-full"
+            title="Probar diferentes endpoints para diagnosticar el problema"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            Probar Endpoints
+          </Button>
         </div>
 
         {loading ? (
@@ -242,6 +293,17 @@ const ResumenVentaDiaria: React.FC = () => {
           <div className="flex items-center justify-center text-red-600 py-6">
             <AlertCircle className="w-5 h-5 mr-2" />
             Error: {error}
+          </div>
+        ) : data && data.total_ingresos === 0 && (!data.abonos || data.abonos.length === 0) ? (
+          <div className="text-center py-8 text-gray-600">
+            <AlertCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+            <h3 className="text-lg font-semibold mb-2">No se encontraron datos</h3>
+            <p className="text-sm">
+              No hay registros de ventas para el período seleccionado ({fechaInicio} - {fechaFin})
+            </p>
+            <p className="text-xs text-gray-500 mt-2">
+              Verifica que las fechas sean correctas y que existan abonos registrados en ese período
+            </p>
           </div>
         ) : data && (
           <div>
