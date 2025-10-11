@@ -14,6 +14,7 @@ interface Empleado {
   identificador: string;
   nombreCompleto: string;
   permisos: string[];
+  pin?: string;
 }
 
 
@@ -36,6 +37,7 @@ const empleadoSchema = z.object({
   identificador: z.string().min(1, "ID requerido"),
   nombreCompleto: z.string().min(1, "Nombre requerido"),
   permisos: z.array(z.string()),
+  pin: z.string().min(4, "PIN debe tener 4 dígitos").max(4, "PIN debe tener 4 dígitos").regex(/^\d{4}$/, "PIN debe contener solo números"),
 });
 
 type EmpleadoForm = z.infer<typeof empleadoSchema>;
@@ -61,6 +63,7 @@ const ModificarEmpleado: React.FC = () => {
       identificador: "",
       nombreCompleto: "",
       permisos: [],
+      pin: "",
     },
   });
 
@@ -86,6 +89,7 @@ const ModificarEmpleado: React.FC = () => {
       setValue("identificador", empleadoSeleccionado.identificador);
       setValue("nombreCompleto", empleadoSeleccionado.nombreCompleto);
       setValue("permisos", empleadoSeleccionado.permisos);
+      setValue("pin", empleadoSeleccionado.pin || "");
     }
   }, [empleadoSeleccionado, setValue]);
 
@@ -107,6 +111,7 @@ const ModificarEmpleado: React.FC = () => {
           identificador: data.identificador,
           nombreCompleto: data.nombreCompleto,
           permisos: data.permisos,
+          pin: data.pin,
         }),
       });
       setEmpleados((prev) => prev.map((u) => (u._id === updated._id ? updated : u)));
@@ -167,6 +172,22 @@ const ModificarEmpleado: React.FC = () => {
                 required
               />
               {errors.nombreCompleto && <span className="text-red-600 text-xs">{errors.nombreCompleto.message}</span>}
+            </div>
+            <div>
+              <Label htmlFor="pin">PIN de 4 dígitos</Label>
+              <Input
+                id="pin"
+                {...register("pin")}
+                className="mt-1"
+                placeholder="1234"
+                maxLength={4}
+                pattern="[0-9]{4}"
+                required
+              />
+              {errors.pin && <span className="text-red-600 text-xs">{errors.pin.message}</span>}
+              <p className="text-xs text-gray-500 mt-1">
+                Solo números, exactamente 4 dígitos
+              </p>
             </div>
             <div>
               <Label>Permisos</Label>
