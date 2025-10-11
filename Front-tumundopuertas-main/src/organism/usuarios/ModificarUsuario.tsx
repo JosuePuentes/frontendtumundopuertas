@@ -33,10 +33,11 @@ interface Usuario {
     "monitorpedidos",
     "terminarasignacion",
     "dashboard",
+    "dashboard-asignaciones",
     "pagos",
     "resumenVentaDiaria",
     "metodos_pago"
-];
+  ];
 
 const ModificarUsuario: React.FC = () => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
