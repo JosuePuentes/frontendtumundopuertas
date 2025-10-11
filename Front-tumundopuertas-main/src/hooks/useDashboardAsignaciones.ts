@@ -113,6 +113,8 @@ export const useDashboardAsignaciones = () => {
         
         // Buscar items que tengan información de empleado
         const itemsConEmpleado = todasAsignaciones.filter(item => 
+          item.empleadoId || 
+          item.nombreempleado ||
           item.empleado_id || 
           item.empleado_nombre || 
           item.empleado || 
@@ -124,6 +126,28 @@ export const useDashboardAsignaciones = () => {
         console.log('🔍 Items que podrían tener empleado:', itemsConEmpleado.length);
         if (itemsConEmpleado.length > 0) {
           console.log('🔍 Primer item con posible empleado:', JSON.stringify(itemsConEmpleado[0], null, 2));
+        } else {
+          // Si no hay items con empleado, mostrar las propiedades del primer item
+          console.log('🔍 Propiedades disponibles en el primer item:', Object.keys(todasAsignaciones[0]));
+          console.log('🔍 Primer item completo:', todasAsignaciones[0]);
+          
+          // Buscar propiedades que podrían contener información del empleado
+          const primerItem = todasAsignaciones[0];
+          const propiedadesConEmpleado = Object.keys(primerItem).filter(key => 
+            key.toLowerCase().includes('empleado') || 
+            key.toLowerCase().includes('asignado') || 
+            key.toLowerCase().includes('responsable') || 
+            key.toLowerCase().includes('trabajador') ||
+            key.toLowerCase().includes('user') ||
+            key.toLowerCase().includes('worker')
+          );
+          
+          console.log('🔍 Propiedades que podrían contener empleado:', propiedadesConEmpleado);
+          if (propiedadesConEmpleado.length > 0) {
+            propiedadesConEmpleado.forEach(prop => {
+              console.log(`🔍 ${prop}:`, primerItem[prop]);
+            });
+          }
         }
       }
       
@@ -134,7 +158,9 @@ export const useDashboardAsignaciones = () => {
         let empleado_nombre = "Sin asignar";
         
         // Intentar diferentes formas de obtener el empleado
-        if (item.empleado_id) {
+        if (item.empleadoId) {
+          empleado_id = item.empleadoId;
+        } else if (item.empleado_id) {
           empleado_id = item.empleado_id;
         } else if (item.empleado?.identificador) {
           empleado_id = item.empleado.identificador;
@@ -144,7 +170,9 @@ export const useDashboardAsignaciones = () => {
           empleado_id = item.empleado.empleado_id;
         }
         
-        if (item.empleado_nombre) {
+        if (item.nombreempleado) {
+          empleado_nombre = item.nombreempleado;
+        } else if (item.empleado_nombre) {
           empleado_nombre = item.empleado_nombre;
         } else if (item.empleado?.nombreCompleto) {
           empleado_nombre = item.empleado.nombreCompleto;
@@ -181,12 +209,10 @@ export const useDashboardAsignaciones = () => {
           const index = todasAsignaciones.indexOf(item);
           if (index < 3) {
             console.log(`❌ Sin empleado - Item ${index + 1}:`, {
-              pedido_id: item.pedido_id,
-              item_id: item.item_id,
+              empleadoId: item.empleadoId,
+              nombreempleado: item.nombreempleado,
               empleado_id: item.empleado_id,
-              empleado_nombre: item.empleado_nombre,
-              empleado: item.empleado,
-              keys: Object.keys(item)
+              empleado_nombre: item.empleado_nombre
             });
           }
         }
