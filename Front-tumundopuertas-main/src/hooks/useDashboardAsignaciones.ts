@@ -4,6 +4,7 @@ import { getApiUrl } from '@/lib/api';
 export interface Asignacion {
   _id: string;
   pedido_id: string;
+  orden: number;  // ← AGREGAR ESTA PROPIEDAD
   item_id: string;
   empleado_id: string;
   empleado_nombre: string;
@@ -20,6 +21,7 @@ export interface Asignacion {
 
 export interface TerminarAsignacionData {
   pedido_id: string;
+  orden: number;  // ← AGREGAR ESTE PARÁMETRO
   item_id: string;
   empleado_id: string;
   estado: string;
@@ -187,6 +189,7 @@ export const useDashboardAsignaciones = () => {
         const asignacionNormalizada = {
           _id: item._id || `${item.pedido_id}_${item.item_id}`,
           pedido_id: item.pedido_id,
+          orden: item.orden || 0,  // ← AGREGAR ESTA PROPIEDAD
           item_id: item.item_id,
           empleado_id,
           empleado_nombre,

@@ -8,26 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RefreshCw, Eye, CheckCircle, Clock, AlertCircle, TrendingUp, Package } from "lucide-react";
-import { useDashboardAsignaciones } from "@/hooks/useDashboardAsignaciones";
+import { useDashboardAsignaciones, type Asignacion } from "@/hooks/useDashboardAsignaciones";
 import ImageDisplay from "@/upfile/ImageDisplay";
 import { getApiUrl } from "@/lib/api";
-
-interface Asignacion {
-  _id: string;
-  pedido_id: string;
-  item_id: string;
-  empleado_id: string;
-  empleado_nombre: string;
-  modulo: string;
-  estado: string;
-  fecha_asignacion: string;
-  fecha_fin?: string;
-  descripcionitem: string;
-  detalleitem?: string;
-  cliente_nombre: string;
-  costo_produccion: number;
-  imagenes?: string[];
-}
 
 interface PinVerificationProps {
   isOpen: boolean;
@@ -285,6 +268,7 @@ const DashboardAsignaciones: React.FC = () => {
     try {
       const result = await terminarAsignacion({
         pedido_id: pinModal.asignacion.pedido_id,
+        orden: pinModal.asignacion.orden || 0,  // ← AGREGAR ESTE PARÁMETRO
         item_id: pinModal.asignacion.item_id,
         empleado_id: pinModal.asignacion.empleado_id,
         estado: "terminado",
