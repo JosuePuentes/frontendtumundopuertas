@@ -183,11 +183,21 @@ const DashboardAsignaciones: React.FC = () => {
       
       filtrados = filtrados.filter(asignacion => {
         const nombreEmpleado = asignacion.empleado_nombre.toLowerCase();
-        const filtroEmpleado = empleado.toLowerCase();
-        const coincide = nombreEmpleado.includes(filtroEmpleado);
+        const filtroEmpleado = empleado.toLowerCase().trim();
+        
+        // Buscar coincidencias más precisas
+        // Opción 1: Búsqueda exacta por palabra completa
+        const palabrasNombre = nombreEmpleado.split(' ');
+        const coincideExacta = palabrasNombre.some(palabra => palabra === filtroEmpleado);
+        
+        // Opción 2: Búsqueda que empiece con el filtro (más precisa)
+        const coincideInicio = palabrasNombre.some(palabra => palabra.startsWith(filtroEmpleado));
+        
+        // Usar la búsqueda más precisa
+        const coincide = coincideExacta || coincideInicio;
         
         if (coincide) {
-          console.log(`✅ Coincidencia encontrada: "${asignacion.empleado_nombre}"`);
+          console.log(`✅ Coincidencia encontrada: "${asignacion.empleado_nombre}" (buscando: "${filtroEmpleado}")`);
         }
         
         return coincide;
@@ -209,11 +219,13 @@ const DashboardAsignaciones: React.FC = () => {
       });
     }
 
+    console.log(`🔄 Actualizando asignaciones filtradas: ${filtrados.length} asignaciones`);
     setAsignacionesFiltradas(filtrados);
   };
 
   // Manejar cambios en filtros
   const handleFiltroEmpleadoChange = (value: string) => {
+    console.log(`🎯 Cambiando filtro de empleado a: "${value}"`);
     setFiltroEmpleado(value);
     aplicarFiltros(asignaciones, value, filtroFecha);
   };
@@ -240,6 +252,14 @@ const DashboardAsignaciones: React.FC = () => {
       setAsignacionesFiltradas(asignaciones);
     }
   }, [asignaciones]);
+
+  // Monitorear cambios en asignaciones filtradas
+  useEffect(() => {
+    console.log(`📊 Estado actual de asignaciones filtradas: ${asignacionesFiltradas.length} asignaciones`);
+    if (asignacionesFiltradas.length > 0) {
+      console.log(`👥 Primeros 3 empleados filtrados:`, asignacionesFiltradas.slice(0, 3).map(a => a.empleado_nombre));
+    }
+  }, [asignacionesFiltradas]);
 
   const handleTerminarAsignacion = (asignacion: Asignacion) => {
     setPinModal({ isOpen: true, asignacion });
