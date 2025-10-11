@@ -234,21 +234,21 @@ const DashboardAsignaciones: React.FC = () => {
     setVerificandoPin(true);
     try {
       const result = await terminarAsignacion({
-        asignacion_id: pinModal.asignacion._id,
-        pin: pin,
-        empleado_id: pinModal.asignacion.empleado_id,
         pedido_id: pinModal.asignacion.pedido_id,
         item_id: pinModal.asignacion.item_id,
-        modulo_actual: pinModal.asignacion.modulo,
+        empleado_id: pinModal.asignacion.empleado_id,
+        estado: "terminado",
+        fecha_fin: new Date().toISOString(),
+        pin: pin,
       });
 
       let mensajeExito = "¡Asignación terminada exitosamente!";
       
-      if (result.siguiente_modulo) {
-        mensajeExito += ` El artículo ahora está en ${result.siguiente_modulo}.`;
+      if (result.asignacion_actualizada?.siguiente_modulo) {
+        mensajeExito += ` El artículo ahora está en ${result.asignacion_actualizada.siguiente_modulo}.`;
       }
       
-      if (result.comision_registrada) {
+      if (result.asignacion_actualizada?.comision_registrada) {
         mensajeExito += " Comisión registrada en el reporte.";
       }
 
