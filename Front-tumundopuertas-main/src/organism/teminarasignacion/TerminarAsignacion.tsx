@@ -46,7 +46,12 @@ const TerminarAsignacion: React.FC = () => {
   
   // FORZAR ALERT VISUAL - CAMBIO DRÁSTICO
   useEffect(() => {
-    alert('🚀🚀🚀 VERSIÓN 4.0 DESPLEGADA 🚀🚀🚀\n\nSi ves este mensaje, el código actualizado se está ejecutando correctamente.\n\nDeberías ver:\n- Mensaje azul en la página\n- Botón "Refrescar" en la parte superior derecha\n- Logs detallados en la consola');
+    alert('🚀🚀🚀 VERSIÓN 5.0 DESPLEGADA 🚀🚀🚀\n\nSi ves este mensaje, el código actualizado se está ejecutando correctamente.\n\nDeberías ver:\n- Mensaje azul en la página\n- Botón "Refrescar" en la parte superior derecha\n- Logs detallados en la consola\n\nCOMMIT: 5b62c88');
+    
+    // FORZAR LOGS INMEDIATOS
+    console.log('🚀🚀🚀 VERSIÓN 5.0 EJECUTÁNDOSE 🚀🚀🚀');
+    console.log('🔧 COMMIT: 5b62c88');
+    console.log('📅 TIMESTAMP:', new Date().toISOString());
   }, []);
 
   const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
@@ -178,7 +183,7 @@ const TerminarAsignacion: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold">Asignaciones en proceso</h2>
-          <p className="text-sm text-blue-600 font-bold">🚀 VERSIÓN 4.0 - CON BOTÓN REFRESCAR Y LOGS DETALLADOS</p>
+          <p className="text-sm text-green-600 font-bold">🚀 VERSIÓN 5.0 - COMMIT 5b62c88 - CON BOTÓN REFRESCAR Y LOGS DETALLADOS</p>
         </div>
         <Button
           onClick={fetchAsignaciones}
@@ -193,12 +198,13 @@ const TerminarAsignacion: React.FC = () => {
       </div>
       
       {/* Debug: Confirmar que el código actualizado se está ejecutando */}
-      <div className="mb-4 p-6 bg-blue-100 text-blue-800 rounded border-4 border-blue-500 shadow-lg">
-        <strong className="text-2xl">🚀🚀🚀 VERSIÓN 4.0 DESPLEGADA 🚀🚀🚀</strong><br/>
-        <strong className="text-lg">🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje AZUL, el código con botón refrescar y logs detallados se está ejecutando correctamente.<br/>
+      <div className="mb-4 p-6 bg-green-100 text-green-800 rounded border-4 border-green-500 shadow-lg">
+        <strong className="text-2xl">🚀🚀🚀 VERSIÓN 5.0 DESPLEGADA 🚀🚀🚀</strong><br/>
+        <strong className="text-lg">🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje VERDE, el código con botón refrescar y logs detallados se está ejecutando correctamente.<br/>
         <strong className="text-lg">📅 TIMESTAMP:</strong> {new Date().toISOString()}<br/>
-        <strong className="text-lg">🚀 VERSIÓN:</strong> 4.0-BOTON-REFRESCAR-Y-LOGS<br/>
-        <strong className="text-lg">🔄 BOTÓN REFRESCAR:</strong> Deberías ver un botón "Refrescar" en la parte superior derecha
+        <strong className="text-lg">🚀 VERSIÓN:</strong> 5.0-COMMIT-5b62c88<br/>
+        <strong className="text-lg">🔄 BOTÓN REFRESCAR:</strong> Deberías ver un botón "Refrescar" en la parte superior derecha<br/>
+        <strong className="text-lg">📊 COMMIT:</strong> 5b62c88
       </div>
       
       {mensaje && (
