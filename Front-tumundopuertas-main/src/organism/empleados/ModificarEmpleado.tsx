@@ -73,7 +73,12 @@ const ModificarEmpleado: React.FC = () => {
       setLoading(true);
       setError("");
       try {
-        const data = await api("/empleados/all");
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        const response = await fetch(`${apiUrl}/empleados/all/`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
         setEmpleados(data);
       } catch (err: any) {
         setError(`No se pudieron cargar los empleados: ${err.message}`);

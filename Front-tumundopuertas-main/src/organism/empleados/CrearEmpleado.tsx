@@ -38,7 +38,12 @@ const CrearEmpleado: React.FC = () => {
     useEffect(() => {
         const fetchEmpleados = async () => {
             try {
-                const data = await api("/empleados/all");
+                const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+                const response = await fetch(`${apiUrl}/empleados/all/`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
                 setEmpleadosExistentes(data);
             } catch (err) {
                 console.error("Error al cargar empleados:", err);
