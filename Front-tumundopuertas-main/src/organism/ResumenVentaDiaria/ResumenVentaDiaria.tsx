@@ -102,6 +102,43 @@ const ResumenVentaDiaria: React.FC = () => {
     }
   };
 
+  // Función para obtener TODOS los datos sin filtro de fecha
+  const fetchTodosLosDatos = async () => {
+    console.log('🔍 Obteniendo TODOS los datos sin filtro de fecha...');
+    
+    setLoading(true);
+    setError(null);
+    try {
+      const url = `/pedidos/venta-diaria`;
+      console.log('🌐 URL de consulta (sin filtros):', url);
+
+      const responseData: VentaDiariaResponse = await api(url);
+      console.log('📊 TODOS los datos recibidos:', responseData);
+      
+      if (responseData && responseData.abonos) {
+        console.log('📅 Fechas disponibles en los datos:');
+        const fechasUnicas = [...new Set(responseData.abonos.map(abono => {
+          const fecha = new Date(abono.fecha);
+          return fecha.toISOString().split('T')[0]; // YYYY-MM-DD
+        }))].sort();
+        
+        console.log('📅 Fechas únicas encontradas:', fechasUnicas);
+        
+        // Mostrar las primeras 10 fechas para referencia
+        fechasUnicas.slice(0, 10).forEach(fecha => {
+          console.log(`📅 Fecha disponible: ${fecha} (${new Date(fecha).toLocaleDateString('es-ES')})`);
+        });
+      }
+      
+      setData(responseData);
+    } catch (err: any) {
+      console.error('❌ Error al obtener todos los datos:', err);
+      setError(err.message || "Error desconocido");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Función para probar diferentes endpoints y formatos de fecha
   const probarEndpoints = async () => {
     console.log('🔍 Probando diferentes endpoints y formatos de fecha...');
@@ -321,20 +358,11 @@ const ResumenVentaDiaria: React.FC = () => {
             Buscar
           </Button>
           <Button 
-            onClick={async () => {
-              console.log('🔍 Obteniendo todos los datos sin filtro de fecha...');
-              try {
-                const responseData = await api('/pedidos/venta-diaria');
-                console.log('📊 Todos los datos:', responseData);
-                setData(responseData);
-              } catch (err: any) {
-                console.error('❌ Error:', err);
-                setError(err.message);
-              }
-            }}
+            onClick={fetchTodosLosDatos}
             variant="outline" 
             className="sm:w-auto w-full"
             title="Mostrar todos los datos sin filtro de fecha"
+            disabled={loading}
           >
             <Search className="w-4 h-4 mr-2" />
             Ver Todos
