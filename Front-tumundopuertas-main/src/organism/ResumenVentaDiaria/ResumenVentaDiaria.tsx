@@ -76,8 +76,8 @@ const ResumenVentaDiaria: React.FC = () => {
     setError(null);
     try {
       const params = new URLSearchParams();
-      params.append("fecha_inicio", fechaInicioBackend);
-      params.append("fecha_fin", fechaFinBackend);
+      params.append("start_date", fechaInicioBackend);
+      params.append("end_date", fechaFinBackend);
 
       const url = `/pedidos/venta-diaria?${params.toString()}`;
       console.log('🌐 URL de consulta:', url);
