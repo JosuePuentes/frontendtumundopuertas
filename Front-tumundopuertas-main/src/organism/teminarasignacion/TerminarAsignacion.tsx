@@ -76,9 +76,23 @@ const TerminarAsignacion: React.FC = () => {
           console.log('📈 Cantidad total:', data.length);
           
           // Filtrar asignaciones terminadas del backend
-          const asignacionesActivas = data.filter((asig: any) => 
-            asig.estado_subestado === "en_proceso" && asig.estado !== "terminado"
-          );
+          const asignacionesActivas = data.filter((asig: any) => {
+            const isEnProceso = asig.estado_subestado === "en_proceso";
+            const isNotTerminado = asig.estado !== "terminado";
+            const isNotTerminadoLocal = articuloTerminado !== asig.item_id;
+            const shouldShow = isEnProceso && isNotTerminado && isNotTerminadoLocal;
+            
+            console.log(`🔍 Artículo ${asig.item_id}:`, {
+              estado_subestado: asig.estado_subestado,
+              estado: asig.estado,
+              isEnProceso,
+              isNotTerminado,
+              isNotTerminadoLocal,
+              shouldShow
+            });
+            
+            return shouldShow;
+          });
           console.log('✅ Asignaciones activas después del filtro:', asignacionesActivas.length);
           
           // Mostrar detalles de cada asignación
@@ -134,9 +148,21 @@ const TerminarAsignacion: React.FC = () => {
       console.log('📈 Total de asignaciones:', data.length);
       
       // Filtrar asignaciones terminadas del backend
-      const asignacionesActivas = data.filter((asig: any) => 
-        asig.estado_subestado === "en_proceso" && asig.estado !== "terminado"
-      );
+      const asignacionesActivas = data.filter((asig: any) => {
+        const isEnProceso = asig.estado_subestado === "en_proceso";
+        const isNotTerminado = asig.estado !== "terminado";
+        const shouldShow = isEnProceso && isNotTerminado;
+        
+        console.log(`🔍 INICIAL - Artículo ${asig.item_id}:`, {
+          estado_subestado: asig.estado_subestado,
+          estado: asig.estado,
+          isEnProceso,
+          isNotTerminado,
+          shouldShow
+        });
+        
+        return shouldShow;
+      });
       
       console.log('✅ Asignaciones activas:', asignacionesActivas.length);
       
@@ -223,18 +249,23 @@ const TerminarAsignacion: React.FC = () => {
         <ul className="space-y-6">
           {asignaciones
             .filter((asig) => {
-              // Solo mostrar artículos que no estén terminados localmente
+              // Filtrar artículos terminados tanto localmente como en el backend
+              const isEnProceso = asig.estado_subestado === "en_proceso";
+              const isNotTerminadoBackend = asig.estado !== "terminado";
               const isNotTerminadoLocal = articuloTerminado !== asig.item_id;
+              const shouldShow = isEnProceso && isNotTerminadoBackend && isNotTerminadoLocal;
               
-              console.log(`Artículo ${asig.item_id}:`, {
-                isNotTerminadoLocal,
-                articuloTerminado,
+              console.log(`🔍 RENDER - Artículo ${asig.item_id}:`, {
                 estado_subestado: asig.estado_subestado,
                 estado: asig.estado,
-                shouldShow: isNotTerminadoLocal
+                isEnProceso,
+                isNotTerminadoBackend,
+                isNotTerminadoLocal,
+                articuloTerminado,
+                shouldShow
               });
               
-              return isNotTerminadoLocal;
+              return shouldShow;
             })
             .map((asig, idx) => (
               <li key={idx}>
