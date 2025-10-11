@@ -70,7 +70,7 @@ export const useDashboardAsignaciones = () => {
       });
 
       // Combinar todas las asignaciones de los módulos
-      const todasAsignaciones = [];
+      const todasAsignaciones: any[] = [];
       
       if (herreriaData && herreriaData.asignaciones) {
         herreriaData.asignaciones.forEach((item: any) => {
