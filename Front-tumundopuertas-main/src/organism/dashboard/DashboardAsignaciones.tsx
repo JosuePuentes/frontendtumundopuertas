@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { RefreshCw, Eye, CheckCircle, Clock, AlertCircle, TrendingUp, Users, Package } from "lucide-react";
+import { RefreshCw, Eye, CheckCircle, Clock, AlertCircle, TrendingUp, Package } from "lucide-react";
 import { useDashboardAsignaciones } from "@/hooks/useDashboardAsignaciones";
 
 interface Asignacion {
