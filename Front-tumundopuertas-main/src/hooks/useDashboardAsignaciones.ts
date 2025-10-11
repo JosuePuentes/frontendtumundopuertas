@@ -52,9 +52,9 @@ export const useDashboardAsignaciones = () => {
       ]);
 
       const [herreriaData, masillarData, prepararData] = await Promise.all([
-        herreriaRes.ok ? herreriaRes.json() : [],
-        masillarRes.ok ? masillarRes.json() : [],
-        prepararRes.ok ? prepararRes.json() : []
+        herreriaRes.ok ? (herreriaRes as Response).json() : Promise.resolve([]),
+        masillarRes.ok ? (masillarRes as Response).json() : Promise.resolve([]),
+        prepararRes.ok ? (prepararRes as Response).json() : Promise.resolve([])
       ]);
 
       // Validar que los datos sean arrays
