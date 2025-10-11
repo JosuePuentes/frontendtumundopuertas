@@ -42,77 +42,85 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      console.log('🔍 Obteniendo datos del endpoint general y filtrando por módulo...');
+      console.log('🔍 Obteniendo datos de módulos específicos que sabemos que funcionan...');
       
-      // Usar endpoint general que sabemos que funciona
-      const generalResponse = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso`);
-      console.log('📊 Respuesta endpoint general:', generalResponse.status, generalResponse.ok);
+      // Usar los endpoints específicos que sabemos que funcionan según los logs del backend
+      const [herreriaRes, masillarRes, prepararRes] = await Promise.all([
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=herreria`),
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=masillar`),
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=preparar`)
+      ]);
+
+      console.log('📊 Respuestas de módulos:', {
+        herreria: { status: herreriaRes.status, ok: herreriaRes.ok },
+        masillar: { status: masillarRes.status, ok: masillarRes.ok },
+        preparar: { status: prepararRes.status, ok: prepararRes.ok }
+      });
+
+      const [herreriaData, masillarData, prepararData] = await Promise.all([
+        herreriaRes.ok ? herreriaRes.json() : null,
+        masillarRes.ok ? masillarRes.json() : null,
+        prepararRes.ok ? prepararRes.json() : null
+      ]);
+
+      console.log('📋 Datos recibidos por módulo:', {
+        herreria: herreriaData ? (herreriaData.asignaciones ? herreriaData.asignaciones.length : 'No tiene asignaciones') : 'Error',
+        masillar: masillarData ? (masillarData.asignaciones ? masillarData.asignaciones.length : 'No tiene asignaciones') : 'Error',
+        preparar: prepararData ? (prepararData.asignaciones ? prepararData.asignaciones.length : 'No tiene asignaciones') : 'Error'
+      });
+
+      // Combinar todas las asignaciones de los módulos
+      const todasAsignaciones = [];
       
-      if (!generalResponse.ok) {
-        throw new Error(`HTTP error! status: ${generalResponse.status}`);
+      if (herreriaData && herreriaData.asignaciones) {
+        herreriaData.asignaciones.forEach((item: any) => {
+          todasAsignaciones.push({
+            ...item,
+            modulo: "herreria"
+          });
+        });
       }
       
-      const generalData = await generalResponse.json();
-      console.log('📋 Datos endpoint general:', generalData);
-      
-      if (!generalData.asignaciones || !Array.isArray(generalData.asignaciones)) {
-        console.log('⚠️ No se encontraron asignaciones en el endpoint general');
-        return [];
+      if (masillarData && masillarData.asignaciones) {
+        masillarData.asignaciones.forEach((item: any) => {
+          todasAsignaciones.push({
+            ...item,
+            modulo: "masillar"
+          });
+        });
       }
       
-      console.log('✅ Encontrados datos en generalData.asignaciones:', generalData.asignaciones.length);
+      if (prepararData && prepararData.asignaciones) {
+        prepararData.asignaciones.forEach((item: any) => {
+          todasAsignaciones.push({
+            ...item,
+            modulo: "preparar"
+          });
+        });
+      }
+
+      console.log('✅ Total de asignaciones combinadas:', todasAsignaciones.length);
       
-      // Filtrar solo asignaciones que tienen empleados asignados (no "Sin asignar")
-      const asignacionesConEmpleados = generalData.asignaciones.filter((item: any) => {
-        const tieneEmpleado = item.empleado_id || item.empleado?.identificador || item.empleado?.id;
-        const nombreEmpleado = item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre;
-        return tieneEmpleado && nombreEmpleado && nombreEmpleado !== "Sin asignar";
-      });
+      // Normalizar las asignaciones
+      const asignacionesNormalizadas = todasAsignaciones.map((item: any) => ({
+        _id: item._id || `${item.pedido_id}_${item.item_id}`,
+        pedido_id: item.pedido_id,
+        item_id: item.item_id,
+        empleado_id: item.empleado_id || item.empleado?.identificador || item.empleado?.id || "Sin asignar",
+        empleado_nombre: item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar",
+        modulo: item.modulo || "herreria",
+        estado: item.estado || item.estado_asignacion || "en_proceso",
+        fecha_asignacion: item.fecha_asignacion || item.fecha || item.created_at || new Date().toISOString(),
+        fecha_fin: item.fecha_fin || item.finished_at,
+        descripcionitem: item.descripcionitem || item.descripcion || item.item_descripcion || "Sin descripción",
+        detalleitem: item.detalleitem || item.detalle || item.item_detalle,
+        cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || item.cliente?.nombre || "Sin cliente",
+        costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
+        imagenes: item.imagenes || item.images || []
+      }));
       
-      console.log('👥 Asignaciones con empleados:', asignacionesConEmpleados.length);
-      
-      // Determinar módulo basado en el estado_subestado o crear lógica de asignación
-      const asignacionesConModulo = asignacionesConEmpleados.map((item: any) => {
-        // Determinar módulo basado en estado_subestado o lógica de negocio
-        let modulo = "herreria"; // default
-        
-        if (item.estado_subestado) {
-          switch (item.estado_subestado) {
-            case "herreria":
-            case "en_proceso":
-              modulo = "herreria";
-              break;
-            case "masillar":
-              modulo = "masillar";
-              break;
-            case "preparar":
-              modulo = "preparar";
-              break;
-            default:
-              modulo = "herreria";
-          }
-        }
-        
-        return {
-          _id: item._id || `${item.pedido_id}_${item.item_id}`,
-          pedido_id: item.pedido_id,
-          item_id: item.item_id,
-          empleado_id: item.empleado_id || item.empleado?.identificador || item.empleado?.id,
-          empleado_nombre: item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar",
-          modulo: modulo,
-          estado: item.estado || item.estado_asignacion || "en_proceso",
-          fecha_asignacion: item.fecha_asignacion || item.fecha || item.created_at || new Date().toISOString(),
-          fecha_fin: item.fecha_fin || item.finished_at,
-          descripcionitem: item.descripcionitem || item.descripcion || item.item_descripcion || "Sin descripción",
-          detalleitem: item.detalleitem || item.detalle || item.item_detalle,
-          cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || item.cliente?.nombre || "Sin cliente",
-          costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
-          imagenes: item.imagenes || item.images || []
-        };
-      });
-      
-      console.log('✅ Asignaciones procesadas con módulos:', asignacionesConModulo.length);
-      return asignacionesConModulo;
+      console.log('✅ Asignaciones normalizadas:', asignacionesNormalizadas.length);
+      return asignacionesNormalizadas;
     } catch (err: any) {
       setError(`Error al cargar asignaciones: ${err.message}`);
       throw err;
