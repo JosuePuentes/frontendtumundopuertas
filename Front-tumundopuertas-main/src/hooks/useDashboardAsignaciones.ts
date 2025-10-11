@@ -44,86 +44,64 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      // Obtener asignaciones de todos los módulos de producción
-      const [herreriaRes, masillarRes, prepararRes] = await Promise.all([
-        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=herreria`).catch(() => ({ ok: false })),
-        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=masillar`).catch(() => ({ ok: false })),
-        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=preparar`).catch(() => ({ ok: false }))
-      ]);
-
-      const [herreriaData, masillarData, prepararData] = await Promise.all([
-        herreriaRes.ok ? (herreriaRes as Response).json() : Promise.resolve([]),
-        masillarRes.ok ? (masillarRes as Response).json() : Promise.resolve([]),
-        prepararRes.ok ? (prepararRes as Response).json() : Promise.resolve([])
-      ]);
-
-      // Validar que los datos sean arrays
-      const herreriaArray = Array.isArray(herreriaData) ? herreriaData : [];
-      const masillarArray = Array.isArray(masillarData) ? masillarData : [];
-      const prepararArray = Array.isArray(prepararData) ? prepararData : [];
-
-      console.log('Datos recibidos:', {
-        herreria: herreriaArray.length,
-        masillar: masillarArray.length,
-        preparar: prepararArray.length,
-        herreriaData: herreriaData,
-        masillarData: masillarData,
-        prepararData: prepararData
-      });
-
-      // Combinar todas las asignaciones y normalizar la estructura
-      const todasAsignaciones = [
-        ...herreriaArray.map((item: any) => ({
-          _id: item._id || `${item.pedido_id}_${item.item_id}`,
-          pedido_id: item.pedido_id,
-          item_id: item.item_id,
-          empleado_id: item.empleado_id,
-          empleado_nombre: item.empleado_nombre || "Sin asignar",
-          modulo: "herreria",
-          estado: item.estado || "en_proceso",
-          fecha_asignacion: item.fecha_asignacion || new Date().toISOString(),
-          fecha_fin: item.fecha_fin,
-          descripcionitem: item.descripcionitem,
-          detalleitem: item.detalleitem,
-          cliente_nombre: item.cliente?.cliente_nombre || "Sin cliente",
-          costo_produccion: item.costo_produccion || 0,
-          imagenes: item.imagenes || []
-        })),
-        ...masillarArray.map((item: any) => ({
-          _id: item._id || `${item.pedido_id}_${item.item_id}`,
-          pedido_id: item.pedido_id,
-          item_id: item.item_id,
-          empleado_id: item.empleado_id,
-          empleado_nombre: item.empleado_nombre || "Sin asignar",
-          modulo: "masillar",
-          estado: item.estado || "en_proceso",
-          fecha_asignacion: item.fecha_asignacion || new Date().toISOString(),
-          fecha_fin: item.fecha_fin,
-          descripcionitem: item.descripcionitem,
-          detalleitem: item.detalleitem,
-          cliente_nombre: item.cliente?.cliente_nombre || "Sin cliente",
-          costo_produccion: item.costo_produccion || 0,
-          imagenes: item.imagenes || []
-        })),
-        ...prepararArray.map((item: any) => ({
-          _id: item._id || `${item.pedido_id}_${item.item_id}`,
-          pedido_id: item.pedido_id,
-          item_id: item.item_id,
-          empleado_id: item.empleado_id,
-          empleado_nombre: item.empleado_nombre || "Sin asignar",
-          modulo: "preparar",
-          estado: item.estado || "en_proceso",
-          fecha_asignacion: item.fecha_asignacion || new Date().toISOString(),
-          fecha_fin: item.fecha_fin,
-          descripcionitem: item.descripcionitem,
-          detalleitem: item.detalleitem,
-          cliente_nombre: item.cliente?.cliente_nombre || "Sin cliente",
-          costo_produccion: item.costo_produccion || 0,
-          imagenes: item.imagenes || []
-        }))
+      console.log('🔍 Intentando obtener datos de producción...');
+      
+      // Intentar diferentes endpoints para obtener datos
+      const endpoints = [
+        `${getApiUrl()}/pedidos/comisiones/produccion/enproceso`,
+        `${getApiUrl()}/pedidos/comisiones/produccion`,
+        `${getApiUrl()}/pedidos/produccion/enproceso`,
+        `${getApiUrl()}/pedidos/enproceso`
       ];
       
-      return todasAsignaciones;
+      let datosEncontrados = [];
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`🔍 Probando endpoint: ${endpoint}`);
+          const response = await fetch(endpoint);
+          console.log(`📊 Respuesta del endpoint ${endpoint}:`, response.status, response.ok);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`📋 Datos recibidos de ${endpoint}:`, data);
+            
+            if (Array.isArray(data) && data.length > 0) {
+              datosEncontrados = data;
+              console.log(`✅ Datos encontrados en ${endpoint}:`, data.length, 'elementos');
+              break;
+            }
+          }
+        } catch (err) {
+          console.log(`❌ Error en endpoint ${endpoint}:`, err);
+        }
+      }
+      
+      if (datosEncontrados.length === 0) {
+        console.log('⚠️ No se encontraron datos en ningún endpoint');
+        return [];
+      }
+      
+      // Normalizar los datos encontrados
+      const asignacionesNormalizadas = datosEncontrados.map((item: any) => ({
+        _id: item._id || `${item.pedido_id}_${item.item_id}`,
+        pedido_id: item.pedido_id,
+        item_id: item.item_id,
+        empleado_id: item.empleado_id || item.empleado?.identificador,
+        empleado_nombre: item.empleado_nombre || item.empleado?.nombreCompleto || "Sin asignar",
+        modulo: item.modulo || item.estado_subestado || "herreria",
+        estado: item.estado || "en_proceso",
+        fecha_asignacion: item.fecha_asignacion || item.fecha || new Date().toISOString(),
+        fecha_fin: item.fecha_fin,
+        descripcionitem: item.descripcionitem || item.descripcion || "Sin descripción",
+        detalleitem: item.detalleitem || item.detalle,
+        cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || "Sin cliente",
+        costo_produccion: item.costo_produccion || item.costo || 0,
+        imagenes: item.imagenes || []
+      }));
+      
+      console.log('✅ Asignaciones normalizadas:', asignacionesNormalizadas.length);
+      return asignacionesNormalizadas;
     } catch (err: any) {
       setError(`Error al cargar asignaciones: ${err.message}`);
       throw err;

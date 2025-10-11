@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { RefreshCw, Eye, CheckCircle, Clock, AlertCircle, TrendingUp, Package } from "lucide-react";
 import { useDashboardAsignaciones } from "@/hooks/useDashboardAsignaciones";
 import ImageDisplay from "@/upfile/ImageDisplay";
+import { getApiUrl } from "@/lib/api";
 
 interface Asignacion {
   _id: string;
@@ -121,6 +122,36 @@ const DashboardAsignaciones: React.FC = () => {
     obtenerIconoModulo,
     obtenerEstadisticasModulo
   } = useDashboardAsignaciones();
+  
+  // Función para probar endpoints manualmente
+  const probarEndpoints = async () => {
+    const endpoints = [
+      '/pedidos/comisiones/produccion/enproceso',
+      '/pedidos/comisiones/produccion',
+      '/pedidos/produccion/enproceso',
+      '/pedidos/enproceso',
+      '/pedidos/comisiones/produccion/enproceso/?modulo=herreria',
+      '/pedidos/comisiones/produccion/enproceso/?modulo=masillar',
+      '/pedidos/comisiones/produccion/enproceso/?modulo=preparar'
+    ];
+    
+    console.log('🔍 PROBANDO ENDPOINTS MANUALMENTE...');
+    
+    for (const endpoint of endpoints) {
+      try {
+        const response = await fetch(`${getApiUrl()}${endpoint}`);
+        const data = await response.json();
+        console.log(`📊 ${endpoint}:`, {
+          status: response.status,
+          ok: response.ok,
+          dataLength: Array.isArray(data) ? data.length : 'No es array',
+          data: data
+        });
+      } catch (err) {
+        console.log(`❌ ${endpoint}:`, err);
+      }
+    }
+  };
 
   const cargarAsignaciones = async () => {
     try {
@@ -222,16 +253,26 @@ const DashboardAsignaciones: React.FC = () => {
           <h1 className="text-3xl font-bold">Dashboard de Asignaciones</h1>
           <p className="text-gray-600">Gestiona todas las asignaciones de producción</p>
         </div>
-        <Button
-          onClick={cargarAsignaciones}
-          disabled={loading}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refrescar
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={probarEndpoints}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            🔍 Probar Endpoints
+          </Button>
+          <Button
+            onClick={cargarAsignaciones}
+            disabled={loading}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refrescar
+          </Button>
+        </div>
       </div>
 
       {/* Estadísticas Generales */}
