@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { RefreshCw, Eye, CheckCircle, Clock, AlertCircle, TrendingUp, Package } from "lucide-react";
 import { useDashboardAsignaciones } from "@/hooks/useDashboardAsignaciones";
+import ImageDisplay from "@/organism/inventario/ImageDisplay";
 
 interface Asignacion {
   _id: string;
@@ -147,6 +148,9 @@ const DashboardAsignaciones: React.FC = () => {
         asignacion_id: pinModal.asignacion._id,
         pin: pin,
         empleado_id: pinModal.asignacion.empleado_id,
+        pedido_id: pinModal.asignacion.pedido_id,
+        item_id: pinModal.asignacion.item_id,
+        modulo_actual: pinModal.asignacion.modulo,
       });
 
       let mensajeExito = "¡Asignación terminada exitosamente!";
@@ -358,6 +362,20 @@ const DashboardAsignaciones: React.FC = () => {
                 </div>
               </CardHeader>
               <CardContent>
+                {/* Mostrar imágenes si existen */}
+                {Array.isArray(asignacion.imagenes) && asignacion.imagenes.length > 0 && (
+                  <div className="flex gap-2 mb-4 flex-wrap">
+                    {asignacion.imagenes.slice(0, 3).map((img, imgIdx) => (
+                      <ImageDisplay
+                        key={imgIdx}
+                        imageName={img}
+                        alt={`Imagen ${imgIdx + 1}`}
+                        style={{ maxWidth: 70, maxHeight: 70, borderRadius: 8, border: '1px solid #ddd' }}
+                      />
+                    ))}
+                  </div>
+                )}
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-gray-600">Cliente:</p>

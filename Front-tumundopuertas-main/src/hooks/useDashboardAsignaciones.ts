@@ -22,6 +22,9 @@ interface TerminarAsignacionData {
   asignacion_id: string;
   pin: string;
   empleado_id: string;
+  pedido_id: string;
+  item_id: string;
+  modulo_actual: string;
 }
 
 interface TerminarAsignacionResponse {
@@ -41,14 +44,72 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      const response = await fetch(`${getApiUrl()}/dashboard/asignaciones`);
+      // Obtener asignaciones de todos los módulos de producción
+      const [herreriaRes, masillarRes, prepararRes] = await Promise.all([
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=herreria`),
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=masillar`),
+        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=preparar`)
+      ]);
+
+      const [herreriaData, masillarData, prepararData] = await Promise.all([
+        herreriaRes.ok ? herreriaRes.json() : [],
+        masillarRes.ok ? masillarRes.json() : [],
+        prepararRes.ok ? prepararRes.json() : []
+      ]);
+
+      // Combinar todas las asignaciones y normalizar la estructura
+      const todasAsignaciones = [
+        ...herreriaData.map((item: any) => ({
+          _id: item._id || `${item.pedido_id}_${item.item_id}`,
+          pedido_id: item.pedido_id,
+          item_id: item.item_id,
+          empleado_id: item.empleado_id,
+          empleado_nombre: item.empleado_nombre || "Sin asignar",
+          modulo: "herreria",
+          estado: item.estado || "en_proceso",
+          fecha_asignacion: item.fecha_asignacion || new Date().toISOString(),
+          fecha_fin: item.fecha_fin,
+          descripcionitem: item.descripcionitem,
+          detalleitem: item.detalleitem,
+          cliente_nombre: item.cliente?.cliente_nombre || "Sin cliente",
+          costo_produccion: item.costo_produccion || 0,
+          imagenes: item.imagenes || []
+        })),
+        ...masillarData.map((item: any) => ({
+          _id: item._id || `${item.pedido_id}_${item.item_id}`,
+          pedido_id: item.pedido_id,
+          item_id: item.item_id,
+          empleado_id: item.empleado_id,
+          empleado_nombre: item.empleado_nombre || "Sin asignar",
+          modulo: "masillar",
+          estado: item.estado || "en_proceso",
+          fecha_asignacion: item.fecha_asignacion || new Date().toISOString(),
+          fecha_fin: item.fecha_fin,
+          descripcionitem: item.descripcionitem,
+          detalleitem: item.detalleitem,
+          cliente_nombre: item.cliente?.cliente_nombre || "Sin cliente",
+          costo_produccion: item.costo_produccion || 0,
+          imagenes: item.imagenes || []
+        })),
+        ...prepararData.map((item: any) => ({
+          _id: item._id || `${item.pedido_id}_${item.item_id}`,
+          pedido_id: item.pedido_id,
+          item_id: item.item_id,
+          empleado_id: item.empleado_id,
+          empleado_nombre: item.empleado_nombre || "Sin asignar",
+          modulo: "preparar",
+          estado: item.estado || "en_proceso",
+          fecha_asignacion: item.fecha_asignacion || new Date().toISOString(),
+          fecha_fin: item.fecha_fin,
+          descripcionitem: item.descripcionitem,
+          detalleitem: item.detalleitem,
+          cliente_nombre: item.cliente?.cliente_nombre || "Sin cliente",
+          costo_produccion: item.costo_produccion || 0,
+          imagenes: item.imagenes || []
+        }))
+      ];
       
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
+      return todasAsignaciones;
     } catch (err: any) {
       setError(`Error al cargar asignaciones: ${err.message}`);
       throw err;
@@ -62,12 +123,20 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      const response = await fetch(`${getApiUrl()}/dashboard/asignaciones/terminar`, {
+      // Usar el endpoint existente de terminar asignación
+      const response = await fetch(`${getApiUrl()}/pedidos/asignacion/terminar`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          pedido_id: data.pedido_id,
+          item_id: data.item_id,
+          empleado_id: data.empleado_id,
+          estado: "terminado",
+          fecha_fin: new Date().toISOString(),
+          pin: data.pin
+        }),
       });
 
       if (!response.ok) {
@@ -76,7 +145,17 @@ export const useDashboardAsignaciones = () => {
       }
 
       const result = await response.json();
-      return result;
+      
+      // Determinar el siguiente módulo basado en el módulo actual
+      const siguienteModulo = obtenerSiguienteModulo(data.modulo_actual || "herreria");
+      
+      return {
+        message: result.message || "Asignación terminada exitosamente",
+        success: true,
+        asignacion_actualizada: result.asignacion_actualizada,
+        siguiente_modulo: siguienteModulo,
+        comision_registrada: true
+      };
     } catch (err: any) {
       setError(`Error: ${err.message}`);
       throw err;
