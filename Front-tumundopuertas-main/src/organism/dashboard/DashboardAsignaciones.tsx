@@ -433,19 +433,33 @@ const DashboardAsignaciones: React.FC = () => {
               onValueChange={handleEmpleadoChange}
               disabled={modulosSeleccionados.length === 0}
             >
-              <SelectTrigger className="mt-1">
+              <SelectTrigger className={`mt-1 ${
+                modulosSeleccionados.length === 0 
+                  ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed" 
+                  : "bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              }`}>
                 <SelectValue placeholder={
                   modulosSeleccionados.length === 0 
                     ? "Selecciona módulos primero" 
                     : "Selecciona un empleado"
                 } />
               </SelectTrigger>
-              <SelectContent>
-                {obtenerEmpleadosDisponibles().map((empleado) => (
-                  <SelectItem key={empleado} value={empleado}>
-                    {empleado}
-                  </SelectItem>
-                ))}
+              <SelectContent className="bg-white border border-gray-200 shadow-lg rounded-md">
+                {obtenerEmpleadosDisponibles().length > 0 ? (
+                  obtenerEmpleadosDisponibles().map((empleado) => (
+                    <SelectItem 
+                      key={empleado} 
+                      value={empleado}
+                      className="hover:bg-blue-50 focus:bg-blue-50 cursor-pointer"
+                    >
+                      {empleado}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-sm text-gray-500 bg-gray-50">
+                    No hay empleados en los módulos seleccionados
+                  </div>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -460,7 +474,7 @@ const DashboardAsignaciones: React.FC = () => {
               type="date"
               value={filtroFecha}
               onChange={(e) => handleFiltroFechaChange(e.target.value)}
-              className="mt-1"
+              className="mt-1 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             />
           </div>
         </div>
