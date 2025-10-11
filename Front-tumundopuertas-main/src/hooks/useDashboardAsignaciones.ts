@@ -204,6 +204,17 @@ export const useDashboardAsignaciones = () => {
           imagenes: item.imagenes || item.images || []
         };
         
+        // Log para debugging de imágenes (solo los primeros 3 items)
+        const index = todasAsignaciones.indexOf(item);
+        if (index < 3) {
+          console.log(`🖼️ Imágenes del item ${index + 1}:`, {
+            item_id: item.item_id,
+            imagenes: item.imagenes,
+            images: item.images,
+            imagenes_finales: asignacionNormalizada.imagenes
+          });
+        }
+        
         // Log para debugging de empleados
         if (empleado_nombre !== "Sin asignar") {
           console.log(`👤 Empleado encontrado: ${empleado_nombre} (ID: ${empleado_id})`);
