@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import api from "@/lib/api";
 // import { useEmpleado } from "@/hooks/useEmpleado";
 interface empleado {
     id: string;
@@ -31,6 +32,23 @@ const CrearEmpleado: React.FC = () => {
     });
     const [mensaje, setMensaje] = useState<string>("");
     const [errorMsg, setErrorMsg] = useState<string>("");
+    const [empleadosExistentes, setEmpleadosExistentes] = useState<any[]>([]);
+    const [loadingEmpleados, setLoadingEmpleados] = useState<boolean>(true);
+    
+    // Cargar empleados existentes para validar PIN único
+    useEffect(() => {
+        const fetchEmpleados = async () => {
+            try {
+                const data = await api("/empleados/all");
+                setEmpleadosExistentes(data);
+            } catch (err) {
+                console.error("Error al cargar empleados:", err);
+            } finally {
+                setLoadingEmpleados(false);
+            }
+        };
+        fetchEmpleados();
+    }, []);
     
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -65,6 +83,13 @@ const CrearEmpleado: React.FC = () => {
         
         if (empleado.pin.length !== 4) {
             setErrorMsg("El PIN debe tener exactamente 4 dígitos.");
+            return;
+        }
+        
+        // Validar que el PIN sea único
+        const pinExistente = empleadosExistentes.some(emp => emp.pin === empleado.pin);
+        if (pinExistente) {
+            setErrorMsg("Este PIN ya está en uso por otro empleado. Elige un PIN diferente.");
             return;
         }
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
@@ -138,6 +163,16 @@ const CrearEmpleado: React.FC = () => {
                         <p className="text-xs text-gray-500 mt-1">
                             Solo números, máximo 4 dígitos
                         </p>
+                        {empleado.pin.length === 4 && empleadosExistentes.some(emp => emp.pin === empleado.pin) && (
+                            <p className="text-xs text-red-500 mt-1">
+                                ⚠️ Este PIN ya está en uso por otro empleado
+                            </p>
+                        )}
+                        {empleado.pin.length === 4 && !empleadosExistentes.some(emp => emp.pin === empleado.pin) && (
+                            <p className="text-xs text-green-500 mt-1">
+                                ✅ PIN disponible
+                            </p>
+                        )}
                     </div>
                     <div>
                         <Label>Permisos</Label>

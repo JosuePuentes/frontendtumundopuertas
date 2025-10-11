@@ -38,6 +38,12 @@ const empleadoSchema = z.object({
   nombreCompleto: z.string().min(1, "Nombre requerido"),
   permisos: z.array(z.string()),
   pin: z.string().min(4, "PIN debe tener 4 dígitos").max(4, "PIN debe tener 4 dígitos").regex(/^\d{4}$/, "PIN debe contener solo números"),
+}).refine((data) => {
+  // Validación personalizada para PIN único se hará en el componente
+  return true;
+}, {
+  message: "PIN debe ser único",
+  path: ["pin"],
 });
 
 type EmpleadoForm = z.infer<typeof empleadoSchema>;
@@ -48,6 +54,7 @@ const ModificarEmpleado: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState<Empleado | null>(null);
   const [mensaje, setMensaje] = useState<string>("");
+  const [pinError, setPinError] = useState<string>("");
   
   const navigate = useNavigate();
   const {
@@ -94,6 +101,23 @@ const ModificarEmpleado: React.FC = () => {
   }, [empleadoSeleccionado, setValue]);
 
   const permisosForm = watch("permisos");
+  const pinForm = watch("pin");
+
+  // Validar PIN único en tiempo real
+  useEffect(() => {
+    if (pinForm && pinForm.length === 4 && empleadoSeleccionado) {
+      const pinExistente = empleados.some(emp => 
+        emp.pin === pinForm && emp._id !== empleadoSeleccionado._id
+      );
+      if (pinExistente) {
+        setPinError("Este PIN ya está en uso por otro empleado");
+      } else {
+        setPinError("");
+      }
+    } else {
+      setPinError("");
+    }
+  }, [pinForm, empleados, empleadoSeleccionado]);
 
   const handleSelectEmpleado = (id: string) => {
     const empleado = empleados.find((u) => u._id === id) || null;
@@ -104,6 +128,18 @@ const ModificarEmpleado: React.FC = () => {
   const onSubmit = async (data: EmpleadoForm) => {
     setMensaje("");
     setError("");
+    
+    // Validar PIN único antes de enviar
+    if (data.pin && data.pin.length === 4) {
+      const pinExistente = empleados.some(emp => 
+        emp.pin === data.pin && emp._id !== data._id
+      );
+      if (pinExistente) {
+        setError("Este PIN ya está en uso por otro empleado. Elige un PIN diferente.");
+        return;
+      }
+    }
+    
     try {
       const updated = await api(`/empleados/${data._id}`, {
         method: "PUT",
@@ -185,9 +221,15 @@ const ModificarEmpleado: React.FC = () => {
                 required
               />
               {errors.pin && <span className="text-red-600 text-xs">{errors.pin.message}</span>}
+              {pinError && <span className="text-red-600 text-xs">{pinError}</span>}
               <p className="text-xs text-gray-500 mt-1">
                 Solo números, exactamente 4 dígitos
               </p>
+              {pinForm && pinForm.length === 4 && !pinError && (
+                <p className="text-xs text-green-500 mt-1">
+                  ✅ PIN disponible
+                </p>
+              )}
             </div>
             <div>
               <Label>Permisos</Label>
