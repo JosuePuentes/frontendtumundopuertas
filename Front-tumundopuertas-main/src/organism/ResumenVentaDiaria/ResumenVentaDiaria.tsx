@@ -81,26 +81,47 @@ const ResumenVentaDiaria: React.FC = () => {
     }
   };
 
-  // Función para probar diferentes endpoints
+  // Función para probar diferentes endpoints y formatos de fecha
   const probarEndpoints = async () => {
-    console.log('🔍 Probando diferentes endpoints de resumen de venta...');
+    console.log('🔍 Probando diferentes endpoints y formatos de fecha...');
     
-    const endpoints = [
-      '/pedidos/venta-diaria',
-      '/pedidos/resumen-venta',
-      '/pedidos/abonos/resumen',
-      '/pedidos/ingresos-diarios',
-      '/venta-diaria',
-      '/resumen-venta'
+    // Probar endpoint base sin parámetros
+    try {
+      console.log(`📡 Probando endpoint base: /pedidos/venta-diaria`);
+      const responseBase = await api('/pedidos/venta-diaria');
+      console.log(`✅ Base - Respuesta:`, responseBase);
+    } catch (err: any) {
+      console.log(`❌ Base - Error:`, err.message);
+    }
+    
+    // Probar diferentes formatos de parámetros de fecha
+    const formatosFecha = [
+      // Formato actual
+      `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`,
+      // Formato con fechas en español
+      `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`,
+      // Formato con start_date y end_date
+      `start_date=${fechaInicio}&end_date=${fechaFin}`,
+      // Formato con from y to
+      `from=${fechaInicio}&to=${fechaFin}`,
+      // Formato con date_start y date_end
+      `date_start=${fechaInicio}&date_end=${fechaFin}`,
+      // Formato con fechas en formato ISO
+      `fecha_inicio=${fechaInicio}T00:00:00Z&fecha_fin=${fechaFin}T23:59:59Z`,
+      // Formato con fechas en timestamp
+      `fecha_inicio=${new Date(fechaInicio).getTime()}&fecha_fin=${new Date(fechaFin).getTime()}`
     ];
     
-    for (const endpoint of endpoints) {
+    for (const formato of formatosFecha) {
       try {
-        console.log(`📡 Probando endpoint: ${endpoint}`);
-        const response = await api(endpoint);
-        console.log(`✅ ${endpoint} - Respuesta:`, response);
+        console.log(`📡 Probando formato: ${formato}`);
+        const response = await api(`/pedidos/venta-diaria?${formato}`);
+        console.log(`✅ ${formato} - Respuesta:`, {
+          total_ingresos: response.total_ingresos,
+          cantidad_abonos: response.abonos?.length || 0
+        });
       } catch (err: any) {
-        console.log(`❌ ${endpoint} - Error:`, err.message);
+        console.log(`❌ ${formato} - Error:`, err.message);
       }
     }
   };
@@ -274,13 +295,32 @@ const ResumenVentaDiaria: React.FC = () => {
             Buscar
           </Button>
           <Button 
+            onClick={async () => {
+              console.log('🔍 Obteniendo todos los datos sin filtro de fecha...');
+              try {
+                const responseData = await api('/pedidos/venta-diaria');
+                console.log('📊 Todos los datos:', responseData);
+                setData(responseData);
+              } catch (err: any) {
+                console.error('❌ Error:', err);
+                setError(err.message);
+              }
+            }}
+            variant="outline" 
+            className="sm:w-auto w-full"
+            title="Mostrar todos los datos sin filtro de fecha"
+          >
+            <Search className="w-4 h-4 mr-2" />
+            Ver Todos
+          </Button>
+          <Button 
             onClick={probarEndpoints} 
             variant="outline" 
             className="sm:w-auto w-full"
-            title="Probar diferentes endpoints para diagnosticar el problema"
+            title="Probar diferentes formatos de fecha"
           >
             <Search className="w-4 h-4 mr-2" />
-            Probar Endpoints
+            Probar Formatos
           </Button>
         </div>
 
