@@ -60,6 +60,20 @@ const TerminarAsignacion: React.FC = () => {
       setMensaje("¡Asignación terminada exitosamente!");
       setTimeout(() => setMensaje(""), 3000);
       
+      // SOLUCIÓN TEMPORAL: Marcar artículo como terminado localmente inmediatamente
+      const itemIdTerminado = data.item_id || data.asignacion_actualizada?.item_id;
+      const pedidoId = data.pedido_id;
+      
+      if (itemIdTerminado) {
+        console.log('🚀 Marcando artículo como terminado localmente:', itemIdTerminado);
+        setArticuloTerminado(itemIdTerminado);
+        
+        // Intentar mover al siguiente módulo
+        if (pedidoId) {
+          moverArticuloSiguienteModulo(pedidoId, itemIdTerminado);
+        }
+      }
+      
       // Recargar las asignaciones inmediatamente y luego cada 2 segundos por 10 segundos
       const fetchAsignaciones = async () => {
         setLoading(true);
@@ -131,6 +145,36 @@ const TerminarAsignacion: React.FC = () => {
       setTimeout(() => setMensaje(""), 5000);
     }
   })
+
+  // SOLUCIÓN TEMPORAL: Función para mover artículo al siguiente módulo
+  const moverArticuloSiguienteModulo = async (pedidoId: string, itemId: string) => {
+    try {
+      console.log('🚀 Moviendo artículo al siguiente módulo...');
+      const response = await fetch(`${getApiUrl()}/pedidos/mover-siguiente-modulo`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pedido_id: pedidoId,
+          item_id: itemId,
+          empleado_id: identificador
+        }),
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Artículo movido al siguiente módulo:', result);
+        return true;
+      } else {
+        console.log('⚠️ No se pudo mover el artículo (endpoint no existe)');
+        return false;
+      }
+    } catch (error) {
+      console.log('⚠️ Error al mover artículo:', error);
+      return false;
+    }
+  };
 
   const fetchAsignaciones = async () => {
     setLoading(true);
@@ -318,38 +362,60 @@ const TerminarAsignacion: React.FC = () => {
                       </div>
                     </div>
                     <div className="pt-4">
-                      <button
-                        onClick={async () => {
-                          if (confirm(`¿Estás seguro de que quieres marcar como terminado el artículo "${asig.descripcionitem}"?`)) {
-                            // Marcar inmediatamente como terminado en la UI
-                            console.log('=== INICIANDO TERMINACIÓN ===');
-                            console.log('Marcando artículo como terminado:', asig.item_id);
-                            console.log('Estado actual del artículo:', {
-                              item_id: asig.item_id,
-                              estado_subestado: asig.estado_subestado,
-                              estado: asig.estado
-                            });
-                            
-                            setArticuloTerminado(asig.item_id);
-                            console.log('Estado articuloTerminado actualizado a:', asig.item_id);
-                            
-                            await terminarEmpleado({
-                              orden: asig.orden,
-                              pedido_id: asig.pedido_id,
-                              item_id: asig.item_id,
-                              empleado_id: identificador,
-                              estado: "terminado",
-                              fecha_fin: new Date().toISOString(),
-                            });
-                            
-                            console.log('=== TERMINACIÓN COMPLETADA ===');
-                          }
-                        }}
-                        disabled={terminando || articuloTerminado === asig.item_id}
-                        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {terminando && articuloTerminado === asig.item_id ? "Terminando..." : "Marcar como Terminado"}
-                      </button>
+                      <div className="flex gap-2 flex-wrap">
+                        <button
+                          onClick={async () => {
+                            if (confirm(`¿Estás seguro de que quieres marcar como terminado el artículo "${asig.descripcionitem}"?`)) {
+                              // Marcar inmediatamente como terminado en la UI
+                              console.log('=== INICIANDO TERMINACIÓN ===');
+                              console.log('Marcando artículo como terminado:', asig.item_id);
+                              console.log('Estado actual del artículo:', {
+                                item_id: asig.item_id,
+                                estado_subestado: asig.estado_subestado,
+                                estado: asig.estado
+                              });
+                              
+                              setArticuloTerminado(asig.item_id);
+                              console.log('Estado articuloTerminado actualizado a:', asig.item_id);
+                              
+                              await terminarEmpleado({
+                                orden: asig.orden,
+                                pedido_id: asig.pedido_id,
+                                item_id: asig.item_id,
+                                empleado_id: identificador,
+                                estado: "terminado",
+                                fecha_fin: new Date().toISOString(),
+                              });
+                              
+                              console.log('=== TERMINACIÓN COMPLETADA ===');
+                            }
+                          }}
+                          disabled={terminando || articuloTerminado === asig.item_id}
+                          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {terminando && articuloTerminado === asig.item_id ? "Terminando..." : "Marcar como Terminado"}
+                        </button>
+                        
+                        {/* SOLUCIÓN TEMPORAL: Botón para mover manualmente */}
+                        <button
+                          onClick={async () => {
+                            if (confirm(`¿Mover este artículo al siguiente módulo manualmente?`)) {
+                              const movido = await moverArticuloSiguienteModulo(asig.pedido_id, asig.item_id);
+                              if (movido) {
+                                setMensaje("¡Artículo movido al siguiente módulo!");
+                                setTimeout(() => setMensaje(""), 3000);
+                                fetchAsignaciones();
+                              } else {
+                                setMensaje("No se pudo mover el artículo. Verifica el backend.");
+                                setTimeout(() => setMensaje(""), 5000);
+                              }
+                            }
+                          }}
+                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                        >
+                          Mover al Siguiente Módulo
+                        </button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
