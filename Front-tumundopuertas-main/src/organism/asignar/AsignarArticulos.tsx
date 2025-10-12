@@ -134,6 +134,16 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
   }, [items, pedidoId]);
 
+  // Debug: Log de empleados cuando cambien
+  useEffect(() => {
+    console.log('🔍 DEBUG EMPLEADOS:', {
+      empleadosLength: empleados.length,
+      empleados: empleados.slice(0, 3), // Primeros 3 empleados
+      tipoEmpleado: tipoEmpleado,
+      pedidoId: pedidoId
+    });
+  }, [empleados, tipoEmpleado, pedidoId]);
+
   // Copia asignaciones previas al estado local si no existen
   React.useEffect(() => {
     if (Object.keys(asignadosPrevios).length > 0) {
@@ -292,20 +302,46 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             👤 Seleccionar empleado...
                           </option>
                           {(() => {
+                            console.log('🔍 DEBUG FILTRO INICIO:', {
+                              itemId: item.id,
+                              empleadosDisponibles: (empleadosPorItem[item.id] || empleados).length,
+                              tipoEmpleado: tipoEmpleado,
+                              empleadosGenerales: empleados.length
+                            });
+
                             const empleadosFiltrados = (empleadosPorItem[item.id] || empleados)
                               .filter((e) => {
+                                console.log('🔍 DEBUG EMPLEADO INDIVIDUAL:', {
+                                  identificador: e?.identificador,
+                                  nombreCompleto: e?.nombreCompleto,
+                                  permisos: e?.permisos,
+                                  tienePermisos: Array.isArray(e?.permisos),
+                                  tipoEmpleado: tipoEmpleado
+                                });
+
                                 // Verificar que el empleado tenga datos válidos
-                                if (!e || !e.identificador || !e.nombreCompleto) return false;
+                                if (!e || !e.identificador || !e.nombreCompleto) {
+                                  console.log('❌ Empleado inválido:', e);
+                                  return false;
+                                }
                                 
                                 // Si hay tipoEmpleado definido, filtrar por permisos
                                 if (tipoEmpleado && Array.isArray(tipoEmpleado) && tipoEmpleado.length > 0) {
                                   const permisos = e.permisos || [];
-                                  return tipoEmpleado.some((tipo) => 
+                                  const cumpleFiltro = tipoEmpleado.some((tipo) => 
                                     permisos.includes(tipo)
                                   );
+                                  console.log('🎯 FILTRO RESULTADO:', {
+                                    empleado: e.identificador,
+                                    permisos: permisos,
+                                    tipoEmpleado: tipoEmpleado,
+                                    cumpleFiltro: cumpleFiltro
+                                  });
+                                  return cumpleFiltro;
                                 }
                                 
                                 // Si no hay filtro específico, mostrar todos los empleados válidos
+                                console.log('✅ Sin filtro específico, mostrando empleado:', e.identificador);
                                 return true;
                               });
                             
