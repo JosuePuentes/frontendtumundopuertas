@@ -89,29 +89,40 @@ const PedidosHerreria: React.FC = () => {
     recargarDatos();
   }, []);
 
-  // Sincronización: Escuchar cambios de estado para todos los pedidos
+  // Sincronización: Escuchar cambios de estado usando evento personalizado
   useEffect(() => {
-    if (!Array.isArray(dataPedidos) || dataPedidos.length === 0) return;
+    const handleCambioEstado = async (event: CustomEvent) => {
+      const evento = event.detail;
+      console.log(`🔄 PedidosHerreria: Cambio de estado detectado:`, evento);
+      
+      // Verificar si el cambio es relevante para los pedidos actuales
+      const pedidos = dataPedidos as Pedido[];
+      const esRelevante = pedidos.some(pedido => 
+        pedido._id === evento.pedidoId && 
+        pedido.items.some(item => item.id === evento.itemId)
+      );
+      
+      if (esRelevante) {
+        console.log(`🎯 Cambio relevante detectado, recargando datos...`);
+        
+        // Recargar datos cuando hay un cambio de estado relevante
+        await recargarDatos();
+        
+        // Incrementar trigger para forzar re-render
+        setRefreshTrigger(prev => prev + 1);
+        
+        console.log(`✅ PedidosHerreria: Datos actualizados después del cambio de estado`);
+      }
+    };
 
-    const pedidos = dataPedidos as Pedido[];
-    
-    // Crear listeners para cada pedido y sus items
-    pedidos.forEach(pedido => {
-      pedido.items.forEach(item => {
-        useReaccionarACambiosEstado(pedido._id, item.id, async (evento) => {
-          console.log(`🔄 PedidosHerreria: Cambio de estado detectado para pedido ${pedido._id}, item ${item.id}:`, evento);
-          
-          // Recargar datos cuando hay un cambio de estado
-          await recargarDatos();
-          
-          // Incrementar trigger para forzar re-render
-          setRefreshTrigger(prev => prev + 1);
-          
-          console.log(`✅ PedidosHerreria: Datos actualizados después del cambio de estado`);
-        });
-      });
-    });
-  }, [dataPedidos, refreshTrigger]);
+    // Suscribirse al evento personalizado
+    window.addEventListener('cambioEstadoItem', handleCambioEstado as EventListener);
+
+    // Cleanup: remover el listener cuando el componente se desmonte
+    return () => {
+      window.removeEventListener('cambioEstadoItem', handleCambioEstado as EventListener);
+    };
+  }, [dataPedidos]);
 
   // ...
 
