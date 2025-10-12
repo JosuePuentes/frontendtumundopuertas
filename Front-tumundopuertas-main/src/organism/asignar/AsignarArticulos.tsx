@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import FinalizarSubestado from "@/organism/designar/FinalizarSubestado";
-import useTerminarEmpleado from "@/hooks/useTerminarEmpleado";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
 import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
@@ -61,19 +59,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const [message, setMessage] = useState<string>("");
   const [asignadosPrevios, setAsignadosPrevios] = useState<Record<string, AsignacionArticulo>>({});
   const [showCambio, setShowCambio] = useState<Record<string, boolean>>({});
-  const [showFinalizar, setShowFinalizar] = useState(false);
   const [empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
-  
-  // Hook para terminar asignación de artículo
-  const [messageTerminar, setMessageTerminar] = useState<string>("");
-  const {
-    terminarEmpleado,
-    loading: loadingTerminar,
-    error: errorTerminar,
-  } = useTerminarEmpleado({
-    onSuccess: () => setMessageTerminar("Artículo terminado correctamente"),
-    onError: (err) => setMessageTerminar(err.message || "Error al terminar artículo"),
-  });
 
   // Hook para obtener empleados por módulo
   const { obtenerEmpleadosPorModulo, loading: loadingEmpleados } = useEmpleadosPorModulo();
@@ -395,30 +381,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       >
         Asignar empleados
       </button>
-      <button
-        type="button"
-        className="bg-green-600 text-white px-4 py-2 rounded shadow hover:bg-green-700 mt-4 ml-2"
-        onClick={() => setShowFinalizar(true)}
-      >
-        Finalizar pedido
-      </button>
-      {showFinalizar && (
-        <FinalizarSubestado
-          pedidoId={pedidoId}
-          numeroOrden={numeroOrden}
-          estadoGeneralActual={estado_general}
-          nuevoEstadoGeneral={nuevo_estado_general}
-          onFinalizado={() => setShowFinalizar(false)}
-        />
-      )}
       {message && (
         <div className="mt-2 text-green-600 font-semibold">{message}</div>
-      )}
-      {messageTerminar && (
-        <div className="mt-2 text-green-600 font-semibold">{messageTerminar}</div>
-      )}
-      {errorTerminar && (
-        <div className="mt-2 text-red-600 font-semibold">{errorTerminar}</div>
       )}
     </div>
   );
