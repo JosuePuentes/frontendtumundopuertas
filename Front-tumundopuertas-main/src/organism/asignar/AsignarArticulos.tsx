@@ -289,39 +289,52 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                           <option value="" className="text-gray-500">
                             👤 Seleccionar empleado...
                           </option>
-                          {(empleadosPorItem[item.id] || empleados)
-                            .filter((e) => {
-                              // Verificar que el empleado tenga permisos válidos
-                              if (!e || !e.permisos || !Array.isArray(e.permisos)) {
-                                return false;
-                              }
-                              
-                              // Debug más detallado
-                              if (empleados.indexOf(e) === 0) {
-                                console.log('🔍 Debug filtro empleados:', {
-                                  empleado: e.identificador,
-                                  permisos: e.permisos,
-                                  tipoEmpleado,
-                                  tienePermisos: true,
-                                  cumpleFiltro: Array.isArray(tipoEmpleado)
-                                    ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
-                                    : e.permisos.includes(tipoEmpleado)
+                          {(() => {
+                            const empleadosFiltrados = (empleadosPorItem[item.id] || empleados)
+                              .filter((e) => {
+                                // Verificar que el empleado tenga datos válidos
+                                if (!e || !e.identificador || !e.nombreCompleto) return false;
+                                
+                                // Si hay tipoEmpleado definido, filtrar por cargo
+                                if (tipoEmpleado && Array.isArray(tipoEmpleado) && tipoEmpleado.length > 0) {
+                                  const cargo = e.cargo || '';
+                                  return tipoEmpleado.some((tipo) => 
+                                    cargo.toLowerCase().includes(tipo.toLowerCase()) ||
+                                    tipo.toLowerCase().includes(cargo.toLowerCase())
+                                  );
+                                }
+                                
+                                // Si no hay filtro específico, mostrar todos los empleados válidos
+                                return true;
+                              });
+                            
+                            console.log('🎯 Debug select renderizado:', {
+                              itemId: item.id,
+                              empleadosDisponibles: empleadosFiltrados.length,
+                              empleadosPorItem: empleadosPorItem[item.id]?.length || 0,
+                              empleadosGenerales: empleados.length
+                            });
+                            
+                            return empleadosFiltrados.map((empleado, index) => {
+                              if (index === 0) {
+                                console.log('🎯 Debug mapeo empleados:', {
+                                  totalEmpleadosFiltrados: empleadosFiltrados.length,
+                                  primerEmpleado: empleado.identificador,
+                                  nombreCompleto: empleado.nombreCompleto
                                 });
                               }
                               
-                              // Filtro más permisivo: si tiene permisos válidos, incluirlo
-                              // Solo excluir si no tiene permisos válidos
-                              return true;
-                            })
-                            .map((empleado) => (
-                              <option
-                                key={empleado.identificador}
-                                value={empleado.identificador}
-                                className="py-2"
-                              >
-                                {empleado.nombreCompleto || empleado.identificador}
-                              </option>
-                            ))}
+                              return (
+                                <option
+                                  key={empleado.identificador}
+                                  value={empleado.identificador}
+                                  className="py-2"
+                                >
+                                  {empleado.nombreCompleto || empleado.identificador}
+                                </option>
+                              );
+                            });
+                          })()}
                         </select>
                         
                         {/* Flecha del dropdown */}
