@@ -84,15 +84,24 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     for (const item of items) {
       try {
         const empleadosFiltrados = await obtenerEmpleadosPorModulo(pedidoId, item.id);
-        empleadosPorItemData[item.id] = empleadosFiltrados;
+        if (empleadosFiltrados && empleadosFiltrados.length > 0) {
+          empleadosPorItemData[item.id] = empleadosFiltrados;
+          console.log(`✅ Empleados filtrados para item ${item.id}:`, empleadosFiltrados.length);
+        } else {
+          // Si no hay empleados filtrados, usar empleados generales
+          empleadosPorItemData[item.id] = empleados;
+          console.log(`⚠️ Sin empleados filtrados para item ${item.id}, usando empleados generales`);
+        }
       } catch (error) {
-        console.error(`Error al cargar empleados para item ${item.id}:`, error);
+        console.error(`❌ Error al cargar empleados para item ${item.id}:`, error);
         // Fallback a empleados generales si hay error
         empleadosPorItemData[item.id] = empleados;
+        console.log(`🔄 Usando empleados generales como fallback para item ${item.id}`);
       }
     }
     
     setEmpleadosPorItem(empleadosPorItemData);
+    console.log('📋 Empleados cargados por item:', empleadosPorItemData);
   };
 
   // Buscar asignaciones previas al montar
@@ -274,43 +283,51 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                       Cargando empleados...
                     </div>
                   ) : (
-                    <select
-                      className="border rounded px-2 py-1"
-                      value={asignacion.empleadoId || ""}
-                      onChange={(e) => {
-                        const empleadoId = e.target.value;
-                        const empleadosDisponibles = empleadosPorItem[item.id] || empleados;
-                        const empleado = empleadosDisponibles.find(
-                          (emp) => emp.identificador === empleadoId
-                        );
-                        handleEmpleadoChange(
-                          item,
-                          idx,
-                          empleadoId,
-                          empleado?.nombreCompleto || empleadoId
-                        );
-                      }}
-                    >
-                      <option value="">Seleccionar empleado</option>
-                      {(empleadosPorItem[item.id] || empleados)
-                        .filter(
-                          (e) =>
-                            Array.isArray(e.permisos) &&
-                            (
-                              Array.isArray(tipoEmpleado)
-                                ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
-                                : e.permisos.includes(tipoEmpleado)
-                            )
-                        )
-                        .map((empleado) => (
-                          <option
-                            key={empleado.identificador}
-                            value={empleado.identificador}
-                          >
-                            {empleado.nombreCompleto || empleado.identificador}
-                          </option>
-                        ))}
-                    </select>
+                    <div className="flex flex-col gap-1">
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={asignacion.empleadoId || ""}
+                        onChange={(e) => {
+                          const empleadoId = e.target.value;
+                          const empleadosDisponibles = empleadosPorItem[item.id] || empleados;
+                          const empleado = empleadosDisponibles.find(
+                            (emp) => emp.identificador === empleadoId
+                          );
+                          handleEmpleadoChange(
+                            item,
+                            idx,
+                            empleadoId,
+                            empleado?.nombreCompleto || empleadoId
+                          );
+                        }}
+                      >
+                        <option value="">Seleccionar empleado</option>
+                        {(empleadosPorItem[item.id] || empleados)
+                          .filter(
+                            (e) =>
+                              Array.isArray(e.permisos) &&
+                              (
+                                Array.isArray(tipoEmpleado)
+                                  ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
+                                  : e.permisos.includes(tipoEmpleado)
+                              )
+                          )
+                          .map((empleado) => (
+                            <option
+                              key={empleado.identificador}
+                              value={empleado.identificador}
+                            >
+                              {empleado.nombreCompleto || empleado.identificador}
+                            </option>
+                          ))}
+                      </select>
+                      {/* Indicador de tipo de empleados */}
+                      {empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0 ? (
+                        <span className="text-xs text-green-600">✅ Empleados filtrados por módulo</span>
+                      ) : (
+                        <span className="text-xs text-orange-600">⚠️ Empleados generales (filtrado no disponible)</span>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

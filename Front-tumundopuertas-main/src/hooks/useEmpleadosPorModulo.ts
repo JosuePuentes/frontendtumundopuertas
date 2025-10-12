@@ -33,6 +33,11 @@ export const useEmpleadosPorModulo = () => {
       );
       
       if (!response.ok) {
+        // Para errores 500, no lanzar excepción, devolver array vacío
+        if (response.status === 500) {
+          console.warn(`⚠️ Error 500 en endpoint para pedido ${pedidoId}, item ${itemId} - usando fallback`);
+          return [];
+        }
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
@@ -44,7 +49,7 @@ export const useEmpleadosPorModulo = () => {
         empleados: data.empleados
       });
       
-      return data.empleados;
+      return data.empleados || [];
       
     } catch (error: any) {
       console.error('❌ Error al obtener empleados por módulo:', error);
