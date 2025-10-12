@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
+import { useEstadoItems } from "@/hooks/useEstadoItems";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
 import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
 import GestorEmpleadosAutomatico from "@/components/GestorEmpleadosAutomatico";
@@ -66,6 +67,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   // Hook para obtener empleados por módulo
   const { obtenerEmpleadosPorModulo, loading: loadingEmpleados } = useEmpleadosPorModulo();
   
+  // Hook para manejar estados individuales de items
+  const { obtenerEstadoItem } = useEstadoItems(pedidoId, items);
+  
   // Hook para sincronización automática (preparado para uso futuro)
   // const { procesarCambioAutomatico, sincronizando } = useSincronizacionEmpleados();
 
@@ -80,29 +84,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
   };
 
-  // Función para determinar el estado actual de un item específico
-  const determinarEstadoItem = (itemId: string): string => {
-    // Buscar en asignaciones previas para determinar el estado actual del item
-    const asignacionItem = Object.values(asignadosPrevios).find(a => a.key.includes(itemId));
-    
-    if (asignacionItem) {
-      // Si el item tiene asignación, determinar su estado basado en el orden
-      switch(numeroOrden) {
-        case "1": return "herreria";
-        case "2": return "masillar";
-        case "3": return "preparar";
-        case "4": return "facturar";
-        default: return "herreria";
-      }
-    }
-    
-    // Si no tiene asignación, usar el estado general del pedido
-    return determinarModuloActual(numeroOrden);
-  };
 
-  // Función para obtener el tipo de empleado según el estado del item
+  // Función para obtener el tipo de empleado según el estado real del item
   const obtenerTipoEmpleadoPorItem = (itemId: string): string[] => {
-    const estadoItem = determinarEstadoItem(itemId);
+    const estadoItem = obtenerEstadoItem(itemId); // Usar el estado real del item
+    
+    console.log(`🎯 Obteniendo tipo empleado para item ${itemId}, estado: ${estadoItem}`);
     
     switch (estadoItem) {
       case "herreria":
@@ -230,20 +217,32 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       itemId: item.id,
       ...asignaciones[`${item.id}-${idx}`],
     }));
+    
     // Detectar si es cambio (ya existe asignación previa)
     const esCambio = Object.keys(asignadosPrevios).length > 0;
+    
+    // Determinar el nuevo estado general del pedido
+    let nuevoEstadoGeneral = estado_general;
+    if (!esCambio && estado_general === "pendiente") {
+      // Si es la primera asignación y está pendiente, cambiar a orden1
+      nuevoEstadoGeneral = "orden1";
+      console.log("🔄 Cambiando estado del pedido de 'pendiente' a 'orden1'");
+    }
+    
     const consulta: any = {
       pedido_id: pedidoId,
       asignaciones: asignacionPorItem,
       numero_orden: numeroOrden,
       estado: "en_proceso",
-      estado_general: estado_general,
+      estado_general: nuevoEstadoGeneral, // Usar el nuevo estado
     };
+    
     if (!esCambio) {
       consulta.tipo_fecha = "inicio";
     } else {
       consulta.tipo_fecha = "";
     }
+    
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       const res = await fetch(`${apiUrl}/pedidos/subestados/`, {
@@ -251,13 +250,20 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(consulta),
       });
-      console.log("Respuesta de /pruebaapi1:", res);
+      
+      console.log("🔄 Respuesta de asignación:", res);
       setMessage("Asignación enviada correctamente");
       const result = await res.json();
-      console.log("Respuesta de /pruebaapi1:", result);
+      console.log("✅ Resultado de asignación:", result);
+      
+      // Si el estado cambió, mostrar mensaje adicional
+      if (nuevoEstadoGeneral !== estado_general) {
+        setMessage(`Asignación enviada correctamente. Estado cambiado a ${nuevoEstadoGeneral}`);
+      }
+      
     } catch (err) {
       setMessage("Error al enviar la asignación");
-      console.error("Error al enviar a /pruebaapi1:", err);
+      console.error("❌ Error al enviar asignación:", err);
     } finally {
       setLoading(false);
     }
@@ -515,6 +521,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             <div>Empleados totales: {empleados.length}</div>
                             <div>Empleados por item: {empleadosPorItem[item.id]?.length || 0}</div>
                             <div>Tipo empleado: {Array.isArray(obtenerTipoEmpleadoPorItem(item.id)) ? obtenerTipoEmpleadoPorItem(item.id).join(', ') : obtenerTipoEmpleadoPorItem(item.id)}</div>
+                            <div>Estado real del item: {obtenerEstadoItem(item.id)}</div>
+                            <div>Estado del pedido: {estado_general}</div>
                             <div>Item ID: {item.id}</div>
                             <div className="mt-2">
                               <strong>Primeros 3 empleados:</strong>
