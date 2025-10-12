@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
-import { useSincronizacionEmpleados } from "@/hooks/useSincronizacionEmpleados";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
 import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
 import GestorEmpleadosAutomatico from "@/components/GestorEmpleadosAutomatico";
@@ -23,7 +22,7 @@ interface Empleado {
   id?: string;
   identificador: string;
   nombre?: string;
-  cargo?: string;
+  cargo?: string | null;
   pin?: string;
   activo?: boolean;
 }

@@ -5,7 +5,7 @@ interface Empleado {
   id?: string;
   identificador: string;
   nombre?: string;
-  cargo?: string;
+  cargo?: string | null;
   pin?: string;
   activo?: boolean;
 }
