@@ -12,6 +12,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useDashboardAsignaciones, type Asignacion } from "@/hooks/useDashboardAsignaciones";
+import { useSincronizacionEstados } from "@/hooks/useSincronizacionEstados";
 import ImageDisplay from "@/upfile/ImageDisplay";
 import { getApiUrl } from "@/lib/api";
 
@@ -140,6 +141,9 @@ const DashboardAsignaciones: React.FC = () => {
     obtenerEstadisticasModulo,
     obtenerSiguienteModulo
   } = useDashboardAsignaciones();
+
+  // Hook para sincronización de estados
+  const { notificarCambioEstado, obtenerSiguienteModulo: obtenerSiguienteModuloSync } = useSincronizacionEstados();
   
   // Función para probar endpoints manualmente
   const probarEndpoints = async () => {
@@ -627,6 +631,15 @@ const DashboardAsignaciones: React.FC = () => {
         const siguienteModulo = result.asignacion_actualizada.siguiente_modulo;
         mensajeExito += ` El artículo ahora está en ${siguienteModulo}.`;
         console.log(`🔄 Artículo movido de ${pinModal.asignacion.modulo} a ${siguienteModulo}`);
+        
+        // Notificar cambio de estado a todos los componentes
+        notificarCambioEstado({
+          pedidoId: pinModal.asignacion.pedido_id,
+          itemId: pinModal.asignacion.item_id,
+          nuevoEstado: siguienteModulo,
+          moduloAnterior: pinModal.asignacion.modulo,
+          moduloSiguiente: siguienteModulo
+        });
       }
       
       if (result.asignacion_actualizada?.comision_registrada) {

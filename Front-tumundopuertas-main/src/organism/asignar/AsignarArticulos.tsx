@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useReaccionarACambiosEstado } from "@/hooks/useSincronizacionEstados";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
 import { useEstadoItems } from "@/hooks/useEstadoItems";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
@@ -69,6 +70,24 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   
   // Hook para manejar estados individuales de items
   const { obtenerEstadoItem, cargarEstadosItems } = useEstadoItems(pedidoId, items);
+  
+  // Hook para sincronización de estados
+  // const { notificarCambioEstado } = useSincronizacionEstados();
+  
+  // Reaccionar a cambios de estado para cada item
+  items.forEach(item => {
+    useReaccionarACambiosEstado(pedidoId, item.id, async (evento) => {
+      console.log(`🔄 Reaccionando a cambio de estado para item ${item.id}:`, evento);
+      
+      // Recargar estados de items
+      await cargarEstadosItems();
+      
+      // Recargar empleados por item
+      await cargarEmpleadosPorItem();
+      
+      console.log(`✅ Estados actualizados para item ${item.id} después del cambio`);
+    });
+  });
   
   // Hook para sincronización automática (preparado para uso futuro)
   // const { procesarCambioAutomatico, sincronizando } = useSincronizacionEmpleados();
