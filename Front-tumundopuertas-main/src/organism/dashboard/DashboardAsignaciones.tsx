@@ -43,44 +43,61 @@ const PinVerification: React.FC<PinVerificationProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Verificación de PIN</DialogTitle>
+      <DialogContent className="max-w-md bg-white border-2 border-gray-200 shadow-2xl">
+        <DialogHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-t-lg border-b">
+          <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              🔒
+            </div>
+            Verificación de PIN
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="pin">
+        <form onSubmit={handleSubmit} className="space-y-6 p-6 bg-gray-50">
+          <div className="bg-white p-4 rounded-lg border border-gray-200">
+            <Label htmlFor="pin" className="text-base font-medium text-gray-700 block mb-3">
               Ingresa tu PIN para confirmar la terminación del artículo
             </Label>
-            <p className="text-sm text-gray-600 mb-2">
-              Empleado: <strong>{empleadoNombre}</strong>
-            </p>
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-4">
+              <p className="text-sm text-blue-800">
+                <span className="font-semibold">Empleado:</span> {empleadoNombre}
+              </p>
+            </div>
             <Input
               id="pin"
               type="password"
               value={pin}
               onChange={handlePinChange}
-              placeholder="1234"
+              placeholder="••••"
               maxLength={4}
-              className="text-center text-2xl tracking-widest"
+              className="text-center text-3xl tracking-widest font-mono bg-white border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 h-16"
               required
             />
+            <p className="text-xs text-gray-500 mt-2 text-center">
+              Ingresa 4 dígitos numéricos
+            </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              className="flex-1"
+              className="flex-1 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-medium py-3"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={pin.length !== 4 || loading}
-              className="flex-1"
+              className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-3 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Verificando..." : "Confirmar"}
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Verificando...
+                </div>
+              ) : (
+                "Confirmar"
+              )}
             </Button>
           </div>
         </form>
