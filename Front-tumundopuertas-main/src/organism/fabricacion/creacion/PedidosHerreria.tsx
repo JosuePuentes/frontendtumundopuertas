@@ -96,11 +96,9 @@ const PedidosHerreria: React.FC = () => {
     const pedidos = dataPedidos as Pedido[];
     
     // Crear listeners para cada pedido y sus items
-    const listeners: (() => void)[] = [];
-    
     pedidos.forEach(pedido => {
       pedido.items.forEach(item => {
-        const unsubscribe = useReaccionarACambiosEstado(pedido._id, item.id, async (evento) => {
+        useReaccionarACambiosEstado(pedido._id, item.id, async (evento) => {
           console.log(`🔄 PedidosHerreria: Cambio de estado detectado para pedido ${pedido._id}, item ${item.id}:`, evento);
           
           // Recargar datos cuando hay un cambio de estado
@@ -111,15 +109,8 @@ const PedidosHerreria: React.FC = () => {
           
           console.log(`✅ PedidosHerreria: Datos actualizados después del cambio de estado`);
         });
-        
-        listeners.push(unsubscribe);
       });
     });
-
-    // Cleanup: remover todos los listeners cuando el componente se desmonte
-    return () => {
-      listeners.forEach(unsubscribe => unsubscribe());
-    };
   }, [dataPedidos, refreshTrigger]);
 
   // ...
