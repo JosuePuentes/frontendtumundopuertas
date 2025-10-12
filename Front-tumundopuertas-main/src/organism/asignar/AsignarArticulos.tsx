@@ -68,7 +68,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const { obtenerEmpleadosPorModulo, loading: loadingEmpleados } = useEmpleadosPorModulo();
   
   // Hook para manejar estados individuales de items
-  const { obtenerEstadoItem } = useEstadoItems(pedidoId, items);
+  const { obtenerEstadoItem, cargarEstadosItems } = useEstadoItems(pedidoId, items);
   
   // Hook para sincronización automática (preparado para uso futuro)
   // const { procesarCambioAutomatico, sincronizando } = useSincronizacionEmpleados();
@@ -259,6 +259,49 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
   };
 
+  // Función para manejar la terminación de asignaciones
+  const handleTerminarAsignacion = async (itemId: string, empleadoId: string) => {
+    setLoading(true);
+    setMessage("");
+    
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const res = await fetch(`${apiUrl}/pedidos/asignacion/terminar`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          pedido_id: pedidoId,
+          orden: parseInt(numeroOrden),
+          item_id: itemId,
+          empleado_id: empleadoId,
+          estado: "terminado",
+          fecha_fin: new Date().toISOString(),
+        }),
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
+      const result = await res.json();
+      console.log("✅ Asignación terminada:", result);
+      
+      // Actualizar los estados de los items después de terminar la asignación
+      await cargarEstadosItems();
+      
+      // Recargar empleados por item para reflejar el nuevo estado
+      await cargarEmpleadosPorItem();
+      
+      setMessage("Asignación terminada exitosamente. El artículo ha avanzado al siguiente módulo.");
+      
+    } catch (err) {
+      setMessage("Error al terminar la asignación");
+      console.error("❌ Error al terminar asignación:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="mt-4">
       <h4 className="font-semibold mb-2">Asignar empleados por artículo:</h4>
@@ -307,6 +350,16 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                     onClick={() => setShowCambio((prev) => ({ ...prev, [key]: true }))}
                   >
                     Cambiar asignación
+                  </button>
+                  
+                  {/* Botón para terminar asignación */}
+                  <button
+                    type="button"
+                    className="bg-green-600 text-white px-2 py-1 rounded shadow hover:bg-green-700 w-fit"
+                    onClick={() => handleTerminarAsignacion(item.id, asignadoPrevio.empleadoId)}
+                    disabled={loading}
+                  >
+                    {loading ? "Terminando..." : "Terminar asignación"}
                   </button>
                   </div>
                 </div>
