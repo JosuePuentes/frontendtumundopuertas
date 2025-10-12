@@ -61,7 +61,6 @@ const FacturacionPage: React.FC = () => {
                 <div className="mt-4">
                   <AsignarArticulos
                     estado_general={"orden4"}
-                    nuevo_estado_general="orden5"
                     numeroOrden="4"
                     items={pedido.items.map((item: any) => ({
                       id: item.id,

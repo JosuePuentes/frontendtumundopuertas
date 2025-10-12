@@ -94,7 +94,6 @@ const EnvioPage: React.FC = () => {
                 <div className="mt-4">
                   <AsignarArticulos
                     estado_general={"orden5"}
-                    nuevo_estado_general="orden6"
                     numeroOrden="5"
                     items={pedido.items.map((item: any) => ({
                       id: item.id,

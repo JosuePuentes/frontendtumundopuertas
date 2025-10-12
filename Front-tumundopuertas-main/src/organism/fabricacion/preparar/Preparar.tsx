@@ -79,7 +79,6 @@ const PedidosPreparar: React.FC = () => {
                 <div className="mt-4">
                   <AsignarArticulos
                     estado_general={"orden3"}
-                    nuevo_estado_general="orden4"
                     numeroOrden="3"
                     items={pedido.items.map((item: any) => ({
                       id: item.id,

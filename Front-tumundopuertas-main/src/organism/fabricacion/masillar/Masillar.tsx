@@ -91,7 +91,6 @@ const PedidosMasillar: React.FC = () => {
                 <div className="mt-4">
                   <AsignarArticulos
                     estado_general={"orden2"}
-                    nuevo_estado_general="orden3"
                     numeroOrden="2"
                     items={pedido.items.map((item) => ({
                       id: item.id,
