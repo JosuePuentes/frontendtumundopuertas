@@ -50,7 +50,26 @@ const PedidosHerreria: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [mostrarDiagnostico, setMostrarDiagnostico] = useState(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
-  // La lógica de asignaciones se delega al hijo
+  
+  // Función para determinar el tipo de empleado según el estado del pedido
+  const obtenerTipoEmpleadoPorEstado = (estadoGeneral: string): string[] => {
+    switch (estadoGeneral) {
+      case "orden1":
+      case "herreria":
+        return ["herreria", "ayudante"]; // HERRERIA + AYUDANTES
+      case "orden2":
+      case "masillar":
+        return ["masillar", "pintor", "ayudante"]; // MASILLADOR/PINTOR + AYUDANTES
+      case "orden3":
+      case "preparar":
+        return ["preparador", "manillar", "ayudante"]; // MANILLAR + AYUDANTES
+      case "orden4":
+      case "facturar":
+        return ["facturador", "administrativo", "ayudante"]; // FACTURAR + AYUDANTES
+      default:
+        return ["herreria", "ayudante"]; // Por defecto para herrería
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -94,13 +113,13 @@ const PedidosHerreria: React.FC = () => {
                 <DetalleHerreria pedido={pedido} />
                 <div className="mt-4">
                   <AsignarArticulos
-                    estado_general={"orden1"}
+                    estado_general={pedido.estado_general || "orden1"}
                     nuevo_estado_general="orden2"
                     numeroOrden="1"
                     items={pedido.items}
                     empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
                     pedidoId={pedido._id}
-                    tipoEmpleado={["herreria","ayudante"]}
+                    tipoEmpleado={obtenerTipoEmpleadoPorEstado(pedido.estado_general || "orden1")}
                   />
                 </div>
               </li>

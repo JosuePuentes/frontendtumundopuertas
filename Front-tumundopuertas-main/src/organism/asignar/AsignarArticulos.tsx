@@ -303,50 +303,82 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                       Cargando empleados...
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-1">
-                      <select
-                        className="border rounded px-2 py-1"
-                        value={asignacion.empleadoId || ""}
-                        onChange={(e) => {
-                          const empleadoId = e.target.value;
-                          const empleadosDisponibles = empleadosPorItem[item.id] || empleados;
-                          const empleado = empleadosDisponibles.find(
-                            (emp) => emp.identificador === empleadoId
-                          );
-                          handleEmpleadoChange(
-                            item,
-                            idx,
-                            empleadoId,
-                            empleado?.nombreCompleto || empleadoId
-                          );
-                        }}
-                      >
-                        <option value="">Seleccionar empleado</option>
-                        {(empleadosPorItem[item.id] || empleados)
-                          .filter(
-                            (e) =>
-                              Array.isArray(e.permisos) &&
-                              (
-                                Array.isArray(tipoEmpleado)
-                                  ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
-                                  : e.permisos.includes(tipoEmpleado)
-                              )
-                          )
-                          .map((empleado) => (
-                            <option
-                              key={empleado.identificador}
-                              value={empleado.identificador}
-                            >
-                              {empleado.nombreCompleto || empleado.identificador}
-                            </option>
-                          ))}
-                      </select>
-                      {/* Indicador de tipo de empleados */}
-                      {empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0 ? (
-                        <span className="text-xs text-green-600">✅ Empleados filtrados por módulo</span>
-                      ) : (
-                        <span className="text-xs text-orange-600">⚠️ Empleados generales (filtrado no disponible)</span>
-                      )}
+                    <div className="flex flex-col gap-2 w-full">
+                      <div className="relative">
+                        <select
+                          className="w-full min-w-[200px] border-2 border-gray-300 rounded-lg px-4 py-3 bg-white text-gray-700 font-medium shadow-sm hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200 appearance-none cursor-pointer"
+                          value={asignacion.empleadoId || ""}
+                          onChange={(e) => {
+                            const empleadoId = e.target.value;
+                            const empleadosDisponibles = empleadosPorItem[item.id] || empleados;
+                            const empleado = empleadosDisponibles.find(
+                              (emp) => emp.identificador === empleadoId
+                            );
+                            handleEmpleadoChange(
+                              item,
+                              idx,
+                              empleadoId,
+                              empleado?.nombreCompleto || empleadoId
+                            );
+                          }}
+                        >
+                          <option value="" className="text-gray-500">
+                            👤 Seleccionar empleado...
+                          </option>
+                          {(empleadosPorItem[item.id] || empleados)
+                            .filter(
+                              (e) =>
+                                Array.isArray(e.permisos) &&
+                                (
+                                  Array.isArray(tipoEmpleado)
+                                    ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
+                                    : e.permisos.includes(tipoEmpleado)
+                                )
+                            )
+                            .map((empleado) => (
+                              <option
+                                key={empleado.identificador}
+                                value={empleado.identificador}
+                                className="py-2"
+                              >
+                                {empleado.nombreCompleto || empleado.identificador}
+                              </option>
+                            ))}
+                        </select>
+                        
+                        {/* Flecha del dropdown */}
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
+                      </div>
+                      
+                      {/* Información de empleados disponibles */}
+                      <div className="text-xs">
+                        {empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0 ? (
+                          <span className="text-green-600 font-medium">
+                            ✅ {empleadosPorItem[item.id].length} empleados filtrados por módulo
+                          </span>
+                        ) : (
+                          <span className="text-orange-600 font-medium">
+                            ⚠️ {empleados.length} empleados generales (filtrado no disponible)
+                          </span>
+                        )}
+                      </div>
+                      
+                      {/* Debug info */}
+                      <div className="text-xs text-gray-500">
+                        <details>
+                          <summary className="cursor-pointer">🔍 Debug info</summary>
+                          <div className="mt-1 p-2 bg-gray-100 rounded text-xs">
+                            <div>Empleados totales: {empleados.length}</div>
+                            <div>Empleados por item: {empleadosPorItem[item.id]?.length || 0}</div>
+                            <div>Tipo empleado: {Array.isArray(tipoEmpleado) ? tipoEmpleado.join(', ') : tipoEmpleado}</div>
+                            <div>Item ID: {item.id}</div>
+                          </div>
+                        </details>
+                      </div>
                     </div>
                   )}
                 </div>
