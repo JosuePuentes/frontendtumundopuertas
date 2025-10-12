@@ -370,15 +370,47 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                   const cargo = e.cargo || '';
                                   const nombre = e.nombre || '';
                                   
+                                  // Función helper para normalizar texto (quitar paréntesis, espacios extra, etc.)
+                                  const normalizarTexto = (texto: string): string => {
+                                    return texto.toLowerCase()
+                                      .replace(/[()]/g, '') // Quitar paréntesis
+                                      .replace(/\s+/g, ' ') // Normalizar espacios
+                                      .trim();
+                                  };
+                                  
                                   // Verificar si el cargo coincide directamente
-                                  const cargoCoincide = tipoEmpleadoItem.some((tipo) => 
-                                    cargo.toLowerCase().includes(tipo.toLowerCase())
-                                  );
+                                  const cargoCoincide = tipoEmpleadoItem.some((tipo) => {
+                                    const cargoNormalizado = normalizarTexto(cargo);
+                                    const tipoNormalizado = normalizarTexto(tipo);
+                                    return cargoNormalizado.includes(tipoNormalizado);
+                                  });
                                   
                                   // Verificar si el nombre contiene el tipo (para empleados con cargo: null)
-                                  const nombreCoincide = tipoEmpleadoItem.some((tipo) => 
-                                    nombre.toLowerCase().includes(tipo.toLowerCase())
-                                  );
+                                  const nombreCoincide = tipoEmpleadoItem.some((tipo) => {
+                                    const nombreNormalizado = normalizarTexto(nombre);
+                                    const tipoNormalizado = normalizarTexto(tipo);
+                                    
+                                    // Mapear tipos a variaciones comunes
+                                    const variacionesTipo: Record<string, string[]> = {
+                                      'herreria': ['herrero', 'herreria'],
+                                      'masillar': ['masillador', 'masillar'],
+                                      'pintar': ['pintor', 'pintar'],
+                                      'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
+                                      'facturacion': ['facturador', 'facturacion', 'administrativo'],
+                                      'ayudante': ['ayudante']
+                                    };
+                                    
+                                    // Verificar coincidencia directa
+                                    if (nombreNormalizado.includes(tipoNormalizado)) {
+                                      return true;
+                                    }
+                                    
+                                    // Verificar variaciones del tipo
+                                    const variaciones = variacionesTipo[tipoNormalizado] || [];
+                                    return variaciones.some(variacion => 
+                                      nombreNormalizado.includes(normalizarTexto(variacion))
+                                    );
+                                  });
                                   
                                   const cumpleFiltro = cargoCoincide || nombreCoincide;
                                   
@@ -477,10 +509,46 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                   if (tipoEmpleadoItem && Array.isArray(tipoEmpleadoItem) && tipoEmpleadoItem.length > 0) {
                                     const cargo = e.cargo || '';
                                     const nombre = e.nombre || '';
-                                    return tipoEmpleadoItem.some((tipo) => 
-                                      cargo.toLowerCase().includes(tipo.toLowerCase()) ||
-                                      nombre.toLowerCase().includes(tipo.toLowerCase())
-                                    );
+                                    
+                                    // Función helper para normalizar texto
+                                    const normalizarTexto = (texto: string): string => {
+                                      return texto.toLowerCase()
+                                        .replace(/[()]/g, '')
+                                        .replace(/\s+/g, ' ')
+                                        .trim();
+                                    };
+                                    
+                                    return tipoEmpleadoItem.some((tipo) => {
+                                      const cargoNormalizado = normalizarTexto(cargo);
+                                      const nombreNormalizado = normalizarTexto(nombre);
+                                      const tipoNormalizado = normalizarTexto(tipo);
+                                      
+                                      // Mapear tipos a variaciones comunes
+                                      const variacionesTipo: Record<string, string[]> = {
+                                        'herreria': ['herrero', 'herreria'],
+                                        'masillar': ['masillador', 'masillar'],
+                                        'pintar': ['pintor', 'pintar'],
+                                        'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
+                                        'facturacion': ['facturador', 'facturacion', 'administrativo'],
+                                        'ayudante': ['ayudante']
+                                      };
+                                      
+                                      // Verificar cargo
+                                      if (cargoNormalizado.includes(tipoNormalizado)) {
+                                        return true;
+                                      }
+                                      
+                                      // Verificar nombre con coincidencia directa
+                                      if (nombreNormalizado.includes(tipoNormalizado)) {
+                                        return true;
+                                      }
+                                      
+                                      // Verificar variaciones del tipo
+                                      const variaciones = variacionesTipo[tipoNormalizado] || [];
+                                      return variaciones.some(variacion => 
+                                        nombreNormalizado.includes(normalizarTexto(variacion))
+                                      );
+                                    });
                                   }
                                   return true;
                                 })
