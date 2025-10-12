@@ -750,12 +750,12 @@ const CrearPedido: React.FC = () => {
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Método de pago" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border-2 border-gray-200 shadow-lg max-h-60">
                       {(() => {
                         console.log("Renderizando SelectContent, metodosPago:", metodosPago);
                         console.log("Primer método estructura:", metodosPago[0]);
                         return metodosPago.length === 0 ? (
-                          <SelectItem value="no-methods" disabled>
+                          <SelectItem value="no-methods" disabled className="text-gray-500 bg-gray-50">
                             No hay métodos de pago disponibles
                           </SelectItem>
                         ) : (
@@ -764,7 +764,11 @@ const CrearPedido: React.FC = () => {
                             const metodoId = metodo._id || metodo.id || metodo.nombre || `metodo-${index}`;
                             console.log("ID del método:", metodoId);
                             return (
-                              <SelectItem key={metodoId} value={metodoId}>
+                              <SelectItem 
+                                key={metodoId} 
+                                value={metodoId}
+                                className="bg-white hover:bg-blue-50 focus:bg-blue-50 text-gray-800 font-medium cursor-pointer border-b border-gray-100 last:border-b-0"
+                              >
                                 {metodo.nombre || 'Sin nombre'}
                               </SelectItem>
                             );
