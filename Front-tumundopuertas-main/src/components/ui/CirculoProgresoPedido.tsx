@@ -17,19 +17,19 @@ const CirculoProgresoPedido: React.FC<CirculoProgresoPedidoProps> = ({
   const strokeDashoffset = circumference - (porcentaje / 100) * circumference;
 
   const getColor = () => {
-    if (porcentaje >= 100) return '#10b981'; // verde
-    if (porcentaje >= 75) return '#3b82f6'; // azul
-    if (porcentaje >= 50) return '#f59e0b'; // amarillo
-    if (porcentaje >= 25) return '#f97316'; // naranja
-    return '#ef4444'; // rojo
+    if (porcentaje >= 100) return '#10b981'; // verde (completado)
+    if (porcentaje >= 80) return '#3b82f6'; // azul (preparar)
+    if (porcentaje >= 55) return '#f59e0b'; // amarillo (masillar)
+    if (porcentaje >= 20) return '#f97316'; // naranja (herreria)
+    return '#ef4444'; // rojo (pendiente)
   };
 
   const getTextColor = () => {
-    if (porcentaje >= 100) return '#065f46';
-    if (porcentaje >= 75) return '#1e40af';
-    if (porcentaje >= 50) return '#92400e';
-    if (porcentaje >= 25) return '#9a3412';
-    return '#991b1b';
+    if (porcentaje >= 100) return '#065f46'; // verde oscuro
+    if (porcentaje >= 80) return '#1e40af'; // azul oscuro
+    if (porcentaje >= 55) return '#92400e'; // amarillo oscuro
+    if (porcentaje >= 20) return '#9a3412'; // naranja oscuro
+    return '#991b1b'; // rojo oscuro
   };
 
   return (

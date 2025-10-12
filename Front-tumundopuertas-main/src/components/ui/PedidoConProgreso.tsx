@@ -45,48 +45,50 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <span>Pedido: {pedido._id.slice(-6)}</span>
-              {/* Círculo de progreso */}
-              {progreso && (
-                <CirculoProgresoPedido 
-                  porcentaje={progreso.porcentaje}
-                  size={60}
-                  strokeWidth={6}
-                />
-              )}
-            </div>
+            <span>Pedido: {pedido._id.slice(-6)}</span>
             <Badge variant="secondary">
               {ordenMap[pedido.estado_general] || pedido.estado_general}
             </Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="mb-2">
+        <CardContent className="relative">
+          {/* Círculo de progreso centrado y más visible */}
+          {progreso && (
+            <div className="absolute top-4 right-4 z-10">
+              <CirculoProgresoPedido 
+                porcentaje={progreso.porcentaje}
+                size={80}
+                strokeWidth={8}
+              />
+            </div>
+          )}
+          
+          <div className="mb-2 pr-24">
             <strong>Cliente:</strong> {pedido.cliente_nombre}
           </div>
           {pedido.creado_por && (
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 pr-24">
               <strong>Creado por:</strong> {pedido.creado_por}
             </div>
           )}
           {pedido.fecha_creacion && (
-            <div className="text-base text-gray-700">
+            <div className="text-base text-gray-700 pr-24">
               Fecha: {new Date(pedido.fecha_creacion).toLocaleDateString()}
             </div>
           )}
           
           {/* Información de progreso */}
           {progreso && (
-            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg pr-24">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">
-                  Progreso: {progreso.itemsCompletados}/{progreso.totalItems} items
+                  Progreso: {progreso.contadorProgreso} módulos
                 </span>
                 <span className="text-sm font-bold" style={{ 
                   color: progreso.porcentaje >= 100 ? '#10b981' : 
-                         progreso.porcentaje >= 75 ? '#3b82f6' : 
-                         progreso.porcentaje >= 50 ? '#f59e0b' : '#f97316'
+                         progreso.porcentaje >= 80 ? '#3b82f6' : 
+                         progreso.porcentaje >= 55 ? '#f59e0b' : 
+                         progreso.porcentaje >= 20 ? '#f97316' : '#ef4444'
                 }}>
                   {Math.round(progreso.porcentaje)}%
                 </span>
@@ -95,7 +97,7 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           )}
 
           {Array.isArray(pedido.items) && pedido.items.length > 0 && (
-            <div className="mt-2">
+            <div className="mt-2 pr-24">
               <div className="font-semibold mb-1">Items:</div>
               <ul className="list-disc ml-6">
                 {pedido.items.map((item, idx) => (
@@ -114,6 +116,17 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
                         <span className="ml-2 text-green-700 font-semibold">${item.costoProduccion}</span>
                       )}
                     </div>
+                    {/* Contador de progreso del item */}
+                    {progreso && (
+                      <span className="text-sm font-bold px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                        {progreso.items[idx]?.estado_actual === 'pendiente' ? '0/4' :
+                         progreso.items[idx]?.modulo_actual === 'herreria' ? '1/4' :
+                         progreso.items[idx]?.modulo_actual === 'masillar' ? '2/4' :
+                         progreso.items[idx]?.modulo_actual === 'preparar' ? '3/4' :
+                         progreso.items[idx]?.modulo_actual === 'facturar' ? '4/4' :
+                         progreso.items[idx]?.estado_actual === 'completado' ? '4/4' : '0/4'}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>

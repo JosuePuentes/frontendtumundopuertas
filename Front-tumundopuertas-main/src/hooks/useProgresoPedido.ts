@@ -14,6 +14,7 @@ interface ProgresoPedido {
   items: ItemProgreso[];
   totalItems: number;
   itemsCompletados: number;
+  contadorProgreso: string; // "0/4", "1/4", "2/4", etc.
 }
 
 export const useProgresoPedido = (pedidoId: string) => {
@@ -24,22 +25,74 @@ export const useProgresoPedido = (pedidoId: string) => {
   const calcularPorcentaje = (items: ItemProgreso[]): number => {
     if (items.length === 0) return 0;
 
-    const modulos = ['herreria', 'masillar', 'preparar', 'facturar'];
+    // Pesos específicos para cada módulo (Masillar/Pintar tiene más peso por ser más largo)
+    const pesosModulos = {
+      'herreria': 20,      // 20%
+      'masillar': 35,      // 35% (más largo)
+      'preparar': 25,      // 25%
+      'facturar': 20       // 20%
+    };
     
     let totalProgreso = 0;
     
     items.forEach(item => {
-      const moduloIndex = modulos.indexOf(item.modulo_actual);
-      if (moduloIndex !== -1) {
-        // Cada módulo representa 25% (100% / 4 módulos)
-        totalProgreso += (moduloIndex + 1) * 25;
-      } else if (item.estado_actual === 'completado' || item.estado_actual === 'orden6') {
-        // Si está completado, cuenta como 100%
-        totalProgreso += 100;
+      // Si está pendiente, no suma nada (0%)
+      if (item.estado_actual === 'pendiente') {
+        totalProgreso += 0;
+        return;
       }
+
+      // Si está completado, suma 100%
+      if (item.estado_actual === 'completado' || item.estado_actual === 'orden6') {
+        totalProgreso += 100;
+        return;
+      }
+
+      // Calcular progreso basado en el módulo actual
+      const peso = pesosModulos[item.modulo_actual as keyof typeof pesosModulos] || 0;
+      
+      // Sumar el peso acumulado de módulos anteriores + parte del módulo actual
+      let progresoItem = 0;
+      
+      switch (item.modulo_actual) {
+        case 'herreria':
+          progresoItem = peso; // 20%
+          break;
+        case 'masillar':
+          progresoItem = pesosModulos.herreria + peso; // 20% + 35% = 55%
+          break;
+        case 'preparar':
+          progresoItem = pesosModulos.herreria + pesosModulos.masillar + peso; // 20% + 35% + 25% = 80%
+          break;
+        case 'facturar':
+          progresoItem = pesosModulos.herreria + pesosModulos.masillar + pesosModulos.preparar + peso; // 20% + 35% + 25% + 20% = 100%
+          break;
+      }
+      
+      totalProgreso += progresoItem;
     });
 
     return Math.min(totalProgreso / items.length, 100);
+  };
+
+  const calcularContadorProgreso = (items: ItemProgreso[]): string => {
+    const modulos = ['herreria', 'masillar', 'preparar', 'facturar'];
+    const totalModulos = modulos.length;
+    
+    let modulosCompletados = 0;
+    
+    items.forEach(item => {
+      if (item.estado_actual === 'completado' || item.estado_actual === 'orden6') {
+        modulosCompletados = totalModulos; // Si está completado, cuenta todos los módulos
+      } else if (item.estado_actual !== 'pendiente') {
+        const moduloIndex = modulos.indexOf(item.modulo_actual);
+        if (moduloIndex !== -1) {
+          modulosCompletados = Math.max(modulosCompletados, moduloIndex + 1);
+        }
+      }
+    });
+    
+    return `${modulosCompletados}/${totalModulos}`;
   };
 
   const obtenerProgresoPedido = async (): Promise<ProgresoPedido | null> => {
@@ -114,6 +167,7 @@ export const useProgresoPedido = (pedidoId: string) => {
       });
 
       const porcentaje = calcularPorcentaje(items);
+      const contadorProgreso = calcularContadorProgreso(items);
       const itemsCompletados = items.filter(item => 
         item.estado_actual === 'completado' || item.modulo_actual === 'facturar'
       ).length;
@@ -123,7 +177,8 @@ export const useProgresoPedido = (pedidoId: string) => {
         porcentaje,
         items,
         totalItems: items.length,
-        itemsCompletados
+        itemsCompletados,
+        contadorProgreso
       };
 
     } catch (err: any) {

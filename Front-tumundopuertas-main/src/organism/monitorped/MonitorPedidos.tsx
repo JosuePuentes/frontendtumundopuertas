@@ -37,6 +37,8 @@ const MonitorPedidos: React.FC = () => {
   const [ordenFilter, setOrdenFilter] = useState<string>("");
   const [estadoSeleccionado, setEstadoSeleccionado] = useState<Record<string, string>>({});
   const [actualizando, setActualizando] = useState<string>("");
+  const [mostrarCompletados, setMostrarCompletados] = useState<boolean>(false);
+  const [mostrarCancelados, setMostrarCancelados] = useState<boolean>(false);
 
   useEffect(() => {
     if (!shouldSearch) return;
@@ -73,13 +75,34 @@ const MonitorPedidos: React.FC = () => {
     setActualizando("");
   };
 
-  const pedidosFiltrados = pedidos.filter(
-    (p) =>
-      (ordenFilter === "" || p.estado_general === ordenFilter) &&
-      ((p.cliente_nombre?.toLowerCase?.().includes(search.toLowerCase()) || "") ||
+  const pedidosFiltrados = pedidos
+    .filter((p) => {
+      // Filtro por búsqueda de texto
+      const coincideBusqueda = 
+        (p.cliente_nombre?.toLowerCase?.().includes(search.toLowerCase()) || "") ||
         (p.estado_general?.toLowerCase?.().includes(search.toLowerCase()) || "") ||
-        (p._id?.includes(search) || ""))
-  );
+        (p._id?.includes(search) || "");
+
+      // Filtro por estado específico si está seleccionado
+      const coincideEstado = ordenFilter === "" || p.estado_general === ordenFilter;
+
+      // Filtro automático: excluir completados y cancelados por defecto
+      const esCompletado = p.estado_general === "orden6" || p.estado_general === "completado";
+      const esCancelado = p.estado_general === "cancelado";
+      
+      // Si no se quiere mostrar completados/cancelados, excluirlos
+      const mostrarEstePedido = 
+        (!esCompletado || mostrarCompletados) && 
+        (!esCancelado || mostrarCancelados);
+
+      return coincideBusqueda && coincideEstado && mostrarEstePedido;
+    })
+    .sort((a, b) => {
+      // Ordenar por fecha más reciente primero
+      const fechaA = new Date(a.fecha_creacion || 0).getTime();
+      const fechaB = new Date(b.fecha_creacion || 0).getTime();
+      return fechaB - fechaA; // Más reciente primero
+    });
 
   return (
     <div className="max-w-4xl mx-auto mt-8">
@@ -110,20 +133,92 @@ const MonitorPedidos: React.FC = () => {
           Buscar
         </button>
       </div>
-        <select
-          className="border rounded px-2 py-1 w-1/3 mb-4"
-          value={ordenFilter}
-          onChange={(e) => setOrdenFilter(e.target.value)}
-        >
-          <option value="">Todos los estados</option>
-          {Object.entries(ordenMap).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-4 mb-4">
+          <select
+            className="border rounded px-2 py-1 w-1/3"
+            value={ordenFilter}
+            onChange={(e) => setOrdenFilter(e.target.value)}
+          >
+            <option value="">Todos los estados activos</option>
+            {Object.entries(ordenMap).map(([key, label]) => (
+              <option key={key} value={key}>{label}</option>
+            ))}
+          </select>
+          
+          {/* Controles para mostrar pedidos completados y cancelados */}
+          <div className="flex gap-4 items-center">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={mostrarCompletados}
+                onChange={(e) => setMostrarCompletados(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-green-700 font-medium">Mostrar pedidos completados</span>
+            </label>
+            
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={mostrarCancelados}
+                onChange={(e) => setMostrarCancelados(e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-red-700 font-medium">Mostrar pedidos cancelados</span>
+            </label>
+          </div>
+          
+          {/* Información de filtros activos */}
+          <div className="text-sm text-gray-600">
+            {!mostrarCompletados && !mostrarCancelados && (
+              <span>✅ Mostrando solo pedidos activos (completados y cancelados ocultos)</span>
+            )}
+            {mostrarCompletados && !mostrarCancelados && (
+              <span>✅ Mostrando pedidos activos y completados</span>
+            )}
+            {!mostrarCompletados && mostrarCancelados && (
+              <span>✅ Mostrando pedidos activos y cancelados</span>
+            )}
+            {mostrarCompletados && mostrarCancelados && (
+              <span>✅ Mostrando todos los pedidos</span>
+            )}
+          </div>
+        </div>
+      {/* Contador de pedidos */}
+      {!loading && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-blue-800">
+                📊 Mostrando {pedidosFiltrados.length} de {pedidos.length} pedidos
+              </span>
+              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                📅 Ordenados por fecha (más recientes primero)
+              </span>
+            </div>
+            <div className="text-xs text-blue-600">
+              {pedidos.filter(p => p.estado_general === "orden6" || p.estado_general === "completado").length} completados • 
+              {pedidos.filter(p => p.estado_general === "cancelado").length} cancelados • 
+              {pedidos.filter(p => p.estado_general !== "orden6" && p.estado_general !== "completado" && p.estado_general !== "cancelado").length} activos
+            </div>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div>Cargando pedidos...</div>
       ) : pedidosFiltrados.length === 0 ? (
-        <div className="text-gray-500">No hay pedidos para mostrar.</div>
+        <div className="text-gray-500 p-4 bg-gray-50 rounded-lg">
+          <div className="text-center">
+            <p className="text-lg font-medium mb-2">No hay pedidos para mostrar</p>
+            <p className="text-sm">
+              {mostrarCompletados || mostrarCancelados 
+                ? "Intenta ajustar los filtros de búsqueda o fechas"
+                : "Los pedidos completados y cancelados están ocultos por defecto. Usa las casillas de arriba para mostrarlos."
+              }
+            </p>
+          </div>
+        </div>
       ) : (
         <ul className="space-y-4">
           {pedidosFiltrados.map((pedido) => (
