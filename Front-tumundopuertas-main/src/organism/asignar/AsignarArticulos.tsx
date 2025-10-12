@@ -76,6 +76,44 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
   };
 
+  // Función para determinar el estado actual de un item específico
+  const determinarEstadoItem = (itemId: string): string => {
+    // Buscar en asignaciones previas para determinar el estado actual del item
+    const asignacionItem = Object.values(asignadosPrevios).find(a => a.key.includes(itemId));
+    
+    if (asignacionItem) {
+      // Si el item tiene asignación, determinar su estado basado en el orden
+      switch(numeroOrden) {
+        case "1": return "herreria";
+        case "2": return "masillar";
+        case "3": return "preparar";
+        case "4": return "facturar";
+        default: return "herreria";
+      }
+    }
+    
+    // Si no tiene asignación, usar el estado general del pedido
+    return determinarModuloActual(numeroOrden);
+  };
+
+  // Función para obtener el tipo de empleado según el estado del item
+  const obtenerTipoEmpleadoPorItem = (itemId: string): string[] => {
+    const estadoItem = determinarEstadoItem(itemId);
+    
+    switch (estadoItem) {
+      case "herreria":
+        return ["herreria", "ayudante"];
+      case "masillar":
+        return ["masillar", "pintar", "ayudante"];
+      case "preparar":
+        return ["mantenimiento", "ayudante"];
+      case "facturar":
+        return ["facturacion", "ayudante"];
+      default:
+        return ["herreria", "ayudante"];
+    }
+  };
+
   // Cargar empleados filtrados para cada item
   const cargarEmpleadosPorItem = async () => {
     const empleadosPorItemData: Record<string, any[]> = {};
@@ -282,23 +320,23 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                   ) : (
                     <div className="flex flex-col gap-2 w-full">
                       <div className="relative">
-                        <select
+                  <select
                           className="w-full min-w-[200px] border-2 border-gray-300 rounded-lg px-4 py-3 bg-white text-gray-700 font-medium shadow-sm hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200 appearance-none cursor-pointer"
-                          value={asignacion.empleadoId || ""}
-                          onChange={(e) => {
-                            const empleadoId = e.target.value;
+                    value={asignacion.empleadoId || ""}
+                    onChange={(e) => {
+                      const empleadoId = e.target.value;
                             const empleadosDisponibles = empleadosPorItem[item.id] || empleados;
                             const empleado = empleadosDisponibles.find(
-                              (emp) => emp.identificador === empleadoId
-                            );
-                            handleEmpleadoChange(
-                              item,
-                              idx,
-                              empleadoId,
+                        (emp) => emp.identificador === empleadoId
+                      );
+                      handleEmpleadoChange(
+                        item,
+                        idx,
+                        empleadoId,
                               empleado?.nombre || empleadoId
-                            );
-                          }}
-                        >
+                      );
+                    }}
+                  >
                           <option value="" className="text-gray-500">
                             👤 Seleccionar empleado...
                           </option>
@@ -306,7 +344,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             console.log('🔍 DEBUG FILTRO INICIO:', {
                               itemId: item.id,
                               empleadosDisponibles: (empleadosPorItem[item.id] || empleados).length,
-                              tipoEmpleado: tipoEmpleado,
+                              tipoEmpleado: obtenerTipoEmpleadoPorItem(item.id),
                               empleadosGenerales: empleados.length
                             });
 
@@ -317,7 +355,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                   nombre: e?.nombre,
                                   cargo: e?.cargo,
                                   tieneCargo: !!e?.cargo,
-                                  tipoEmpleado: tipoEmpleado
+                                  tipoEmpleado: obtenerTipoEmpleadoPorItem(item.id)
                                 });
 
                                 // Verificar que el empleado tenga datos válidos
@@ -327,16 +365,30 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 }
                                 
                                 // Si hay tipoEmpleado definido, filtrar por cargo
-                                if (tipoEmpleado && Array.isArray(tipoEmpleado) && tipoEmpleado.length > 0) {
+                                const tipoEmpleadoItem = obtenerTipoEmpleadoPorItem(item.id);
+                                if (tipoEmpleadoItem && Array.isArray(tipoEmpleadoItem) && tipoEmpleadoItem.length > 0) {
                                   const cargo = e.cargo || '';
-                                  const cumpleFiltro = tipoEmpleado.some((tipo) => 
-                                    cargo.toLowerCase().includes(tipo.toLowerCase()) ||
-                                    tipo.toLowerCase().includes(cargo.toLowerCase())
+                                  const nombre = e.nombre || '';
+                                  
+                                  // Verificar si el cargo coincide directamente
+                                  const cargoCoincide = tipoEmpleadoItem.some((tipo) => 
+                                    cargo.toLowerCase().includes(tipo.toLowerCase())
                                   );
+                                  
+                                  // Verificar si el nombre contiene el tipo (para empleados con cargo: null)
+                                  const nombreCoincide = tipoEmpleadoItem.some((tipo) => 
+                                    nombre.toLowerCase().includes(tipo.toLowerCase())
+                                  );
+                                  
+                                  const cumpleFiltro = cargoCoincide || nombreCoincide;
+                                  
                                   console.log('🎯 FILTRO RESULTADO:', {
                                     empleado: e.identificador,
                                     cargo: cargo,
-                                    tipoEmpleado: tipoEmpleado,
+                                    nombre: nombre,
+                                    tipoEmpleado: tipoEmpleadoItem,
+                                    cargoCoincide: cargoCoincide,
+                                    nombreCoincide: nombreCoincide,
                                     cumpleFiltro: cumpleFiltro
                                   });
                                   return cumpleFiltro;
@@ -366,13 +418,13 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                               }
                               
                               return (
-                                <option
-                                  key={empleado.identificador}
-                                  value={empleado.identificador}
+                        <option
+                          key={empleado.identificador}
+                          value={empleado.identificador}
                                   className="py-2"
-                                >
+                        >
                                   {empleado.nombre || empleado.identificador}
-                                </option>
+                        </option>
                               );
                             });
                           })()}
@@ -406,7 +458,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                           <div className="mt-1 p-2 bg-gray-100 rounded text-xs">
                             <div>Empleados totales: {empleados.length}</div>
                             <div>Empleados por item: {empleadosPorItem[item.id]?.length || 0}</div>
-                            <div>Tipo empleado: {Array.isArray(tipoEmpleado) ? tipoEmpleado.join(', ') : tipoEmpleado}</div>
+                            <div>Tipo empleado: {Array.isArray(obtenerTipoEmpleadoPorItem(item.id)) ? obtenerTipoEmpleadoPorItem(item.id).join(', ') : obtenerTipoEmpleadoPorItem(item.id)}</div>
                             <div>Item ID: {item.id}</div>
                             <div className="mt-2">
                               <strong>Primeros 3 empleados:</strong>
@@ -421,11 +473,13 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                               {(empleadosPorItem[item.id] || empleados)
                                 .filter((e) => {
                                   if (!e || !e.identificador || !e.nombre) return false;
-                                  if (tipoEmpleado && Array.isArray(tipoEmpleado) && tipoEmpleado.length > 0) {
+                                  const tipoEmpleadoItem = obtenerTipoEmpleadoPorItem(item.id);
+                                  if (tipoEmpleadoItem && Array.isArray(tipoEmpleadoItem) && tipoEmpleadoItem.length > 0) {
                                     const cargo = e.cargo || '';
-                                    return tipoEmpleado.some((tipo) => 
+                                    const nombre = e.nombre || '';
+                                    return tipoEmpleadoItem.some((tipo) => 
                                       cargo.toLowerCase().includes(tipo.toLowerCase()) ||
-                                      tipo.toLowerCase().includes(cargo.toLowerCase())
+                                      nombre.toLowerCase().includes(tipo.toLowerCase())
                                     );
                                   }
                                   return true;
