@@ -143,7 +143,7 @@ const DashboardAsignaciones: React.FC = () => {
   } = useDashboardAsignaciones();
 
   // Hook para sincronización de estados
-  const { notificarCambioEstado, obtenerSiguienteModulo: obtenerSiguienteModuloSync } = useSincronizacionEstados();
+  const { notificarCambioEstado } = useSincronizacionEstados();
   
   // Función para probar endpoints manualmente
   const probarEndpoints = async () => {
