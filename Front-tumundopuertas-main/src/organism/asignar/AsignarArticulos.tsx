@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useReaccionarACambiosEstado } from "@/hooks/useSincronizacionEstados";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
 import { useEstadoItems } from "@/hooks/useEstadoItems";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
@@ -71,48 +70,37 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   // Hook para manejar estados individuales de items
   const { obtenerEstadoItem, cargarEstadosItems } = useEstadoItems(pedidoId, items);
   
-  // Hook para sincronización de estados
-  // const { notificarCambioEstado } = useSincronizacionEstados();
-  
-  // Reaccionar a cambios de estado para cada item
-  items.forEach(item => {
-    useReaccionarACambiosEstado(pedidoId, item.id, async (evento) => {
-      console.log(`🔄 Reaccionando a cambio de estado para item ${item.id}:`, evento);
+  // Escuchar cambios de estado usando evento personalizado
+  useEffect(() => {
+    const handleCambioEstado = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const evento = customEvent.detail;
+      console.log(`🔄 AsignarArticulos: Cambio de estado detectado:`, evento);
       
-      // Recargar estados de items
-      await cargarEstadosItems();
+      // Verificar si el cambio es relevante para los items actuales
+      const esRelevante = items.some(item => item.id === evento.itemId);
       
-      // Recargar empleados por item
-      await cargarEmpleadosPorItem();
-      
-      console.log(`✅ Estados actualizados para item ${item.id} después del cambio`);
-    });
-  });
-  
-  // Hook para sincronización automática (preparado para uso futuro)
-  // const { procesarCambioAutomatico, sincronizando } = useSincronizacionEmpleados();
+      if (esRelevante) {
+        console.log(`🎯 Cambio relevante detectado, recargando datos...`);
+        
+        // Recargar estados de items
+        await cargarEstadosItems();
+        
+        // Recargar empleados por item
+        await cargarEmpleadosPorItem();
+        
+        console.log(`✅ AsignarArticulos: Datos actualizados después del cambio de estado`);
+      }
+    };
 
+    // Suscribirse al evento personalizado
+    window.addEventListener('cambioEstadoItem', handleCambioEstado);
 
-
-  // Función para obtener el tipo de empleado según el estado real del item
-  const obtenerTipoEmpleadoPorItem = (itemId: string): string[] => {
-    const estadoItem = obtenerEstadoItem(itemId); // Usar el estado real del item
-    
-    console.log(`🎯 Obteniendo tipo empleado para item ${itemId}, estado: ${estadoItem}`);
-    
-    switch (estadoItem) {
-      case "herreria":
-        return ["herreria", "ayudante"];
-      case "masillar":
-        return ["masillar", "pintar", "ayudante"];
-      case "preparar":
-        return ["mantenimiento", "ayudante"];
-      case "facturar":
-        return ["facturacion", "ayudante"];
-      default:
-        return ["herreria", "ayudante"];
-    }
-  };
+    // Cleanup: remover el listener cuando el componente se desmonte
+    return () => {
+      window.removeEventListener('cambioEstadoItem', handleCambioEstado);
+    };
+  }, [items, cargarEstadosItems]);
 
   // Cargar empleados filtrados para cada item
   const cargarEmpleadosPorItem = async () => {
@@ -139,6 +127,26 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     setEmpleadosPorItem(empleadosPorItemData);
     console.log('📋 Empleados cargados por item:', empleadosPorItemData);
+  };
+
+  // Función para obtener el tipo de empleado según el estado real del item
+  const obtenerTipoEmpleadoPorItem = (itemId: string): string[] => {
+    const estadoItem = obtenerEstadoItem(itemId); // Usar el estado real del item
+    
+    console.log(`🎯 Obteniendo tipo empleado para item ${itemId}, estado: ${estadoItem}`);
+    
+    switch (estadoItem) {
+      case "herreria":
+        return ["herreria", "ayudante"];
+      case "masillar":
+        return ["masillar", "pintar", "ayudante"];
+      case "preparar":
+        return ["mantenimiento", "ayudante"];
+      case "facturar":
+        return ["facturacion", "ayudante"];
+      default:
+        return ["herreria", "ayudante"];
+    }
   };
 
   // Buscar asignaciones previas al montar
