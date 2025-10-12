@@ -1,11 +1,5 @@
 import { useState, useEffect } from 'react';
 
-interface EstadoItem {
-  itemId: string;
-  estado: string;
-  ultimaActualizacion: string;
-}
-
 export const useEstadoItems = (pedidoId: string, items: any[]) => {
   const [estadosItems, setEstadosItems] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
