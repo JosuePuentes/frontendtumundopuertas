@@ -14,7 +14,6 @@ import autoTable from 'jspdf-autotable';
 import { useDashboardAsignaciones, type Asignacion } from "@/hooks/useDashboardAsignaciones";
 import ImageDisplay from "@/upfile/ImageDisplay";
 import { getApiUrl } from "@/lib/api";
-import DiagnosticoBackend from "@/components/ui/DiagnosticoBackend";
 
 interface PinVerificationProps {
   isOpen: boolean;
@@ -130,7 +129,6 @@ const DashboardAsignaciones: React.FC = () => {
   const [fechaInicioReporte, setFechaInicioReporte] = useState("");
   const [fechaFinReporte, setFechaFinReporte] = useState("");
   const [generandoReporte, setGenerandoReporte] = useState(false);
-  const [mostrarDiagnostico, setMostrarDiagnostico] = useState(false);
   
   const {
     loading,
@@ -815,19 +813,6 @@ const DashboardAsignaciones: React.FC = () => {
           </ul>
         </div>
         
-        {/* Botón de diagnóstico del backend */}
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <Button
-            onClick={() => setMostrarDiagnostico(true)}
-            variant="outline"
-            className="flex items-center gap-2 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
-          >
-            🚨 Diagnosticar Errores 500 del Backend
-          </Button>
-          <p className="text-xs text-gray-600 mt-1">
-            Analiza los errores 500 del endpoint empleados-por-modulo para identificar problemas
-          </p>
-        </div>
       </div>
 
       {/* Filtros */}
@@ -1202,15 +1187,6 @@ const DashboardAsignaciones: React.FC = () => {
         loading={verificandoPin}
       />
 
-      {/* Modal de diagnóstico del backend */}
-      <Dialog open={mostrarDiagnostico} onOpenChange={setMostrarDiagnostico}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>🔍 Diagnóstico del Backend - Errores 500</DialogTitle>
-          </DialogHeader>
-          <DiagnosticoBackend />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

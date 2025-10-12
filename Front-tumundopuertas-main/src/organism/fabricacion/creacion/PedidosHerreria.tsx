@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePedido } from "@/hooks/usePedido";
 import DetalleHerreria from "./DetalleHerreria";
 import { useEmpleado } from "@/hooks/useEmpleado";
 import AsignarArticulos from "@/organism/asignar/AsignarArticulos";
+import DiagnosticoBackend from "@/components/ui/DiagnosticoBackend";
 
 // Tipos explícitos
 interface PedidoItem {
@@ -45,6 +48,7 @@ const PedidosHerreria: React.FC = () => {
   const { fetchPedido, dataPedidos } = usePedido();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [mostrarDiagnostico, setMostrarDiagnostico] = useState(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
   // La lógica de asignaciones se delega al hijo
 
@@ -62,7 +66,16 @@ const PedidosHerreria: React.FC = () => {
   return (
     <Card className="max-w-3xl mx-auto mt-8 border-gray-200">
       <CardHeader>
-        <CardTitle>Pedidos Herreria</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle>Pedidos Herreria</CardTitle>
+          <Button
+            onClick={() => setMostrarDiagnostico(true)}
+            variant="outline"
+            className="flex items-center gap-2 bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
+          >
+            🚨 Diagnosticar Errores 500
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -95,6 +108,16 @@ const PedidosHerreria: React.FC = () => {
           </ul>
         )}
       </CardContent>
+      
+      {/* Modal de diagnóstico del backend */}
+      <Dialog open={mostrarDiagnostico} onOpenChange={setMostrarDiagnostico}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>🔍 Diagnóstico del Backend - Errores 500</DialogTitle>
+          </DialogHeader>
+          <DiagnosticoBackend />
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
