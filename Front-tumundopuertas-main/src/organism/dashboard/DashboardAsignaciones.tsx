@@ -120,6 +120,7 @@ const DashboardAsignaciones: React.FC = () => {
   const [modulosSeleccionados, setModulosSeleccionados] = useState<string[]>([]);
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState("");
   const [filtroFecha, setFiltroFecha] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<"en_proceso" | "terminado" | "todos">("en_proceso");
   
   const {
     loading,
@@ -162,7 +163,7 @@ const DashboardAsignaciones: React.FC = () => {
     try {
       const data = await fetchAsignaciones();
       setAsignaciones(data);
-      aplicarFiltros(data, modulosSeleccionados, empleadoSeleccionado, filtroFecha);
+      aplicarFiltros(data, modulosSeleccionados, empleadoSeleccionado, filtroFecha, filtroEstado);
       setMensaje(`Cargadas ${data.length} asignaciones`);
       setTimeout(() => setMensaje(""), 3000);
     } catch (err) {
@@ -173,8 +174,15 @@ const DashboardAsignaciones: React.FC = () => {
   };
 
   // Función para aplicar filtros
-  const aplicarFiltros = (datos: Asignacion[], modulos: string[], empleado: string, fecha: string) => {
+  const aplicarFiltros = (datos: Asignacion[], modulos: string[], empleado: string, fecha: string, estado: "en_proceso" | "terminado" | "todos") => {
     let filtrados = [...datos];
+
+    // Filtro por estado (PRIMERO - más importante)
+    if (estado !== "todos") {
+      filtrados = filtrados.filter(asignacion => 
+        asignacion.estado === estado
+      );
+    }
 
     // Filtro por módulos
     if (modulos.length > 0) {
@@ -215,17 +223,14 @@ const DashboardAsignaciones: React.FC = () => {
       nuevosModulos = nuevosModulos.filter(m => m !== modulo);
     }
     setModulosSeleccionados(nuevosModulos);
-    aplicarFiltros(asignaciones, nuevosModulos, empleadoSeleccionado, filtroFecha);
   };
 
   const handleEmpleadoChange = (value: string) => {
     setEmpleadoSeleccionado(value);
-    aplicarFiltros(asignaciones, modulosSeleccionados, value, filtroFecha);
   };
 
   const handleFiltroFechaChange = (value: string) => {
     setFiltroFecha(value);
-    aplicarFiltros(asignaciones, modulosSeleccionados, empleadoSeleccionado, value);
   };
 
   // Limpiar filtros
@@ -233,7 +238,7 @@ const DashboardAsignaciones: React.FC = () => {
     setModulosSeleccionados([]);
     setEmpleadoSeleccionado("");
     setFiltroFecha("");
-    setAsignacionesFiltradas(asignaciones);
+    setFiltroEstado("en_proceso"); // Volver al estado por defecto
   };
 
   // Obtener empleados únicos de los módulos seleccionados
@@ -255,12 +260,22 @@ const DashboardAsignaciones: React.FC = () => {
     cargarAsignaciones();
   }, []);
 
-  // Inicializar asignaciones filtradas cuando cambien las asignaciones
+  // Actualización automática cada 5 minutos
   useEffect(() => {
-    if (asignaciones.length > 0 && asignacionesFiltradas.length === 0) {
-      setAsignacionesFiltradas(asignaciones);
+    const interval = setInterval(() => {
+      console.log('🔄 Actualización automática cada 5 minutos...');
+      cargarAsignaciones();
+    }, 5 * 60 * 1000); // 5 minutos
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Aplicar filtros cuando cambien los filtros o las asignaciones
+  useEffect(() => {
+    if (asignaciones.length > 0) {
+      aplicarFiltros(asignaciones, modulosSeleccionados, empleadoSeleccionado, filtroFecha, filtroEstado);
     }
-  }, [asignaciones]);
+  }, [asignaciones, modulosSeleccionados, empleadoSeleccionado, filtroFecha, filtroEstado]);
 
 
   const handleTerminarAsignacion = (asignacion: Asignacion) => {
@@ -423,6 +438,43 @@ const DashboardAsignaciones: React.FC = () => {
           </div>
         </div>
 
+        {/* Filtro por estado */}
+        <div className="mb-4">
+          <Label className="text-sm font-medium mb-2 block">Estado de Asignaciones</Label>
+          <div className="flex gap-4 flex-wrap">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="estado-en-proceso"
+                checked={filtroEstado === "en_proceso"}
+                onCheckedChange={(checked) => checked && setFiltroEstado("en_proceso")}
+              />
+              <Label htmlFor="estado-en-proceso" className="text-sm">
+                🔄 En Proceso (para terminar)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="estado-terminado"
+                checked={filtroEstado === "terminado"}
+                onCheckedChange={(checked) => checked && setFiltroEstado("terminado")}
+              />
+              <Label htmlFor="estado-terminado" className="text-sm">
+                ✅ Terminadas
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="estado-todos"
+                checked={filtroEstado === "todos"}
+                onCheckedChange={(checked) => checked && setFiltroEstado("todos")}
+              />
+              <Label htmlFor="estado-todos" className="text-sm">
+                📋 Todos
+              </Label>
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Filtro por empleado */}
           <div>
@@ -485,16 +537,19 @@ const DashboardAsignaciones: React.FC = () => {
           <Button
             onClick={limpiarFiltros}
             variant="outline"
-            disabled={modulosSeleccionados.length === 0 && !empleadoSeleccionado && !filtroFecha}
+            disabled={modulosSeleccionados.length === 0 && !empleadoSeleccionado && !filtroFecha && filtroEstado === "en_proceso"}
           >
             Limpiar Filtros
           </Button>
         </div>
 
         {/* Información de filtros activos */}
-        {(modulosSeleccionados.length > 0 || empleadoSeleccionado || filtroFecha) && (
+        {(modulosSeleccionados.length > 0 || empleadoSeleccionado || filtroFecha || filtroEstado !== "en_proceso") && (
           <div className="mt-3 p-2 bg-blue-50 rounded text-sm text-blue-700">
             <strong>Filtros activos:</strong>
+            {filtroEstado !== "en_proceso" && (
+              <span> Estado: {filtroEstado === "terminado" ? "✅ Terminadas" : "📋 Todos"}</span>
+            )}
             {modulosSeleccionados.length > 0 && (
               <span> Módulos: {modulosSeleccionados.map(m => m.toUpperCase()).join(', ')}</span>
             )}
