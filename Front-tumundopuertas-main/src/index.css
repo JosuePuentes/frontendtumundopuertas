@@ -120,3 +120,169 @@ input[type=number] {
 .progreso-pendiente .progreso-fill {
   background: linear-gradient(90deg, #6b7280, #4b5563);
 }
+
+/* Estilos para barra de progreso de items */
+.barra-progreso-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin: 8px 0;
+  border: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.modulo-step-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.modulo-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  flex: 1;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.modulo-step-completado {
+  background: #d1fae5;
+  border: 2px solid #10b981;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.modulo-step-proceso {
+  background: #dbeafe;
+  border: 2px solid #3b82f6;
+  animation: pulso-progreso 2s infinite;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.modulo-step-pendiente {
+  background: #f3f4f6;
+  border: 2px solid #d1d5db;
+  opacity: 0.7;
+}
+
+.modulo-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.modulo-nombre {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modulo-step-completado .modulo-nombre {
+  color: #065f46;
+}
+
+.modulo-step-proceso .modulo-nombre {
+  color: #1e40af;
+}
+
+.modulo-step-pendiente .modulo-nombre {
+  color: #6b7280;
+}
+
+.conector {
+  position: absolute;
+  top: 50%;
+  right: -50%;
+  width: 100%;
+  height: 2px;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.conector-activo {
+  background: linear-gradient(90deg, #10b981, #059669);
+  box-shadow: 0 0 4px rgba(16, 185, 129, 0.4);
+}
+
+.conector-inactivo {
+  background: #d1d5db;
+}
+
+@keyframes pulso-progreso {
+  0%, 100% { 
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 4px 16px rgba(59, 130, 246, 0.5);
+    transform: scale(1.02);
+  }
+}
+
+/* Responsive design para móvil */
+@media (max-width: 768px) {
+  .barra-progreso-item {
+    padding: 8px;
+    margin: 6px 0;
+  }
+  
+  .modulo-step {
+    padding: 6px;
+    gap: 2px;
+  }
+  
+  .modulo-nombre {
+    font-size: 8px;
+  }
+  
+  .modulo-icono svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .conector {
+    height: 1px;
+  }
+}
+
+@media (max-width: 480px) {
+  .barra-progreso-item {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .modulo-step-container {
+    width: 100%;
+  }
+  
+  .modulo-step {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  
+  .modulo-icono {
+    margin-bottom: 0;
+  }
+  
+  .modulo-nombre {
+    font-size: 12px;
+    text-align: left;
+  }
+  
+  .conector {
+    display: none;
+  }
+}

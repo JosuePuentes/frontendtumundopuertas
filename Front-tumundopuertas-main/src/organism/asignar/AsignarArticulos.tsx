@@ -3,6 +3,7 @@ import FinalizarSubestado from "@/organism/designar/FinalizarSubestado";
 import useTerminarEmpleado from "@/hooks/useTerminarEmpleado";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
+import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
 
 interface PedidoItem {
   id: string;
@@ -76,6 +77,17 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
 
   // Hook para obtener empleados por módulo
   const { obtenerEmpleadosPorModulo, loading: loadingEmpleados } = useEmpleadosPorModulo();
+
+  // Función helper para determinar módulo actual según el orden
+  const determinarModuloActual = (orden: string): string => {
+    switch(orden) {
+      case "1": return "herreria";
+      case "2": return "masillar";
+      case "3": return "preparar";
+      case "4": return "facturar";
+      default: return "herreria";
+    }
+  };
 
   // Cargar empleados filtrados para cada item
   const cargarEmpleadosPorItem = async () => {
@@ -224,6 +236,14 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
           return (
             <li key={key} className="flex flex-col gap-2 border rounded p-3">
               <span className="font-medium">{item.nombre}</span>
+              
+              {/* Barra de progreso del item */}
+              <BarraProgresoItem 
+                pedidoId={pedidoId}
+                itemId={item.id}
+                moduloActual={determinarModuloActual(numeroOrden)}
+              />
+              
               {item.imagenes && item.imagenes.length > 0 && (
                 <div className="flex flex-col gap-2 items-center justify-center">
                   <span className="text-xs text-gray-600 mb-1">Imágenes:</span>

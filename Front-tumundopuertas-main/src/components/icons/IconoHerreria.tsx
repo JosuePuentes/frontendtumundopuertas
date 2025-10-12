@@ -1,0 +1,79 @@
+import React from 'react';
+
+interface IconoHerreriaProps {
+  size?: number;
+  estado?: 'completado' | 'en_proceso' | 'pendiente';
+}
+
+const IconoHerreria: React.FC<IconoHerreriaProps> = ({ 
+  size = 32, 
+  estado = 'pendiente' 
+}) => {
+  const getColor = () => {
+    switch (estado) {
+      case 'completado':
+        return '#10b981'; // verde
+      case 'en_proceso':
+        return '#3b82f6'; // azul
+      case 'pendiente':
+      default:
+        return '#9ca3af'; // gris
+    }
+  };
+
+  const isAnimated = estado === 'en_proceso';
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={isAnimated ? 'animate-pulse' : ''}
+    >
+      {/* Cabeza del muñequito */}
+      <circle cx="16" cy="8" r="4" fill={getColor()} />
+      
+      {/* Cuerpo */}
+      <rect x="12" y="12" width="8" height="10" rx="2" fill={getColor()} />
+      
+      {/* Brazos */}
+      <rect x="8" y="14" width="4" height="2" rx="1" fill={getColor()} />
+      <rect x="20" y="14" width="4" height="2" rx="1" fill={getColor()} />
+      
+      {/* Piernas */}
+      <rect x="13" y="22" width="2" height="6" rx="1" fill={getColor()} />
+      <rect x="17" y="22" width="2" height="6" rx="1" fill={getColor()} />
+      
+      {/* Máscara de soldador */}
+      <ellipse cx="16" cy="8" rx="3" ry="2.5" fill="#1f2937" />
+      <circle cx="16" cy="8" r="1.5" fill="#ffffff" />
+      
+      {/* Soplete */}
+      <rect x="24" y="12" width="6" height="2" rx="1" fill="#ef4444" />
+      <circle cx="30" cy="13" r="1" fill="#fbbf24" />
+      
+      {/* Llamas del soplete */}
+      {isAnimated && (
+        <g className="animate-pulse">
+          <path d="M30 11 Q31 10 30 9 Q29 10 30 11" fill="#f59e0b" />
+          <path d="M30 12 Q31 11 30 10 Q29 11 30 12" fill="#fbbf24" />
+        </g>
+      )}
+      
+      {/* Checkmark para completado */}
+      {estado === 'completado' && (
+        <path
+          d="M12 16 L14 18 L20 12"
+          stroke="#ffffff"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      )}
+    </svg>
+  );
+};
+
+export default IconoHerreria;
