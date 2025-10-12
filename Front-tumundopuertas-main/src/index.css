@@ -286,3 +286,57 @@ input[type=number] {
     display: none;
   }
 }
+
+/* Estilos para círculo de progreso del pedido */
+.circulo-progreso-pedido {
+  position: relative;
+  display: inline-block;
+}
+
+.circulo-progreso-texto {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.circulo-progreso-porcentaje {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.circulo-progreso-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Estilos para progreso de items en monitor */
+.progreso-item-monitor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 6px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+/* Responsive para círculo de progreso */
+@media (max-width: 768px) {
+  .circulo-progreso-porcentaje {
+    font-size: 16px;
+  }
+  
+  .circulo-progreso-label {
+    font-size: 9px;
+  }
+}

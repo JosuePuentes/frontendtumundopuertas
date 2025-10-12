@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import PedidoConProgreso from "@/components/ui/PedidoConProgreso";
 
 interface Pedido {
   _id: string;
@@ -130,69 +127,15 @@ const MonitorPedidos: React.FC = () => {
       ) : (
         <ul className="space-y-4">
           {pedidosFiltrados.map((pedido) => (
-            <li key={pedido._id}>
-              <Card>
-                <CardHeader>
-                  <CardTitle>
-                    Pedido: {pedido._id}
-                    <Badge variant="secondary" className="ml-2">
-                      {pedido.estado_general}
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="mb-2 text-base font-bold text-gray-900">
-                    Cliente: <span className="font-normal text-gray-700">{pedido.cliente_nombre}</span>
-                  </div>
-                  <div className="mb-2 text-base font-bold text-blue-700">
-                    Estado general: <span className="font-normal text-blue-900">{ordenMap[pedido.estado_general] || pedido.estado_general}</span>
-                  </div>
-                  {pedido.fecha_creacion && (
-                    <div className="text-base text-gray-700">
-                      Fecha: {new Date(pedido.fecha_creacion).toLocaleDateString()}
-                    </div>
-                  )}
-                  {Array.isArray(pedido.items) && pedido.items.length > 0 && (
-                    <div className="mt-2">
-                      <div className="font-semibold mb-1">Items:</div>
-                      <ul className="list-disc ml-6">
-                        {pedido.items.map((item, idx) => (
-                          <li key={idx} className="mb-1">
-                            <span className="font-bold">{item.nombre}</span> - {item.descripcion} <span className="text-gray-600">x{item.cantidad}</span>
-                            {item.costoProduccion && (
-                              <span className="ml-2 text-green-700 font-semibold">${item.costoProduccion}</span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </CardContent>
-                <div className="px-6 pb-4 flex flex-col gap-2">
-                  <Select
-                    value={estadoSeleccionado[pedido._id] || ""}
-                    onValueChange={(val) => setEstadoSeleccionado((prev) => ({ ...prev, [pedido._id]: val }))}
-                  >
-                    <SelectTrigger className="w-full max-w-xs" aria-label="Seleccionar estado">
-                      <SelectValue placeholder="Selecciona nuevo estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(ordenMap).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    className="w-full max-w-xs bg-black text-white border-black hover:bg-gray-900 hover:text-white"
-                    disabled={!estadoSeleccionado[pedido._id] || actualizando === pedido._id}
-                    onClick={() => handleActualizarEstado(pedido._id)}
-                  >
-                    {actualizando === pedido._id ? "Actualizando..." : "Cambiar Estado"}
-                  </Button>
-                </div>
-              </Card>
-            </li>
+            <PedidoConProgreso
+              key={pedido._id}
+              pedido={pedido}
+              ordenMap={ordenMap}
+              estadoSeleccionado={estadoSeleccionado}
+              setEstadoSeleccionado={setEstadoSeleccionado}
+              actualizando={actualizando}
+              onActualizarEstado={handleActualizarEstado}
+            />
           ))}
         </ul>
       )}
