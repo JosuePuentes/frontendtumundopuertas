@@ -20,7 +20,8 @@ interface PedidoItem {
 interface Empleado {
   identificador: string;
   nombreCompleto?: string;
-  permisos: string[];
+  cargo?: string;
+  permisos?: string[];
 }
 
 interface AsignacionArticulo {
@@ -371,7 +372,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                               <strong>Primeros 3 empleados:</strong>
                               {empleados.slice(0, 3).map((emp, idx) => (
                                 <div key={idx} className="ml-2">
-                                  {emp?.identificador || 'Sin ID'}: {emp?.permisos?.join(', ') || 'Sin permisos'}
+                                  {emp?.identificador || 'Sin ID'}: {emp?.cargo || 'Sin cargo'}
                                 </div>
                               ))}
                             </div>
@@ -379,15 +380,20 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                               <strong>Empleados filtrados:</strong>
                               {(empleadosPorItem[item.id] || empleados)
                                 .filter((e) => {
-                                  if (!e || !e.permisos || !Array.isArray(e.permisos)) return false;
-                                  return Array.isArray(tipoEmpleado)
-                                    ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
-                                    : e.permisos.includes(tipoEmpleado);
+                                  if (!e || !e.identificador || !e.nombreCompleto) return false;
+                                  if (tipoEmpleado && Array.isArray(tipoEmpleado) && tipoEmpleado.length > 0) {
+                                    const cargo = e.cargo || '';
+                                    return tipoEmpleado.some((tipo) => 
+                                      cargo.toLowerCase().includes(tipo.toLowerCase()) ||
+                                      tipo.toLowerCase().includes(cargo.toLowerCase())
+                                    );
+                                  }
+                                  return true;
                                 })
                                 .slice(0, 3)
                                 .map((emp, idx) => (
                                   <div key={idx} className="ml-2">
-                                    {emp?.identificador || 'Sin ID'}: {emp?.permisos?.join(', ') || 'Sin permisos'}
+                                    {emp?.identificador || 'Sin ID'}: {emp?.cargo || 'Sin cargo'}
                                   </div>
                                 ))}
                             </div>
