@@ -35,8 +35,6 @@ const MonitorPedidos: React.FC = () => {
   };
 
   const [ordenFilter, setOrdenFilter] = useState<string>("");
-  const [estadoSeleccionado, setEstadoSeleccionado] = useState<Record<string, string>>({});
-  const [actualizando, setActualizando] = useState<string>("");
   const [mostrarCompletados, setMostrarCompletados] = useState<boolean>(false);
   const [mostrarCancelados, setMostrarCancelados] = useState<boolean>(false);
 
@@ -59,21 +57,6 @@ const MonitorPedidos: React.FC = () => {
     fetchPedidos();
   }, [shouldSearch, apiUrl, fechaInicio, fechaFin]);
 
-  const handleActualizarEstado = async (pedidoId: string) => {
-    if (!estadoSeleccionado[pedidoId]) return;
-    setActualizando(pedidoId);
-    try {
-      const res = await fetch(`${apiUrl}/pedidos/actualizar-estado-general/`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pedido_id: pedidoId, nuevo_estado_general: estadoSeleccionado[pedidoId] }),
-      });
-      if (!res.ok) throw new Error("Error actualizando estado");
-      // Actualizar localmente el estado
-      setPedidos((prev) => prev.map((p) => p._id === pedidoId ? { ...p, estado_general: estadoSeleccionado[pedidoId] } : p));
-    } catch {}
-    setActualizando("");
-  };
 
   const pedidosFiltrados = pedidos
     .filter((p) => {
@@ -226,10 +209,6 @@ const MonitorPedidos: React.FC = () => {
               key={pedido._id}
               pedido={pedido}
               ordenMap={ordenMap}
-              estadoSeleccionado={estadoSeleccionado}
-              setEstadoSeleccionado={setEstadoSeleccionado}
-              actualizando={actualizando}
-              onActualizarEstado={handleActualizarEstado}
             />
           ))}
         </ul>

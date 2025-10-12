@@ -1,8 +1,6 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import CirculoProgresoPedido from "./CirculoProgresoPedido";
 import ProgresoItemMonitor from "./ProgresoItemMonitor";
 import { useProgresoPedido } from "@/hooks/useProgresoPedido";
@@ -24,19 +22,11 @@ interface Pedido {
 interface PedidoConProgresoProps {
   pedido: Pedido;
   ordenMap: Record<string, string>;
-  estadoSeleccionado: Record<string, string>;
-  setEstadoSeleccionado: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  actualizando: string;
-  onActualizarEstado: (pedidoId: string) => void;
 }
 
 const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
   pedido,
-  ordenMap,
-  estadoSeleccionado,
-  setEstadoSeleccionado,
-  actualizando,
-  onActualizarEstado
+  ordenMap
 }) => {
   const { progreso } = useProgresoPedido(pedido._id);
 
@@ -52,43 +42,47 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="relative">
-          {/* Círculo de progreso centrado y más visible */}
+          {/* Círculo de progreso centrado y estético */}
           {progreso && (
-            <div className="absolute top-4 right-4 z-10">
+            <div className="absolute top-1/2 right-6 transform -translate-y-1/2 z-10">
               <CirculoProgresoPedido 
                 porcentaje={progreso.porcentaje}
-                size={80}
-                strokeWidth={8}
+                size={100}
+                strokeWidth={10}
               />
             </div>
           )}
           
-          <div className="mb-2 pr-24">
+          <div className="mb-2 pr-32">
             <strong>Cliente:</strong> {pedido.cliente_nombre}
           </div>
           {pedido.creado_por && (
-            <div className="text-sm text-gray-600 pr-24">
+            <div className="text-sm text-gray-600 pr-32">
               <strong>Creado por:</strong> {pedido.creado_por}
             </div>
           )}
           {pedido.fecha_creacion && (
-            <div className="text-base text-gray-700 pr-24">
+            <div className="text-base text-gray-700 pr-32">
               Fecha: {new Date(pedido.fecha_creacion).toLocaleDateString()}
             </div>
           )}
           
-          {/* Información de progreso */}
+          {/* Información de progreso mejorada */}
           {progreso && (
-            <div className="mt-3 p-3 bg-gray-50 rounded-lg pr-24">
+            <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg pr-32 border border-blue-100">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-gray-700">
-                  Progreso: {progreso.contadorProgreso} módulos
+                  📊 Progreso: {progreso.contadorProgreso} módulos completados
                 </span>
-                <span className="text-sm font-bold" style={{ 
-                  color: progreso.porcentaje >= 100 ? '#10b981' : 
-                         progreso.porcentaje >= 80 ? '#3b82f6' : 
-                         progreso.porcentaje >= 55 ? '#f59e0b' : 
-                         progreso.porcentaje >= 20 ? '#f97316' : '#ef4444'
+                <span className="text-sm font-bold px-2 py-1 rounded-full" style={{ 
+                  backgroundColor: progreso.porcentaje >= 100 ? '#dcfce7' : 
+                                 progreso.porcentaje >= 80 ? '#dbeafe' : 
+                                 progreso.porcentaje >= 55 ? '#fef3c7' : 
+                                 progreso.porcentaje >= 20 ? '#fed7aa' : '#fee2e2',
+                  color: progreso.porcentaje >= 100 ? '#166534' : 
+                         progreso.porcentaje >= 80 ? '#1e40af' : 
+                         progreso.porcentaje >= 55 ? '#92400e' : 
+                         progreso.porcentaje >= 20 ? '#9a3412' : '#991b1b'
                 }}>
                   {Math.round(progreso.porcentaje)}%
                 </span>
@@ -97,7 +91,7 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           )}
 
           {Array.isArray(pedido.items) && pedido.items.length > 0 && (
-            <div className="mt-2 pr-24">
+            <div className="mt-2 pr-32">
               <div className="font-semibold mb-1">Items:</div>
               <ul className="list-disc ml-6">
                 {pedido.items.map((item, idx) => (
@@ -133,29 +127,6 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
             </div>
           )}
         </CardContent>
-        <div className="px-6 pb-4 flex flex-col gap-2">
-          <Select
-            value={estadoSeleccionado[pedido._id] || ""}
-            onValueChange={(val) => setEstadoSeleccionado((prev) => ({ ...prev, [pedido._id]: val }))}
-          >
-            <SelectTrigger className="w-full max-w-xs" aria-label="Seleccionar estado">
-              <SelectValue placeholder="Selecciona nuevo estado" />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(ordenMap).map(([key, label]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            className="w-full max-w-xs bg-black text-white border-black hover:bg-gray-900 hover:text-white"
-            disabled={!estadoSeleccionado[pedido._id] || actualizando === pedido._id}
-            onClick={() => onActualizarEstado(pedido._id)}
-          >
-            {actualizando === pedido._id ? "Actualizando..." : "Cambiar Estado"}
-          </Button>
-        </div>
       </Card>
     </li>
   );

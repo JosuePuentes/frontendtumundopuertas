@@ -287,13 +287,21 @@ input[type=number] {
   }
 }
 
-/* Estilos para círculo de progreso del pedido */
-.circulo-progreso-pedido {
+/* Estilos para círculo de progreso del pedido mejorado */
+.circulo-progreso-pedido-mejorado {
   position: relative;
   display: inline-block;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 50%;
+  padding: 8px;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.1),
+    0 2px 8px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.circulo-progreso-texto {
+.circulo-progreso-texto-mejorado {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -302,21 +310,49 @@ input[type=number] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
+  z-index: 10;
 }
 
-.circulo-progreso-porcentaje {
-  font-size: 18px;
-  font-weight: 700;
+.circulo-progreso-porcentaje-mejorado {
+  font-size: 16px;
+  font-weight: 800;
   line-height: 1;
+  letter-spacing: -0.5px;
 }
 
-.circulo-progreso-label {
-  font-size: 10px;
-  font-weight: 500;
+.circulo-progreso-label-mejorado {
+  font-size: 8px;
+  font-weight: 600;
   color: #6b7280;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  opacity: 0.8;
+}
+
+.circulo-progreso-indicador {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 15;
+}
+
+.circulo-progreso-punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulso-punto 2s infinite;
+}
+
+@keyframes pulso-punto {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
 }
 
 /* Estilos para progreso de items en monitor */

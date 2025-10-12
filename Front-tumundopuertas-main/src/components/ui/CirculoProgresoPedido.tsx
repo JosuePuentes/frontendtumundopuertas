@@ -33,46 +33,92 @@ const CirculoProgresoPedido: React.FC<CirculoProgresoPedidoProps> = ({
   };
 
   return (
-    <div className="circulo-progreso-pedido">
+    <div className="circulo-progreso-pedido-mejorado">
       <svg
         width={size}
         height={size}
         className="transform -rotate-90"
       >
+        {/* Círculo de fondo con gradiente */}
+        <defs>
+          <linearGradient id={`gradient-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#f3f4f6" />
+            <stop offset="100%" stopColor="#e5e7eb" />
+          </linearGradient>
+          <linearGradient id={`progress-gradient-${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={getColor()} stopOpacity="0.8" />
+            <stop offset="100%" stopColor={getColor()} stopOpacity="1" />
+          </linearGradient>
+        </defs>
+        
         {/* Círculo de fondo */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#e5e7eb"
+          stroke="url(#gradient-80)"
           strokeWidth={strokeWidth}
           fill="transparent"
+          className="drop-shadow-sm"
         />
         
-        {/* Círculo de progreso */}
+        {/* Círculo de progreso con gradiente */}
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={getColor()}
+          stroke={`url(#progress-gradient-${size})`}
           strokeWidth={strokeWidth}
           fill="transparent"
           strokeDasharray={strokeDasharray}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          className="transition-all duration-500 ease-in-out"
+          className="transition-all duration-700 ease-out drop-shadow-md"
+          style={{
+            filter: `drop-shadow(0 0 8px ${getColor()}40)`
+          }}
         />
+        
+        {/* Efecto de brillo */}
+        {porcentaje > 0 && (
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="rgba(255, 255, 255, 0.3)"
+            strokeWidth={strokeWidth * 0.3}
+            fill="transparent"
+            strokeDasharray={strokeDasharray}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            className="transition-all duration-700 ease-out"
+          />
+        )}
       </svg>
       
-      {/* Texto del porcentaje */}
-      <div className="circulo-progreso-texto">
+      {/* Texto del porcentaje mejorado */}
+      <div className="circulo-progreso-texto-mejorado">
         <span 
-          className="circulo-progreso-porcentaje"
-          style={{ color: getTextColor() }}
+          className="circulo-progreso-porcentaje-mejorado"
+          style={{ 
+            color: getTextColor(),
+            textShadow: `0 0 10px ${getColor()}40`
+          }}
         >
           {Math.round(porcentaje)}%
         </span>
-        <span className="circulo-progreso-label">Completado</span>
+        <span className="circulo-progreso-label-mejorado">Progreso</span>
+      </div>
+      
+      {/* Indicador de estado visual */}
+      <div className="circulo-progreso-indicador">
+        <div 
+          className="circulo-progreso-punto"
+          style={{ 
+            backgroundColor: getColor(),
+            boxShadow: `0 0 12px ${getColor()}60`
+          }}
+        />
       </div>
     </div>
   );
