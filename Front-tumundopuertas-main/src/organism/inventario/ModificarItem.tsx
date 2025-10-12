@@ -120,6 +120,17 @@ const ModificarItem: React.FC<{ itemId: string; modalClose: () => void }> = ({
     setTimeout(() => setMensaje(""), 2000);
   };
 
+  const handleDeleteImage = (idx: number) => {
+    setItem((prev) => {
+      if (!prev) return prev;
+      const nuevas = [...(prev.imagenes ?? [])];
+      nuevas[idx] = ""; // Eliminar la imagen en esa posición
+      return { ...prev, imagenes: nuevas };
+    });
+    setMensaje(`Imagen ${idx + 1} eliminada ✅`);
+    setTimeout(() => setMensaje(""), 2000);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!item) return;
@@ -211,18 +222,29 @@ const ModificarItem: React.FC<{ itemId: string; modalClose: () => void }> = ({
             <Label>Imágenes del item (máx. 3)</Label>
             <div className="flex gap-4 flex-wrap mt-2">
               {[0, 1, 2].map((idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2">
+                <div key={idx} className="flex flex-col items-center gap-2 relative">
                   {item.imagenes?.[idx] ? (
-                    <ImageDisplay
-                      imageName={item.imagenes[idx]}
-                      alt={`Imagen ${idx + 1}`}
-                      style={{
-                        maxWidth: 90,
-                        maxHeight: 90,
-                        borderRadius: 8,
-                        border: "1px solid #ddd",
-                      }}
-                    />
+                    <div className="relative">
+                      <ImageDisplay
+                        imageName={item.imagenes[idx]}
+                        alt={`Imagen ${idx + 1}`}
+                        style={{
+                          maxWidth: 90,
+                          maxHeight: 90,
+                          borderRadius: 8,
+                          border: "1px solid #ddd",
+                        }}
+                      />
+                      {/* Botón de eliminar */}
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteImage(idx)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg transition-colors"
+                        title="Eliminar imagen"
+                      >
+                        ×
+                      </button>
+                    </div>
                   ) : (
                     <div className="w-[90px] h-[90px] bg-gray-100 border border-gray-200 rounded flex items-center justify-center text-gray-400 text-xs">
                       Sin imagen
