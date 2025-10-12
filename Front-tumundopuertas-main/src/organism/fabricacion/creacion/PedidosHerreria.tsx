@@ -101,7 +101,6 @@ const PedidosHerreria: React.FC = () => {
                 <div className="mt-4">
                   <AsignarArticulos
                     estado_general={pedido.estado_general || "orden1"}
-                    nuevo_estado_general="orden2"
                     numeroOrden="1"
                     items={pedido.items}
                     empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
