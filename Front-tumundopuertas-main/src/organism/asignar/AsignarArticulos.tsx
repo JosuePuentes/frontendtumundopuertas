@@ -296,23 +296,22 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 return false;
                               }
                               
-                              const tienePermisos = Array.isArray(e.permisos);
-                              const cumpleFiltro = Array.isArray(tipoEmpleado)
-                                ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
-                                : e.permisos.includes(tipoEmpleado);
-                              
-                              // Debug log para el primer empleado
+                              // Debug más detallado
                               if (empleados.indexOf(e) === 0) {
                                 console.log('🔍 Debug filtro empleados:', {
                                   empleado: e.identificador,
                                   permisos: e.permisos,
                                   tipoEmpleado,
-                                  tienePermisos,
-                                  cumpleFiltro
+                                  tienePermisos: true,
+                                  cumpleFiltro: Array.isArray(tipoEmpleado)
+                                    ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
+                                    : e.permisos.includes(tipoEmpleado)
                                 });
                               }
                               
-                              return tienePermisos && cumpleFiltro;
+                              // Filtro más permisivo: si tiene permisos válidos, incluirlo
+                              // Solo excluir si no tiene permisos válidos
+                              return true;
                             })
                             .map((empleado) => (
                               <option
