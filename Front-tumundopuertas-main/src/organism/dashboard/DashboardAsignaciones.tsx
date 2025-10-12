@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RefreshCw, Eye, CheckCircle, Clock, AlertCircle, TrendingUp, Package, Download } from "lucide-react";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { useDashboardAsignaciones, type Asignacion } from "@/hooks/useDashboardAsignaciones";
 import ImageDisplay from "@/upfile/ImageDisplay";
 import { getApiUrl } from "@/lib/api";
@@ -522,7 +522,7 @@ const DashboardAsignaciones: React.FC = () => {
       ]);
 
       // Agregar tabla
-      (doc as any).autoTable({
+      autoTable(doc, {
         startY: 60,
         head: [['Empleado', 'En Proceso', 'Terminadas', 'Total', 'Costo Total', 'Módulos']],
         body: tableData,
@@ -539,7 +539,7 @@ const DashboardAsignaciones: React.FC = () => {
       const totalAsignaciones = datosReporte.reduce((sum, item) => sum + item.total, 0);
       const costoTotal = datosReporte.reduce((sum, item) => sum + item.costoTotal, 0);
 
-      const finalY = (doc as any).lastAutoTable.finalY + 20;
+      const finalY = (doc as any).lastAutoTable?.finalY + 20 || 120;
       
       doc.setFontSize(14);
       doc.text('RESUMEN GENERAL', 20, finalY);
