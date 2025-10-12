@@ -290,15 +290,25 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             👤 Seleccionar empleado...
                           </option>
                           {(empleadosPorItem[item.id] || empleados)
-                            .filter(
-                              (e) =>
-                                Array.isArray(e.permisos) &&
-                                (
-                                  Array.isArray(tipoEmpleado)
-                                    ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
-                                    : e.permisos.includes(tipoEmpleado)
-                                )
-                            )
+                            .filter((e) => {
+                              const tienePermisos = Array.isArray(e.permisos);
+                              const cumpleFiltro = Array.isArray(tipoEmpleado)
+                                ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
+                                : e.permisos.includes(tipoEmpleado);
+                              
+                              // Debug log para el primer empleado
+                              if (empleados.indexOf(e) === 0) {
+                                console.log('🔍 Debug filtro empleados:', {
+                                  empleado: e.identificador,
+                                  permisos: e.permisos,
+                                  tipoEmpleado,
+                                  tienePermisos,
+                                  cumpleFiltro
+                                });
+                              }
+                              
+                              return tienePermisos && cumpleFiltro;
+                            })
                             .map((empleado) => (
                               <option
                                 key={empleado.identificador}
@@ -340,6 +350,30 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             <div>Empleados por item: {empleadosPorItem[item.id]?.length || 0}</div>
                             <div>Tipo empleado: {Array.isArray(tipoEmpleado) ? tipoEmpleado.join(', ') : tipoEmpleado}</div>
                             <div>Item ID: {item.id}</div>
+                            <div className="mt-2">
+                              <strong>Primeros 3 empleados:</strong>
+                              {empleados.slice(0, 3).map((emp, idx) => (
+                                <div key={idx} className="ml-2">
+                                  {emp.identificador}: {emp.permisos?.join(', ') || 'Sin permisos'}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-2">
+                              <strong>Empleados filtrados:</strong>
+                              {(empleadosPorItem[item.id] || empleados)
+                                .filter((e) =>
+                                  Array.isArray(e.permisos) &&
+                                  (Array.isArray(tipoEmpleado)
+                                    ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
+                                    : e.permisos.includes(tipoEmpleado))
+                                )
+                                .slice(0, 3)
+                                .map((emp, idx) => (
+                                  <div key={idx} className="ml-2">
+                                    {emp.identificador}: {emp.permisos?.join(', ') || 'Sin permisos'}
+                                  </div>
+                                ))}
+                            </div>
                           </div>
                         </details>
                       </div>
