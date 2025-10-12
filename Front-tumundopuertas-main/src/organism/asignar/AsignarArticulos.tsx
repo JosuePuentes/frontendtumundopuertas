@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
+import { useSincronizacionEmpleados } from "@/hooks/useSincronizacionEmpleados";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
 import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
+import GestorEmpleadosAutomatico from "@/components/GestorEmpleadosAutomatico";
 
 interface PedidoItem {
   id: string;
@@ -64,6 +66,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
 
   // Hook para obtener empleados por módulo
   const { obtenerEmpleadosPorModulo, loading: loadingEmpleados } = useEmpleadosPorModulo();
+  
+  // Hook para sincronización automática (preparado para uso futuro)
+  // const { procesarCambioAutomatico, sincronizando } = useSincronizacionEmpleados();
 
   // Función helper para determinar módulo actual según el orden
   const determinarModuloActual = (orden: string): string => {
@@ -382,7 +387,27 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                   const cargoCoincide = tipoEmpleadoItem.some((tipo) => {
                                     const cargoNormalizado = normalizarTexto(cargo);
                                     const tipoNormalizado = normalizarTexto(tipo);
-                                    return cargoNormalizado.includes(tipoNormalizado);
+                                    
+                                    // Mapear tipos a variaciones comunes para cargo
+                                    const variacionesTipo: Record<string, string[]> = {
+                                      'herreria': ['herrero', 'herreria'],
+                                      'masillar': ['masillador', 'masillar'],
+                                      'pintar': ['pintor', 'pintar'],
+                                      'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
+                                      'facturacion': ['facturador', 'facturacion', 'administrativo'],
+                                      'ayudante': ['ayudante']
+                                    };
+                                    
+                                    // Verificar coincidencia directa
+                                    if (cargoNormalizado.includes(tipoNormalizado)) {
+                                      return true;
+                                    }
+                                    
+                                    // Verificar variaciones del tipo
+                                    const variaciones = variacionesTipo[tipoNormalizado] || [];
+                                    return variaciones.some(variacion => 
+                                      cargoNormalizado.includes(normalizarTexto(variacion))
+                                    );
                                   });
                                   
                                   // Verificar si el nombre contiene el tipo (para empleados con cargo: null)
@@ -581,6 +606,15 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       {message && (
         <div className="mt-2 text-green-600 font-semibold">{message}</div>
       )}
+      
+      {/* Gestor Automático de Empleados */}
+      <GestorEmpleadosAutomatico 
+        empleados={empleados}
+        onEmpleadosChange={(nuevosEmpleados) => {
+          // Aquí se pueden aplicar cambios automáticamente
+          console.log('🔄 Empleados actualizados automáticamente:', nuevosEmpleados);
+        }}
+      />
     </div>
   );
 };
