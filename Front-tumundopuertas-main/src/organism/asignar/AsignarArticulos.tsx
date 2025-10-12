@@ -73,16 +73,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   // Hook para sincronización automática (preparado para uso futuro)
   // const { procesarCambioAutomatico, sincronizando } = useSincronizacionEmpleados();
 
-  // Función helper para determinar módulo actual según el orden
-  const determinarModuloActual = (orden: string): string => {
-    switch(orden) {
-      case "1": return "herreria";
-      case "2": return "masillar";
-      case "3": return "preparar";
-      case "4": return "facturar";
-      default: return "herreria";
-    }
-  };
 
 
   // Función para obtener el tipo de empleado según el estado real del item
@@ -286,7 +276,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
               <BarraProgresoItem 
                 pedidoId={pedidoId}
                 itemId={item.id}
-                moduloActual={determinarModuloActual(numeroOrden)}
+                moduloActual={obtenerEstadoItem(item.id)}
               />
               
               {item.imagenes && item.imagenes.length > 0 && (
@@ -538,6 +528,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 .filter((e) => {
                                   if (!e || !e.identificador || !e.nombre) return false;
                                   const tipoEmpleadoItem = obtenerTipoEmpleadoPorItem(item.id);
+                                  console.log(`🔍 Filtrando empleado ${e.identificador} (${e.nombre}) para tipos:`, tipoEmpleadoItem);
+                                  
                                   if (tipoEmpleadoItem && Array.isArray(tipoEmpleadoItem) && tipoEmpleadoItem.length > 0) {
                                     const cargo = e.cargo || '';
                                     const nombre = e.nombre || '';
@@ -550,7 +542,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                         .trim();
                                     };
                                     
-                                    return tipoEmpleadoItem.some((tipo) => {
+                                    const resultado = tipoEmpleadoItem.some((tipo) => {
                                       const cargoNormalizado = normalizarTexto(cargo);
                                       const nombreNormalizado = normalizarTexto(nombre);
                                       const tipoNormalizado = normalizarTexto(tipo);
@@ -567,27 +559,38 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                       
                                       // Verificar cargo
                                       if (cargoNormalizado.includes(tipoNormalizado)) {
+                                        console.log(`✅ Coincidencia por cargo: ${cargoNormalizado} incluye ${tipoNormalizado}`);
                                         return true;
                                       }
                                       
                                       // Verificar nombre con coincidencia directa
                                       if (nombreNormalizado.includes(tipoNormalizado)) {
+                                        console.log(`✅ Coincidencia por nombre: ${nombreNormalizado} incluye ${tipoNormalizado}`);
                                         return true;
                                       }
                                       
                                       // Verificar variaciones del tipo
                                       const variaciones = variacionesTipo[tipoNormalizado] || [];
-                                      return variaciones.some(variacion => 
+                                      const variacionMatch = variaciones.some(variacion => 
                                         nombreNormalizado.includes(normalizarTexto(variacion))
                                       );
+                                      
+                                      if (variacionMatch) {
+                                        console.log(`✅ Coincidencia por variación: ${nombreNormalizado} incluye variación de ${tipoNormalizado}`);
+                                      }
+                                      
+                                      return variacionMatch;
                                     });
+                                    
+                                    console.log(`🎯 Resultado final para ${e.identificador}: ${resultado}`);
+                                    return resultado;
                                   }
                                   return true;
                                 })
                                 .slice(0, 3)
                                 .map((emp, idx) => (
                                   <div key={idx} className="ml-2">
-                                    {emp?.identificador || 'Sin ID'}: {emp?.cargo || 'Sin cargo'}
+                                    {emp?.identificador || 'Sin ID'}: {emp?.cargo || 'Sin cargo'} - {emp?.nombre || 'Sin nombre'}
                                   </div>
                                 ))}
                             </div>
