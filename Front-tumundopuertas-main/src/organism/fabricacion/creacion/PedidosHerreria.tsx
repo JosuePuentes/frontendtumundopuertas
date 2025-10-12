@@ -4,7 +4,6 @@ import { usePedido } from "@/hooks/usePedido";
 import DetalleHerreria from "./DetalleHerreria";
 import { useEmpleado } from "@/hooks/useEmpleado";
 import AsignarArticulos from "@/organism/asignar/AsignarArticulos";
-import { useReaccionarACambiosEstado } from "@/hooks/useSincronizacionEstados";
 
 // Tipos explícitos
 interface PedidoItem {
@@ -47,7 +46,6 @@ const PedidosHerreria: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Función para recargar datos
   const recargarDatos = async () => {
@@ -91,8 +89,9 @@ const PedidosHerreria: React.FC = () => {
 
   // Sincronización: Escuchar cambios de estado usando evento personalizado
   useEffect(() => {
-    const handleCambioEstado = async (event: CustomEvent) => {
-      const evento = event.detail;
+    const handleCambioEstado = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const evento = customEvent.detail;
       console.log(`🔄 PedidosHerreria: Cambio de estado detectado:`, evento);
       
       // Verificar si el cambio es relevante para los pedidos actuales
@@ -108,19 +107,16 @@ const PedidosHerreria: React.FC = () => {
         // Recargar datos cuando hay un cambio de estado relevante
         await recargarDatos();
         
-        // Incrementar trigger para forzar re-render
-        setRefreshTrigger(prev => prev + 1);
-        
         console.log(`✅ PedidosHerreria: Datos actualizados después del cambio de estado`);
       }
     };
 
     // Suscribirse al evento personalizado
-    window.addEventListener('cambioEstadoItem', handleCambioEstado as EventListener);
+    window.addEventListener('cambioEstadoItem', handleCambioEstado);
 
     // Cleanup: remover el listener cuando el componente se desmonte
     return () => {
-      window.removeEventListener('cambioEstadoItem', handleCambioEstado as EventListener);
+      window.removeEventListener('cambioEstadoItem', handleCambioEstado);
     };
   }, [dataPedidos]);
 
