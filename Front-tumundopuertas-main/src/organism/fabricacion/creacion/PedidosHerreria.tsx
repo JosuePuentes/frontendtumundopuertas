@@ -4,6 +4,7 @@ import { usePedido } from "@/hooks/usePedido";
 import DetalleHerreria from "./DetalleHerreria";
 import { useEmpleado } from "@/hooks/useEmpleado";
 import AsignarArticulos from "@/organism/asignar/AsignarArticulos";
+import { useReaccionarACambiosEstado } from "@/hooks/useSincronizacionEstados";
 
 // Tipos explícitos
 interface PedidoItem {
@@ -46,7 +47,24 @@ const PedidosHerreria: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
+  // Función para recargar datos
+  const recargarDatos = async () => {
+    console.log('🔄 Recargando datos de PedidosHerreria...');
+    setLoading(true);
+    try {
+      await fetchPedido("/pedidos/estado/?estado_general=orden1&estado_general=pendiente&/");
+      await fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
+      console.log('✅ Datos recargados exitosamente');
+    } catch (error) {
+      console.error('❌ Error al recargar datos:', error);
+      setError("Error al recargar los pedidos");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Función para determinar el tipo de empleado según el estado del pedido
   const obtenerTipoEmpleadoPorEstado = (estadoGeneral: string): string[] => {
     switch (estadoGeneral) {
@@ -68,13 +86,41 @@ const PedidosHerreria: React.FC = () => {
   };
 
   useEffect(() => {
-    setLoading(true);
-    fetchPedido("/pedidos/estado/?estado_general=orden1&estado_general=pendiente&/")
-      .catch(() => setError("Error al cargar los pedidos"))
-      .finally(() => setLoading(false));
-    fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
-    console.log("Pedidos cargados:", dataPedidos);
+    recargarDatos();
   }, []);
+
+  // Sincronización: Escuchar cambios de estado para todos los pedidos
+  useEffect(() => {
+    if (!Array.isArray(dataPedidos) || dataPedidos.length === 0) return;
+
+    const pedidos = dataPedidos as Pedido[];
+    
+    // Crear listeners para cada pedido y sus items
+    const listeners: (() => void)[] = [];
+    
+    pedidos.forEach(pedido => {
+      pedido.items.forEach(item => {
+        const unsubscribe = useReaccionarACambiosEstado(pedido._id, item.id, async (evento) => {
+          console.log(`🔄 PedidosHerreria: Cambio de estado detectado para pedido ${pedido._id}, item ${item.id}:`, evento);
+          
+          // Recargar datos cuando hay un cambio de estado
+          await recargarDatos();
+          
+          // Incrementar trigger para forzar re-render
+          setRefreshTrigger(prev => prev + 1);
+          
+          console.log(`✅ PedidosHerreria: Datos actualizados después del cambio de estado`);
+        });
+        
+        listeners.push(unsubscribe);
+      });
+    });
+
+    // Cleanup: remover todos los listeners cuando el componente se desmonte
+    return () => {
+      listeners.forEach(unsubscribe => unsubscribe());
+    };
+  }, [dataPedidos, refreshTrigger]);
 
   // ...
 
