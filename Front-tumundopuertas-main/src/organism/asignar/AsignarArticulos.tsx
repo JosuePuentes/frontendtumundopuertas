@@ -291,6 +291,11 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                           </option>
                           {(empleadosPorItem[item.id] || empleados)
                             .filter((e) => {
+                              // Verificar que el empleado tenga permisos válidos
+                              if (!e || !e.permisos || !Array.isArray(e.permisos)) {
+                                return false;
+                              }
+                              
                               const tienePermisos = Array.isArray(e.permisos);
                               const cumpleFiltro = Array.isArray(tipoEmpleado)
                                 ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
@@ -354,23 +359,23 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                               <strong>Primeros 3 empleados:</strong>
                               {empleados.slice(0, 3).map((emp, idx) => (
                                 <div key={idx} className="ml-2">
-                                  {emp.identificador}: {emp.permisos?.join(', ') || 'Sin permisos'}
+                                  {emp?.identificador || 'Sin ID'}: {emp?.permisos?.join(', ') || 'Sin permisos'}
                                 </div>
                               ))}
                             </div>
                             <div className="mt-2">
                               <strong>Empleados filtrados:</strong>
                               {(empleadosPorItem[item.id] || empleados)
-                                .filter((e) =>
-                                  Array.isArray(e.permisos) &&
-                                  (Array.isArray(tipoEmpleado)
+                                .filter((e) => {
+                                  if (!e || !e.permisos || !Array.isArray(e.permisos)) return false;
+                                  return Array.isArray(tipoEmpleado)
                                     ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
-                                    : e.permisos.includes(tipoEmpleado))
-                                )
+                                    : e.permisos.includes(tipoEmpleado);
+                                })
                                 .slice(0, 3)
                                 .map((emp, idx) => (
                                   <div key={idx} className="ml-2">
-                                    {emp.identificador}: {emp.permisos?.join(', ') || 'Sin permisos'}
+                                    {emp?.identificador || 'Sin ID'}: {emp?.permisos?.join(', ') || 'Sin permisos'}
                                   </div>
                                 ))}
                             </div>
