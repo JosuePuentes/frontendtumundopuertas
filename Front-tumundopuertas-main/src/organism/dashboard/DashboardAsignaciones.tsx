@@ -7,7 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RefreshCw, Eye, CheckCircle, Clock, AlertCircle, TrendingUp, Package } from "lucide-react";
+import { RefreshCw, Eye, CheckCircle, Clock, AlertCircle, TrendingUp, Package, Download } from "lucide-react";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { useDashboardAsignaciones, type Asignacion } from "@/hooks/useDashboardAsignaciones";
 import ImageDisplay from "@/upfile/ImageDisplay";
 import { getApiUrl } from "@/lib/api";
@@ -121,6 +124,11 @@ const DashboardAsignaciones: React.FC = () => {
   const [empleadoSeleccionado, setEmpleadoSeleccionado] = useState("");
   const [filtroFecha, setFiltroFecha] = useState("");
   const [filtroEstado, setFiltroEstado] = useState<"en_proceso" | "terminado" | "todos">("en_proceso");
+  
+  // Estados para reportes
+  const [fechaInicioReporte, setFechaInicioReporte] = useState("");
+  const [fechaFinReporte, setFechaFinReporte] = useState("");
+  const [generandoReporte, setGenerandoReporte] = useState(false);
   
   const {
     loading,
@@ -254,6 +262,252 @@ const DashboardAsignaciones: React.FC = () => {
       .sort();
     
     return empleados;
+  };
+
+  // Función para generar reporte de asignaciones
+  const generarReporteAsignaciones = () => {
+    if (!fechaInicioReporte || !fechaFinReporte) {
+      setMensaje("Por favor selecciona un rango de fechas para el reporte");
+      setTimeout(() => setMensaje(""), 3000);
+      return;
+    }
+
+    setGenerandoReporte(true);
+    
+    try {
+      // Filtrar asignaciones por rango de fechas
+      const asignacionesEnRango = asignaciones.filter(asignacion => {
+        const fechaAsignacion = new Date(asignacion.fecha_asignacion);
+        const fechaInicio = new Date(fechaInicioReporte);
+        const fechaFin = new Date(fechaFinReporte);
+        
+        return fechaAsignacion >= fechaInicio && fechaAsignacion <= fechaFin;
+      });
+
+      // Agrupar por empleado
+      const reportePorEmpleado: { [key: string]: {
+        empleado: string;
+        enProceso: number;
+        terminadas: number;
+        total: number;
+        costoTotal: number;
+        modulos: string[];
+      } } = {};
+
+      asignacionesEnRango.forEach(asignacion => {
+        const empleado = asignacion.empleado_nombre || "Sin asignar";
+        
+        if (!reportePorEmpleado[empleado]) {
+          reportePorEmpleado[empleado] = {
+            empleado,
+            enProceso: 0,
+            terminadas: 0,
+            total: 0,
+            costoTotal: 0,
+            modulos: []
+          };
+        }
+
+        const reporte = reportePorEmpleado[empleado];
+        
+        if (asignacion.estado === "terminado") {
+          reporte.terminadas++;
+        } else {
+          reporte.enProceso++;
+        }
+        
+        reporte.total++;
+        reporte.costoTotal += asignacion.costo_produccion || 0;
+        
+        if (!reporte.modulos.includes(asignacion.modulo)) {
+          reporte.modulos.push(asignacion.modulo);
+        }
+      });
+
+      // Convertir a array y ordenar por total de asignaciones
+      const datosReporte = Object.values(reportePorEmpleado)
+        .sort((a, b) => b.total - a.total);
+
+      // Generar datos para Excel
+      const datosExcel = [
+        // Encabezados
+        [
+          "Empleado",
+          "Asignaciones En Proceso",
+          "Asignaciones Terminadas", 
+          "Total Asignaciones",
+          "Costo Total Producción",
+          "Módulos Trabajados"
+        ],
+        // Datos
+        ...datosReporte.map(item => [
+          item.empleado,
+          item.enProceso,
+          item.terminadas,
+          item.total,
+          `$${item.costoTotal.toFixed(2)}`,
+          item.modulos.join(", ")
+        ]),
+        // Resumen
+        [],
+        ["RESUMEN GENERAL"],
+        ["Total Empleados", datosReporte.length],
+        ["Total Asignaciones En Proceso", datosReporte.reduce((sum, item) => sum + item.enProceso, 0)],
+        ["Total Asignaciones Terminadas", datosReporte.reduce((sum, item) => sum + item.terminadas, 0)],
+        ["Total Asignaciones", datosReporte.reduce((sum, item) => sum + item.total, 0)],
+        ["Costo Total Producción", `$${datosReporte.reduce((sum, item) => sum + item.costoTotal, 0).toFixed(2)}`]
+      ];
+
+      // Exportar a Excel
+      const ws = XLSX.utils.aoa_to_sheet(datosExcel);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Reporte Asignaciones");
+      
+      const nombreArchivo = `Reporte_Asignaciones_${fechaInicioReporte}_a_${fechaFinReporte}.xlsx`;
+      XLSX.writeFile(wb, nombreArchivo);
+
+      setMensaje(`✅ Reporte Excel exportado exitosamente: ${nombreArchivo}`);
+      setTimeout(() => setMensaje(""), 5000);
+
+    } catch (error) {
+      console.error('Error al generar reporte:', error);
+      setMensaje("❌ Error al generar el reporte");
+      setTimeout(() => setMensaje(""), 5000);
+    } finally {
+      setGenerandoReporte(false);
+    }
+  };
+
+  // Función para generar reporte en PDF
+  const generarReportePDF = () => {
+    if (!fechaInicioReporte || !fechaFinReporte) {
+      setMensaje("Por favor selecciona un rango de fechas para el reporte");
+      setTimeout(() => setMensaje(""), 3000);
+      return;
+    }
+
+    setGenerandoReporte(true);
+    
+    try {
+      // Filtrar asignaciones por rango de fechas
+      const asignacionesEnRango = asignaciones.filter(asignacion => {
+        const fechaAsignacion = new Date(asignacion.fecha_asignacion);
+        const fechaInicio = new Date(fechaInicioReporte);
+        const fechaFin = new Date(fechaFinReporte);
+        
+        return fechaAsignacion >= fechaInicio && fechaAsignacion <= fechaFin;
+      });
+
+      // Agrupar por empleado
+      const reportePorEmpleado: { [key: string]: {
+        empleado: string;
+        enProceso: number;
+        terminadas: number;
+        total: number;
+        costoTotal: number;
+        modulos: string[];
+      } } = {};
+
+      asignacionesEnRango.forEach(asignacion => {
+        const empleado = asignacion.empleado_nombre || "Sin asignar";
+        
+        if (!reportePorEmpleado[empleado]) {
+          reportePorEmpleado[empleado] = {
+            empleado,
+            enProceso: 0,
+            terminadas: 0,
+            total: 0,
+            costoTotal: 0,
+            modulos: []
+          };
+        }
+
+        const reporte = reportePorEmpleado[empleado];
+        
+        if (asignacion.estado === "terminado") {
+          reporte.terminadas++;
+        } else {
+          reporte.enProceso++;
+        }
+        
+        reporte.total++;
+        reporte.costoTotal += asignacion.costo_produccion || 0;
+        
+        if (!reporte.modulos.includes(asignacion.modulo)) {
+          reporte.modulos.push(asignacion.modulo);
+        }
+      });
+
+      // Convertir a array y ordenar por total de asignaciones
+      const datosReporte = Object.values(reportePorEmpleado)
+        .sort((a, b) => b.total - a.total);
+
+      // Crear PDF
+      const doc = new jsPDF();
+      
+      // Título
+      doc.setFontSize(20);
+      doc.text('REPORTE DE ASIGNACIONES', 20, 20);
+      
+      // Información del rango de fechas
+      doc.setFontSize(12);
+      doc.text(`Período: ${new Date(fechaInicioReporte).toLocaleDateString()} - ${new Date(fechaFinReporte).toLocaleDateString()}`, 20, 35);
+      doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 20, 45);
+      
+      // Datos de la tabla
+      const tableData = datosReporte.map(item => [
+        item.empleado,
+        item.enProceso.toString(),
+        item.terminadas.toString(),
+        item.total.toString(),
+        `$${item.costoTotal.toFixed(2)}`,
+        item.modulos.join(", ")
+      ]);
+
+      // Agregar tabla
+      (doc as any).autoTable({
+        startY: 60,
+        head: [['Empleado', 'En Proceso', 'Terminadas', 'Total', 'Costo Total', 'Módulos']],
+        body: tableData,
+        theme: 'grid',
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [41, 128, 185] },
+        alternateRowStyles: { fillColor: [245, 245, 245] }
+      });
+
+      // Resumen general
+      const totalEmpleados = datosReporte.length;
+      const totalEnProceso = datosReporte.reduce((sum, item) => sum + item.enProceso, 0);
+      const totalTerminadas = datosReporte.reduce((sum, item) => sum + item.terminadas, 0);
+      const totalAsignaciones = datosReporte.reduce((sum, item) => sum + item.total, 0);
+      const costoTotal = datosReporte.reduce((sum, item) => sum + item.costoTotal, 0);
+
+      const finalY = (doc as any).lastAutoTable.finalY + 20;
+      
+      doc.setFontSize(14);
+      doc.text('RESUMEN GENERAL', 20, finalY);
+      
+      doc.setFontSize(11);
+      doc.text(`Total de Empleados: ${totalEmpleados}`, 20, finalY + 15);
+      doc.text(`Asignaciones En Proceso: ${totalEnProceso}`, 20, finalY + 25);
+      doc.text(`Asignaciones Terminadas: ${totalTerminadas}`, 20, finalY + 35);
+      doc.text(`Total de Asignaciones: ${totalAsignaciones}`, 20, finalY + 45);
+      doc.text(`Costo Total de Producción: $${costoTotal.toFixed(2)}`, 20, finalY + 55);
+
+      // Guardar PDF
+      const nombreArchivo = `Reporte_Asignaciones_${fechaInicioReporte}_a_${fechaFinReporte}.pdf`;
+      doc.save(nombreArchivo);
+
+      setMensaje(`✅ Reporte PDF exportado exitosamente: ${nombreArchivo}`);
+      setTimeout(() => setMensaje(""), 5000);
+
+    } catch (error) {
+      console.error('Error al generar reporte PDF:', error);
+      setMensaje("❌ Error al generar el reporte PDF");
+      setTimeout(() => setMensaje(""), 5000);
+    } finally {
+      setGenerandoReporte(false);
+    }
   };
 
   useEffect(() => {
@@ -412,6 +666,86 @@ const DashboardAsignaciones: React.FC = () => {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refrescar
           </Button>
+        </div>
+      </div>
+
+      {/* Sección de Reportes */}
+      <div className="bg-white p-4 rounded-lg mb-6 border">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Download className="w-5 h-5" />
+          Generar Reportes
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          {/* Fecha de inicio */}
+          <div>
+            <Label htmlFor="fecha-inicio-reporte" className="text-sm font-medium">
+              Fecha de Inicio
+            </Label>
+            <Input
+              id="fecha-inicio-reporte"
+              type="date"
+              value={fechaInicioReporte}
+              onChange={(e) => setFechaInicioReporte(e.target.value)}
+              className="mt-1 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+
+          {/* Fecha de fin */}
+          <div>
+            <Label htmlFor="fecha-fin-reporte" className="text-sm font-medium">
+              Fecha de Fin
+            </Label>
+            <Input
+              id="fecha-fin-reporte"
+              type="date"
+              value={fechaFinReporte}
+              onChange={(e) => setFechaFinReporte(e.target.value)}
+              className="mt-1 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+          </div>
+        </div>
+
+        {/* Botones de exportación */}
+        <div className="flex gap-3">
+          <Button
+            onClick={generarReporteAsignaciones}
+            disabled={generandoReporte || !fechaInicioReporte || !fechaFinReporte}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+          >
+            {generandoReporte ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            Exportar Excel
+          </Button>
+          
+          <Button
+            onClick={generarReportePDF}
+            disabled={generandoReporte || !fechaInicioReporte || !fechaFinReporte}
+            variant="outline"
+            className="flex items-center gap-2 border-red-300 text-red-600 hover:bg-red-50"
+          >
+            {generandoReporte ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            Exportar PDF
+          </Button>
+        </div>
+
+        {/* Información del reporte */}
+        <div className="mt-3 p-3 bg-blue-50 rounded text-sm text-blue-700">
+          <strong>📊 Información del Reporte:</strong>
+          <ul className="mt-1 ml-4 list-disc">
+            <li>Resumen por empleado con asignaciones en proceso y terminadas</li>
+            <li>Costo total de producción por empleado</li>
+            <li>Módulos trabajados por cada empleado</li>
+            <li>Resumen general con totales</li>
+            <li>Datos filtrados por el rango de fechas seleccionado</li>
+          </ul>
         </div>
       </div>
 
