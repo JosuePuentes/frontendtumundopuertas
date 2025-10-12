@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FinalizarSubestado from "@/organism/designar/FinalizarSubestado";
 import useTerminarEmpleado from "@/hooks/useTerminarEmpleado";
+import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
 
 interface PedidoItem {
@@ -60,6 +61,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const [asignadosPrevios, setAsignadosPrevios] = useState<Record<string, AsignacionArticulo>>({});
   const [showCambio, setShowCambio] = useState<Record<string, boolean>>({});
   const [showFinalizar, setShowFinalizar] = useState(false);
+  const [empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
+  
   // Hook para terminar asignación de artículo
   const [messageTerminar, setMessageTerminar] = useState<string>("");
   const {
@@ -70,6 +73,27 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     onSuccess: () => setMessageTerminar("Artículo terminado correctamente"),
     onError: (err) => setMessageTerminar(err.message || "Error al terminar artículo"),
   });
+
+  // Hook para obtener empleados por módulo
+  const { obtenerEmpleadosPorModulo, loading: loadingEmpleados } = useEmpleadosPorModulo();
+
+  // Cargar empleados filtrados para cada item
+  const cargarEmpleadosPorItem = async () => {
+    const empleadosPorItemData: Record<string, any[]> = {};
+    
+    for (const item of items) {
+      try {
+        const empleadosFiltrados = await obtenerEmpleadosPorModulo(pedidoId, item.id);
+        empleadosPorItemData[item.id] = empleadosFiltrados;
+      } catch (error) {
+        console.error(`Error al cargar empleados para item ${item.id}:`, error);
+        // Fallback a empleados generales si hay error
+        empleadosPorItemData[item.id] = empleados;
+      }
+    }
+    
+    setEmpleadosPorItem(empleadosPorItemData);
+  };
 
   // Buscar asignaciones previas al montar
   React.useEffect(() => {
@@ -95,6 +119,13 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     };
     fetchPedido();
   }, [pedidoId, numeroOrden]);
+
+  // Cargar empleados filtrados cuando cambien los items
+  useEffect(() => {
+    if (items.length > 0) {
+      cargarEmpleadosPorItem();
+    }
+  }, [items, pedidoId]);
 
   // Copia asignaciones previas al estado local si no existen
   React.useEffect(() => {
@@ -237,42 +268,50 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                 </div>
               ) : (
                 <div className="flex gap-4 items-center">
-                  <select
-                    className="border rounded px-2 py-1"
-                    value={asignacion.empleadoId || ""}
-                    onChange={(e) => {
-                      const empleadoId = e.target.value;
-                      const empleado = empleados.find(
-                        (emp) => emp.identificador === empleadoId
-                      );
-                      handleEmpleadoChange(
-                        item,
-                        idx,
-                        empleadoId,
-                        empleado?.nombreCompleto || empleadoId
-                      );
-                    }}
-                  >
-                    <option value="">Seleccionar empleado</option>
-                    {empleados
-                      .filter(
-                        (e) =>
-                          Array.isArray(e.permisos) &&
-                          (
-                            Array.isArray(tipoEmpleado)
-                              ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
-                              : e.permisos.includes(tipoEmpleado)
-                          )
-                      )
-                      .map((empleado) => (
-                        <option
-                          key={empleado.identificador}
-                          value={empleado.identificador}
-                        >
-                          {empleado.nombreCompleto || empleado.identificador}
-                        </option>
-                      ))}
-                  </select>
+                  {loadingEmpleados ? (
+                    <div className="flex items-center gap-2 text-gray-500">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                      Cargando empleados...
+                    </div>
+                  ) : (
+                    <select
+                      className="border rounded px-2 py-1"
+                      value={asignacion.empleadoId || ""}
+                      onChange={(e) => {
+                        const empleadoId = e.target.value;
+                        const empleadosDisponibles = empleadosPorItem[item.id] || empleados;
+                        const empleado = empleadosDisponibles.find(
+                          (emp) => emp.identificador === empleadoId
+                        );
+                        handleEmpleadoChange(
+                          item,
+                          idx,
+                          empleadoId,
+                          empleado?.nombreCompleto || empleadoId
+                        );
+                      }}
+                    >
+                      <option value="">Seleccionar empleado</option>
+                      {(empleadosPorItem[item.id] || empleados)
+                        .filter(
+                          (e) =>
+                            Array.isArray(e.permisos) &&
+                            (
+                              Array.isArray(tipoEmpleado)
+                                ? tipoEmpleado.some((tipo) => e.permisos.includes(tipo))
+                                : e.permisos.includes(tipoEmpleado)
+                            )
+                        )
+                        .map((empleado) => (
+                          <option
+                            key={empleado.identificador}
+                            value={empleado.identificador}
+                          >
+                            {empleado.nombreCompleto || empleado.identificador}
+                          </option>
+                        ))}
+                    </select>
+                  )}
                 </div>
               )}
             </li>
