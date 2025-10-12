@@ -52,18 +52,18 @@ const PedidosHerreria: React.FC = () => {
     switch (estadoGeneral) {
       case "orden1":
       case "herreria":
-        return ["herreria", "ayudante"]; // HERRERIA + AYUDANTES
+        return ["HERRERO", "AYUDANTE"]; // HERRERIA + AYUDANTES
       case "orden2":
       case "masillar":
-        return ["masillar", "pintar", "ayudante"]; // MASILLADOR/PINTOR + AYUDANTES
+        return ["MASILLADOR", "PINTOR", "AYUDANTE"]; // MASILLADOR/PINTOR + AYUDANTES
       case "orden3":
       case "preparar":
-        return ["mantenimiento", "ayudante"]; // MANILLAR + AYUDANTES
+        return ["PREPARADOR", "MANILLAR", "AYUDANTE"]; // MANILLAR + AYUDANTES
       case "orden4":
       case "facturar":
-        return ["facturacion", "ayudante"]; // FACTURAR + AYUDANTES
+        return ["FACTURADOR", "ADMINISTRATIVO", "AYUDANTE"]; // FACTURAR + AYUDANTES
       default:
-        return ["herreria", "ayudante"]; // Por defecto para herrería
+        return ["HERRERO", "AYUDANTE"]; // Por defecto para herrería
     }
   };
 

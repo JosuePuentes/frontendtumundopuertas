@@ -21,7 +21,8 @@ interface Empleado {
   identificador: string;
   nombreCompleto?: string;
   cargo?: string;
-  permisos?: string[];
+  pin?: string;
+  activo?: boolean;
 }
 
 interface AsignacionArticulo {
@@ -296,11 +297,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 // Verificar que el empleado tenga datos válidos
                                 if (!e || !e.identificador || !e.nombreCompleto) return false;
                                 
-                                // Si hay tipoEmpleado definido, filtrar por permisos
+                                // Si hay tipoEmpleado definido, filtrar por cargo
                                 if (tipoEmpleado && Array.isArray(tipoEmpleado) && tipoEmpleado.length > 0) {
-                                  const permisos = e.permisos || [];
+                                  const cargo = e.cargo || '';
                                   return tipoEmpleado.some((tipo) => 
-                                    permisos.includes(tipo)
+                                    cargo.toLowerCase().includes(tipo.toLowerCase()) ||
+                                    tipo.toLowerCase().includes(cargo.toLowerCase())
                                   );
                                 }
                                 
@@ -322,7 +324,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                   totalEmpleadosFiltrados: empleadosFiltrados.length,
                                   primerEmpleado: empleado.identificador,
                                   nombreCompleto: empleado.nombreCompleto,
-                                  permisos: empleado.permisos
+                                  cargo: empleado.cargo
                                 });
                               }
                               
@@ -373,7 +375,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                               <strong>Primeros 3 empleados:</strong>
                               {empleados.slice(0, 3).map((emp, idx) => (
                                 <div key={idx} className="ml-2">
-                                  {emp?.identificador || 'Sin ID'}: {emp?.permisos?.join(', ') || 'Sin permisos'}
+                                  {emp?.identificador || 'Sin ID'}: {emp?.cargo || 'Sin cargo'}
                                 </div>
                               ))}
                             </div>
@@ -383,9 +385,10 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 .filter((e) => {
                                   if (!e || !e.identificador || !e.nombreCompleto) return false;
                                   if (tipoEmpleado && Array.isArray(tipoEmpleado) && tipoEmpleado.length > 0) {
-                                    const permisos = e.permisos || [];
+                                    const cargo = e.cargo || '';
                                     return tipoEmpleado.some((tipo) => 
-                                      permisos.includes(tipo)
+                                      cargo.toLowerCase().includes(tipo.toLowerCase()) ||
+                                      tipo.toLowerCase().includes(cargo.toLowerCase())
                                     );
                                   }
                                   return true;
@@ -393,7 +396,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 .slice(0, 3)
                                 .map((emp, idx) => (
                                   <div key={idx} className="ml-2">
-                                    {emp?.identificador || 'Sin ID'}: {emp?.permisos?.join(', ') || 'Sin permisos'}
+                                    {emp?.identificador || 'Sin ID'}: {emp?.cargo || 'Sin cargo'}
                                   </div>
                                 ))}
                             </div>
