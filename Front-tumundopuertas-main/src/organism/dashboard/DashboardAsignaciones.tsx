@@ -167,6 +167,63 @@ const DashboardAsignaciones: React.FC = () => {
     }
   };
 
+  // Función para diagnosticar empleados
+  const diagnosticarEmpleados = async () => {
+    console.log('🔍 DIAGNÓSTICO DE EMPLEADOS');
+    console.log('================================');
+    
+    try {
+      // 1. Verificar empleados en la base de datos
+      console.log('1️⃣ Obteniendo empleados de la base de datos...');
+      const empleadosResponse = await fetch(`${getApiUrl()}/empleados/all/`);
+      const empleadosData = await empleadosResponse.json();
+      
+      console.log('📋 Empleados en BD:', {
+        status: empleadosResponse.status,
+        ok: empleadosResponse.ok,
+        cantidad: Array.isArray(empleadosData) ? empleadosData.length : 'No es array',
+        empleados: empleadosData
+      });
+
+      // 2. Verificar empleados en asignaciones
+      console.log('2️⃣ Verificando empleados en asignaciones...');
+      const asignacionesData = await fetchAsignaciones();
+      
+      const empleadosEnAsignaciones = asignacionesData
+        .map(a => a.empleado_nombre)
+        .filter((nombre, index, arr) => arr.indexOf(nombre) === index && nombre !== "Sin asignar")
+        .sort();
+
+      console.log('👥 Empleados en asignaciones:', {
+        cantidad: empleadosEnAsignaciones.length,
+        empleados: empleadosEnAsignaciones
+      });
+
+      // 3. Comparar empleados
+      console.log('3️⃣ Comparando empleados...');
+      if (Array.isArray(empleadosData)) {
+        const empleadosBD = empleadosData.map(e => e.nombreCompleto || e.identificador).filter(Boolean);
+        const empleadosSoloEnBD = empleadosBD.filter(e => !empleadosEnAsignaciones.includes(e));
+        const empleadosSoloEnAsignaciones = empleadosEnAsignaciones.filter(e => !empleadosBD.includes(e));
+        
+        console.log('📊 Comparación:', {
+          empleadosSoloEnBD: empleadosSoloEnBD,
+          empleadosSoloEnAsignaciones: empleadosSoloEnAsignaciones,
+          totalBD: empleadosBD.length,
+          totalAsignaciones: empleadosEnAsignaciones.length
+        });
+      }
+
+      setMensaje(`✅ Diagnóstico completado. Revisa la consola para detalles.`);
+      setTimeout(() => setMensaje(""), 5000);
+
+    } catch (error: any) {
+      console.error('❌ Error en diagnóstico:', error);
+      setMensaje(`❌ Error en diagnóstico: ${error.message || 'Error desconocido'}`);
+      setTimeout(() => setMensaje(""), 5000);
+    }
+  };
+
   const cargarAsignaciones = async () => {
     try {
       const data = await fetchAsignaciones();
@@ -655,6 +712,14 @@ const DashboardAsignaciones: React.FC = () => {
             className="flex items-center gap-2"
           >
             🔍 Probar Endpoints
+          </Button>
+          <Button
+            onClick={diagnosticarEmpleados}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            👥 Diagnosticar Empleados
           </Button>
           <Button
             onClick={cargarAsignaciones}
