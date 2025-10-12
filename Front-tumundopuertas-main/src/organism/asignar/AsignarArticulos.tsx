@@ -378,20 +378,26 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                       .trim();
                                   };
                                   
+                                  // Función helper para extraer rol del nombre (texto entre paréntesis)
+                                  const extraerRolDelNombre = (nombreCompleto: string): string => {
+                                    const match = nombreCompleto.match(/\(([^)]+)\)/);
+                                    return match ? match[1].toLowerCase().trim() : '';
+                                  };
+                                  
+                                  // Mapear tipos a variaciones comunes
+                                  const variacionesTipo: Record<string, string[]> = {
+                                    'herreria': ['herrero', 'herreria'],
+                                    'masillar': ['masillador', 'masillar'],
+                                    'pintar': ['pintor', 'pintar'],
+                                    'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
+                                    'facturacion': ['facturador', 'facturacion', 'administrativo'],
+                                    'ayudante': ['ayudante']
+                                  };
+                                  
                                   // Verificar si el cargo coincide directamente
                                   const cargoCoincide = tipoEmpleadoItem.some((tipo) => {
                                     const cargoNormalizado = normalizarTexto(cargo);
                                     const tipoNormalizado = normalizarTexto(tipo);
-                                    
-                                    // Mapear tipos a variaciones comunes para cargo
-                                    const variacionesTipo: Record<string, string[]> = {
-                                      'herreria': ['herrero', 'herreria'],
-                                      'masillar': ['masillador', 'masillar'],
-                                      'pintar': ['pintor', 'pintar'],
-                                      'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
-                                      'facturacion': ['facturador', 'facturacion', 'administrativo'],
-                                      'ayudante': ['ayudante']
-                                    };
                                     
                                     // Verificar coincidencia directa
                                     if (cargoNormalizado.includes(tipoNormalizado)) {
@@ -410,16 +416,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                     const nombreNormalizado = normalizarTexto(nombre);
                                     const tipoNormalizado = normalizarTexto(tipo);
                                     
-                                    // Mapear tipos a variaciones comunes
-                                    const variacionesTipo: Record<string, string[]> = {
-                                      'herreria': ['herrero', 'herreria'],
-                                      'masillar': ['masillador', 'masillar'],
-                                      'pintar': ['pintor', 'pintar'],
-                                      'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
-                                      'facturacion': ['facturador', 'facturacion', 'administrativo'],
-                                      'ayudante': ['ayudante']
-                                    };
-                                    
                                     // Verificar coincidencia directa
                                     if (nombreNormalizado.includes(tipoNormalizado)) {
                                       return true;
@@ -432,15 +428,34 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                     );
                                   });
                                   
-                                  const cumpleFiltro = cargoCoincide || nombreCoincide;
+                                  // Verificar si el rol extraído del nombre coincide
+                                  const rolCoincide = tipoEmpleadoItem.some((tipo) => {
+                                    const rolExtraido = extraerRolDelNombre(nombre);
+                                    const tipoNormalizado = normalizarTexto(tipo);
+                                    
+                                    // Verificar coincidencia directa con el rol extraído
+                                    if (rolExtraido.includes(tipoNormalizado)) {
+                                      return true;
+                                    }
+                                    
+                                    // Verificar variaciones del tipo con el rol extraído
+                                    const variaciones = variacionesTipo[tipoNormalizado] || [];
+                                    return variaciones.some(variacion => 
+                                      rolExtraido.includes(normalizarTexto(variacion))
+                                    );
+                                  });
+                                  
+                                  const cumpleFiltro = cargoCoincide || nombreCoincide || rolCoincide;
                                   
                                   console.log('🎯 FILTRO RESULTADO:', {
                                     empleado: e.identificador,
                                     cargo: cargo,
                                     nombre: nombre,
+                                    rolExtraido: extraerRolDelNombre(nombre),
                                     tipoEmpleado: tipoEmpleadoItem,
                                     cargoCoincide: cargoCoincide,
                                     nombreCoincide: nombreCoincide,
+                                    rolCoincide: rolCoincide,
                                     cumpleFiltro: cumpleFiltro
                                   });
                                   return cumpleFiltro;
@@ -542,10 +557,17 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                         .trim();
                                     };
                                     
+                                    // Función helper para extraer rol del nombre (texto entre paréntesis)
+                                    const extraerRolDelNombre = (nombreCompleto: string): string => {
+                                      const match = nombreCompleto.match(/\(([^)]+)\)/);
+                                      return match ? match[1].toLowerCase().trim() : '';
+                                    };
+                                    
                                     const resultado = tipoEmpleadoItem.some((tipo) => {
                                       const cargoNormalizado = normalizarTexto(cargo);
                                       const nombreNormalizado = normalizarTexto(nombre);
                                       const tipoNormalizado = normalizarTexto(tipo);
+                                      const rolExtraido = extraerRolDelNombre(nombre);
                                       
                                       // Mapear tipos a variaciones comunes
                                       const variacionesTipo: Record<string, string[]> = {
@@ -569,14 +591,21 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                         return true;
                                       }
                                       
+                                      // Verificar rol extraído del nombre
+                                      if (rolExtraido.includes(tipoNormalizado)) {
+                                        console.log(`✅ Coincidencia por rol extraído: ${rolExtraido} incluye ${tipoNormalizado}`);
+                                        return true;
+                                      }
+                                      
                                       // Verificar variaciones del tipo
                                       const variaciones = variacionesTipo[tipoNormalizado] || [];
                                       const variacionMatch = variaciones.some(variacion => 
-                                        nombreNormalizado.includes(normalizarTexto(variacion))
+                                        nombreNormalizado.includes(normalizarTexto(variacion)) ||
+                                        rolExtraido.includes(normalizarTexto(variacion))
                                       );
                                       
                                       if (variacionMatch) {
-                                        console.log(`✅ Coincidencia por variación: ${nombreNormalizado} incluye variación de ${tipoNormalizado}`);
+                                        console.log(`✅ Coincidencia por variación: ${nombreNormalizado} o ${rolExtraido} incluye variación de ${tipoNormalizado}`);
                                       }
                                       
                                       return variacionMatch;
