@@ -104,7 +104,7 @@ export const useDashboardAsignaciones = () => {
             fecha_fin: item.fecha_fin,
             descripcionitem: item.descripcionitem || "Sin descripción",
             detalleitem: item.detalleitem,
-            cliente_nombre: item.cliente_nombre || "Sin cliente",
+            cliente_nombre: item.cliente?.cliente_nombre || item.cliente_nombre || "Sin cliente",
             costo_produccion: Number(item.costoproduccion || item.costo_produccion || 0),
             imagenes: item.imagenes || []
           };
@@ -141,7 +141,7 @@ export const useDashboardAsignaciones = () => {
           fecha_fin: item.fecha_fin,
           descripcionitem: item.descripcionitem || "Sin descripción",
           detalleitem: item.detalleitem,
-          cliente_nombre: item.cliente_nombre || "Sin cliente",
+          cliente_nombre: item.cliente?.cliente_nombre || item.cliente_nombre || "Sin cliente",
           costo_produccion: Number(item.costo_produccion || item.costoproduccion || 0),
           imagenes: item.imagenes || []
         };
