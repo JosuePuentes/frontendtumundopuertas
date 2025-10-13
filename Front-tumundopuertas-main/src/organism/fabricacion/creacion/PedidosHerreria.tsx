@@ -58,15 +58,24 @@ const PedidosHerreria: React.FC = () => {
   
   // Función para construir URL de filtrado dinámico
   const construirUrlFiltro = () => {
-    // Cambiar a endpoint que obtenga todos los pedidos para filtrar por estado_item
-    let url = "/pedidos/?";
+    // Obtener TODOS los pedidos para mostrar con indicadores de estado
+    let url = "/pedidos/estado/?";
+    
+    // Siempre incluir todos los estados para obtener todos los pedidos
+    const estados = ["pendiente", "orden1", "orden2", "orden3", "orden4"];
+    
+    // Agregar parámetros de estado
+    estados.forEach(estado => {
+      url += `estado_general=${estado}&`;
+    });
     
     // Agregar parámetro de asignación si es necesario
     if (filtrosAplicados.asignacion === "sin_asignar") {
       url += "sin_asignar=true&";
     }
     
-    return url.slice(0, -1); // Remover el último &
+    url += "/";
+    return url;
   };
 
   // Función para aplicar filtros con debounce
@@ -207,9 +216,28 @@ const PedidosHerreria: React.FC = () => {
           <p className="text-gray-500">No hay items para gestionar.</p>
         ) : (
           <ul className="space-y-8">
+            {/* Debug: Log todos los pedidos que llegan */}
+            {console.log('📋 Todos los pedidos recibidos:', dataPedidos.map((p: any) => ({
+              id: p._id,
+              estado_general: p.estado_general,
+              items_count: p.items?.length || 0
+            })))}
             {(dataPedidos as Pedido[])
               .filter((pedido) => {
-                // Solo mostrar pedidos que tengan items
+                // Debug: Log para el pedido específico que estamos buscando
+                if (pedido._id === "68ec892e4187d3c8bd7e6480") {
+                  console.log(`🔍 DEBUG Pedido encontrado: ${pedido._id}`, {
+                    estado_general: pedido.estado_general,
+                    items_count: pedido.items?.length || 0,
+                    items: pedido.items?.map((i: any) => ({
+                      id: i.id,
+                      nombre: i.nombre,
+                      estado_item: i.estado_item
+                    })) || []
+                  });
+                }
+                
+                // MOSTRAR TODOS los pedidos que tengan items (nunca desaparecen)
                 return pedido.items && pedido.items.length > 0;
               })
               .map((pedido) => (
