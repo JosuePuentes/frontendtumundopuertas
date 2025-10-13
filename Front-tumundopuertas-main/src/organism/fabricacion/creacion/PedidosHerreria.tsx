@@ -58,11 +58,11 @@ const PedidosHerreria: React.FC = () => {
   
   // Función para construir URL de filtrado dinámico
   const construirUrlFiltro = () => {
-    // Obtener TODOS los pedidos para mostrar con indicadores de estado
+    // PRUEBA TEMPORAL: Obtener TODOS los pedidos sin filtro de estado_general
     let url = "/pedidos/estado/?";
     
-    // Siempre incluir todos los estados para obtener todos los pedidos
-    const estados = ["pendiente", "orden1", "orden2", "orden3", "orden4"];
+    // Incluir TODOS los estados posibles para asegurar que obtenemos todos los pedidos
+    const estados = ["pendiente", "orden1", "orden2", "orden3", "orden4", "terminado", "cancelado"];
     
     // Agregar parámetros de estado
     estados.forEach(estado => {
@@ -123,8 +123,23 @@ const PedidosHerreria: React.FC = () => {
       console.log('📋 Todos los pedidos recibidos:', dataPedidos.map((p: any) => ({
         id: p._id,
         estado_general: p.estado_general,
-        items_count: p.items?.length || 0
+        items_count: p.items?.length || 0,
+        items: p.items?.map((i: any) => ({
+          id: i.id,
+          nombre: i.nombre,
+          estado_item: i.estado_item
+        })) || []
       })));
+      
+      // Buscar específicamente el pedido que estamos buscando
+      const pedidoBuscado = dataPedidos.find((p: any) => p._id === "68ec892e4187d3c8bd7e6480");
+      if (pedidoBuscado) {
+        console.log('🎯 PEDIDO ENCONTRADO:', pedidoBuscado);
+      } else {
+        console.log('❌ PEDIDO NO ENCONTRADO en la respuesta del servidor');
+      }
+    } else {
+      console.log('⚠️ No hay pedidos o dataPedidos no es un array:', dataPedidos);
     }
   }, [dataPedidos]);
 
