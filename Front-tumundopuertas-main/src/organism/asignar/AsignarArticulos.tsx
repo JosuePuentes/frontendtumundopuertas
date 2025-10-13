@@ -24,6 +24,7 @@ interface Empleado {
   identificador: string;
   nombre?: string;
   nombreCompleto?: string;
+  cargo?: string | null;
   permisos?: string[];
   pin?: string;
   activo?: boolean;
