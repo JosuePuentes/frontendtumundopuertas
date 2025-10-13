@@ -65,6 +65,26 @@ export const useDashboardAsignaciones = () => {
         asignaciones: generalData.asignaciones ? generalData.asignaciones.length : 'No es array'
       });
 
+      // DEBUG DETALLADO: Mostrar las primeras 3 asignaciones para ver su estructura
+      if (generalData.asignaciones && generalData.asignaciones.length > 0) {
+        console.log('🔍 PRIMERAS 3 ASIGNACIONES DEL ENDPOINT GENERAL:');
+        generalData.asignaciones.slice(0, 3).forEach((asignacion: any, index: number) => {
+          console.log(`📋 Asignación ${index + 1}:`, {
+            pedido_id: asignacion.pedido_id,
+            item_id: asignacion.item_id,
+            empleado_id: asignacion.empleado_id,
+            empleado_nombre: asignacion.empleado_nombre,
+            empleadoId: asignacion.empleadoId,
+            nombreempleado: asignacion.nombreempleado,
+            modulo: asignacion.modulo,
+            estado: asignacion.estado,
+            fecha_asignacion: asignacion.fecha_asignacion,
+            descripcionitem: asignacion.descripcionitem,
+            cliente_nombre: asignacion.cliente_nombre
+          });
+        });
+      }
+
       // Verificar que tenemos asignaciones
       if (!generalData.asignaciones || !Array.isArray(generalData.asignaciones)) {
         console.log('⚠️ No se encontraron datos en ningún endpoint ahora no aparece nada');

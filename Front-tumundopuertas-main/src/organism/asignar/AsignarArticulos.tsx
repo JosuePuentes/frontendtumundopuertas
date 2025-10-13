@@ -272,7 +272,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         endpoint: `${apiUrl}/pedidos/subestados/`,
         consulta: consulta,
         pedidoId: pedidoId,
-        itemsCount: Object.keys(asignaciones).length
+        itemsCount: Object.keys(asignaciones).length,
+        asignacionesDetalle: Object.keys(asignaciones).map(itemId => ({
+          itemId,
+          empleadoId: asignaciones[itemId].empleadoId,
+          empleadoNombre: asignaciones[itemId].empleadoNombre
+        }))
       });
       
       const res = await fetch(`${apiUrl}/pedidos/subestados/`, {
