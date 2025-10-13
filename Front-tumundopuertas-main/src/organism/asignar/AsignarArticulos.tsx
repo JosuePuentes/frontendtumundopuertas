@@ -431,10 +431,20 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 identificador: empleados[0].identificador,
                                 nombre: empleados[0].nombre,
                                 nombreCompleto: empleados[0].nombreCompleto,
+                                cargo: empleados[0].cargo,
                                 permisos: empleados[0].permisos,
                                 activo: empleados[0].activo,
-                                todasLasPropiedades: Object.keys(empleados[0])
-                              } : null
+                                todasLasPropiedades: Object.keys(empleados[0]),
+                                estructuraCompleta: empleados[0]
+                              } : null,
+                              todosLosEmpleados: empleados.slice(0, 3).map(emp => ({
+                                identificador: emp.identificador,
+                                nombre: emp.nombre,
+                                nombreCompleto: emp.nombreCompleto,
+                                cargo: emp.cargo,
+                                permisos: emp.permisos,
+                                propiedades: Object.keys(emp)
+                              }))
                             });
 
                             const empleadosFiltrados = (empleadosPorItem[item.id] || empleados)
@@ -454,26 +464,63 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                   return false;
                                 }
                                 
-                                // Si hay tipoEmpleado definido, filtrar por permisos
+                                // Si hay tipoEmpleado definido, filtrar por permisos o cargo
                                 const tipoEmpleadoItem = obtenerTipoEmpleadoPorItem(item.id);
                                 if (tipoEmpleadoItem && Array.isArray(tipoEmpleadoItem) && tipoEmpleadoItem.length > 0) {
-                                  // Verificar si el empleado tiene permisos válidos
-                                  if (!Array.isArray(e.permisos) || e.permisos.length === 0) {
-                                    console.log('❌ Empleado sin permisos:', e.identificador);
-                                    return false;
+                                  let cumpleFiltro = false;
+                                  
+                                  // Intentar filtrar por permisos primero
+                                  if (Array.isArray(e.permisos) && e.permisos.length > 0) {
+                                    cumpleFiltro = tipoEmpleadoItem.some((tipo) => 
+                                      e.permisos.includes(tipo)
+                                    );
+                                    console.log('🎯 FILTRO POR PERMISOS:', {
+                                      empleado: e.identificador,
+                                      permisos: e.permisos,
+                                      tipoEmpleado: tipoEmpleadoItem,
+                                      cumpleFiltro: cumpleFiltro
+                                    });
+                                  }
+                                  // Si no tiene permisos, intentar filtrar por cargo
+                                  else if (e.cargo) {
+                                    const cargo = e.cargo.toLowerCase();
+                                    cumpleFiltro = tipoEmpleadoItem.some((tipo) => {
+                                      const tipoNormalizado = tipo.toLowerCase();
+                                      
+                                      // Mapear tipos a variaciones comunes
+                                      const variacionesTipo: Record<string, string[]> = {
+                                        'herreria': ['herrero', 'herreria'],
+                                        'masillar': ['masillador', 'masillar'],
+                                        'pintar': ['pintor', 'pintar'],
+                                        'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
+                                        'facturacion': ['facturador', 'facturacion', 'administrativo'],
+                                        'ayudante': ['ayudante']
+                                      };
+                                      
+                                      // Verificar coincidencia directa
+                                      if (cargo.includes(tipoNormalizado)) {
+                                        return true;
+                                      }
+                                      
+                                      // Verificar variaciones del tipo
+                                      const variaciones = variacionesTipo[tipoNormalizado] || [];
+                                      return variaciones.some(variacion => 
+                                        cargo.includes(variacion)
+                                      );
+                                    });
+                                    console.log('🎯 FILTRO POR CARGO:', {
+                                      empleado: e.identificador,
+                                      cargo: e.cargo,
+                                      tipoEmpleado: tipoEmpleadoItem,
+                                      cumpleFiltro: cumpleFiltro
+                                    });
+                                  }
+                                  // Si no tiene ni permisos ni cargo, mostrar todos
+                                  else {
+                                    console.log('⚠️ Empleado sin permisos ni cargo, mostrando:', e.identificador);
+                                    cumpleFiltro = true;
                                   }
                                   
-                                  // Verificar si alguno de los permisos del empleado coincide con el tipo requerido
-                                  const cumpleFiltro = tipoEmpleadoItem.some((tipo) => 
-                                    e.permisos.includes(tipo)
-                                  );
-                                  
-                                  console.log('🎯 FILTRO RESULTADO:', {
-                                    empleado: e.identificador,
-                                    permisos: e.permisos,
-                                    tipoEmpleado: tipoEmpleadoItem,
-                                    cumpleFiltro: cumpleFiltro
-                                  });
                                   return cumpleFiltro;
                                 }
                                 
