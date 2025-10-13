@@ -32,7 +32,17 @@ export interface TerminarAsignacionData {
 export interface TerminarAsignacionResponse {
   success: boolean;
   message: string;
-  asignacion_actualizada?: any;
+  siguiente_estado_item?: number;
+  estado_anterior?: number;
+  asignacion_actualizada?: {
+    pedido_id: string;
+    item_id: string;
+    empleado_id: string;
+    estado: string;
+    fecha_fin: string;
+    siguiente_modulo?: string;
+    comision_registrada?: boolean;
+  };
 }
 
 export const useDashboardAsignaciones = () => {
