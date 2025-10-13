@@ -47,15 +47,15 @@ const PedidosHerreria: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
   
-  // Función para recargar datos - AHORA TRAE TODOS LOS PEDIDOS CON ITEMS INDEPENDIENTES
+  // Función para recargar datos - OPTIMIZADA: Solo pedidos con items en estados 1-4
   const recargarDatos = async () => {
-    console.log('🔄 Recargando datos de PedidosHerreria (ITEMS INDEPENDIENTES)...');
+    console.log('🔄 Recargando datos de PedidosHerreria (OPTIMIZADO)...');
     setLoading(true);
     try {
-      // Traer TODOS los pedidos, no solo los de orden1/pendiente
-      await fetchPedido("/pedidos/all/");
+      // Cargar pedidos con items en estados activos (1, 2, 3, 4)
+      await fetchPedido("/pedidos/estado/?estado_general=orden1&estado_general=orden2&estado_general=orden3&estado_general=orden4&estado_general=pendiente&/");
       await fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
-      console.log('✅ Datos recargados exitosamente - TODOS LOS PEDIDOS');
+      console.log('✅ Datos recargados exitosamente - PEDIDOS OPTIMIZADOS');
     } catch (error) {
       console.error('❌ Error al recargar datos:', error);
       setError("Error al recargar los pedidos");
@@ -107,7 +107,7 @@ const PedidosHerreria: React.FC = () => {
   return (
     <Card className="max-w-3xl mx-auto mt-8 border-gray-200">
       <CardHeader>
-        <CardTitle>Gestión de Items por Estado (Independientes)</CardTitle>
+        <CardTitle>Gestión de Items por Estado (Optimizado)</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -121,7 +121,15 @@ const PedidosHerreria: React.FC = () => {
           <p className="text-gray-500">No hay items para gestionar.</p>
         ) : (
           <ul className="space-y-8">
-            {(dataPedidos as Pedido[]).map((pedido) => (
+            {(dataPedidos as Pedido[])
+              .filter((pedido) => {
+                // Solo mostrar pedidos que tengan items en estados activos (1, 2, 3, 4)
+                return pedido.items && pedido.items.some((item) => {
+                  // Aquí podrías agregar lógica adicional para filtrar items específicos
+                  return true; // Por ahora mostrar todos los items del pedido
+                });
+              })
+              .map((pedido) => (
               <li key={pedido._id} className="border rounded-xl bg-white shadow p-4 transition-all duration-300 hover:shadow-lg">
                 <DetalleHerreria pedido={pedido} />
                 <div className="mt-4">
