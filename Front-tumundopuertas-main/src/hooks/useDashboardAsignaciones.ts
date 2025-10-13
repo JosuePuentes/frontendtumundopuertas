@@ -71,6 +71,13 @@ export const useDashboardAsignaciones = () => {
         preparar: prepararData ? (prepararData.asignaciones ? prepararData.asignaciones.length : 'No tiene asignaciones') : 'Error'
       });
 
+      // Debug detallado de los datos recibidos
+      console.log('🔍 DEBUG DETALLADO - Datos completos:', {
+        herreriaData: herreriaData,
+        masillarData: masillarData,
+        prepararData: prepararData
+      });
+
       // Combinar todas las asignaciones de los módulos
       const todasAsignaciones: any[] = [];
       

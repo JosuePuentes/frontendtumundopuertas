@@ -268,6 +268,13 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      console.log('🔄 Enviando asignación:', {
+        endpoint: `${apiUrl}/pedidos/subestados/`,
+        consulta: consulta,
+        pedidoId: pedidoId,
+        itemsCount: Object.keys(asignaciones).length
+      });
+      
       const res = await fetch(`${apiUrl}/pedidos/subestados/`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
