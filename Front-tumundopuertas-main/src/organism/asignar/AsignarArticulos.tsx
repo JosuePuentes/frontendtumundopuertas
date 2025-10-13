@@ -244,12 +244,36 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   };
 
   const handleAsignar = async () => {
+    console.log('🚀 INICIANDO ASIGNACIÓN...');
+    console.log('📋 Items:', items.length);
+    console.log('📋 Asignaciones actuales:', Object.keys(asignaciones).length);
+    console.log('📋 Asignaciones previas:', Object.keys(asignadosPrevios).length);
+    
+    // Verificar que hay asignaciones para enviar
+    const asignacionesValidas = Object.entries(asignaciones).filter(([key, asignacion]) => 
+      asignacion.empleadoId && asignacion.empleadoId.trim() !== ""
+    );
+    
+    console.log('✅ Asignaciones válidas:', asignacionesValidas.length);
+    
+    if (asignacionesValidas.length === 0) {
+      setMessage("⚠️ Debes seleccionar al menos un empleado antes de asignar");
+      return;
+    }
+    
     setLoading(true);
     setMessage("");
-    const asignacionPorItem = items.map((item, idx) => ({
-      itemId: item.id,
-      ...asignaciones[`${item.id}-${idx}`],
-    }));
+    
+    const asignacionPorItem = asignacionesValidas.map(([key, asignacion]) => {
+      const [itemId, idx] = key.split('-');
+      const item = items.find(i => i.id === itemId);
+      return {
+        itemId: itemId,
+        ...asignacion
+      };
+    });
+    
+    console.log('📤 Datos a enviar:', asignacionPorItem);
     
     // Detectar si es cambio (ya existe asignación previa)
     const esCambio = Object.keys(asignadosPrevios).length > 0;
@@ -276,9 +300,11 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       consulta.tipo_fecha = "";
     }
     
+    console.log('📤 Consulta completa:', consulta);
+    
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-      console.log('🔄 Asignando', Object.keys(asignaciones).length, 'items al pedido', pedidoId);
+      console.log('🔄 Enviando asignación a:', `${apiUrl}/pedidos/subestados/`);
       
       const res = await fetch(`${apiUrl}/pedidos/subestados/`, {
         method: "PUT",
@@ -286,18 +312,31 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         body: JSON.stringify(consulta),
       });
       
-      setMessage("Asignación enviada correctamente");
-      await res.json();
-      console.log("✅ Asignación exitosa");
+      console.log('📡 Respuesta del servidor:', res.status, res.statusText);
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('❌ Error del servidor:', errorText);
+        throw new Error(`Error ${res.status}: ${errorText}`);
+      }
+      
+      const result = await res.json();
+      console.log('✅ Respuesta exitosa:', result);
+      
+      setMessage("✅ Asignación enviada correctamente");
       
       // Si el estado cambió, mostrar mensaje adicional
       if (nuevoEstadoGeneral !== estado_general) {
-        setMessage(`Asignación enviada correctamente. Estado cambiado a ${nuevoEstadoGeneral}`);
+        setMessage(`✅ Asignación enviada correctamente. Estado cambiado a ${nuevoEstadoGeneral}`);
       }
       
+      // Recargar datos después de la asignación
+      await cargarEstadosItems();
+      await cargarEmpleadosPorItem();
+      
     } catch (err) {
-      setMessage("Error al enviar la asignación");
       console.error("❌ Error al enviar asignación:", err);
+      setMessage(`❌ Error al enviar la asignación: ${err.message}`);
     } finally {
       setLoading(false);
     }

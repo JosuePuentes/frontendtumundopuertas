@@ -44,49 +44,87 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      console.log('🔄 Cargando asignaciones desde endpoint general...');
+      console.log('🔄 Cargando asignaciones desde endpoint específico...');
       
-      // SOLUCIÓN DIRECTA: Usar endpoint general de pedidos y extraer asignaciones
-      const response = await fetch(`${getApiUrl()}/pedidos/`);
+      // SOLUCIÓN: Usar endpoint específico que funcione
+      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
       
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('📋 Datos recibidos del endpoint general:', data);
-      
-      // Verificar que tenemos pedidos
-      if (!data.pedidos || !Array.isArray(data.pedidos)) {
-        console.log('⚠️ No hay pedidos en la respuesta');
-        return [];
-      }
-      
-      // Extraer todas las asignaciones de todos los pedidos
-      const todasAsignaciones: any[] = [];
-      
-      data.pedidos.forEach((pedido: any) => {
-        if (pedido.seguimiento && Array.isArray(pedido.seguimiento)) {
-          pedido.seguimiento.forEach((subestado: any) => {
-            if (subestado.asignaciones_articulos && Array.isArray(subestado.asignaciones_articulos)) {
-              subestado.asignaciones_articulos.forEach((asignacion: any) => {
-                // Solo incluir asignaciones en proceso
-                if (asignacion.estado === 'en_proceso') {
-                  todasAsignaciones.push({
-                    ...asignacion,
-                    pedido_id: pedido._id,
-                    cliente_nombre: pedido.cliente_nombre || pedido.cliente?.nombre || 'Sin cliente',
-                    orden: subestado.orden,
-                    modulo: obtenerModuloPorOrden(subestado.orden)
+        console.log('⚠️ Endpoint específico falló, usando endpoint alternativo...');
+        
+        // FALLBACK: Usar endpoint alternativo
+        const responseAlt = await fetch(`${getApiUrl()}/pedidos/estado/?estado_general=orden1&estado_general=orden2&estado_general=orden3&estado_general=orden4`);
+        
+        if (!responseAlt.ok) {
+          throw new Error(`Error ${responseAlt.status}: ${responseAlt.statusText}`);
+        }
+        
+        const dataAlt = await responseAlt.json();
+        console.log('📋 Datos recibidos del endpoint alternativo:', dataAlt);
+        
+        // Procesar datos del endpoint alternativo
+        const todasAsignaciones: any[] = [];
+        
+        if (dataAlt.pedidos && Array.isArray(dataAlt.pedidos)) {
+          dataAlt.pedidos.forEach((pedido: any) => {
+            if (pedido.seguimiento && Array.isArray(pedido.seguimiento)) {
+              pedido.seguimiento.forEach((subestado: any) => {
+                if (subestado.asignaciones_articulos && Array.isArray(subestado.asignaciones_articulos)) {
+                  subestado.asignaciones_articulos.forEach((asignacion: any) => {
+                    if (asignacion.estado === 'en_proceso') {
+                      todasAsignaciones.push({
+                        ...asignacion,
+                        pedido_id: pedido._id,
+                        cliente_nombre: pedido.cliente_nombre || pedido.cliente?.nombre || 'Sin cliente',
+                        orden: subestado.orden,
+                        modulo: obtenerModuloPorOrden(subestado.orden)
+                      });
+                    }
                   });
                 }
               });
             }
           });
         }
-      });
+        
+        console.log('🎯 Asignaciones extraídas (alternativo):', todasAsignaciones.length);
+        
+        // Normalizar las asignaciones
+        const asignacionesNormalizadas = todasAsignaciones.map((item: any) => {
+          return {
+            _id: item._id || `${item.pedido_id}_${item.item_id}`,
+            pedido_id: item.pedido_id,
+            orden: item.orden || 0,
+            item_id: item.item_id,
+            empleado_id: item.empleadoId || item.empleado_id || "Sin asignar",
+            empleado_nombre: item.nombreempleado || item.empleado_nombre || "Sin asignar",
+            modulo: item.modulo || "herreria",
+            estado: item.estado || "en_proceso",
+            fecha_asignacion: item.fecha_inicio || item.fecha_asignacion || new Date().toISOString(),
+            fecha_fin: item.fecha_fin,
+            descripcionitem: item.descripcionitem || "Sin descripción",
+            detalleitem: item.detalleitem,
+            cliente_nombre: item.cliente_nombre || "Sin cliente",
+            costo_produccion: item.costoproduccion || item.costo_produccion || 0,
+            imagenes: item.imagenes || []
+          };
+        });
+        
+        console.log('✅ Asignaciones normalizadas (alternativo):', asignacionesNormalizadas.length);
+        return asignacionesNormalizadas;
+      }
+
+      const data = await response.json();
+      console.log('📋 Datos recibidos del endpoint específico:', data);
       
-      console.log('🎯 Asignaciones extraídas:', todasAsignaciones.length);
+      // Verificar que tenemos asignaciones
+      if (!data.asignaciones || !Array.isArray(data.asignaciones)) {
+        console.log('⚠️ No hay asignaciones en la respuesta específica');
+        return [];
+      }
+      
+      // Usar directamente las asignaciones del endpoint específico
+      const todasAsignaciones = data.asignaciones;
       
       // Normalizar las asignaciones
       const asignacionesNormalizadas = todasAsignaciones.map((item: any) => {
@@ -99,17 +137,17 @@ export const useDashboardAsignaciones = () => {
           empleado_nombre: item.nombreempleado || item.empleado_nombre || "Sin asignar",
           modulo: item.modulo || "herreria",
           estado: item.estado || "en_proceso",
-          fecha_asignacion: item.fecha_inicio || item.fecha_asignacion || new Date().toISOString(),
+          fecha_asignacion: item.fecha_asignacion || item.fecha_inicio || new Date().toISOString(),
           fecha_fin: item.fecha_fin,
           descripcionitem: item.descripcionitem || "Sin descripción",
           detalleitem: item.detalleitem,
           cliente_nombre: item.cliente_nombre || "Sin cliente",
-          costo_produccion: item.costoproduccion || item.costo_produccion || 0,
+          costo_produccion: item.costo_produccion || item.costoproduccion || 0,
           imagenes: item.imagenes || []
         };
       });
       
-      console.log('✅ Asignaciones normalizadas:', asignacionesNormalizadas.length);
+      console.log('✅ Asignaciones normalizadas (específico):', asignacionesNormalizadas.length);
       return asignacionesNormalizadas;
       
     } catch (err: any) {
