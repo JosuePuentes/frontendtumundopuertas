@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { usePedido } from "@/hooks/usePedido";
 import DetalleHerreria from "./DetalleHerreria";
 import { useEmpleado } from "@/hooks/useEmpleado";
@@ -52,13 +53,14 @@ const PedidosHerreria: React.FC = () => {
   // Estados para filtros
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [filtroAsignacion, setFiltroAsignacion] = useState<string>("todos");
+  const [filtrosAplicados, setFiltrosAplicados] = useState<{estado: string, asignacion: string}>({estado: "todos", asignacion: "todos"});
   
   // Función para construir URL de filtrado dinámico
   const construirUrlFiltro = () => {
     let url = "/pedidos/estado/?";
     const estados: string[] = [];
     
-    switch (filtroEstado) {
+    switch (filtrosAplicados.estado) {
       case "pendiente":
         estados.push("pendiente");
         break;
@@ -86,12 +88,20 @@ const PedidosHerreria: React.FC = () => {
     });
     
     // Agregar parámetro de asignación si es necesario
-    if (filtroAsignacion === "sin_asignar") {
+    if (filtrosAplicados.asignacion === "sin_asignar") {
       url += "sin_asignar=true&";
     }
     
     url += "/";
     return url;
+  };
+
+  // Función para aplicar filtros con debounce
+  const aplicarFiltros = () => {
+    setFiltrosAplicados({
+      estado: filtroEstado,
+      asignacion: filtroAsignacion
+    });
   };
 
   // Función para recargar datos - OPTIMIZADA con filtros dinámicos
@@ -120,10 +130,10 @@ const PedidosHerreria: React.FC = () => {
     recargarDatos();
   }, []);
 
-  // Recargar datos cuando cambien los filtros
+  // Recargar datos cuando cambien los filtros aplicados
   useEffect(() => {
     recargarDatos();
-  }, [filtroEstado, filtroAsignacion]);
+  }, [filtrosAplicados]);
 
   // Sincronización: Escuchar cambios de estado usando evento personalizado
   useEffect(() => {
@@ -165,41 +175,50 @@ const PedidosHerreria: React.FC = () => {
       <CardHeader>
         <CardTitle>Gestión de Items por Estado (Con Filtros)</CardTitle>
         
-        {/* Controles de Filtro */}
-        <div className="flex gap-4 mt-4 p-4 bg-gray-50 rounded-lg">
+        {/* Controles de Filtro Mejorados */}
+        <div className="flex gap-4 mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="flex-1">
-            <Label htmlFor="filtro-estado" className="text-sm font-medium text-gray-700">
-              Filtrar por Estado del Pedido:
+            <Label htmlFor="filtro-estado" className="text-sm font-medium text-gray-700 mb-2 block">
+              Estado del Pedido:
             </Label>
             <Select value={filtroEstado} onValueChange={setFiltroEstado}>
-              <SelectTrigger className="mt-1">
+              <SelectTrigger className="w-full bg-white border-gray-300">
                 <SelectValue placeholder="Seleccionar estado" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos los Estados</SelectItem>
-                <SelectItem value="pendiente">Pendientes</SelectItem>
-                <SelectItem value="orden1">Orden 1 (Herrería)</SelectItem>
-                <SelectItem value="orden2">Orden 2 (Masillar/Pintar)</SelectItem>
-                <SelectItem value="orden3">Orden 3 (Manillar)</SelectItem>
-                <SelectItem value="orden4">Orden 4 (Facturar)</SelectItem>
+              <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                <SelectItem value="todos" className="hover:bg-gray-100">Todos los Estados</SelectItem>
+                <SelectItem value="pendiente" className="hover:bg-gray-100">Pendientes</SelectItem>
+                <SelectItem value="orden1" className="hover:bg-gray-100">Orden 1 (Herrería)</SelectItem>
+                <SelectItem value="orden2" className="hover:bg-gray-100">Orden 2 (Masillar/Pintar)</SelectItem>
+                <SelectItem value="orden3" className="hover:bg-gray-100">Orden 3 (Manillar)</SelectItem>
+                <SelectItem value="orden4" className="hover:bg-gray-100">Orden 4 (Facturar)</SelectItem>
               </SelectContent>
             </Select>
           </div>
           
           <div className="flex-1">
-            <Label htmlFor="filtro-asignacion" className="text-sm font-medium text-gray-700">
-              Filtrar por Asignación:
+            <Label htmlFor="filtro-asignacion" className="text-sm font-medium text-gray-700 mb-2 block">
+              Asignación:
             </Label>
             <Select value={filtroAsignacion} onValueChange={setFiltroAsignacion}>
-              <SelectTrigger className="mt-1">
+              <SelectTrigger className="w-full bg-white border-gray-300">
                 <SelectValue placeholder="Seleccionar asignación" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="sin_asignar">Sin Asignar</SelectItem>
-                <SelectItem value="asignados">Asignados</SelectItem>
+              <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                <SelectItem value="todos" className="hover:bg-gray-100">Todos</SelectItem>
+                <SelectItem value="sin_asignar" className="hover:bg-gray-100">Sin Asignar</SelectItem>
+                <SelectItem value="asignados" className="hover:bg-gray-100">Asignados</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          <div className="flex items-end">
+            <Button 
+              onClick={aplicarFiltros}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+            >
+              Aplicar Filtros
+            </Button>
           </div>
         </div>
       </CardHeader>
