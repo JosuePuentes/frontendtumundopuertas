@@ -248,6 +248,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     console.log('📋 Items:', items.length);
     console.log('📋 Asignaciones actuales:', Object.keys(asignaciones).length);
     console.log('📋 Asignaciones previas:', Object.keys(asignadosPrevios).length);
+    console.log('📋 Estado de asignaciones:', asignaciones);
     
     // Verificar que hay asignaciones para enviar
     const asignacionesValidas = Object.entries(asignaciones).filter(([, asignacion]) => 
@@ -255,8 +256,10 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     );
     
     console.log('✅ Asignaciones válidas:', asignacionesValidas.length);
+    console.log('📋 Asignaciones válidas detalle:', asignacionesValidas);
     
     if (asignacionesValidas.length === 0) {
+      console.log('⚠️ NO HAY ASIGNACIONES VÁLIDAS - Mostrando mensaje de error');
       setMessage("⚠️ Debes seleccionar al menos un empleado antes de asignar");
       return;
     }
