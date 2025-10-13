@@ -425,7 +425,16 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                               itemId: item.id,
                               empleadosDisponibles: (empleadosPorItem[item.id] || empleados).length,
                               tipoEmpleado: obtenerTipoEmpleadoPorItem(item.id),
-                              empleadosGenerales: empleados.length
+                              empleadosGenerales: empleados.length,
+                              primerEmpleado: empleados[0] ? {
+                                identificador: empleados[0].identificador,
+                                nombre: empleados[0].nombre,
+                                nombreCompleto: empleados[0].nombreCompleto,
+                                cargo: empleados[0].cargo,
+                                permisos: empleados[0].permisos,
+                                activo: empleados[0].activo,
+                                todasLasPropiedades: Object.keys(empleados[0])
+                              } : null
                             });
 
                             const empleadosFiltrados = (empleadosPorItem[item.id] || empleados)
