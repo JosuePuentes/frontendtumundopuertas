@@ -250,7 +250,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     console.log('📋 Asignaciones previas:', Object.keys(asignadosPrevios).length);
     
     // Verificar que hay asignaciones para enviar
-    const asignacionesValidas = Object.entries(asignaciones).filter(([key, asignacion]) => 
+    const asignacionesValidas = Object.entries(asignaciones).filter(([, asignacion]) => 
       asignacion.empleadoId && asignacion.empleadoId.trim() !== ""
     );
     
@@ -265,8 +265,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     setMessage("");
     
     const asignacionPorItem = asignacionesValidas.map(([key, asignacion]) => {
-      const [itemId, idx] = key.split('-');
-      const item = items.find(i => i.id === itemId);
+      const [itemId] = key.split('-');
       return {
         itemId: itemId,
         ...asignacion
@@ -334,7 +333,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       await cargarEstadosItems();
       await cargarEmpleadosPorItem();
       
-    } catch (err) {
+    } catch (err: any) {
       console.error("❌ Error al enviar asignación:", err);
       setMessage(`❌ Error al enviar la asignación: ${err.message}`);
     } finally {
