@@ -64,27 +64,6 @@ const PedidosHerreria: React.FC = () => {
     }
   };
 
-  // Función para determinar el tipo de empleado según el estado INDIVIDUAL del item
-  const obtenerTipoEmpleadoPorEstadoItem = (estadoItem: string): string[] => {
-    console.log(`🎯 Obteniendo tipo empleado para estado de item: ${estadoItem}`);
-    
-    switch (estadoItem) {
-      case "1":
-      case "herreria":
-        return ["herreria", "ayudante"]; // HERRERIA + AYUDANTES
-      case "2":
-      case "masillar":
-        return ["masillar", "pintar", "ayudante"]; // MASILLADOR/PINTOR + AYUDANTES
-      case "3":
-      case "preparar":
-        return ["mantenimiento", "ayudante"]; // MANILLAR + AYUDANTES
-      case "4":
-      case "facturar":
-        return ["facturacion", "ayudante"]; // FACTURAR + AYUDANTES
-      default:
-        return ["herreria", "ayudante"]; // Por defecto para herrería
-    }
-  };
 
   useEffect(() => {
     recargarDatos();
