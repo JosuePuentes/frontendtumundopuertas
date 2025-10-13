@@ -288,10 +288,14 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       console.log("🔄 Cambiando estado del pedido de 'pendiente' a 'orden1'");
     }
     
+    // SOLUCIÓN: Convertir "independiente" a "1" para herreria
+    const numeroOrdenFinal = numeroOrden === "independiente" ? "1" : numeroOrden;
+    console.log('🔧 CONVERSIÓN numero_orden:', numeroOrden, '→', numeroOrdenFinal);
+
     const consulta: any = {
       pedido_id: pedidoId,
       asignaciones: asignacionPorItem,
-      numero_orden: numeroOrden === "independiente" ? "1" : numeroOrden, // SOLUCIÓN: Usar "1" si es independiente
+      numero_orden: numeroOrdenFinal, // Usar el número convertido
       estado: "en_proceso",
       estado_general: nuevoEstadoGeneral, // Usar el nuevo estado
     };
