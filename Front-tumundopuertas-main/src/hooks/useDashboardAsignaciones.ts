@@ -44,69 +44,37 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      console.log('🔍 Obteniendo datos de módulos específicos que sabemos que funcionan...');
+      console.log('🔍 SOLUCIÓN DIRECTA: Usando endpoint general que sabemos que funciona...');
       
-      // Usar los endpoints específicos que sabemos que funcionan según los logs del backend
-      const [herreriaRes, masillarRes, prepararRes] = await Promise.all([
-        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=herreria`),
-        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=masillar`),
-        fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/?modulo=preparar`)
-      ]);
-
-      console.log('📊 Respuestas de módulos:', {
-        herreria: { status: herreriaRes.status, ok: herreriaRes.ok },
-        masillar: { status: masillarRes.status, ok: masillarRes.ok },
-        preparar: { status: prepararRes.status, ok: prepararRes.ok }
+      // SOLUCIÓN DIRECTA: Usar el endpoint general que sabemos que funciona
+      const generalRes = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
+      
+      console.log('📊 Respuesta endpoint general:', {
+        status: generalRes.status,
+        ok: generalRes.ok
       });
 
-      const [herreriaData, masillarData, prepararData] = await Promise.all([
-        herreriaRes.ok ? herreriaRes.json() : null,
-        masillarRes.ok ? masillarRes.json() : null,
-        prepararRes.ok ? prepararRes.json() : null
-      ]);
+      if (!generalRes.ok) {
+        throw new Error(`Error ${generalRes.status}: ${generalRes.statusText}`);
+      }
 
-      console.log('📋 Datos recibidos por módulo:', {
-        herreria: herreriaData ? (herreriaData.asignaciones ? herreriaData.asignaciones.length : 'No tiene asignaciones') : 'Error',
-        masillar: masillarData ? (masillarData.asignaciones ? masillarData.asignaciones.length : 'No tiene asignaciones') : 'Error',
-        preparar: prepararData ? (prepararData.asignaciones ? prepararData.asignaciones.length : 'No tiene asignaciones') : 'Error'
+      const generalData = await generalRes.json();
+      console.log('📋 Datos endpoint general:', {
+        success: generalData.success,
+        total: generalData.total,
+        asignaciones: generalData.asignaciones ? generalData.asignaciones.length : 'No es array'
       });
 
-      // Debug detallado de los datos recibidos
-      console.log('🔍 DEBUG DETALLADO - Datos completos:', {
-        herreriaData: herreriaData,
-        masillarData: masillarData,
-        prepararData: prepararData
-      });
+      // Verificar que tenemos asignaciones
+      if (!generalData.asignaciones || !Array.isArray(generalData.asignaciones)) {
+        console.log('⚠️ No se encontraron datos en ningún endpoint ahora no aparece nada');
+        return [];
+      }
 
-      // Combinar todas las asignaciones de los módulos
-      const todasAsignaciones: any[] = [];
+      console.log('✅ Encontrados datos en generalData.asignaciones:', generalData.asignaciones.length);
       
-      if (herreriaData && herreriaData.asignaciones) {
-        herreriaData.asignaciones.forEach((item: any) => {
-          todasAsignaciones.push({
-            ...item,
-            modulo: "herreria"
-          });
-        });
-      }
-      
-      if (masillarData && masillarData.asignaciones) {
-        masillarData.asignaciones.forEach((item: any) => {
-          todasAsignaciones.push({
-            ...item,
-            modulo: "masillar"
-          });
-        });
-      }
-      
-      if (prepararData && prepararData.asignaciones) {
-        prepararData.asignaciones.forEach((item: any) => {
-          todasAsignaciones.push({
-            ...item,
-            modulo: "preparar"
-          });
-        });
-      }
+      // Usar directamente las asignaciones del endpoint general
+      const todasAsignaciones = generalData.asignaciones;
 
       console.log('✅ Total de asignaciones combinadas:', todasAsignaciones.length);
       

@@ -112,14 +112,49 @@ export const useProgresoPedido = (pedidoId: string) => {
         return null;
       }
 
-      // Mapear items con su estado actual
+      // Mapear items con su estado actual - MEJORADO para estados independientes
       const items: ItemProgreso[] = pedido.items.map((item: any) => {
-        // Determinar el módulo actual basado en el seguimiento
+        // Determinar el módulo actual basado en el seguimiento Y en el estado del item
         let moduloActual = 'herreria'; // por defecto
         let estadoActual = 'pendiente';
 
-        if (pedido.seguimiento && Array.isArray(pedido.seguimiento)) {
-          // Buscar el subestado en proceso
+        // PRIMERO: Intentar obtener el estado del item directamente
+        if (item.estado_item) {
+          // Si el item tiene estado_item, usarlo directamente
+          switch (item.estado_item) {
+            case 1:
+            case 'orden1':
+            case 'herreria':
+              moduloActual = 'herreria';
+              estadoActual = 'herreria';
+              break;
+            case 2:
+            case 'orden2':
+            case 'masillar':
+              moduloActual = 'masillar';
+              estadoActual = 'masillar';
+              break;
+            case 3:
+            case 'orden3':
+            case 'preparar':
+              moduloActual = 'preparar';
+              estadoActual = 'preparar';
+              break;
+            case 4:
+            case 'orden4':
+            case 'facturar':
+              moduloActual = 'facturar';
+              estadoActual = 'facturar';
+              break;
+            case 5:
+            case 'orden5':
+            case 'completado':
+              moduloActual = 'facturar';
+              estadoActual = 'completado';
+              break;
+          }
+        } else if (pedido.seguimiento && Array.isArray(pedido.seguimiento)) {
+          // FALLBACK: Usar el seguimiento del pedido (método anterior)
           const subestadoEnProceso = pedido.seguimiento.find((s: any) => 
             s.estado === 'en_proceso' && s.asignaciones_articulos && 
             s.asignaciones_articulos.some((a: any) => a.item_id === item._id)
@@ -158,6 +193,8 @@ export const useProgresoPedido = (pedidoId: string) => {
           }
         }
 
+        console.log(`🔍 Item ${item._id}: estado_item=${item.estado_item}, moduloActual=${moduloActual}, estadoActual=${estadoActual}`);
+
         return {
           id: item._id,
           nombre: item.nombre,
@@ -194,6 +231,25 @@ export const useProgresoPedido = (pedidoId: string) => {
     if (pedidoId) {
       obtenerProgresoPedido().then(setProgreso);
     }
+  }, [pedidoId]);
+
+  // Escuchar cambios de estado de items para actualizar el progreso
+  useEffect(() => {
+    const handleCambioEstado = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const evento = customEvent.detail;
+      
+      // Solo actualizar si el cambio es relevante para este pedido
+      if (evento.pedidoId === pedidoId) {
+        console.log(`🔄 useProgresoPedido: Cambio de estado detectado para pedido ${pedidoId}`, evento);
+        await actualizarProgreso();
+      }
+    };
+
+    window.addEventListener('cambioEstadoItem', handleCambioEstado);
+    return () => {
+      window.removeEventListener('cambioEstadoItem', handleCambioEstado);
+    };
   }, [pedidoId]);
 
   const actualizarProgreso = async () => {
