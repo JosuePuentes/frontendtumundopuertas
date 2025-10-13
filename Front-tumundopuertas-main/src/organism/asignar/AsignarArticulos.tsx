@@ -163,22 +163,31 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         const res = await fetch(`${apiUrl}/pedidos/id/${pedidoId}/`);
         if (!res.ok) return;
         const pedido = await res.json();
-        // Buscar subestado actual
-        const sub = Array.isArray(pedido.seguimiento)
-          ? pedido.seguimiento.find((s: any) => s.estado === "en_proceso" && String(s.orden) === numeroOrden)
-          : null;
-        if (sub && Array.isArray(sub.asignaciones_articulos)) {
-          // Mapear asignaciones previas por key
-          const prev: Record<string, AsignacionArticulo> = {};
-          sub.asignaciones_articulos.forEach((a: AsignacionArticulo) => {
-            prev[a.key] = a;
+        
+        // SOLUCIÓN: Buscar asignaciones en TODOS los subestados, no solo uno específico
+        const prev: Record<string, AsignacionArticulo> = {};
+        
+        if (Array.isArray(pedido.seguimiento)) {
+          pedido.seguimiento.forEach((s: any) => {
+            if (s.asignaciones_articulos && Array.isArray(s.asignaciones_articulos)) {
+              s.asignaciones_articulos.forEach((a: AsignacionArticulo) => {
+                // Solo incluir asignaciones en proceso
+                if (a.estado === "en_proceso") {
+                  prev[a.key] = a;
+                }
+              });
+            }
           });
-          setAsignadosPrevios(prev);
         }
-      } catch {}
+        
+        console.log('🔍 Asignaciones previas encontradas:', Object.keys(prev).length);
+        setAsignadosPrevios(prev);
+      } catch (error) {
+        console.error('❌ Error al cargar asignaciones previas:', error);
+      }
     };
     fetchPedido();
-  }, [pedidoId, numeroOrden]);
+  }, [pedidoId]); // Remover numeroOrden de las dependencias
 
   // Cargar empleados filtrados cuando cambien los items (SOLO UNA VEZ)
   useEffect(() => {

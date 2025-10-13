@@ -44,56 +44,91 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      // SOLUCIÓN SIMPLIFICADA: Usar endpoint directo sin logs excesivos
-      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
+      console.log('🔄 Cargando asignaciones desde endpoint general...');
+      
+      // SOLUCIÓN DIRECTA: Usar endpoint general de pedidos y extraer asignaciones
+      const response = await fetch(`${getApiUrl()}/pedidos/`);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
+      console.log('📋 Datos recibidos del endpoint general:', data);
       
-      // Verificar que tenemos asignaciones
-      if (!data.asignaciones || !Array.isArray(data.asignaciones)) {
+      // Verificar que tenemos pedidos
+      if (!data.pedidos || !Array.isArray(data.pedidos)) {
+        console.log('⚠️ No hay pedidos en la respuesta');
         return [];
       }
       
-      // Usar directamente las asignaciones del endpoint
-      const todasAsignaciones = data.asignaciones;
-
-      // Procesar asignaciones de manera eficiente
+      // Extraer todas las asignaciones de todos los pedidos
+      const todasAsignaciones: any[] = [];
       
-      // Normalizar las asignaciones de manera eficiente
+      data.pedidos.forEach((pedido: any) => {
+        if (pedido.seguimiento && Array.isArray(pedido.seguimiento)) {
+          pedido.seguimiento.forEach((subestado: any) => {
+            if (subestado.asignaciones_articulos && Array.isArray(subestado.asignaciones_articulos)) {
+              subestado.asignaciones_articulos.forEach((asignacion: any) => {
+                // Solo incluir asignaciones en proceso
+                if (asignacion.estado === 'en_proceso') {
+                  todasAsignaciones.push({
+                    ...asignacion,
+                    pedido_id: pedido._id,
+                    cliente_nombre: pedido.cliente_nombre || pedido.cliente?.nombre || 'Sin cliente',
+                    orden: subestado.orden,
+                    modulo: obtenerModuloPorOrden(subestado.orden)
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
+      
+      console.log('🎯 Asignaciones extraídas:', todasAsignaciones.length);
+      
+      // Normalizar las asignaciones
       const asignacionesNormalizadas = todasAsignaciones.map((item: any) => {
-        // Extraer información del empleado de manera simple
-        const empleado_id = item.empleadoId || item.empleado_id || item.empleado?.identificador || item.empleado?.id || "Sin asignar";
-        const empleado_nombre = item.nombreempleado || item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar";
-        
         return {
           _id: item._id || `${item.pedido_id}_${item.item_id}`,
           pedido_id: item.pedido_id,
           orden: item.orden || 0,
           item_id: item.item_id,
-          empleado_id,
-          empleado_nombre,
+          empleado_id: item.empleadoId || item.empleado_id || "Sin asignar",
+          empleado_nombre: item.nombreempleado || item.empleado_nombre || "Sin asignar",
           modulo: item.modulo || "herreria",
-          estado: item.estado || item.estado_asignacion || "en_proceso",
-          fecha_asignacion: item.fecha_asignacion || item.fecha || item.created_at || new Date().toISOString(),
-          fecha_fin: item.fecha_fin || item.finished_at,
-          descripcionitem: item.descripcionitem || item.descripcion || item.item_descripcion || "Sin descripción",
-          detalleitem: item.detalleitem || item.detalle || item.item_detalle,
-          cliente_nombre: item.cliente_nombre || item.cliente?.cliente_nombre || item.cliente?.nombre || "Sin cliente",
-          costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
-          imagenes: item.imagenes || item.images || []
+          estado: item.estado || "en_proceso",
+          fecha_asignacion: item.fecha_inicio || item.fecha_asignacion || new Date().toISOString(),
+          fecha_fin: item.fecha_fin,
+          descripcionitem: item.descripcionitem || "Sin descripción",
+          detalleitem: item.detalleitem,
+          cliente_nombre: item.cliente_nombre || "Sin cliente",
+          costo_produccion: item.costoproduccion || item.costo_produccion || 0,
+          imagenes: item.imagenes || []
         };
       });
       
+      console.log('✅ Asignaciones normalizadas:', asignacionesNormalizadas.length);
       return asignacionesNormalizadas;
+      
     } catch (err: any) {
+      console.error('❌ Error al cargar asignaciones:', err);
       setError(`Error al cargar asignaciones: ${err.message}`);
       throw err;
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Función helper para obtener módulo por orden
+  const obtenerModuloPorOrden = (orden: number): string => {
+    switch (orden) {
+      case 1: return 'herreria';
+      case 2: return 'masillar';
+      case 3: return 'preparar';
+      case 4: return 'facturar';
+      default: return 'herreria';
     }
   };
 
