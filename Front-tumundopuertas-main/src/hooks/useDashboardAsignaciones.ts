@@ -44,147 +44,35 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      console.log('🔍 SOLUCIÓN DIRECTA: Usando endpoint general que sabemos que funciona...');
+      // SOLUCIÓN SIMPLIFICADA: Usar endpoint directo sin logs excesivos
+      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
       
-      // SOLUCIÓN DIRECTA: Usar el endpoint general que sabemos que funciona
-      const generalRes = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
-      
-      console.log('📊 Respuesta endpoint general:', {
-        status: generalRes.status,
-        ok: generalRes.ok
-      });
-
-      if (!generalRes.ok) {
-        throw new Error(`Error ${generalRes.status}: ${generalRes.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
-      const generalData = await generalRes.json();
-      console.log('📋 Datos endpoint general:', {
-        success: generalData.success,
-        total: generalData.total,
-        asignaciones: generalData.asignaciones ? generalData.asignaciones.length : 'No es array'
-      });
-
-      // DEBUG DETALLADO: Mostrar las primeras 3 asignaciones para ver su estructura
-      if (generalData.asignaciones && generalData.asignaciones.length > 0) {
-        console.log('🔍 PRIMERAS 3 ASIGNACIONES DEL ENDPOINT GENERAL:');
-        generalData.asignaciones.slice(0, 3).forEach((asignacion: any, index: number) => {
-          console.log(`📋 Asignación ${index + 1}:`, {
-            pedido_id: asignacion.pedido_id,
-            item_id: asignacion.item_id,
-            empleado_id: asignacion.empleado_id,
-            empleado_nombre: asignacion.empleado_nombre,
-            empleadoId: asignacion.empleadoId,
-            nombreempleado: asignacion.nombreempleado,
-            modulo: asignacion.modulo,
-            estado: asignacion.estado,
-            fecha_asignacion: asignacion.fecha_asignacion,
-            descripcionitem: asignacion.descripcionitem,
-            cliente_nombre: asignacion.cliente_nombre
-          });
-        });
-      }
-
+      const data = await response.json();
+      
       // Verificar que tenemos asignaciones
-      if (!generalData.asignaciones || !Array.isArray(generalData.asignaciones)) {
-        console.log('⚠️ No se encontraron datos en ningún endpoint ahora no aparece nada');
+      if (!data.asignaciones || !Array.isArray(data.asignaciones)) {
         return [];
       }
+      
+      // Usar directamente las asignaciones del endpoint
+      const todasAsignaciones = data.asignaciones;
 
-      console.log('✅ Encontrados datos en generalData.asignaciones:', generalData.asignaciones.length);
+      // Procesar asignaciones de manera eficiente
       
-      // Usar directamente las asignaciones del endpoint general
-      const todasAsignaciones = generalData.asignaciones;
-
-      console.log('✅ Total de asignaciones combinadas:', todasAsignaciones.length);
-      
-      // Mostrar muestra de datos para debugging
-      if (todasAsignaciones.length > 0) {
-        console.log('🔍 Muestra de datos sin procesar:', {
-          primerItem: todasAsignaciones[0],
-          segundoItem: todasAsignaciones[1] || 'No hay segundo item'
-        });
-        
-        // Mostrar estructura completa del primer item
-        console.log('🔍 Estructura completa del primer item:', JSON.stringify(todasAsignaciones[0], null, 2));
-        
-        // Buscar items que tengan información de empleado
-        const itemsConEmpleado = todasAsignaciones.filter((item: any) => 
-          item.empleadoId || 
-          item.nombreempleado ||
-          item.empleado_id || 
-          item.empleado_nombre || 
-          item.empleado || 
-          item.empleado?.id || 
-          item.empleado?.identificador ||
-          item.empleado?.nombre
-        );
-        
-        console.log('🔍 Items que podrían tener empleado:', itemsConEmpleado.length);
-        if (itemsConEmpleado.length > 0) {
-          console.log('🔍 Primer item con posible empleado:', JSON.stringify(itemsConEmpleado[0], null, 2));
-        } else {
-          // Si no hay items con empleado, mostrar las propiedades del primer item
-          console.log('🔍 Propiedades disponibles en el primer item:', Object.keys(todasAsignaciones[0]));
-          console.log('🔍 Primer item completo:', todasAsignaciones[0]);
-          
-          // Buscar propiedades que podrían contener información del empleado
-          const primerItem = todasAsignaciones[0];
-          const propiedadesConEmpleado = Object.keys(primerItem).filter(key => 
-            key.toLowerCase().includes('empleado') || 
-            key.toLowerCase().includes('asignado') || 
-            key.toLowerCase().includes('responsable') || 
-            key.toLowerCase().includes('trabajador') ||
-            key.toLowerCase().includes('user') ||
-            key.toLowerCase().includes('worker')
-          );
-          
-          console.log('🔍 Propiedades que podrían contener empleado:', propiedadesConEmpleado);
-          if (propiedadesConEmpleado.length > 0) {
-            propiedadesConEmpleado.forEach(prop => {
-              console.log(`🔍 ${prop}:`, primerItem[prop]);
-            });
-          }
-        }
-      }
-      
-      // Normalizar las asignaciones
+      // Normalizar las asignaciones de manera eficiente
       const asignacionesNormalizadas = todasAsignaciones.map((item: any) => {
-        // Extraer información del empleado de diferentes formas posibles
-        let empleado_id = "Sin asignar";
-        let empleado_nombre = "Sin asignar";
+        // Extraer información del empleado de manera simple
+        const empleado_id = item.empleadoId || item.empleado_id || item.empleado?.identificador || item.empleado?.id || "Sin asignar";
+        const empleado_nombre = item.nombreempleado || item.empleado_nombre || item.empleado?.nombreCompleto || item.empleado?.nombre || "Sin asignar";
         
-        // Intentar diferentes formas de obtener el empleado
-        if (item.empleadoId) {
-          empleado_id = item.empleadoId;
-        } else if (item.empleado_id) {
-          empleado_id = item.empleado_id;
-        } else if (item.empleado?.identificador) {
-          empleado_id = item.empleado.identificador;
-        } else if (item.empleado?.id) {
-          empleado_id = item.empleado.id;
-        } else if (item.empleado?.empleado_id) {
-          empleado_id = item.empleado.empleado_id;
-        }
-        
-        if (item.nombreempleado) {
-          empleado_nombre = item.nombreempleado;
-        } else if (item.empleado_nombre) {
-          empleado_nombre = item.empleado_nombre;
-        } else if (item.empleado?.nombreCompleto) {
-          empleado_nombre = item.empleado.nombreCompleto;
-        } else if (item.empleado?.nombre) {
-          empleado_nombre = item.empleado.nombre;
-        } else if (item.empleado?.nombre_completo) {
-          empleado_nombre = item.empleado.nombre_completo;
-        } else if (item.empleado?.primer_nombre && item.empleado?.apellido) {
-          empleado_nombre = `${item.empleado.primer_nombre} ${item.empleado.apellido}`;
-        }
-        
-        const asignacionNormalizada = {
+        return {
           _id: item._id || `${item.pedido_id}_${item.item_id}`,
           pedido_id: item.pedido_id,
-          orden: item.orden || 0,  // ← AGREGAR ESTA PROPIEDAD
+          orden: item.orden || 0,
           item_id: item.item_id,
           empleado_id,
           empleado_nombre,
@@ -198,49 +86,7 @@ export const useDashboardAsignaciones = () => {
           costo_produccion: item.costo_produccion || item.costo || item.costo_produccion_item || 0,
           imagenes: item.imagenes || item.images || []
         };
-        
-        // Log para debugging de imágenes (solo los primeros 3 items)
-        const index = todasAsignaciones.indexOf(item);
-        if (index < 3) {
-          console.log(`🖼️ Imágenes del item ${index + 1}:`, {
-            item_id: item.item_id,
-            imagenes: item.imagenes,
-            images: item.images,
-            imagenes_finales: asignacionNormalizada.imagenes
-          });
-        }
-        
-        // Si no hay imágenes en la asignación, intentar obtenerlas del item
-        if (!asignacionNormalizada.imagenes || asignacionNormalizada.imagenes.length === 0) {
-          console.log(`🔍 No hay imágenes en asignación, buscando en item: ${item.item_id}`);
-          // Aquí podrías hacer una llamada adicional para obtener las imágenes del item
-          // Por ahora, vamos a usar las imágenes que vengan del backend
-        }
-        
-        // Log para debugging de empleados
-        if (empleado_nombre !== "Sin asignar") {
-          console.log(`👤 Empleado encontrado: ${empleado_nombre} (ID: ${empleado_id})`);
-        } else {
-          // Log detallado cuando NO se encuentra empleado (solo los primeros 3 para evitar spam)
-          const index = todasAsignaciones.indexOf(item);
-          if (index < 3) {
-            console.log(`❌ Sin empleado - Item ${index + 1}:`, {
-              empleadoId: item.empleadoId,
-              nombreempleado: item.nombreempleado,
-              empleado_id: item.empleado_id,
-              empleado_nombre: item.empleado_nombre
-            });
-          }
-        }
-        
-        return asignacionNormalizada;
       });
-      
-      // Contar empleados encontrados
-      const empleadosConAsignacion = asignacionesNormalizadas.filter((a: any) => a.empleado_nombre !== "Sin asignar");
-      console.log('✅ Asignaciones normalizadas:', asignacionesNormalizadas.length);
-      console.log('👥 Empleados con asignaciones:', empleadosConAsignacion.length);
-      console.log('📋 Lista de empleados:', empleadosConAsignacion.map((a: any) => a.empleado_nombre).filter((nombre: any, index: any, arr: any) => arr.indexOf(nombre) === index));
       
       return asignacionesNormalizadas;
     } catch (err: any) {

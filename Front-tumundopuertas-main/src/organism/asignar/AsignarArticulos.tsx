@@ -268,17 +268,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-      console.log('🔄 Enviando asignación:', {
-        endpoint: `${apiUrl}/pedidos/subestados/`,
-        consulta: consulta,
-        pedidoId: pedidoId,
-        itemsCount: Object.keys(asignaciones).length,
-        asignacionesDetalle: Object.keys(asignaciones).map(itemId => ({
-          itemId,
-          empleadoId: asignaciones[itemId].empleadoId,
-          empleadoNombre: asignaciones[itemId].empleadoNombre
-        }))
-      });
+      console.log('🔄 Asignando', Object.keys(asignaciones).length, 'items al pedido', pedidoId);
       
       const res = await fetch(`${apiUrl}/pedidos/subestados/`, {
         method: "PUT",
@@ -286,10 +276,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         body: JSON.stringify(consulta),
       });
       
-      console.log("🔄 Respuesta de asignación:", res);
       setMessage("Asignación enviada correctamente");
-      const result = await res.json();
-      console.log("✅ Resultado de asignación:", result);
+      await res.json();
+      console.log("✅ Asignación exitosa");
       
       // Si el estado cambió, mostrar mensaje adicional
       if (nuevoEstadoGeneral !== estado_general) {
