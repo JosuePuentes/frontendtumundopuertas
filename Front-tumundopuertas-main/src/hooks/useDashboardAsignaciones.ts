@@ -105,7 +105,7 @@ export const useDashboardAsignaciones = () => {
             descripcionitem: item.descripcionitem || "Sin descripción",
             detalleitem: item.detalleitem,
             cliente_nombre: item.cliente_nombre || "Sin cliente",
-            costo_produccion: item.costoproduccion || item.costo_produccion || 0,
+            costo_produccion: Number(item.costoproduccion || item.costo_produccion || 0),
             imagenes: item.imagenes || []
           };
         });
@@ -142,7 +142,7 @@ export const useDashboardAsignaciones = () => {
           descripcionitem: item.descripcionitem || "Sin descripción",
           detalleitem: item.detalleitem,
           cliente_nombre: item.cliente_nombre || "Sin cliente",
-          costo_produccion: item.costo_produccion || item.costoproduccion || 0,
+          costo_produccion: Number(item.costo_produccion || item.costoproduccion || 0),
           imagenes: item.imagenes || []
         };
       });
@@ -240,7 +240,7 @@ export const useDashboardAsignaciones = () => {
       total: asignacionesModulo.length,
       enProceso: asignacionesModulo.filter(a => a.estado === 'en_proceso').length,
       terminadas: asignacionesModulo.filter(a => a.estado === 'terminado').length,
-      costoTotal: asignacionesModulo.reduce((sum, a) => sum + (a.costo_produccion || 0), 0)
+      costoTotal: asignacionesModulo.reduce((sum, a) => sum + (Number(a.costo_produccion) || 0), 0)
     };
   };
 

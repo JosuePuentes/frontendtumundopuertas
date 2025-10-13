@@ -406,7 +406,7 @@ const DashboardAsignaciones: React.FC = () => {
           item.enProceso,
           item.terminadas,
           item.total,
-          `$${(item.costoTotal || 0).toFixed(2)}`,
+          `$${(Number(item.costoTotal) || 0).toFixed(2)}`,
           item.modulos.join(", ")
         ]),
         // Resumen
@@ -416,7 +416,7 @@ const DashboardAsignaciones: React.FC = () => {
         ["Total Asignaciones En Proceso", datosReporte.reduce((sum, item) => sum + item.enProceso, 0)],
         ["Total Asignaciones Terminadas", datosReporte.reduce((sum, item) => sum + item.terminadas, 0)],
         ["Total Asignaciones", datosReporte.reduce((sum, item) => sum + item.total, 0)],
-        ["Costo Total Producción", `$${datosReporte.reduce((sum, item) => sum + item.costoTotal, 0).toFixed(2)}`]
+        ["Costo Total Producción", `$${datosReporte.reduce((sum, item) => sum + (Number(item.costoTotal) || 0), 0).toFixed(2)}`]
       ];
 
       // Exportar a Excel
@@ -521,7 +521,7 @@ const DashboardAsignaciones: React.FC = () => {
         item.enProceso.toString(),
         item.terminadas.toString(),
         item.total.toString(),
-        `$${(item.costoTotal || 0).toFixed(2)}`,
+        `$${(Number(item.costoTotal) || 0).toFixed(2)}`,
         item.modulos.join(", ")
       ]);
 
@@ -553,7 +553,7 @@ const DashboardAsignaciones: React.FC = () => {
       doc.text(`Asignaciones En Proceso: ${totalEnProceso}`, 20, finalY + 25);
       doc.text(`Asignaciones Terminadas: ${totalTerminadas}`, 20, finalY + 35);
       doc.text(`Total de Asignaciones: ${totalAsignaciones}`, 20, finalY + 45);
-      doc.text(`Costo Total de Producción: $${(costoTotal || 0).toFixed(2)}`, 20, finalY + 55);
+      doc.text(`Costo Total de Producción: $${(Number(costoTotal) || 0).toFixed(2)}`, 20, finalY + 55);
 
       // Guardar PDF
       const nombreArchivo = `Reporte_Asignaciones_${fechaInicioReporte}_a_${fechaFinReporte}.pdf`;
@@ -1043,7 +1043,7 @@ const DashboardAsignaciones: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Costo Total</p>
-                <p className="text-2xl font-bold text-purple-600">${(estadisticasGenerales.costoTotal || 0).toFixed(2)}</p>
+                <p className="text-2xl font-bold text-purple-600">${(Number(estadisticasGenerales.costoTotal) || 0).toFixed(2)}</p>
               </div>
               <TrendingUp className="w-8 h-8 text-purple-600" />
             </div>
@@ -1065,7 +1065,7 @@ const DashboardAsignaciones: React.FC = () => {
                 <p className="text-sm text-gray-600">Total: {stats.total}</p>
                 <p className="text-sm text-gray-600">En Proceso: {stats.enProceso}</p>
                 <p className="text-sm text-gray-600">Terminadas: {stats.terminadas}</p>
-                <p className="text-sm font-semibold">Costo: ${(stats.costoTotal || 0).toFixed(2)}</p>
+                <p className="text-sm font-semibold">Costo: ${(Number(stats.costoTotal) || 0).toFixed(2)}</p>
               </div>
             </CardContent>
           </Card>
