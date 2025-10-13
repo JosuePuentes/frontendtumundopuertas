@@ -8,6 +8,7 @@ import DetalleHerreria from "./DetalleHerreria";
 import { useEmpleado } from "@/hooks/useEmpleado";
 import AsignarArticulos from "@/organism/asignar/AsignarArticulos";
 import IndicadorEstadosItem from "@/components/IndicadorEstadosItem";
+import CrearPedidoPrueba from "@/components/CrearPedidoPrueba";
 
 // Tipos explícitos
 interface PedidoItem {
@@ -58,11 +59,38 @@ const PedidosHerreria: React.FC = () => {
   
   // Función para construir URL de filtrado dinámico
   const construirUrlFiltro = () => {
-    // PRUEBA TEMPORAL: Obtener TODOS los pedidos sin filtro de estado_general
     let url = "/pedidos/estado/?";
+    const estados: string[] = [];
     
-    // Incluir TODOS los estados posibles para asegurar que obtenemos todos los pedidos
-    const estados = ["pendiente", "orden1", "orden2", "orden3", "orden4", "terminado", "cancelado"];
+    // Aplicar filtro de estado según selección
+    switch (filtrosAplicados.estado) {
+      case "pendiente":
+        estados.push("pendiente");
+        break;
+      case "orden1":
+        estados.push("orden1");
+        break;
+      case "orden2":
+        estados.push("orden2");
+        break;
+      case "orden3":
+        estados.push("orden3");
+        break;
+      case "orden4":
+        estados.push("orden4");
+        break;
+      case "terminado":
+        estados.push("terminado");
+        break;
+      case "cancelado":
+        estados.push("cancelado");
+        break;
+      case "todos":
+      default:
+        // Para "todos", incluir estados activos (no terminados ni cancelados)
+        estados.push("pendiente", "orden1", "orden2", "orden3", "orden4");
+        break;
+    }
     
     // Agregar parámetros de estado
     estados.forEach(estado => {
@@ -73,6 +101,9 @@ const PedidosHerreria: React.FC = () => {
     if (filtrosAplicados.asignacion === "sin_asignar") {
       url += "sin_asignar=true&";
     }
+    
+    // Agregar ordenamiento por fecha (más recientes primero)
+    url += "ordenar=fecha_desc&";
     
     url += "/";
     return url;
@@ -194,12 +225,14 @@ const PedidosHerreria: React.FC = () => {
                 <SelectValue placeholder="Seleccionar estado" />
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                <SelectItem value="todos" className="hover:bg-gray-100">Todos los Estados</SelectItem>
+                <SelectItem value="todos" className="hover:bg-gray-100">Todos los Estados Activos</SelectItem>
                 <SelectItem value="pendiente" className="hover:bg-gray-100">Pendientes</SelectItem>
                 <SelectItem value="orden1" className="hover:bg-gray-100">Orden 1 (Herrería)</SelectItem>
                 <SelectItem value="orden2" className="hover:bg-gray-100">Orden 2 (Masillar/Pintar)</SelectItem>
                 <SelectItem value="orden3" className="hover:bg-gray-100">Orden 3 (Manillar)</SelectItem>
                 <SelectItem value="orden4" className="hover:bg-gray-100">Orden 4 (Facturar)</SelectItem>
+                <SelectItem value="terminado" className="hover:bg-gray-100">Terminados</SelectItem>
+                <SelectItem value="cancelado" className="hover:bg-gray-100">Cancelados</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -220,7 +253,8 @@ const PedidosHerreria: React.FC = () => {
             </Select>
           </div>
           
-          <div className="flex items-end">
+          <div className="flex items-end space-x-2">
+            <CrearPedidoPrueba onPedidoCreado={recargarDatos} />
             <Button 
               onClick={aplicarFiltros}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
