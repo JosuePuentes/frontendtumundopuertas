@@ -123,11 +123,8 @@ const PedidosHerreria: React.FC = () => {
           <ul className="space-y-8">
             {(dataPedidos as Pedido[])
               .filter((pedido) => {
-                // Solo mostrar pedidos que tengan items en estados activos (1, 2, 3, 4)
-                return pedido.items && pedido.items.some((item) => {
-                  // Aquí podrías agregar lógica adicional para filtrar items específicos
-                  return true; // Por ahora mostrar todos los items del pedido
-                });
+                // Solo mostrar pedidos que tengan items
+                return pedido.items && pedido.items.length > 0;
               })
               .map((pedido) => (
               <li key={pedido._id} className="border rounded-xl bg-white shadow p-4 transition-all duration-300 hover:shadow-lg">
