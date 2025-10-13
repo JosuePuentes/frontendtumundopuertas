@@ -7,6 +7,7 @@ import { usePedido } from "@/hooks/usePedido";
 import DetalleHerreria from "./DetalleHerreria";
 import { useEmpleado } from "@/hooks/useEmpleado";
 import AsignarArticulos from "@/organism/asignar/AsignarArticulos";
+import IndicadorEstadosItem from "@/components/IndicadorEstadosItem";
 
 // Tipos explícitos
 interface PedidoItem {
@@ -57,43 +58,15 @@ const PedidosHerreria: React.FC = () => {
   
   // Función para construir URL de filtrado dinámico
   const construirUrlFiltro = () => {
-    let url = "/pedidos/estado/?";
-    const estados: string[] = [];
-    
-    switch (filtrosAplicados.estado) {
-      case "pendiente":
-        estados.push("pendiente");
-        break;
-      case "orden1":
-        estados.push("orden1");
-        break;
-      case "orden2":
-        estados.push("orden2");
-        break;
-      case "orden3":
-        estados.push("orden3");
-        break;
-      case "orden4":
-        estados.push("orden4");
-        break;
-      case "todos":
-      default:
-        estados.push("pendiente", "orden1", "orden2", "orden3", "orden4");
-        break;
-    }
-    
-    // Agregar parámetros de estado
-    estados.forEach(estado => {
-      url += `estado_general=${estado}&`;
-    });
+    // Cambiar a endpoint que obtenga todos los pedidos para filtrar por estado_item
+    let url = "/pedidos/?";
     
     // Agregar parámetro de asignación si es necesario
     if (filtrosAplicados.asignacion === "sin_asignar") {
       url += "sin_asignar=true&";
     }
     
-    url += "/";
-    return url;
+    return url.slice(0, -1); // Remover el último &
   };
 
   // Función para aplicar filtros con debounce
@@ -239,34 +212,34 @@ const PedidosHerreria: React.FC = () => {
                 // Solo mostrar pedidos que tengan items
                 return pedido.items && pedido.items.length > 0;
               })
-              .map((pedido) => {
-                // Filtrar items por estado_item para mostrar orden1, orden2, orden3 y orden4
-                const itemsFiltrados = pedido.items.filter((item: any) => {
-                  const estadoItem = item.estado_item || 1; // Por defecto orden1 si no tiene estado_item
-                  return estadoItem === 1 || estadoItem === 2 || estadoItem === 3 || estadoItem === 4; // Mostrar items en herrería, masillar, manillar y facturación
-                });
-                
-                // Solo mostrar el pedido si tiene items filtrados
-                if (itemsFiltrados.length === 0) return null;
-                
-                return (
+              .map((pedido) => (
               <li key={pedido._id} className="border rounded-xl bg-white shadow p-4 transition-all duration-300 hover:shadow-lg">
                 <DetalleHerreria pedido={pedido} />
+                
+                {/* Indicadores de estado por item */}
+                <div className="mt-4 space-y-3">
+                  {pedido.items.map((item: any) => (
+                    <IndicadorEstadosItem
+                      key={item.id}
+                      estadoItem={item.estado_item || 1}
+                      itemId={item.id}
+                      itemNombre={item.nombre}
+                    />
+                  ))}
+                </div>
+                
                 <div className="mt-4">
                   <AsignarArticulos
                     estado_general="independiente" // Estado independiente por item
                     numeroOrden="independiente"
-                    items={itemsFiltrados} // Usar items filtrados por estado_item
+                    items={pedido.items} // Mostrar todos los items
                     empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
                     pedidoId={pedido._id}
                     tipoEmpleado={[]} // Se determinará individualmente por item
                   />
                 </div>
               </li>
-                );
-              })
-              .filter(Boolean) // Filtrar valores null
-            }
+            ))}
           </ul>
         )}
       </CardContent>
