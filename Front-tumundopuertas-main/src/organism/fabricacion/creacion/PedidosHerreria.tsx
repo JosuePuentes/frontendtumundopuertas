@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { usePedido } from "@/hooks/usePedido";
 import DetalleHerreria from "./DetalleHerreria";
 import { useEmpleado } from "@/hooks/useEmpleado";
@@ -47,15 +49,64 @@ const PedidosHerreria: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
   
-  // Función para recargar datos - OPTIMIZADA: Solo pedidos con items en estados 1-4
+  // Estados para filtros
+  const [filtroEstado, setFiltroEstado] = useState<string>("todos");
+  const [filtroAsignacion, setFiltroAsignacion] = useState<string>("todos");
+  
+  // Función para construir URL de filtrado dinámico
+  const construirUrlFiltro = () => {
+    let url = "/pedidos/estado/?";
+    const estados: string[] = [];
+    
+    switch (filtroEstado) {
+      case "pendiente":
+        estados.push("pendiente");
+        break;
+      case "orden1":
+        estados.push("orden1");
+        break;
+      case "orden2":
+        estados.push("orden2");
+        break;
+      case "orden3":
+        estados.push("orden3");
+        break;
+      case "orden4":
+        estados.push("orden4");
+        break;
+      case "todos":
+      default:
+        estados.push("pendiente", "orden1", "orden2", "orden3", "orden4");
+        break;
+    }
+    
+    // Agregar parámetros de estado
+    estados.forEach(estado => {
+      url += `estado_general=${estado}&`;
+    });
+    
+    // Agregar parámetro de asignación si es necesario
+    if (filtroAsignacion === "sin_asignar") {
+      url += "sin_asignar=true&";
+    }
+    
+    url += "/";
+    return url;
+  };
+
+  // Función para recargar datos - OPTIMIZADA con filtros dinámicos
   const recargarDatos = async () => {
-    console.log('🔄 Recargando datos de PedidosHerreria (OPTIMIZADO)...');
+    console.log('🔄 Recargando datos de PedidosHerreria (FILTROS DINÁMICOS)...');
+    console.log('🎯 Filtros aplicados:', { filtroEstado, filtroAsignacion });
+    
     setLoading(true);
     try {
-      // Cargar pedidos con items en estados activos (1, 2, 3, 4)
-      await fetchPedido("/pedidos/estado/?estado_general=orden1&estado_general=orden2&estado_general=orden3&estado_general=orden4&estado_general=pendiente&/");
+      const urlFiltro = construirUrlFiltro();
+      console.log('📡 URL de filtro:', urlFiltro);
+      
+      await fetchPedido(urlFiltro);
       await fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
-      console.log('✅ Datos recargados exitosamente - PEDIDOS OPTIMIZADOS');
+      console.log('✅ Datos recargados exitosamente - FILTROS APLICADOS');
     } catch (error) {
       console.error('❌ Error al recargar datos:', error);
       setError("Error al recargar los pedidos");
@@ -68,6 +119,11 @@ const PedidosHerreria: React.FC = () => {
   useEffect(() => {
     recargarDatos();
   }, []);
+
+  // Recargar datos cuando cambien los filtros
+  useEffect(() => {
+    recargarDatos();
+  }, [filtroEstado, filtroAsignacion]);
 
   // Sincronización: Escuchar cambios de estado usando evento personalizado
   useEffect(() => {
@@ -105,9 +161,47 @@ const PedidosHerreria: React.FC = () => {
   // ...
 
   return (
-    <Card className="max-w-3xl mx-auto mt-8 border-gray-200">
+    <Card className="max-w-4xl mx-auto mt-8 border-gray-200">
       <CardHeader>
-        <CardTitle>Gestión de Items por Estado (Optimizado)</CardTitle>
+        <CardTitle>Gestión de Items por Estado (Con Filtros)</CardTitle>
+        
+        {/* Controles de Filtro */}
+        <div className="flex gap-4 mt-4 p-4 bg-gray-50 rounded-lg">
+          <div className="flex-1">
+            <Label htmlFor="filtro-estado" className="text-sm font-medium text-gray-700">
+              Filtrar por Estado del Pedido:
+            </Label>
+            <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Seleccionar estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos los Estados</SelectItem>
+                <SelectItem value="pendiente">Pendientes</SelectItem>
+                <SelectItem value="orden1">Orden 1 (Herrería)</SelectItem>
+                <SelectItem value="orden2">Orden 2 (Masillar/Pintar)</SelectItem>
+                <SelectItem value="orden3">Orden 3 (Manillar)</SelectItem>
+                <SelectItem value="orden4">Orden 4 (Facturar)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex-1">
+            <Label htmlFor="filtro-asignacion" className="text-sm font-medium text-gray-700">
+              Filtrar por Asignación:
+            </Label>
+            <Select value={filtroAsignacion} onValueChange={setFiltroAsignacion}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Seleccionar asignación" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="sin_asignar">Sin Asignar</SelectItem>
+                <SelectItem value="asignados">Asignados</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {loading ? (
