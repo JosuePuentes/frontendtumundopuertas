@@ -180,22 +180,23 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     fetchPedido();
   }, [pedidoId, numeroOrden]);
 
-  // Cargar empleados filtrados cuando cambien los items
+  // Cargar empleados filtrados cuando cambien los items (SOLO UNA VEZ)
   useEffect(() => {
     if (items.length > 0) {
       cargarEmpleadosPorItem();
     }
-  }, [items, pedidoId]);
+  }, [items.length, pedidoId]); // Solo cuando cambie la cantidad de items o el pedidoId
 
-  // Debug: Log de empleados cuando cambien
+  // Debug: Log de empleados cuando cambien (SOLO UNA VEZ)
   useEffect(() => {
-    console.log('🔍 DEBUG EMPLEADOS:', {
-      empleadosLength: empleados.length,
-      empleados: empleados.slice(0, 3), // Primeros 3 empleados
-      tipoEmpleado: tipoEmpleado,
-      pedidoId: pedidoId
-    });
-  }, [empleados, tipoEmpleado, pedidoId]);
+    if (empleados.length > 0) {
+      console.log('🔍 EMPLEADOS CARGADOS:', {
+        empleadosLength: empleados.length,
+        primerEmpleado: empleados[0]?.identificador,
+        tipoEmpleado: tipoEmpleado
+      });
+    }
+  }, [empleados.length]); // Solo cuando cambie la cantidad de empleados
 
   // Copia asignaciones previas al estado local si no existen
   React.useEffect(() => {
@@ -428,45 +429,10 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             👤 Seleccionar empleado...
                           </option>
                           {(() => {
-                            console.log('🔍 DEBUG FILTRO INICIO:', {
-                              itemId: item.id,
-                              empleadosDisponibles: (empleadosPorItem[item.id] || empleados).length,
-                              tipoEmpleado: obtenerTipoEmpleadoPorItem(item.id),
-                              empleadosGenerales: empleados.length,
-                              primerEmpleado: empleados[0] ? {
-                                identificador: empleados[0].identificador,
-                                nombre: empleados[0].nombre,
-                                nombreCompleto: empleados[0].nombreCompleto,
-                                cargo: empleados[0].cargo,
-                                permisos: empleados[0].permisos,
-                                activo: empleados[0].activo,
-                                todasLasPropiedades: Object.keys(empleados[0]),
-                                estructuraCompleta: empleados[0]
-                              } : null,
-                              todosLosEmpleados: empleados.slice(0, 3).map(emp => ({
-                                identificador: emp.identificador,
-                                nombre: emp.nombre,
-                                nombreCompleto: emp.nombreCompleto,
-                                cargo: emp.cargo,
-                                permisos: emp.permisos,
-                                propiedades: Object.keys(emp)
-                              }))
-                            });
-
                             const empleadosFiltrados = (empleadosPorItem[item.id] || empleados)
                               .filter((e) => {
-                                console.log('🔍 DEBUG EMPLEADO INDIVIDUAL:', {
-                                  identificador: e?.identificador,
-                                  nombre: e?.nombre,
-                                  nombreCompleto: e?.nombreCompleto,
-                                  permisos: e?.permisos,
-                                  tienePermisos: Array.isArray(e?.permisos),
-                                  tipoEmpleado: obtenerTipoEmpleadoPorItem(item.id)
-                                });
-
                                 // Verificar que el empleado tenga datos válidos
                                 if (!e || !e.identificador || (!e.nombre && !e.nombreCompleto)) {
-                                  console.log('❌ Empleado inválido:', e);
                                   return false;
                                 }
                                 
@@ -480,12 +446,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                     cumpleFiltro = tipoEmpleadoItem.some((tipo) => 
                                       e.permisos.includes(tipo)
                                     );
-                                    console.log('🎯 FILTRO POR PERMISOS:', {
-                                      empleado: e.identificador,
-                                      permisos: e.permisos,
-                                      tipoEmpleado: tipoEmpleadoItem,
-                                      cumpleFiltro: cumpleFiltro
-                                    });
                                   }
                                   // Si no tiene permisos, intentar filtrar por cargo
                                   else if (e.cargo) {
@@ -514,16 +474,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                         cargo.includes(variacion)
                                       );
                                     });
-                                    console.log('🎯 FILTRO POR CARGO:', {
-                                      empleado: e.identificador,
-                                      cargo: e.cargo,
-                                      tipoEmpleado: tipoEmpleadoItem,
-                                      cumpleFiltro: cumpleFiltro
-                                    });
                                   }
                                   // Si no tiene ni permisos ni cargo, mostrar todos
                                   else {
-                                    console.log('⚠️ Empleado sin permisos ni cargo, mostrando:', e.identificador);
                                     cumpleFiltro = true;
                                   }
                                   
@@ -531,29 +484,10 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 }
                                 
                                 // Si no hay filtro específico, mostrar todos los empleados válidos
-                                console.log('✅ Sin filtro específico, mostrando empleado:', e.identificador);
                                 return true;
                               });
                             
-                            console.log('🎯 Debug select renderizado:', {
-                              itemId: item.id,
-                              empleadosDisponibles: empleadosFiltrados.length,
-                              empleadosPorItem: empleadosPorItem[item.id]?.length || 0,
-                              empleadosGenerales: empleados.length,
-                              tipoEmpleado: tipoEmpleado
-                            });
-                            
-                            return empleadosFiltrados.map((empleado, index) => {
-                              if (index === 0) {
-                                console.log('🎯 Debug mapeo empleados:', {
-                                  totalEmpleadosFiltrados: empleadosFiltrados.length,
-                                  primerEmpleado: empleado.identificador,
-                                  nombre: empleado.nombre,
-                                  nombreCompleto: empleado.nombreCompleto,
-                                  permisos: empleado.permisos
-                                });
-                              }
-                              
+                            return empleadosFiltrados.map((empleado) => {
                               return (
                         <option
                           key={empleado.identificador}
@@ -588,114 +522,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                         )}
                       </div>
                       
-                      {/* Debug info */}
-                      <div className="text-xs text-gray-500">
-                        <details>
-                          <summary className="cursor-pointer">🔍 Debug info</summary>
-                          <div className="mt-1 p-2 bg-gray-100 rounded text-xs">
-                            <div>Empleados totales: {empleados.length}</div>
-                            <div>Empleados por item: {empleadosPorItem[item.id]?.length || 0}</div>
-                            <div>Tipo empleado: {Array.isArray(obtenerTipoEmpleadoPorItem(item.id)) ? obtenerTipoEmpleadoPorItem(item.id).join(', ') : obtenerTipoEmpleadoPorItem(item.id)}</div>
-                            <div>Estado real del item: {obtenerEstadoItem(item.id)}</div>
-                            <div>Estado del pedido: {estado_general}</div>
-                            <div>Item ID: {item.id}</div>
-                            <div className="mt-2">
-                              <strong>Primeros 3 empleados:</strong>
-                              {empleados.slice(0, 3).map((emp, idx) => (
-                                <div key={idx} className="ml-2">
-                                  {emp?.identificador || 'Sin ID'}: {emp?.nombreCompleto || emp?.nombre || 'Sin nombre'}
-                                </div>
-                              ))}
-                            </div>
-                            <div className="mt-2">
-                              <strong>Empleados filtrados:</strong>
-                              {(empleadosPorItem[item.id] || empleados)
-                                .filter((e) => {
-                                  if (!e || !e.identificador || !e.nombre) return false;
-                                  const tipoEmpleadoItem = obtenerTipoEmpleadoPorItem(item.id);
-                                  console.log(`🔍 Filtrando empleado ${e.identificador} (${e.nombre}) para tipos:`, tipoEmpleadoItem);
-                                  
-                                  if (tipoEmpleadoItem && Array.isArray(tipoEmpleadoItem) && tipoEmpleadoItem.length > 0) {
-                                    const cargo = e.cargo || '';
-                                    const nombre = e.nombre || '';
-                                    
-                                    // Función helper para normalizar texto
-                                    const normalizarTexto = (texto: string): string => {
-                                      return texto.toLowerCase()
-                                        .replace(/[()]/g, '')
-                                        .replace(/\s+/g, ' ')
-                                        .trim();
-                                    };
-                                    
-                                    // Función helper para extraer rol del nombre (texto entre paréntesis)
-                                    const extraerRolDelNombre = (nombreCompleto: string): string => {
-                                      const match = nombreCompleto.match(/\(([^)]+)\)/);
-                                      return match ? match[1].toLowerCase().trim() : '';
-                                    };
-                                    
-                                    const resultado = tipoEmpleadoItem.some((tipo) => {
-                                      const cargoNormalizado = normalizarTexto(cargo);
-                                      const nombreNormalizado = normalizarTexto(nombre);
-                                      const tipoNormalizado = normalizarTexto(tipo);
-                                      const rolExtraido = extraerRolDelNombre(nombre);
-                                      
-                                      // Mapear tipos a variaciones comunes
-                                      const variacionesTipo: Record<string, string[]> = {
-                                        'herreria': ['herrero', 'herreria'],
-                                        'masillar': ['masillador', 'masillar'],
-                                        'pintar': ['pintor', 'pintar'],
-                                        'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
-                                        'facturacion': ['facturador', 'facturacion', 'administrativo'],
-                                        'ayudante': ['ayudante']
-                                      };
-                                      
-                                      // Verificar cargo
-                                      if (cargoNormalizado.includes(tipoNormalizado)) {
-                                        console.log(`✅ Coincidencia por cargo: ${cargoNormalizado} incluye ${tipoNormalizado}`);
-                                        return true;
-                                      }
-                                      
-                                      // Verificar nombre con coincidencia directa
-                                      if (nombreNormalizado.includes(tipoNormalizado)) {
-                                        console.log(`✅ Coincidencia por nombre: ${nombreNormalizado} incluye ${tipoNormalizado}`);
-                                        return true;
-                                      }
-                                      
-                                      // Verificar rol extraído del nombre
-                                      if (rolExtraido.includes(tipoNormalizado)) {
-                                        console.log(`✅ Coincidencia por rol extraído: ${rolExtraido} incluye ${tipoNormalizado}`);
-                                        return true;
-                                      }
-                                      
-                                      // Verificar variaciones del tipo
-                                      const variaciones = variacionesTipo[tipoNormalizado] || [];
-                                      const variacionMatch = variaciones.some(variacion => 
-                                        nombreNormalizado.includes(normalizarTexto(variacion)) ||
-                                        rolExtraido.includes(normalizarTexto(variacion))
-                                      );
-                                      
-                                      if (variacionMatch) {
-                                        console.log(`✅ Coincidencia por variación: ${nombreNormalizado} o ${rolExtraido} incluye variación de ${tipoNormalizado}`);
-                                      }
-                                      
-                                      return variacionMatch;
-                                    });
-                                    
-                                    console.log(`🎯 Resultado final para ${e.identificador}: ${resultado}`);
-                                    return resultado;
-                                  }
-                                  return true;
-                                })
-                                .slice(0, 3)
-                                .map((emp, idx) => (
-                                  <div key={idx} className="ml-2">
-                                    {emp?.identificador || 'Sin ID'}: {emp?.cargo || 'Sin cargo'} - {emp?.nombre || 'Sin nombre'}
-                                  </div>
-                                ))}
-                            </div>
-                          </div>
-                        </details>
-                      </div>
                     </div>
                   )}
                 </div>
