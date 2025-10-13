@@ -239,21 +239,34 @@ const PedidosHerreria: React.FC = () => {
                 // Solo mostrar pedidos que tengan items
                 return pedido.items && pedido.items.length > 0;
               })
-              .map((pedido) => (
+              .map((pedido) => {
+                // Filtrar items por estado_item para mostrar solo los que están en orden1 o orden2
+                const itemsFiltrados = pedido.items.filter((item: any) => {
+                  const estadoItem = item.estado_item || 1; // Por defecto orden1 si no tiene estado_item
+                  return estadoItem === 1 || estadoItem === 2; // Mostrar items en herrería y masillar
+                });
+                
+                // Solo mostrar el pedido si tiene items filtrados
+                if (itemsFiltrados.length === 0) return null;
+                
+                return (
               <li key={pedido._id} className="border rounded-xl bg-white shadow p-4 transition-all duration-300 hover:shadow-lg">
                 <DetalleHerreria pedido={pedido} />
                 <div className="mt-4">
                   <AsignarArticulos
                     estado_general="independiente" // Estado independiente por item
                     numeroOrden="independiente"
-                    items={pedido.items}
+                    items={itemsFiltrados} // Usar items filtrados por estado_item
                     empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
                     pedidoId={pedido._id}
                     tipoEmpleado={[]} // Se determinará individualmente por item
                   />
                 </div>
               </li>
-            ))}
+                );
+              })
+              .filter(Boolean) // Filtrar valores null
+            }
           </ul>
         )}
       </CardContent>

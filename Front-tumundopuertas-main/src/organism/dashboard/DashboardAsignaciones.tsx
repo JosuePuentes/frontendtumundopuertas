@@ -627,10 +627,11 @@ const DashboardAsignaciones: React.FC = () => {
 
       let mensajeExito = "¡Asignación terminada exitosamente!";
       
-      if (result.asignacion_actualizada?.siguiente_modulo) {
-        const siguienteModulo = result.asignacion_actualizada.siguiente_modulo;
+      // Verificar si el artículo se movió al siguiente módulo
+      if (result.siguiente_estado_item) {
+        const siguienteModulo = `orden${result.siguiente_estado_item}`;
         mensajeExito += ` El artículo ahora está en ${siguienteModulo}.`;
-        console.log(`🔄 Artículo movido de ${pinModal.asignacion.modulo} a ${siguienteModulo}`);
+        console.log(`🔄 Artículo movido de orden${result.estado_anterior} a ${siguienteModulo}`);
         
         // Notificar cambio de estado a todos los componentes
         notificarCambioEstado({
