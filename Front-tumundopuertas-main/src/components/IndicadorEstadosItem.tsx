@@ -2,13 +2,11 @@ import React from 'react';
 
 interface IndicadorEstadosItemProps {
   estadoItem: number;
-  itemId: string;
   itemNombre: string;
 }
 
 const IndicadorEstadosItem: React.FC<IndicadorEstadosItemProps> = ({ 
   estadoItem, 
-  itemId, 
   itemNombre 
 }) => {
   const estados = [
@@ -25,7 +23,6 @@ const IndicadorEstadosItem: React.FC<IndicadorEstadosItemProps> = ({
         {estados.map((estado, index) => {
           const isCompleted = estadoItem > estado.numero;
           const isCurrent = estadoItem === estado.numero;
-          const isPending = estadoItem < estado.numero;
 
           return (
             <div key={estado.numero} className="flex items-center">

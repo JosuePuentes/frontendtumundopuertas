@@ -222,7 +222,6 @@ const PedidosHerreria: React.FC = () => {
                     <IndicadorEstadosItem
                       key={item.id}
                       estadoItem={item.estado_item || 1}
-                      itemId={item.id}
                       itemNombre={item.nombre}
                     />
                   ))}
