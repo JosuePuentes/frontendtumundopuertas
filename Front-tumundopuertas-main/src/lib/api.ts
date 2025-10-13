@@ -1,6 +1,6 @@
 
 export const getApiUrl = () => {
-  const apiUrlFromEnv = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const apiUrlFromEnv = import.meta.env.VITE_API_URL || 'https://crafteo.onrender.com';
   if (apiUrlFromEnv.includes('onrender.com')) {
     return apiUrlFromEnv.replace('http://', 'https://');
   }
