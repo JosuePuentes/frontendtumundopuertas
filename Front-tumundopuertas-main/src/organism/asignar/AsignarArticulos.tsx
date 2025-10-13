@@ -146,7 +146,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         return ["masillar", "pintar", "ayudante"];
       case "3":
       case "preparar":
-        return ["mantenimiento", "ayudante"];
+        return ["mantenimiento", "manillar", "pintor", "ayudante"];
       case "4":
       case "facturar":
         return ["facturacion", "ayudante"];

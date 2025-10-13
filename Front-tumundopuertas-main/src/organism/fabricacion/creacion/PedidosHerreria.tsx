@@ -240,10 +240,10 @@ const PedidosHerreria: React.FC = () => {
                 return pedido.items && pedido.items.length > 0;
               })
               .map((pedido) => {
-                // Filtrar items por estado_item para mostrar solo los que están en orden1 o orden2
+                // Filtrar items por estado_item para mostrar orden1, orden2, orden3 y orden4
                 const itemsFiltrados = pedido.items.filter((item: any) => {
                   const estadoItem = item.estado_item || 1; // Por defecto orden1 si no tiene estado_item
-                  return estadoItem === 1 || estadoItem === 2; // Mostrar items en herrería y masillar
+                  return estadoItem === 1 || estadoItem === 2 || estadoItem === 3 || estadoItem === 4; // Mostrar items en herrería, masillar, manillar y facturación
                 });
                 
                 // Solo mostrar el pedido si tiene items filtrados
