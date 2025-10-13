@@ -117,6 +117,17 @@ const PedidosHerreria: React.FC = () => {
     recargarDatos();
   }, [filtrosAplicados]);
 
+  // Debug: Log todos los pedidos cuando cambien
+  useEffect(() => {
+    if (Array.isArray(dataPedidos) && dataPedidos.length > 0) {
+      console.log('📋 Todos los pedidos recibidos:', dataPedidos.map((p: any) => ({
+        id: p._id,
+        estado_general: p.estado_general,
+        items_count: p.items?.length || 0
+      })));
+    }
+  }, [dataPedidos]);
+
   // Sincronización: Escuchar cambios de estado usando evento personalizado
   useEffect(() => {
     const handleCambioEstado = async (event: Event) => {
@@ -216,12 +227,6 @@ const PedidosHerreria: React.FC = () => {
           <p className="text-gray-500">No hay items para gestionar.</p>
         ) : (
           <ul className="space-y-8">
-            {/* Debug: Log todos los pedidos que llegan */}
-            {console.log('📋 Todos los pedidos recibidos:', dataPedidos.map((p: any) => ({
-              id: p._id,
-              estado_general: p.estado_general,
-              items_count: p.items?.length || 0
-            })))}
             {(dataPedidos as Pedido[])
               .filter((pedido) => {
                 // Debug: Log para el pedido específico que estamos buscando
