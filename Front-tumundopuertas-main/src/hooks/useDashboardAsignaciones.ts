@@ -89,7 +89,7 @@ export const useDashboardAsignaciones = () => {
         console.log('🔍 Estructura completa del primer item:', JSON.stringify(todasAsignaciones[0], null, 2));
         
         // Buscar items que tengan información de empleado
-        const itemsConEmpleado = todasAsignaciones.filter(item => 
+        const itemsConEmpleado = todasAsignaciones.filter((item: any) => 
           item.empleadoId || 
           item.nombreempleado ||
           item.empleado_id || 
@@ -217,10 +217,10 @@ export const useDashboardAsignaciones = () => {
       });
       
       // Contar empleados encontrados
-      const empleadosConAsignacion = asignacionesNormalizadas.filter(a => a.empleado_nombre !== "Sin asignar");
+      const empleadosConAsignacion = asignacionesNormalizadas.filter((a: any) => a.empleado_nombre !== "Sin asignar");
       console.log('✅ Asignaciones normalizadas:', asignacionesNormalizadas.length);
       console.log('👥 Empleados con asignaciones:', empleadosConAsignacion.length);
-      console.log('📋 Lista de empleados:', empleadosConAsignacion.map(a => a.empleado_nombre).filter((nombre, index, arr) => arr.indexOf(nombre) === index));
+      console.log('📋 Lista de empleados:', empleadosConAsignacion.map((a: any) => a.empleado_nombre).filter((nombre: any, index: any, arr: any) => arr.indexOf(nombre) === index));
       
       return asignacionesNormalizadas;
     } catch (err: any) {
