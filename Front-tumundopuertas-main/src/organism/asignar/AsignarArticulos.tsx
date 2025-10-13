@@ -300,6 +300,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
     
     console.log('📤 Consulta completa:', consulta);
+    console.log('🔍 DEBUG FRONTEND - Datos enviados:');
+    console.log('  - pedido_id:', consulta.pedido_id);
+    console.log('  - numero_orden:', consulta.numero_orden);
+    console.log('  - estado_general:', consulta.estado_general);
+    console.log('  - asignaciones:', consulta.asignaciones);
+    console.log('  - tipo_fecha:', consulta.tipo_fecha);
     
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
