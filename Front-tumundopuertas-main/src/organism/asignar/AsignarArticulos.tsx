@@ -131,23 +131,27 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     console.log('📋 Empleados cargados por item:', empleadosPorItemData);
   };
 
-  // Función para obtener el tipo de empleado según el estado real del item
+  // Función para obtener el tipo de empleado según el estado real del item (INDEPENDIENTE)
   const obtenerTipoEmpleadoPorItem = (itemId: string): string[] => {
     const estadoItem = obtenerEstadoItem(itemId); // Usar el estado real del item
     
-    console.log(`🎯 Obteniendo tipo empleado para item ${itemId}, estado: ${estadoItem}`);
+    console.log(`🎯 Obteniendo tipo empleado para item ${itemId}, estado INDIVIDUAL: ${estadoItem}`);
     
     switch (estadoItem) {
+      case "1":
       case "herreria":
         return ["herreria", "ayudante"];
+      case "2":
       case "masillar":
         return ["masillar", "pintar", "ayudante"];
+      case "3":
       case "preparar":
         return ["mantenimiento", "ayudante"];
+      case "4":
       case "facturar":
         return ["facturacion", "ayudante"];
       default:
-        return ["herreria", "ayudante"];
+        return ["herreria", "ayudante"]; // Por defecto estado 1 (herreria)
     }
   };
 

@@ -47,14 +47,15 @@ const PedidosHerreria: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
   
-  // Función para recargar datos
+  // Función para recargar datos - AHORA TRAE TODOS LOS PEDIDOS CON ITEMS INDEPENDIENTES
   const recargarDatos = async () => {
-    console.log('🔄 Recargando datos de PedidosHerreria...');
+    console.log('🔄 Recargando datos de PedidosHerreria (ITEMS INDEPENDIENTES)...');
     setLoading(true);
     try {
-      await fetchPedido("/pedidos/estado/?estado_general=orden1&estado_general=pendiente&/");
+      // Traer TODOS los pedidos, no solo los de orden1/pendiente
+      await fetchPedido("/pedidos/all/");
       await fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
-      console.log('✅ Datos recargados exitosamente');
+      console.log('✅ Datos recargados exitosamente - TODOS LOS PEDIDOS');
     } catch (error) {
       console.error('❌ Error al recargar datos:', error);
       setError("Error al recargar los pedidos");
@@ -63,19 +64,21 @@ const PedidosHerreria: React.FC = () => {
     }
   };
 
-  // Función para determinar el tipo de empleado según el estado del pedido
-  const obtenerTipoEmpleadoPorEstado = (estadoGeneral: string): string[] => {
-    switch (estadoGeneral) {
-      case "orden1":
+  // Función para determinar el tipo de empleado según el estado INDIVIDUAL del item
+  const obtenerTipoEmpleadoPorEstadoItem = (estadoItem: string): string[] => {
+    console.log(`🎯 Obteniendo tipo empleado para estado de item: ${estadoItem}`);
+    
+    switch (estadoItem) {
+      case "1":
       case "herreria":
         return ["herreria", "ayudante"]; // HERRERIA + AYUDANTES
-      case "orden2":
+      case "2":
       case "masillar":
         return ["masillar", "pintar", "ayudante"]; // MASILLADOR/PINTOR + AYUDANTES
-      case "orden3":
+      case "3":
       case "preparar":
         return ["mantenimiento", "ayudante"]; // MANILLAR + AYUDANTES
-      case "orden4":
+      case "4":
       case "facturar":
         return ["facturacion", "ayudante"]; // FACTURAR + AYUDANTES
       default:
@@ -125,7 +128,7 @@ const PedidosHerreria: React.FC = () => {
   return (
     <Card className="max-w-3xl mx-auto mt-8 border-gray-200">
       <CardHeader>
-        <CardTitle>Pedidos Herreria</CardTitle>
+        <CardTitle>Gestión de Items por Estado (Independientes)</CardTitle>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -136,7 +139,7 @@ const PedidosHerreria: React.FC = () => {
         ) : error ? (
           <div className="text-red-600 font-semibold py-4">{error}</div>
         ) : !Array.isArray(dataPedidos) || dataPedidos.length === 0 ? (
-          <p className="text-gray-500">No hay pedidos pendientes.</p>
+          <p className="text-gray-500">No hay items para gestionar.</p>
         ) : (
           <ul className="space-y-8">
             {(dataPedidos as Pedido[]).map((pedido) => (
@@ -144,12 +147,12 @@ const PedidosHerreria: React.FC = () => {
                 <DetalleHerreria pedido={pedido} />
                 <div className="mt-4">
                   <AsignarArticulos
-                    estado_general={pedido.estado_general || "orden1"}
-                    numeroOrden="1"
+                    estado_general="independiente" // Estado independiente por item
+                    numeroOrden="independiente"
                     items={pedido.items}
                     empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
                     pedidoId={pedido._id}
-                    tipoEmpleado={obtenerTipoEmpleadoPorEstado(pedido.estado_general || "orden1")}
+                    tipoEmpleado={[]} // Se determinará individualmente por item
                   />
                 </div>
               </li>
