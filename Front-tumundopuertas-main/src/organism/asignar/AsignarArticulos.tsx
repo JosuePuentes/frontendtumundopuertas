@@ -291,7 +291,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     const consulta: any = {
       pedido_id: pedidoId,
       asignaciones: asignacionPorItem,
-      numero_orden: numeroOrden,
+      numero_orden: numeroOrden === "independiente" ? "1" : numeroOrden, // SOLUCIÓN: Usar "1" si es independiente
       estado: "en_proceso",
       estado_general: nuevoEstadoGeneral, // Usar el nuevo estado
     };
