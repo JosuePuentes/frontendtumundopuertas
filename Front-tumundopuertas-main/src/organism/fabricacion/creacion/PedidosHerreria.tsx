@@ -56,45 +56,10 @@ const PedidosHerreria: React.FC = () => {
   const [filtroAsignacion, setFiltroAsignacion] = useState<string>("todos");
   const [filtrosAplicados, setFiltrosAplicados] = useState<{estado: string, asignacion: string}>({estado: "todos", asignacion: "todos"});
   
-  // Función para construir URL de filtrado dinámico
+  // Función para construir URL de filtrado dinámico - CORREGIDA para mostrar TODOS los pedidos
   const construirUrlFiltro = () => {
-    let url = "/pedidos/estado/?";
-    const estados: string[] = [];
-    
-    // Aplicar filtro de estado según selección
-    switch (filtrosAplicados.estado) {
-      case "pendiente":
-        estados.push("pendiente");
-        break;
-      case "orden1":
-        estados.push("orden1");
-        break;
-      case "orden2":
-        estados.push("orden2");
-        break;
-      case "orden3":
-        estados.push("orden3");
-        break;
-      case "orden4":
-        estados.push("orden4");
-        break;
-      case "terminado":
-        estados.push("terminado");
-        break;
-      case "cancelado":
-        estados.push("cancelado");
-        break;
-      case "todos":
-      default:
-        // Para "todos", incluir estados activos (no terminados ni cancelados)
-        estados.push("pendiente", "orden1", "orden2", "orden3", "orden4");
-        break;
-    }
-    
-    // Agregar parámetros de estado
-    estados.forEach(estado => {
-      url += `estado_general=${estado}&`;
-    });
+    // CAMBIO CRÍTICO: Usar /pedidos/all/ para obtener TODOS los pedidos sin filtro de estado
+    let url = "/pedidos/all/?";
     
     // Agregar parámetro de asignación si es necesario
     if (filtrosAplicados.asignacion === "sin_asignar") {
@@ -104,7 +69,6 @@ const PedidosHerreria: React.FC = () => {
     // Agregar ordenamiento por fecha (más recientes primero)
     url += "ordenar=fecha_desc&";
     
-    url += "/";
     return url;
   };
 
@@ -305,22 +269,31 @@ const PedidosHerreria: React.FC = () => {
                   });
                 }
                 
-                // MOSTRAR TODOS los pedidos que tengan items (nunca desaparecen)
-                const tieneItems = pedido.items && pedido.items.length > 0;
+                // MOSTRAR pedidos que tengan items que NO estén completamente terminados
+                const tieneItemsActivos = pedido.items && pedido.items.some((item: any) => {
+                  const estadoItem = item.estado_item || 1;
+                  // Solo mostrar items que NO estén completamente terminados (estado_item < 5)
+                  return estadoItem < 5;
+                });
                 
                 if (pedido._id === "68ec94214187d3c8bd7e6481") {
-                  console.log(`🔍 PEDIDO NUEVO FILTRO: ${pedido._id} - Tiene items: ${tieneItems}`);
+                  console.log(`🔍 PEDIDO NUEVO FILTRO: ${pedido._id} - Tiene items activos: ${tieneItemsActivos}`);
                 }
                 
-                return tieneItems;
+                return tieneItemsActivos;
               })
               .map((pedido) => (
               <li key={pedido._id} className="border rounded-xl bg-white shadow p-4 transition-all duration-300 hover:shadow-lg">
                 <DetalleHerreria pedido={pedido} />
                 
-                {/* Indicadores de estado por item */}
+                {/* Indicadores de estado por item - Solo items activos */}
                 <div className="mt-4 space-y-3">
-                  {pedido.items.map((item: any) => (
+                  {pedido.items
+                    .filter((item: any) => {
+                      const estadoItem = item.estado_item || 1;
+                      return estadoItem < 5; // Solo mostrar items que NO estén completamente terminados
+                    })
+                    .map((item: any) => (
                     <IndicadorEstadosItem
                       key={item.id}
                       estadoItem={item.estado_item || 1}
@@ -333,7 +306,10 @@ const PedidosHerreria: React.FC = () => {
                   <AsignarArticulos
                     estado_general="independiente" // Estado independiente por item
                     numeroOrden="independiente"
-                    items={pedido.items} // Mostrar todos los items
+                    items={pedido.items.filter((item: any) => {
+                      const estadoItem = item.estado_item || 1;
+                      return estadoItem < 5; // Solo mostrar items que NO estén completamente terminados
+                    })} // Mostrar solo items activos
                     empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
                     pedidoId={pedido._id}
                     tipoEmpleado={[]} // Se determinará individualmente por item

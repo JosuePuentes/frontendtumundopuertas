@@ -72,7 +72,7 @@ export const useDashboardAsignaciones = () => {
         const dataAlt = await responseAlt.json();
         console.log('📋 Datos recibidos del endpoint alternativo:', dataAlt);
         
-        // Procesar datos del endpoint alternativo
+        // Procesar datos del endpoint alternativo - MEJORADO para incluir items sin asignar
         const todasAsignaciones: any[] = [];
         
         if (dataAlt.pedidos && Array.isArray(dataAlt.pedidos)) {
@@ -91,6 +91,41 @@ export const useDashboardAsignaciones = () => {
                       });
                     }
                   });
+                }
+              });
+            }
+            
+            // NUEVO: Agregar items que necesitan asignación en el siguiente módulo
+            if (pedido.items && Array.isArray(pedido.items)) {
+              pedido.items.forEach((item: any) => {
+                const estadoItem = item.estado_item || 1;
+                // Si el item está en un estado intermedio (2, 3, 4) y no tiene asignación activa
+                if (estadoItem >= 2 && estadoItem <= 4) {
+                  const tieneAsignacionActiva = todasAsignaciones.some(a => 
+                    a.pedido_id === pedido._id && 
+                    a.item_id === item.id && 
+                    a.estado === 'en_proceso'
+                  );
+                  
+                  if (!tieneAsignacionActiva) {
+                    // Crear una asignación virtual para el siguiente módulo
+                    todasAsignaciones.push({
+                      _id: `virtual_${pedido._id}_${item.id}`,
+                      pedido_id: pedido._id,
+                      item_id: item.id,
+                      empleado_id: "sin_asignar",
+                      empleado_nombre: "Sin asignar",
+                      estado: "pendiente",
+                      fecha_asignacion: new Date().toISOString(),
+                      descripcionitem: item.nombre || "Sin descripción",
+                      detalleitem: item.detalleitem,
+                      cliente_nombre: pedido.cliente_nombre || pedido.cliente?.nombre || 'Sin cliente',
+                      orden: estadoItem,
+                      modulo: obtenerModuloPorOrden(estadoItem),
+                      costo_produccion: item.costoProduccion || 0,
+                      imagenes: item.imagenes || []
+                    });
+                  }
                 }
               });
             }
