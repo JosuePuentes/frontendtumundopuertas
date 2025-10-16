@@ -4,6 +4,7 @@ import { useEstadoItems } from "@/hooks/useEstadoItems";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
 import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
 import GestorEmpleadosAutomatico from "@/components/GestorEmpleadosAutomatico";
+import { getApiUrl } from "@/lib/api";
 
 interface PedidoItem {
   id: string;
@@ -110,17 +111,29 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     for (const item of items) {
       try {
-        const empleadosFiltrados = await obtenerEmpleadosPorModulo(pedidoId, item.id);
-        if (empleadosFiltrados && empleadosFiltrados.length > 0) {
-          empleadosPorItemData[item.id] = empleadosFiltrados;
-          console.log(`✅ Empleados filtrados para item ${item.id}:`, empleadosFiltrados.length);
+        console.log(`🔍 Cargando empleados para item ${item.id} del pedido ${pedidoId}...`);
+        
+        // NUEVO: Llamar al endpoint del backend para obtener empleados filtrados
+        const response = await fetch(`${getApiUrl()}/pedidos/empleados-por-modulo/${pedidoId}/${item.id}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`✅ Empleados filtrados obtenidos del backend para item ${item.id}:`, data);
+          
+          if (data.empleados && Array.isArray(data.empleados)) {
+            empleadosPorItemData[item.id] = data.empleados;
+            console.log(`✅ ${data.empleados.length} empleados filtrados para item ${item.id}`);
+          } else {
+            // Fallback a empleados generales si no hay respuesta válida
+            empleadosPorItemData[item.id] = empleados;
+            console.log(`⚠️ Respuesta inválida del backend, usando empleados generales para item ${item.id}`);
+          }
         } else {
-          // Si no hay empleados filtrados, usar empleados generales
+          console.warn(`⚠️ Error ${response.status} al obtener empleados filtrados para item ${item.id}, usando empleados generales`);
           empleadosPorItemData[item.id] = empleados;
-          console.log(`⚠️ Sin empleados filtrados para item ${item.id}, usando empleados generales`);
         }
       } catch (error) {
-        console.error(`❌ Error al cargar empleados para item ${item.id}:`, error);
+        console.error(`❌ Error al cargar empleados filtrados para item ${item.id}:`, error);
         // Fallback a empleados generales si hay error
         empleadosPorItemData[item.id] = empleados;
         console.log(`🔄 Usando empleados generales como fallback para item ${item.id}`);
@@ -137,21 +150,27 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     console.log(`🎯 Obteniendo tipo empleado para item ${itemId}, estado INDIVIDUAL: ${estadoItem}`);
     
+    // NUEVA LÓGICA: Permitir saltar módulos según el estado del item
     switch (estadoItem) {
       case "1":
       case "herreria":
-        return ["herreria", "ayudante"];
+        // Si está en herrería, puede asignar herreros, masilladores, pintores, manilladores y ayudantes
+        return ["herreria", "masillar", "pintar", "manillar", "mantenimiento", "ayudante"];
       case "2":
       case "masillar":
-        return ["masillar", "pintar", "ayudante"];
+        // Si está en masillar, puede asignar masilladores, pintores, manilladores y ayudantes
+        return ["masillar", "pintar", "manillar", "mantenimiento", "ayudante"];
       case "3":
       case "preparar":
-        return ["mantenimiento", "manillar", "pintor", "ayudante"];
+        // Si está en preparar, puede asignar manilladores, mantenimiento y ayudantes
+        return ["manillar", "mantenimiento", "facturacion", "ayudante"];
       case "4":
       case "facturar":
+        // Si está en facturar, solo puede asignar facturación y ayudantes
         return ["facturacion", "ayudante"];
       default:
-        return ["herreria", "ayudante"]; // Por defecto estado 1 (herreria)
+        // Por defecto, mostrar todos los empleados disponibles
+        return ["herreria", "masillar", "pintar", "manillar", "mantenimiento", "facturacion", "ayudante"];
     }
   };
 
@@ -580,6 +599,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             ⚠️ {empleados.length} empleados generales (filtrado no disponible)
                           </span>
                         )}
+                        <div className="mt-1 text-blue-600 font-medium">
+                          📍 Módulo actual: {obtenerEstadoItem(item.id).toUpperCase()}
+                        </div>
+                        <div className="mt-1 text-gray-600">
+                          🎯 Empleados disponibles: {obtenerTipoEmpleadoPorItem(item.id).join(", ")}
+                        </div>
                       </div>
                       
                     </div>

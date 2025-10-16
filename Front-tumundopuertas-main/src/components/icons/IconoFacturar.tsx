@@ -97,3 +97,5 @@ const IconoFacturar: React.FC<IconoFacturarProps> = ({
 };
 
 export default IconoFacturar;
+
+

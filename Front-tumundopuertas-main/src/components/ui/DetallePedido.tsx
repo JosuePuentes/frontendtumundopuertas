@@ -163,3 +163,5 @@ const DetallePedido: React.FC<DetallePedidoProps> = ({
 };
 
 export default DetallePedido;
+
+

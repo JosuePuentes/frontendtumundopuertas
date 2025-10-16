@@ -73,3 +73,5 @@ const ProgresoItemMonitor: React.FC<ProgresoItemMonitorProps> = ({
 };
 
 export default ProgresoItemMonitor;
+
+

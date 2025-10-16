@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import useTerminarEmpleado from "@/hooks/useTerminarEmpleado";
 import ImageDisplay from "@/upfile/ImageDisplay";
 import { getApiUrl } from "@/lib/api";
@@ -35,22 +38,84 @@ const TerminarAsignacion: React.FC = () => {
   const [articuloTerminado, setArticuloTerminado] = useState<string | null>(null);
   const identificador = localStorage.getItem("identificador");
   
+  // Estados para el modal de PIN
+  const [pinModal, setPinModal] = useState<{
+    isOpen: boolean;
+    asignacion: Asignacion | null;
+  }>({ isOpen: false, asignacion: null });
+  const [pin, setPin] = useState("");
+  const [verificandoPin, setVerificandoPin] = useState(false);
+  
+  // Funciones para manejar el PIN
+  const handleTerminarConPin = (asignacion: Asignacion) => {
+    setPinModal({ isOpen: true, asignacion });
+    setPin("");
+  };
+
+  const handleConfirmarPin = async () => {
+    if (!pinModal.asignacion || pin.length !== 4) {
+      setMensaje("Por favor ingresa un PIN válido de 4 dígitos");
+      setTimeout(() => setMensaje(""), 3000);
+      return;
+    }
+
+    setVerificandoPin(true);
+    try {
+      const asig = pinModal.asignacion;
+      
+      // Marcar inmediatamente como terminado en la UI
+      console.log('=== INICIANDO TERMINACIÓN CON PIN ===');
+      console.log('Marcando artículo como terminado:', asig.item_id);
+      console.log('PIN ingresado:', pin);
+      
+      setArticuloTerminado(asig.item_id);
+      
+      await terminarEmpleado({
+        orden: asig.orden,
+        pedido_id: asig.pedido_id,
+        item_id: asig.item_id,
+        empleado_id: identificador,
+        estado: "terminado",
+        fecha_fin: new Date().toISOString(),
+        pin: pin // ← NUEVO: incluir el PIN
+      });
+      
+      console.log('=== TERMINACIÓN CON PIN COMPLETADA ===');
+      
+      // Cerrar modal
+      setPinModal({ isOpen: false, asignacion: null });
+      setPin("");
+      
+    } catch (error: any) {
+      console.error('❌ Error al terminar asignación con PIN:', error);
+      setMensaje("Error al terminar la asignación: " + error.message);
+      setTimeout(() => setMensaje(""), 5000);
+    } finally {
+      setVerificandoPin(false);
+    }
+  };
+
+  const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+    setPin(value);
+  };
+
   // Debug: Verificar que el código actualizado se está ejecutando
-  console.log('🚀🚀🚀 CÓDIGO ACTUALIZADO EJECUTÁNDOSE - VERSIÓN CON LOGS DETALLADOS 🚀🚀🚀');
-  console.log('🔧 VERSIÓN: 4.0 - CON BOTÓN REFRESCAR Y LOGS DETALLADOS');
+  console.log('🚀🚀🚀 CÓDIGO ACTUALIZADO EJECUTÁNDOSE - VERSIÓN CON PIN OBLIGATORIO 🚀🚀🚀');
+  console.log('🔧 VERSIÓN: 6.0 - CON PIN OBLIGATORIO');
   console.log('📅 TIMESTAMP:', new Date().toISOString());
   
   // FORZAR DESPLIEGUE - CAMBIO DRÁSTICO
-  const VERSION_ACTUAL = "4.0-BOTON-REFRESCAR-Y-LOGS";
+  const VERSION_ACTUAL = "6.0-PIN-OBLIGATORIO";
   console.log('🔥 VERSIÓN ACTUAL:', VERSION_ACTUAL);
   
   // FORZAR ALERT VISUAL - CAMBIO DRÁSTICO
   useEffect(() => {
-    alert('🚀🚀🚀 VERSIÓN 5.0 DESPLEGADA 🚀🚀🚀\n\nSi ves este mensaje, el código actualizado se está ejecutando correctamente.\n\nDeberías ver:\n- Mensaje azul en la página\n- Botón "Refrescar" en la parte superior derecha\n- Logs detallados en la consola\n\nCOMMIT: 5b62c88');
+    alert('🚀🚀🚀 VERSIÓN 6.0 CON PIN OBLIGATORIO DESPLEGADA 🚀🚀🚀\n\nSi ves este mensaje, el código actualizado se está ejecutando correctamente.\n\nDeberías ver:\n- Mensaje azul en la página\n- Botón "Refrescar" en la parte superior derecha\n- Modal de PIN al terminar asignaciones\n- Logs detallados en la consola\n\nCOMMIT: PIN-OBLIGATORIO');
     
     // FORZAR LOGS INMEDIATOS
-    console.log('🚀🚀🚀 VERSIÓN 5.0 EJECUTÁNDOSE 🚀🚀🚀');
-    console.log('🔧 COMMIT: 5b62c88');
+    console.log('🚀🚀🚀 VERSIÓN 6.0 CON PIN OBLIGATORIO EJECUTÁNDOSE 🚀🚀🚀');
+    console.log('🔧 COMMIT: PIN-OBLIGATORIO');
     console.log('📅 TIMESTAMP:', new Date().toISOString());
   }, []);
 
@@ -253,7 +318,7 @@ const TerminarAsignacion: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-2xl font-bold">Asignaciones en proceso</h2>
-          <p className="text-sm text-green-600 font-bold">🚀 VERSIÓN 5.0 - COMMIT 5b62c88 - CON BOTÓN REFRESCAR Y LOGS DETALLADOS</p>
+          <p className="text-sm text-green-600 font-bold">🚀 VERSIÓN 6.0 - CON PIN OBLIGATORIO - COMMIT PIN-OBLIGATORIO</p>
         </div>
         <Button
           onClick={fetchAsignaciones}
@@ -269,12 +334,12 @@ const TerminarAsignacion: React.FC = () => {
       
       {/* Debug: Confirmar que el código actualizado se está ejecutando */}
       <div className="mb-4 p-6 bg-green-100 text-green-800 rounded border-4 border-green-500 shadow-lg">
-        <strong className="text-2xl">🚀🚀🚀 VERSIÓN 5.0 DESPLEGADA 🚀🚀🚀</strong><br/>
-        <strong className="text-lg">🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje VERDE, el código con botón refrescar y logs detallados se está ejecutando correctamente.<br/>
+        <strong className="text-2xl">🚀🚀🚀 VERSIÓN 6.0 CON PIN OBLIGATORIO DESPLEGADA 🚀🚀🚀</strong><br/>
+        <strong className="text-lg">🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje VERDE, el código con PIN obligatorio se está ejecutando correctamente.<br/>
         <strong className="text-lg">📅 TIMESTAMP:</strong> {new Date().toISOString()}<br/>
-        <strong className="text-lg">🚀 VERSIÓN:</strong> 5.0-COMMIT-5b62c88<br/>
-        <strong className="text-lg">🔄 BOTÓN REFRESCAR:</strong> Deberías ver un botón "Refrescar" en la parte superior derecha<br/>
-        <strong className="text-lg">📊 COMMIT:</strong> 5b62c88
+        <strong className="text-lg">🚀 VERSIÓN:</strong> 6.0-PIN-OBLIGATORIO<br/>
+        <strong className="text-lg">🔐 PIN OBLIGATORIO:</strong> Ahora al terminar asignaciones se pedirá PIN obligatorio<br/>
+        <strong className="text-lg">📊 COMMIT:</strong> PIN-OBLIGATORIO
       </div>
       
       {mensaje && (
@@ -364,36 +429,11 @@ const TerminarAsignacion: React.FC = () => {
                     <div className="pt-4">
                       <div className="flex gap-2 flex-wrap">
                         <button
-                          onClick={async () => {
-                            if (confirm(`¿Estás seguro de que quieres marcar como terminado el artículo "${asig.descripcionitem}"?`)) {
-                              // Marcar inmediatamente como terminado en la UI
-                              console.log('=== INICIANDO TERMINACIÓN ===');
-                              console.log('Marcando artículo como terminado:', asig.item_id);
-                              console.log('Estado actual del artículo:', {
-                                item_id: asig.item_id,
-                                estado_subestado: asig.estado_subestado,
-                                estado: asig.estado
-                              });
-                              
-                              setArticuloTerminado(asig.item_id);
-                              console.log('Estado articuloTerminado actualizado a:', asig.item_id);
-                              
-                              await terminarEmpleado({
-                                orden: asig.orden,
-                                pedido_id: asig.pedido_id,
-                                item_id: asig.item_id,
-                                empleado_id: identificador,
-                                estado: "terminado",
-                                fecha_fin: new Date().toISOString(),
-                              });
-                              
-                              console.log('=== TERMINACIÓN COMPLETADA ===');
-                            }
-                          }}
+                          onClick={() => handleTerminarConPin(asig)}
                           disabled={terminando || articuloTerminado === asig.item_id}
                           className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {terminando && articuloTerminado === asig.item_id ? "Terminando..." : "Marcar como Terminado"}
+                          {terminando && articuloTerminado === asig.item_id ? "Terminando..." : "Terminar con PIN"}
                         </button>
                         
                         {/* SOLUCIÓN TEMPORAL: Botón para mover manualmente */}
@@ -423,6 +463,73 @@ const TerminarAsignacion: React.FC = () => {
             ))}
         </ul>
       )}
+
+      {/* Modal de verificación de PIN */}
+      <Dialog open={pinModal.isOpen} onOpenChange={() => setPinModal({ isOpen: false, asignacion: null })}>
+        <DialogContent className="max-w-md bg-white border-2 border-gray-200 shadow-2xl">
+          <DialogHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-t-lg border-b">
+            <DialogTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                🔒
+              </div>
+              Verificación de PIN
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 p-6 bg-gray-50">
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <Label htmlFor="pin" className="text-base font-medium text-gray-700 block mb-3">
+                Ingresa tu PIN para confirmar la terminación del artículo
+              </Label>
+              <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-4">
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Artículo:</span> {pinModal.asignacion?.descripcionitem}
+                </p>
+                <p className="text-sm text-blue-800">
+                  <span className="font-semibold">Cliente:</span> {pinModal.asignacion?.cliente?.cliente_nombre}
+                </p>
+              </div>
+              <Input
+                id="pin"
+                type="password"
+                value={pin}
+                onChange={handlePinChange}
+                placeholder="••••"
+                maxLength={4}
+                className="text-center text-3xl tracking-widest font-mono bg-white border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 h-16"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Ingresa 4 dígitos numéricos
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPinModal({ isOpen: false, asignacion: null })}
+                className="flex-1 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 font-medium py-3"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmarPin}
+                disabled={pin.length !== 4 || verificandoPin}
+                className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-medium py-3 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {verificandoPin ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Verificando...
+                  </div>
+                ) : (
+                  "Confirmar"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

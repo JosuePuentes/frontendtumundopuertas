@@ -150,3 +150,5 @@ const BarraProgreso: React.FC<BarraProgresoProps> = ({ pedidoId, className = "" 
 };
 
 export default BarraProgreso;
+
+

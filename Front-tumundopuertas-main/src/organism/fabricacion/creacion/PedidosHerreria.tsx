@@ -8,7 +8,6 @@ import DetalleHerreria from "./DetalleHerreria";
 import { useEmpleado } from "@/hooks/useEmpleado";
 import AsignarArticulos from "@/organism/asignar/AsignarArticulos";
 import IndicadorEstadosItem from "@/components/IndicadorEstadosItem";
-import CrearPedidoPrueba from "@/components/CrearPedidoPrueba";
 
 // Tipos explícitos
 interface PedidoItem {
@@ -162,12 +161,28 @@ const PedidosHerreria: React.FC = () => {
         })) || []
       })));
       
-      // Buscar específicamente el pedido que estamos buscando
-      const pedidoBuscado = dataPedidos.find((p: any) => p._id === "68ec892e4187d3c8bd7e6480");
-      if (pedidoBuscado) {
-        console.log('🎯 PEDIDO ENCONTRADO:', pedidoBuscado);
+      // Buscar específicamente los pedidos que estamos buscando
+      const pedidoAnterior = dataPedidos.find((p: any) => p._id === "68ec892e4187d3c8bd7e6480");
+      const pedidoNuevo = dataPedidos.find((p: any) => p._id === "68ec94214187d3c8bd7e6481");
+      
+      if (pedidoAnterior) {
+        console.log('🎯 PEDIDO ANTERIOR ENCONTRADO:', pedidoAnterior);
       } else {
-        console.log('❌ PEDIDO NO ENCONTRADO en la respuesta del servidor');
+        console.log('❌ PEDIDO ANTERIOR NO ENCONTRADO');
+      }
+      
+      if (pedidoNuevo) {
+        console.log('🎯 PEDIDO NUEVO ENCONTRADO:', pedidoNuevo);
+        console.log('📊 Estado del pedido nuevo:', {
+          estado_general: pedidoNuevo.estado_general,
+          items: pedidoNuevo.items?.map((i: any) => ({
+            id: i.id,
+            nombre: i.nombre,
+            estado_item: i.estado_item
+          })) || []
+        });
+      } else {
+        console.log('❌ PEDIDO NUEVO NO ENCONTRADO');
       }
     } else {
       console.log('⚠️ No hay pedidos o dataPedidos no es un array:', dataPedidos);
@@ -253,8 +268,7 @@ const PedidosHerreria: React.FC = () => {
             </Select>
           </div>
           
-          <div className="flex items-end space-x-2">
-            <CrearPedidoPrueba onPedidoCreado={recargarDatos} />
+          <div className="flex items-end">
             <Button 
               onClick={aplicarFiltros}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
@@ -278,9 +292,9 @@ const PedidosHerreria: React.FC = () => {
           <ul className="space-y-8">
             {(dataPedidos as Pedido[])
               .filter((pedido) => {
-                // Debug: Log para el pedido específico que estamos buscando
-                if (pedido._id === "68ec892e4187d3c8bd7e6480") {
-                  console.log(`🔍 DEBUG Pedido encontrado: ${pedido._id}`, {
+                // Debug: Log para los pedidos específicos que estamos buscando
+                if (pedido._id === "68ec892e4187d3c8bd7e6480" || pedido._id === "68ec94214187d3c8bd7e6481") {
+                  console.log(`🔍 DEBUG Pedido en filtro: ${pedido._id}`, {
                     estado_general: pedido.estado_general,
                     items_count: pedido.items?.length || 0,
                     items: pedido.items?.map((i: any) => ({
@@ -292,7 +306,13 @@ const PedidosHerreria: React.FC = () => {
                 }
                 
                 // MOSTRAR TODOS los pedidos que tengan items (nunca desaparecen)
-                return pedido.items && pedido.items.length > 0;
+                const tieneItems = pedido.items && pedido.items.length > 0;
+                
+                if (pedido._id === "68ec94214187d3c8bd7e6481") {
+                  console.log(`🔍 PEDIDO NUEVO FILTRO: ${pedido._id} - Tiene items: ${tieneItems}`);
+                }
+                
+                return tieneItems;
               })
               .map((pedido) => (
               <li key={pedido._id} className="border rounded-xl bg-white shadow p-4 transition-all duration-300 hover:shadow-lg">

@@ -88,3 +88,5 @@ const IconoPreparar: React.FC<IconoPrepararProps> = ({
 };
 
 export default IconoPreparar;
+
+
