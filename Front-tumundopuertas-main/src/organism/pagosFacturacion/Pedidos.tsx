@@ -149,15 +149,16 @@ interface Pedido {
   historial_pagos?: RegistroPago[];
 }
 
-const ESTADOS = [
-  "orden1",
-  "orden2",
-  "orden3",
-  "orden4",
-  "orden5",
-  "orden6",
-  "pendiente",
-];
+// Removido el filtro de estados - ahora muestra TODOS los pedidos
+// const ESTADOS = [
+//   "orden1",
+//   "orden2", 
+//   "orden3",
+//   "orden4",
+//   "orden5",
+//   "orden6",
+//   "pendiente",
+// ];
 
 const Pedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
@@ -183,16 +184,17 @@ const Pedidos: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Construcción del query string
-      let params = ESTADOS.map(
-        (e) => `estado_general=${encodeURIComponent(e)}`
-      ).join("&");
-      if (fechaInicio) params += `&fecha_inicio=${fechaInicio}`;
-      if (fechaFin) params += `&fecha_fin=${fechaFin}`;
+      // Construcción del query string - ahora obtiene TODOS los pedidos
+      let params = "";
+      if (fechaInicio) params += `fecha_inicio=${fechaInicio}`;
+      if (fechaFin) params += `${params ? '&' : ''}fecha_fin=${fechaFin}`;
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/estado/?${params}`
-      );
+      // Usar endpoint que devuelve todos los pedidos sin filtro de estado
+      const endpoint = params 
+        ? `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/?${params}`
+        : `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/`;
+
+      const res = await fetch(endpoint);
       if (!res.ok) throw new Error("Error al obtener pedidos");
       const data = await res.json();
       setPedidos(data);
