@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getApiUrl } from '@/lib/api';
+import { useItemsDisponibles } from './useItemsDisponibles';
 
 export interface Asignacion {
   _id: string;
@@ -48,152 +49,39 @@ export interface TerminarAsignacionResponse {
 export const useDashboardAsignaciones = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { fetchItemsDisponibles } = useItemsDisponibles();
 
   const fetchAsignaciones = async (): Promise<Asignacion[]> => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('🔄 Cargando asignaciones desde endpoint específico...');
+      console.log('🔄 Cargando asignaciones usando nuevo endpoint...');
       
-      // SOLUCIÓN: Usar endpoint específico que funcione
-      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
+      // NUEVO: Usar el endpoint de items disponibles
+      const itemsDisponibles = await fetchItemsDisponibles();
       
-      if (!response.ok) {
-        console.log('⚠️ Endpoint específico falló, usando endpoint alternativo...');
-        
-        // FALLBACK: Usar endpoint alternativo
-        const responseAlt = await fetch(`${getApiUrl()}/pedidos/estado/?estado_general=orden1&estado_general=orden2&estado_general=orden3&estado_general=orden4`);
-        
-        if (!responseAlt.ok) {
-          throw new Error(`Error ${responseAlt.status}: ${responseAlt.statusText}`);
-        }
-        
-        const dataAlt = await responseAlt.json();
-        console.log('📋 Datos recibidos del endpoint alternativo:', dataAlt);
-        
-        // Procesar datos del endpoint alternativo - MEJORADO para incluir items sin asignar
-        const todasAsignaciones: any[] = [];
-        
-        if (dataAlt.pedidos && Array.isArray(dataAlt.pedidos)) {
-          dataAlt.pedidos.forEach((pedido: any) => {
-            if (pedido.seguimiento && Array.isArray(pedido.seguimiento)) {
-              pedido.seguimiento.forEach((subestado: any) => {
-                if (subestado.asignaciones_articulos && Array.isArray(subestado.asignaciones_articulos)) {
-                  subestado.asignaciones_articulos.forEach((asignacion: any) => {
-                    if (asignacion.estado === 'en_proceso') {
-                      todasAsignaciones.push({
-                        ...asignacion,
-                        pedido_id: pedido._id,
-                        cliente_nombre: pedido.cliente_nombre || pedido.cliente?.nombre || 'Sin cliente',
-                        orden: subestado.orden,
-                        modulo: obtenerModuloPorOrden(subestado.orden)
-                      });
-                    }
-                  });
-                }
-              });
-            }
-            
-            // NUEVO: Agregar items que necesitan asignación en el siguiente módulo
-            if (pedido.items && Array.isArray(pedido.items)) {
-              pedido.items.forEach((item: any) => {
-                const estadoItem = item.estado_item || 1;
-                // Si el item está en un estado intermedio (2, 3, 4) y no tiene asignación activa
-                if (estadoItem >= 2 && estadoItem <= 4) {
-                  const tieneAsignacionActiva = todasAsignaciones.some(a => 
-                    a.pedido_id === pedido._id && 
-                    a.item_id === item.id && 
-                    a.estado === 'en_proceso'
-                  );
-                  
-                  if (!tieneAsignacionActiva) {
-                    // Crear una asignación virtual para el siguiente módulo
-                    todasAsignaciones.push({
-                      _id: `virtual_${pedido._id}_${item.id}`,
-                      pedido_id: pedido._id,
-                      item_id: item.id,
-                      empleado_id: "sin_asignar",
-                      empleado_nombre: "Sin asignar",
-                      estado: "pendiente",
-                      fecha_asignacion: new Date().toISOString(),
-                      descripcionitem: item.nombre || "Sin descripción",
-                      detalleitem: item.detalleitem,
-                      cliente_nombre: pedido.cliente_nombre || pedido.cliente?.nombre || 'Sin cliente',
-                      orden: estadoItem,
-                      modulo: obtenerModuloPorOrden(estadoItem),
-                      costo_produccion: item.costoProduccion || 0,
-                      imagenes: item.imagenes || []
-                    });
-                  }
-                }
-              });
-            }
-          });
-        }
-        
-        console.log('🎯 Asignaciones extraídas (alternativo):', todasAsignaciones.length);
-        
-        // Normalizar las asignaciones
-        const asignacionesNormalizadas = todasAsignaciones.map((item: any) => {
-          return {
-            _id: item._id || `${item.pedido_id}_${item.item_id}`,
-            pedido_id: item.pedido_id,
-            orden: item.orden || 0,
-            item_id: item.item_id,
-            empleado_id: item.empleadoId || item.empleado_id || "Sin asignar",
-            empleado_nombre: item.nombreempleado || item.empleado_nombre || "Sin asignar",
-            modulo: item.modulo || "herreria",
-            estado: item.estado || "en_proceso",
-            fecha_asignacion: item.fecha_inicio || item.fecha_asignacion || new Date().toISOString(),
-            fecha_fin: item.fecha_fin,
-            descripcionitem: item.descripcionitem || "Sin descripción",
-            detalleitem: item.detalleitem,
-            cliente_nombre: item.cliente?.cliente_nombre || item.cliente_nombre || "Sin cliente",
-            costo_produccion: Number(item.costoproduccion || item.costo_produccion || 0),
-            imagenes: item.imagenes || []
-          };
-        });
-        
-        console.log('✅ Asignaciones normalizadas (alternativo):', asignacionesNormalizadas.length);
-        return asignacionesNormalizadas;
-      }
-
-      const data = await response.json();
-      console.log('📋 Datos recibidos del endpoint específico:', data);
+      // Convertir items disponibles a formato de asignaciones
+      const asignaciones: Asignacion[] = itemsDisponibles.map((item) => ({
+        _id: `disponible_${item.pedido_id}_${item.item_id}`,
+        pedido_id: item.pedido_id,
+        orden: item.estado_item,
+        item_id: item.item_id,
+        empleado_id: "sin_asignar",
+        empleado_nombre: "Sin asignar",
+        modulo: obtenerModuloPorOrden(item.estado_item),
+        estado: "pendiente",
+        fecha_asignacion: new Date().toISOString(),
+        fecha_fin: undefined,
+        descripcionitem: item.item_nombre,
+        detalleitem: "",
+        cliente_nombre: item.cliente_nombre,
+        costo_produccion: item.costo_produccion,
+        imagenes: item.imagenes
+      }));
       
-      // Verificar que tenemos asignaciones
-      if (!data.asignaciones || !Array.isArray(data.asignaciones)) {
-        console.log('⚠️ No hay asignaciones en la respuesta específica');
-        return [];
-      }
-      
-      // Usar directamente las asignaciones del endpoint específico
-      const todasAsignaciones = data.asignaciones;
-      
-      // Normalizar las asignaciones
-      const asignacionesNormalizadas = todasAsignaciones.map((item: any) => {
-        return {
-          _id: item._id || `${item.pedido_id}_${item.item_id}`,
-          pedido_id: item.pedido_id,
-          orden: item.orden || 0,
-          item_id: item.item_id,
-          empleado_id: item.empleadoId || item.empleado_id || "Sin asignar",
-          empleado_nombre: item.nombreempleado || item.empleado_nombre || "Sin asignar",
-          modulo: item.modulo || "herreria",
-          estado: item.estado || "en_proceso",
-          fecha_asignacion: item.fecha_asignacion || item.fecha_inicio || new Date().toISOString(),
-          fecha_fin: item.fecha_fin,
-          descripcionitem: item.descripcionitem || "Sin descripción",
-          detalleitem: item.detalleitem,
-          cliente_nombre: item.cliente?.cliente_nombre || item.cliente_nombre || "Sin cliente",
-          costo_produccion: Number(item.costo_produccion || item.costoproduccion || 0),
-          imagenes: item.imagenes || []
-        };
-      });
-      
-      console.log('✅ Asignaciones normalizadas (específico):', asignacionesNormalizadas.length);
-      return asignacionesNormalizadas;
+      console.log('✅ Asignaciones generadas desde items disponibles:', asignaciones.length);
+      return asignaciones;
       
     } catch (err: any) {
       console.error('❌ Error al cargar asignaciones:', err);
