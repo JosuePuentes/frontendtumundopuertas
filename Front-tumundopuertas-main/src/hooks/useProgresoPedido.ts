@@ -6,6 +6,7 @@ interface ItemProgreso {
   nombre: string;
   estado_actual: string;
   modulo_actual: string;
+  porcentaje?: number; // Agregar como opcional para compatibilidad
 }
 
 interface ProgresoPedido {
