@@ -28,6 +28,8 @@ interface PedidoConProgresoProps {
 interface ProgresoBackend {
   pedidoId: string;
   progreso_general: number;
+  porcentaje: number; // Agregar para compatibilidad
+  contadorProgreso: string; // Agregar para compatibilidad
   items: Array<{
     id: string;
     nombre: string;
@@ -68,7 +70,14 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       const data = await response.json();
       console.log('📊 Progreso preciso obtenido del backend:', data);
       
-      setProgresoBackend(data);
+      // Agregar campos de compatibilidad si no existen
+      const dataCompatible = {
+        ...data,
+        porcentaje: data.progreso_general || 0,
+        contadorProgreso: `${data.items?.filter((item: any) => item.estado_actual === 'completado').length || 0}/4`
+      };
+      
+      setProgresoBackend(dataCompatible);
       
     } catch (err: any) {
       console.error('❌ Error al obtener progreso preciso:', err);

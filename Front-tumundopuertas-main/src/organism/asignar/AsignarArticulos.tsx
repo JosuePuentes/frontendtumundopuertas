@@ -68,7 +68,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const [empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
 
   // Hook para obtener empleados por módulo
-  const { obtenerEmpleadosPorModulo, loading: loadingEmpleados } = useEmpleadosPorModulo();
+  const { loading: loadingEmpleados } = useEmpleadosPorModulo();
   
   // Hook para manejar estados individuales de items
   const { obtenerEstadoItem, cargarEstadosItems } = useEstadoItems(pedidoId, items);
