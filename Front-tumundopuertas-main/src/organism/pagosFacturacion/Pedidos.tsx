@@ -191,8 +191,8 @@ const Pedidos: React.FC = () => {
 
       // Usar endpoint que devuelve todos los pedidos sin filtro de estado
       const endpoint = params 
-        ? `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/?${params}`
-        : `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/`;
+        ? `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/all/?${params}`
+        : `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/all/`;
 
       const res = await fetch(endpoint);
       if (!res.ok) throw new Error("Error al obtener pedidos");
