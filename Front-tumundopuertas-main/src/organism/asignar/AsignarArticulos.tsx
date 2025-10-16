@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
-import { useItemsDisponibles } from "@/hooks/useItemsDisponibles";
+// import { useItemsDisponibles } from "@/hooks/useItemsDisponibles"; // TODO: Usar cuando backend esté listo
 import { useEstadoItems } from "@/hooks/useEstadoItems";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
 import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
@@ -70,7 +70,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
 
   // Hook para obtener empleados por módulo
   const { loading: loadingEmpleados } = useEmpleadosPorModulo();
-  const { asignarItemSiguienteModulo } = useItemsDisponibles();
+  // const { asignarItemSiguienteModulo } = useItemsDisponibles(); // TODO: Usar cuando backend esté listo
   
   // Hook para manejar estados individuales de items
   const { obtenerEstadoItem, cargarEstadosItems } = useEstadoItems(pedidoId, items);
