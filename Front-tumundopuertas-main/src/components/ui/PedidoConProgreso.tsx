@@ -141,7 +141,13 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       
     } catch (error: any) {
       console.error('❌ Error al cancelar pedido:', error);
-      setMensaje(`❌ Error al cancelar pedido: ${error.message}`);
+      if (error.message.includes('400')) {
+        setMensaje('❌ Este pedido no se puede cancelar en su estado actual');
+      } else if (error.message.includes('403')) {
+        setMensaje('❌ No tienes permisos para cancelar este pedido');
+      } else {
+        setMensaje(`❌ Error al cancelar pedido: ${error.message}`);
+      }
     } finally {
       setCancelando(false);
     }
@@ -296,8 +302,8 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
             </div>
           )}
 
-          {/* Botón de cancelar pedido */}
-          {pedido.puede_cancelar && pedido.estado_general !== "cancelado" && (
+          {/* Botón de cancelar pedido - SIEMPRE VISIBLE */}
+          {pedido.estado_general !== "cancelado" && (
             <div className="mt-4 pr-32">
               <Button
                 variant="destructive"
