@@ -53,6 +53,7 @@ const DashboardAsignaciones: React.FC = () => {
         const data = await response.json();
         const asignacionesData = data.asignaciones || [];
         console.log('✅ Asignaciones obtenidas:', asignacionesData.length);
+        console.log('📋 Datos de ejemplo:', asignacionesData[0]);
         setAsignaciones(asignacionesData);
       } else {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -342,25 +343,43 @@ const DashboardAsignaciones: React.FC = () => {
           setPin("");
         }
       }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Terminar Asignación</DialogTitle>
+        <DialogContent className="sm:max-w-md bg-white border-2 border-gray-200 shadow-xl">
+          <DialogHeader className="bg-blue-50 p-4 rounded-t-lg">
+            <DialogTitle className="text-xl font-bold text-blue-900">Terminar Asignación</DialogTitle>
           </DialogHeader>
           
           {pinModal.asignacion && (
-            <div className="space-y-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h3 className="font-semibold text-lg mb-2">{pinModal.asignacion.descripcionitem}</h3>
+            <div className="space-y-4 p-4">
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <h3 className="font-semibold text-lg mb-3 text-blue-900">{pinModal.asignacion.descripcionitem}</h3>
                 <div className="space-y-2 text-sm">
-                  <p><span className="font-medium">Empleado:</span> {pinModal.asignacion.empleado_nombre}</p>
-                  <p><span className="font-medium">Módulo:</span> {pinModal.asignacion.modulo}</p>
-                  <p><span className="font-medium">Cliente:</span> {pinModal.asignacion.cliente_nombre || "Sin cliente"}</p>
-                  <p><span className="font-medium">Pedido:</span> #{pinModal.asignacion.pedido_id ? pinModal.asignacion.pedido_id.slice(-4) : 'N/A'}</p>
+                  <p className="flex justify-between">
+                    <span className="font-medium text-gray-700">Empleado:</span> 
+                    <span className="text-gray-900">{pinModal.asignacion.empleado_nombre || "Sin asignar"}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span className="font-medium text-gray-700">Módulo:</span> 
+                    <span className="text-gray-900">{pinModal.asignacion.modulo || "N/A"}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span className="font-medium text-gray-700">Cliente:</span> 
+                    <span className="text-gray-900">{pinModal.asignacion.cliente_nombre || "Sin cliente"}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span className="font-medium text-gray-700">Pedido:</span> 
+                    <span className="text-gray-900">#{pinModal.asignacion.pedido_id ? pinModal.asignacion.pedido_id.slice(-4) : 'N/A'}</span>
+                  </p>
+                  <p className="flex justify-between">
+                    <span className="font-medium text-gray-700">Fecha:</span> 
+                    <span className="text-gray-900">
+                      {pinModal.asignacion.fecha_asignacion ? new Date(pinModal.asignacion.fecha_asignacion).toLocaleDateString() : 'Sin fecha'}
+                    </span>
+                  </p>
                 </div>
               </div>
               
-              <div>
-                <Label htmlFor="pin" className="text-sm font-medium">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <Label htmlFor="pin" className="text-sm font-medium text-gray-700 block mb-2">
                   Ingresa tu PIN de 4 dígitos
                 </Label>
                 <Input
@@ -370,11 +389,11 @@ const DashboardAsignaciones: React.FC = () => {
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   maxLength={4}
-                  className="mt-1 text-center text-lg tracking-widest"
+                  className="text-center text-xl tracking-widest font-mono border-2 border-gray-300 focus:border-blue-500"
                 />
               </div>
               
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-3 pt-2">
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -382,13 +401,14 @@ const DashboardAsignaciones: React.FC = () => {
                     setPin("");
                   }}
                   disabled={verificandoPin}
+                  className="px-6"
                 >
                   Cancelar
                 </Button>
                 <Button
                   onClick={handleConfirmarPin}
                   disabled={pin.length !== 4 || verificandoPin}
-                  className="bg-green-600 hover:bg-green-700 text-white"
+                  className="bg-green-600 hover:bg-green-700 text-white px-6"
                 >
                   {verificandoPin ? (
                     <div className="flex items-center gap-2">
