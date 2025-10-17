@@ -54,14 +54,46 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      console.log('🔄 Cargando asignaciones usando endpoint optimizado /asignaciones...');
+      console.log('🔄 Cargando asignaciones...');
       
-      // NUEVO: Usar el endpoint optimizado de asignaciones
-      const response = await fetch(`${getApiUrl()}/asignaciones`);
+      // Intentar primero el endpoint optimizado /asignaciones
+      try {
+        const response = await fetch(`${getApiUrl()}/asignaciones`);
+        if (response.ok) {
+          const data = await response.json();
+          const asignaciones = data.asignaciones || [];
+          console.log('✅ Asignaciones obtenidas del endpoint /asignaciones:', asignaciones.length);
+          return asignaciones;
+        }
+      } catch (error) {
+        console.log('⚠️ Endpoint /asignaciones no disponible, usando fallback...');
+      }
+      
+      // Fallback: Usar el endpoint de comisiones en proceso
+      console.log('🔄 Usando endpoint de fallback...');
+      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
       const data = await response.json();
-      const asignaciones = data.asignaciones || [];
       
-      console.log('✅ Asignaciones obtenidas del endpoint optimizado:', asignaciones.length);
+      // Convertir las asignaciones del backend al formato esperado
+      const asignaciones: Asignacion[] = Array.isArray(data) ? data.map((asig: any) => ({
+        _id: asig._id || `${asig.pedido_id}_${asig.item_id}`,
+        pedido_id: asig.pedido_id,
+        orden: asig.orden || 1,
+        item_id: asig.item_id,
+        empleado_id: asig.empleado_id || "sin_asignar",
+        empleado_nombre: asig.nombreempleado || "Sin asignar",
+        modulo: obtenerModuloPorOrden(asig.orden || 1),
+        estado: asig.estado || "en_proceso",
+        fecha_asignacion: asig.fecha_inicio || new Date().toISOString(),
+        fecha_fin: asig.fecha_fin,
+        descripcionitem: asig.descripcionitem || "",
+        detalleitem: asig.detalleitem || "",
+        cliente_nombre: asig.cliente?.cliente_nombre || "",
+        costo_produccion: asig.costoproduccion || 0,
+        imagenes: asig.imagenes || []
+      })) : [];
+      
+      console.log('✅ Asignaciones obtenidas del endpoint de fallback:', asignaciones.length);
       return asignaciones;
       
     } catch (err: any) {
@@ -70,6 +102,17 @@ export const useDashboardAsignaciones = () => {
       throw err;
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Función helper para obtener módulo por orden
+  const obtenerModuloPorOrden = (orden: number): string => {
+    switch (orden) {
+      case 1: return 'herreria';
+      case 2: return 'masillar';
+      case 3: return 'preparar';
+      case 4: return 'facturar';
+      default: return 'herreria';
     }
   };
 

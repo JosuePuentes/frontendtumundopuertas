@@ -131,6 +131,9 @@ const DashboardAsignaciones: React.FC = () => {
   const [fechaFinReporte, setFechaFinReporte] = useState("");
   const [generandoReporte, setGenerandoReporte] = useState(false);
   
+  // Estado para empleados
+  const [empleados, setEmpleados] = useState<any[]>([]);
+  
   const {
     loading,
     error,
@@ -144,6 +147,19 @@ const DashboardAsignaciones: React.FC = () => {
 
   // Hook para sincronización de estados
   const { notificarCambioEstado } = useSincronizacionEstados();
+  
+  // Función para cargar empleados
+  const cargarEmpleados = async () => {
+    try {
+      const response = await fetch(`${getApiUrl()}/empleados/all/`);
+      const data = await response.json();
+      setEmpleados(Array.isArray(data) ? data : []);
+      console.log('✅ Empleados cargados:', data.length);
+    } catch (error) {
+      console.error('❌ Error al cargar empleados:', error);
+      setEmpleados([]);
+    }
+  };
   
   // Función para probar endpoints manualmente
   const probarEndpoints = async () => {
@@ -316,13 +332,44 @@ const DashboardAsignaciones: React.FC = () => {
       return [];
     }
     
-    const empleados = asignaciones
+    // Primero intentar obtener empleados de las asignaciones
+    const empleadosDeAsignaciones = asignaciones
       .filter(a => modulosSeleccionados.includes(a.modulo))
       .map(a => a.empleado_nombre)
       .filter((nombre, index, arr) => arr.indexOf(nombre) === index && nombre !== "Sin asignar")
       .sort();
     
-    return empleados;
+    // Si no hay empleados en asignaciones, usar empleados de la base de datos
+    if (empleadosDeAsignaciones.length === 0 && empleados.length > 0) {
+      const empleadosDeBD = empleados
+        .filter(emp => {
+          if (!emp.activo) return false;
+          
+          // Verificar si el empleado tiene permisos para los módulos seleccionados
+          const permisos = emp.permisos || [];
+          const cargo = (emp.cargo || "").toLowerCase();
+          
+          return modulosSeleccionados.some(modulo => {
+            const moduloLower = modulo.toLowerCase();
+            return permisos.includes(moduloLower) || 
+                   cargo.includes(moduloLower) ||
+                   (moduloLower === 'herreria' && cargo.includes('herrero')) ||
+                   (moduloLower === 'masillar' && cargo.includes('masillador')) ||
+                   (moduloLower === 'pintar' && cargo.includes('pintor')) ||
+                   (moduloLower === 'manillar' && cargo.includes('manillar')) ||
+                   (moduloLower === 'mantenimiento' && cargo.includes('mantenimiento')) ||
+                   (moduloLower === 'facturacion' && cargo.includes('facturacion')) ||
+                   (moduloLower === 'ayudante' && cargo.includes('ayudante'));
+          });
+        })
+        .map(emp => emp.nombreCompleto || emp.nombre || emp.identificador)
+        .filter(Boolean)
+        .sort();
+      
+      return empleadosDeBD;
+    }
+    
+    return empleadosDeAsignaciones;
   };
 
   // Función para generar reporte de asignaciones
@@ -710,6 +757,12 @@ const DashboardAsignaciones: React.FC = () => {
       </div>
     );
   }
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    cargarAsignaciones();
+    cargarEmpleados();
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
