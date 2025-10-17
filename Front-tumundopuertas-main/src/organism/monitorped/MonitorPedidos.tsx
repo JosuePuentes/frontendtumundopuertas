@@ -21,7 +21,7 @@ const MonitorPedidos: React.FC = () => {
   const [search, setSearch] = useState("");
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
-  const [shouldSearch, setShouldSearch] = useState(false);
+  const [shouldSearch, setShouldSearch] = useState(true); // Cargar automáticamente al inicio
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:8002").replace('http://', 'https://');
 
   const ordenMap: Record<string, string> = {
@@ -43,14 +43,24 @@ const MonitorPedidos: React.FC = () => {
     const fetchPedidos = async () => {
       setLoading(true);
       try {
-        let url = `${apiUrl}/pedidos/filtrar/por-fecha/?`;
+        console.log('🔄 Cargando pedidos usando endpoint optimizado /pedidos/all/...');
+        
+        // NUEVO: Usar el endpoint optimizado para todos los pedidos
+        let url = `${apiUrl}/pedidos/all/?`;
         if (fechaInicio && fechaFin) {
-          url += `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`;
+          url += `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&`;
         }
+        url += `ordenar=fecha_desc&`;
+        
         const res = await fetch(url);
         const data = await res.json();
+        
+        console.log('✅ Pedidos obtenidos del endpoint optimizado:', Array.isArray(data) ? data.length : 0);
         setPedidos(Array.isArray(data) ? data : []);
-      } catch {}
+      } catch (error) {
+        console.error('❌ Error al cargar pedidos:', error);
+        setPedidos([]);
+      }
       setLoading(false);
       setShouldSearch(false);
     };

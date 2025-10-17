@@ -113,9 +113,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     for (const item of items) {
       try {
-        console.log(`🔍 Cargando empleados para item ${item.id} del pedido ${pedidoId}...`);
+        console.log(`🔍 Cargando empleados para item ${item.id} del pedido ${pedidoId} usando endpoint optimizado...`);
         
-        // NUEVO: Llamar al endpoint del backend para obtener empleados filtrados
+        // OPTIMIZADO: Usar el endpoint optimizado del backend para obtener empleados filtrados
         const response = await fetch(`${getApiUrl()}/pedidos/empleados-por-modulo/${pedidoId}/${item.id}`);
         
         if (response.ok) {

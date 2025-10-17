@@ -71,10 +71,10 @@ const PedidosHerreria: React.FC = () => {
     }
   };
   
-  // Función para construir URL de filtrado dinámico - CORREGIDA para mostrar TODOS los pedidos
+  // Función para construir URL de filtrado dinámico - OPTIMIZADA para herrería
   const construirUrlFiltro = () => {
-    // CAMBIO CRÍTICO: Usar /pedidos/all/ para obtener TODOS los pedidos sin filtro de estado
-    let url = "/pedidos/all/?";
+    // NUEVO: Usar el endpoint optimizado específico para herrería
+    let url = "/pedidos/herreria/?";
     
     // Agregar parámetro de asignación si es necesario
     if (filtrosAplicados.asignacion === "sin_asignar") {
@@ -95,19 +95,19 @@ const PedidosHerreria: React.FC = () => {
     });
   };
 
-  // Función para recargar datos - OPTIMIZADA con filtros dinámicos
+  // Función para recargar datos - OPTIMIZADA con endpoint específico de herrería
   const recargarDatos = async () => {
-    console.log('🔄 Recargando datos de PedidosHerreria (FILTROS DINÁMICOS)...');
+    console.log('🔄 Recargando datos de PedidosHerreria usando endpoint optimizado /pedidos/herreria/...');
     console.log('🎯 Filtros aplicados:', { filtroEstado, filtroAsignacion });
     
     setLoading(true);
     try {
       const urlFiltro = construirUrlFiltro();
-      console.log('📡 URL de filtro:', urlFiltro);
+      console.log('📡 URL de filtro optimizada:', urlFiltro);
       
       await fetchPedido(urlFiltro);
       await fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
-      console.log('✅ Datos recargados exitosamente - FILTROS APLICADOS');
+      console.log('✅ Datos recargados exitosamente usando endpoint optimizado');
     } catch (error) {
       console.error('❌ Error al recargar datos:', error);
       setError("Error al recargar los pedidos");

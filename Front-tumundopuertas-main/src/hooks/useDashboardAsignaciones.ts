@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { getApiUrl } from '@/lib/api';
-import { useItemsDisponibles } from './useItemsDisponibles';
 
 export interface Asignacion {
   _id: string;
@@ -49,38 +48,20 @@ export interface TerminarAsignacionResponse {
 export const useDashboardAsignaciones = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { fetchItemsDisponibles } = useItemsDisponibles();
 
   const fetchAsignaciones = async (): Promise<Asignacion[]> => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('🔄 Cargando asignaciones usando nuevo endpoint...');
+      console.log('🔄 Cargando asignaciones usando endpoint optimizado /asignaciones...');
       
-      // NUEVO: Usar el endpoint de items disponibles
-      const itemsDisponibles = await fetchItemsDisponibles();
+      // NUEVO: Usar el endpoint optimizado de asignaciones
+      const response = await fetch(`${getApiUrl()}/asignaciones`);
+      const data = await response.json();
+      const asignaciones = data.asignaciones || [];
       
-      // Convertir items disponibles a formato de asignaciones
-      const asignaciones: Asignacion[] = itemsDisponibles.map((item) => ({
-        _id: `disponible_${item.pedido_id}_${item.item_id}`,
-        pedido_id: item.pedido_id,
-        orden: item.estado_item,
-        item_id: item.item_id,
-        empleado_id: "sin_asignar",
-        empleado_nombre: "Sin asignar",
-        modulo: obtenerModuloPorOrden(item.estado_item),
-        estado: "pendiente",
-        fecha_asignacion: new Date().toISOString(),
-        fecha_fin: undefined,
-        descripcionitem: item.item_nombre,
-        detalleitem: "",
-        cliente_nombre: item.cliente_nombre,
-        costo_produccion: item.costo_produccion,
-        imagenes: item.imagenes
-      }));
-      
-      console.log('✅ Asignaciones generadas desde items disponibles:', asignaciones.length);
+      console.log('✅ Asignaciones obtenidas del endpoint optimizado:', asignaciones.length);
       return asignaciones;
       
     } catch (err: any) {
@@ -92,16 +73,6 @@ export const useDashboardAsignaciones = () => {
     }
   };
 
-  // Función helper para obtener módulo por orden
-  const obtenerModuloPorOrden = (orden: number): string => {
-    switch (orden) {
-      case 1: return 'herreria';
-      case 2: return 'masillar';
-      case 3: return 'preparar';
-      case 4: return 'facturar';
-      default: return 'herreria';
-    }
-  };
 
   const terminarAsignacion = async (data: TerminarAsignacionData): Promise<TerminarAsignacionResponse> => {
     try {

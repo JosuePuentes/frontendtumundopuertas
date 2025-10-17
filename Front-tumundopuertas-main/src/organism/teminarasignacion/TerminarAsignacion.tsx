@@ -70,7 +70,7 @@ const TerminarAsignacion: React.FC = () => {
       
       setArticuloTerminado(asig.item_id);
       
-      // Cambiar la llamada de terminación al nuevo endpoint
+      // OPTIMIZADO: Usar el endpoint optimizado para terminar asignaciones
       const response = await fetch(`${getApiUrl()}/asignacion/terminar-mejorado`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -87,7 +87,7 @@ const TerminarAsignacion: React.FC = () => {
       }
 
       const result = await response.json();
-      console.log('✅ Asignación terminada con nuevo endpoint:', result);
+      console.log('✅ Asignación terminada con endpoint optimizado:', result);
       
       console.log('=== TERMINACIÓN CON PIN COMPLETADA ===');
       
