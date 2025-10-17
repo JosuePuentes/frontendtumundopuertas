@@ -145,7 +145,27 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
         try {
           const errorData = await response.json();
           console.log('📋 Error details from backend:', errorData);
-          errorDetails = errorData.detail || errorData.message || errorData.error || '';
+          
+          // Manejar diferentes formatos de error del backend
+          if (errorData.detail) {
+            if (Array.isArray(errorData.detail)) {
+              // Si es un array de errores de validación
+              errorDetails = errorData.detail.map((err: any) => {
+                if (typeof err === 'string') return err;
+                if (err.msg) return err.msg;
+                if (err.message) return err.message;
+                return JSON.stringify(err);
+              }).join(', ');
+            } else {
+              errorDetails = errorData.detail;
+            }
+          } else if (errorData.message) {
+            errorDetails = errorData.message;
+          } else if (errorData.error) {
+            errorDetails = errorData.error;
+          }
+          
+          console.log('🔍 Error details parsed:', errorDetails);
         } catch (e) {
           console.log('⚠️ No se pudo parsear el error del backend');
         }
