@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -258,7 +258,7 @@ const DashboardAsignaciones: React.FC = () => {
   };
 
   // Función para aplicar filtros
-  const aplicarFiltros = (datos: Asignacion[], modulos: string[], empleado: string, fecha: string, estado: "en_proceso" | "terminado" | "todos") => {
+  const aplicarFiltros = useCallback((datos: Asignacion[], modulos: string[], empleado: string, fecha: string, estado: "en_proceso" | "terminado" | "todos") => {
     let filtrados = [...datos];
 
     // Filtro por estado (PRIMERO - más importante)
@@ -296,7 +296,7 @@ const DashboardAsignaciones: React.FC = () => {
     }
 
     setAsignacionesFiltradas(filtrados);
-  };
+  }, []);
 
   // Manejar cambios en filtros
   const handleModuloChange = (modulo: string, checked: boolean) => {
@@ -326,7 +326,7 @@ const DashboardAsignaciones: React.FC = () => {
   };
 
   // Obtener empleados únicos de los módulos seleccionados
-  const obtenerEmpleadosDisponibles = () => {
+  const obtenerEmpleadosDisponibles = useMemo(() => {
     if (modulosSeleccionados.length === 0) {
       return [];
     }
@@ -369,7 +369,7 @@ const DashboardAsignaciones: React.FC = () => {
     }
     
     return empleadosDeAsignaciones;
-  };
+  }, [modulosSeleccionados, asignaciones, empleados]);
 
   // Función para generar reporte de asignaciones
   const generarReporteAsignaciones = () => {
@@ -771,7 +771,7 @@ const DashboardAsignaciones: React.FC = () => {
         aplicarFiltros(asignaciones, modulosSeleccionados, empleadoSeleccionado, filtroFecha, filtroEstado);
       }, 0);
     }
-  }, [asignaciones, modulosSeleccionados, empleadoSeleccionado, filtroFecha, filtroEstado]);
+  }, [asignaciones, modulosSeleccionados, empleadoSeleccionado, filtroFecha, filtroEstado, aplicarFiltros]);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
@@ -974,8 +974,8 @@ const DashboardAsignaciones: React.FC = () => {
                 } />
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-200 shadow-lg rounded-md">
-                {obtenerEmpleadosDisponibles().length > 0 ? (
-                  obtenerEmpleadosDisponibles().map((empleado) => (
+                {obtenerEmpleadosDisponibles.length > 0 ? (
+                  obtenerEmpleadosDisponibles.map((empleado: string) => (
                     <SelectItem 
                       key={empleado} 
                       value={empleado}
