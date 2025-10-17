@@ -42,11 +42,32 @@ const DashboardAsignaciones: React.FC = () => {
   // Función para cargar empleados
   const cargarEmpleados = async () => {
     try {
+      console.log('🔄 Cargando empleados...');
       const response = await fetch(`${getApiUrl()}/empleados/all/`);
-      const data = await response.json();
-      const empleadosActivos = Array.isArray(data) ? data.filter(emp => emp.activo) : [];
-      setEmpleados(empleadosActivos);
-      console.log('✅ Empleados activos cargados:', empleadosActivos.length);
+      console.log('📡 Response empleados status:', response.status);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📋 Datos empleados obtenidos:', data);
+        console.log('🔍 Tipo de datos empleados:', Array.isArray(data) ? 'Array' : typeof data);
+        
+        // ARREGLADO: El backend puede devolver {empleados: Array} o Array directo
+        const empleadosArray = data.empleados || data;
+        console.log('📋 Empleados extraídos:', empleadosArray);
+        
+        if (Array.isArray(empleadosArray)) {
+          const empleadosActivos = empleadosArray.filter(emp => emp.activo !== false);
+          setEmpleados(empleadosActivos);
+          console.log('✅ Empleados activos cargados:', empleadosActivos.length);
+          console.log('📋 Primer empleado:', empleadosActivos[0]);
+        } else {
+          console.log('⚠️ Datos de empleados no es array:', empleadosArray);
+          setEmpleados([]);
+        }
+      } else {
+        console.error('❌ Response empleados no ok:', response.status);
+        setEmpleados([]);
+      }
     } catch (error) {
       console.error('❌ Error al cargar empleados:', error);
       setEmpleados([]);
@@ -253,15 +274,6 @@ const DashboardAsignaciones: React.FC = () => {
         </div>
       )}
 
-      {/* Debug Info */}
-      <div className="mb-4 p-3 rounded bg-blue-100 text-blue-700 border border-blue-300">
-        <p><strong>🔍 DEBUG INFO:</strong></p>
-        <p>• Asignaciones cargadas: {asignaciones.length}</p>
-        <p>• Empleados activos: {empleados.length}</p>
-        <p>• Estado de carga: {loading ? 'Cargando...' : 'Completado'}</p>
-        <p>• Error: {error || 'Ninguno'}</p>
-        <p>• API URL: {getApiUrl()}</p>
-      </div>
 
       {/* Mensaje de éxito/error */}
       {mensaje && (
