@@ -205,7 +205,7 @@ const DashboardAsignaciones: React.FC = () => {
                     <p className="text-sm text-gray-600">Asignado a:</p>
                     <p className="font-semibold">{asignacion.empleado_nombre}</p>
                     <p className="text-sm text-gray-500">
-                      ${asignacion.costo_produccion.toFixed(2)}
+                      ${(asignacion.costo_produccion || 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -218,12 +218,12 @@ const DashboardAsignaciones: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Pedido:</p>
-                    <p className="font-medium">#{asignacion.pedido_id.slice(-4)}</p>
+                    <p className="font-medium">#{asignacion.pedido_id ? asignacion.pedido_id.slice(-4) : 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Fecha de asignación:</p>
                     <p className="font-medium">
-                      {new Date(asignacion.fecha_asignacion).toLocaleDateString()}
+                      {asignacion.fecha_asignacion ? new Date(asignacion.fecha_asignacion).toLocaleDateString() : 'Sin fecha'}
                     </p>
                   </div>
                   <div>
