@@ -115,6 +115,7 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       const response = await fetch(`${getApiUrl()}/pedidos/cancelar/${pedido._id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
