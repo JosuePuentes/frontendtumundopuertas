@@ -46,15 +46,52 @@ const DashboardAsignaciones: React.FC = () => {
     try {
       console.log('🔄 Cargando asignaciones...');
       
-      // Intentar primero el endpoint optimizado /asignaciones
-      const response = await fetch(`${getApiUrl()}/asignaciones`);
+      // TEMPORAL: Usar el mismo endpoint que PedidosHerreria para comparar
+      console.log('🔄 Probando endpoint de PedidosHerreria...');
+      const response = await fetch(`${getApiUrl()}/pedidos/herreria/`);
       
       if (response.ok) {
         const data = await response.json();
-        const asignacionesData = data.asignaciones || [];
-        console.log('✅ Asignaciones obtenidas:', asignacionesData.length);
-        console.log('📋 Datos de ejemplo:', asignacionesData[0]);
-        setAsignaciones(asignacionesData);
+        console.log('📋 Datos de PedidosHerreria:', data);
+        console.log('🔍 Tipo de datos:', Array.isArray(data) ? 'Array' : typeof data);
+        console.log('📊 Cantidad:', Array.isArray(data) ? data.length : 'No es array');
+        
+        if (Array.isArray(data) && data.length > 0) {
+          console.log('📋 Primer pedido:', data[0]);
+          console.log('🔍 Campos del pedido:', Object.keys(data[0]));
+          
+          // Convertir pedidos a formato de asignaciones para comparar
+          const asignacionesData: Asignacion[] = [];
+          data.forEach((pedido: any) => {
+            if (pedido.items && Array.isArray(pedido.items)) {
+              pedido.items.forEach((item: any) => {
+                asignacionesData.push({
+                  _id: `${pedido._id}_${item.id}`,
+                  pedido_id: pedido._id,
+                  item_id: item.id,
+                  empleado_id: "sin_asignar",
+                  empleado_nombre: "Sin asignar",
+                  modulo: "herreria",
+                  estado: "en_proceso",
+                  fecha_asignacion: pedido.fecha_creacion || new Date().toISOString(),
+                  descripcionitem: item.descripcion || item.nombre || "Sin descripción",
+                  detalleitem: item.detalleitem || "",
+                  cliente_nombre: pedido.cliente_nombre || "Sin cliente",
+                  costo_produccion: item.costoProduccion || item.costo || 0,
+                  imagenes: item.imagenes || []
+                });
+              });
+            }
+          });
+          
+          console.log('✅ Asignaciones convertidas:', asignacionesData.length);
+          console.log('📋 Datos de ejemplo convertido:', asignacionesData[0]);
+          console.log('👥 Empleados únicos:', [...new Set(asignacionesData.map(a => a.empleado_nombre))]);
+          setAsignaciones(asignacionesData);
+        } else {
+          console.log('⚠️ No hay datos válidos en el endpoint');
+          setAsignaciones([]);
+        }
       } else {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
