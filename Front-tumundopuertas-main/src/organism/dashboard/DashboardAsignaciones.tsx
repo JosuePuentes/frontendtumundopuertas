@@ -281,7 +281,7 @@ const DashboardAsignaciones: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Empleados Activos</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {new Set(asignaciones.map(a => a.empleado_nombre)).size}
+                  {empleados.length}
                 </p>
               </div>
             </div>
