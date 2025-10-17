@@ -103,7 +103,7 @@ const DashboardAsignaciones: React.FC = () => {
             descripcionitem: asig.descripcionitem || "Sin descripción",
             detalleitem: asig.detalleitem || "",
             cliente_nombre: asig.cliente?.cliente_nombre || "Sin cliente",
-            costo_produccion: asig.costoproduccion || 0,
+            costo_produccion: Number(asig.costoproduccion) || 0,
             imagenes: asig.imagenes || []
           }));
           
@@ -370,7 +370,7 @@ const DashboardAsignaciones: React.FC = () => {
                     <p className="text-sm text-gray-600">Asignado a:</p>
                     <p className="font-semibold">{asignacion.empleado_nombre}</p>
                     <p className="text-sm text-gray-500">
-                      ${(asignacion.costo_produccion || 0).toFixed(2)}
+                      ${Number(asignacion.costo_produccion || 0).toFixed(2)}
                     </p>
                   </div>
                 </div>
