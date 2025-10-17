@@ -65,6 +65,9 @@ const DashboardAsignaciones: React.FC = () => {
       console.log('🔄 Cargando asignaciones con datos completos...');
       const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
       
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+      
       if (response.ok) {
         const data = await response.json();
         console.log('📋 Datos completos obtenidos:', data);
@@ -102,13 +105,19 @@ const DashboardAsignaciones: React.FC = () => {
           console.log('📅 Fechas:', [...new Set(asignacionesData.map((a: any) => new Date(a.fecha_asignacion).toLocaleDateString()))]);
           console.log('🎯 ESTADO FINAL - asignacionesData.length:', asignacionesData.length);
           console.log('🎯 ESTADO FINAL - asignacionesData[0]:', asignacionesData[0]);
+          
+          // FORZAR ACTUALIZACIÓN DEL ESTADO
+          console.log('🔄 Actualizando estado con asignaciones...');
           setAsignaciones(asignacionesData);
+          console.log('✅ Estado actualizado');
+          
         } else {
           console.log('⚠️ No hay asignaciones en proceso - data no es array o está vacío');
           console.log('⚠️ data:', data);
           setAsignaciones([]);
         }
       } else {
+        console.error('❌ Response no ok:', response.status, response.statusText);
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
