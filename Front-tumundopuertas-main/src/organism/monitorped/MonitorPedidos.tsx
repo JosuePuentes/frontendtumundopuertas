@@ -7,6 +7,7 @@ interface Pedido {
   cliente_nombre: string;
   estado_general: string;
   fecha_creacion?: string;
+  puede_cancelar?: boolean;
   items?: Array<{
     nombre: string;
     descripcion: string;
@@ -43,10 +44,10 @@ const MonitorPedidos: React.FC = () => {
     const fetchPedidos = async () => {
       setLoading(true);
       try {
-        console.log('🔄 Cargando pedidos usando endpoint optimizado /pedidos/all/...');
+        console.log('🔄 Cargando pedidos usando endpoint optimizado /pedidos/cancelables/...');
         
-        // NUEVO: Usar el endpoint optimizado para todos los pedidos
-        let url = `${apiUrl}/pedidos/all/?`;
+        // NUEVO: Usar el endpoint optimizado para pedidos cancelables
+        let url = `${apiUrl}/pedidos/cancelables/?`;
         if (fechaInicio && fechaFin) {
           url += `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&`;
         }
@@ -66,6 +67,19 @@ const MonitorPedidos: React.FC = () => {
     };
     fetchPedidos();
   }, [shouldSearch, apiUrl, fechaInicio, fechaFin]);
+
+  // Escuchar eventos de cancelación para actualizar la lista
+  useEffect(() => {
+    const handlePedidoCancelado = () => {
+      console.log('🔄 Pedido cancelado detectado, recargando lista...');
+      setShouldSearch(true);
+    };
+
+    window.addEventListener('pedidoCancelado', handlePedidoCancelado);
+    return () => {
+      window.removeEventListener('pedidoCancelado', handlePedidoCancelado);
+    };
+  }, []);
 
 
   const pedidosFiltrados = pedidos

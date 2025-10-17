@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import CirculoProgresoPedido from "./CirculoProgresoPedido";
 import ProgresoItemMonitor from "./ProgresoItemMonitor";
 import { useProgresoPedido } from "@/hooks/useProgresoPedido";
 import { getApiUrl } from "@/lib/api";
+import { XCircle } from "lucide-react";
 
 interface Pedido {
   _id: string;
@@ -12,6 +17,7 @@ interface Pedido {
   estado_general: string;
   fecha_creacion?: string;
   creado_por?: string;
+  puede_cancelar?: boolean;
   items?: Array<{
     nombre: string;
     descripcion: string;
@@ -54,6 +60,12 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
   const { progreso } = useProgresoPedido(pedido._id);
   const [progresoBackend, setProgresoBackend] = useState<ProgresoBackend | null>(null);
   const [loadingProgreso, setLoadingProgreso] = useState(false);
+  
+  // Estados para cancelación
+  const [cancelModal, setCancelModal] = useState(false);
+  const [motivoCancelacion, setMotivoCancelacion] = useState("");
+  const [cancelando, setCancelando] = useState(false);
+  const [mensaje, setMensaje] = useState("");
 
   // Función para obtener progreso preciso del backend
   const fetchProgresoPreciso = async () => {
@@ -84,6 +96,53 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       // Mantener progreso del hook como fallback
     } finally {
       setLoadingProgreso(false);
+    }
+  };
+
+  // Función para cancelar pedido
+  const cancelarPedido = async () => {
+    if (!motivoCancelacion.trim()) {
+      setMensaje("❌ Debes ingresar un motivo para cancelar el pedido");
+      return;
+    }
+
+    setCancelando(true);
+    setMensaje("");
+
+    try {
+      console.log(`🚫 Cancelando pedido ${pedido._id} con motivo: ${motivoCancelacion}`);
+      
+      const response = await fetch(`${getApiUrl()}/pedidos/cancelar/${pedido._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          motivo_cancelacion: motivoCancelacion
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Pedido cancelado exitosamente:', result);
+      
+      setMensaje("✅ Pedido cancelado exitosamente");
+      setCancelModal(false);
+      setMotivoCancelacion("");
+      
+      // Disparar evento para actualizar la lista de pedidos
+      window.dispatchEvent(new CustomEvent('pedidoCancelado', {
+        detail: { pedidoId: pedido._id }
+      }));
+      
+    } catch (error: any) {
+      console.error('❌ Error al cancelar pedido:', error);
+      setMensaje(`❌ Error al cancelar pedido: ${error.message}`);
+    } finally {
+      setCancelando(false);
     }
   };
 
@@ -235,8 +294,110 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
               </ul>
             </div>
           )}
+
+          {/* Botón de cancelar pedido */}
+          {pedido.puede_cancelar && pedido.estado_general !== "cancelado" && (
+            <div className="mt-4 pr-32">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setCancelModal(true)}
+                className="flex items-center gap-2"
+              >
+                <XCircle className="w-4 h-4" />
+                Cancelar Pedido
+              </Button>
+            </div>
+          )}
+
+          {/* Mensaje de estado */}
+          {mensaje && (
+            <div className={`mt-2 pr-32 p-2 rounded text-sm ${
+              mensaje.includes("Error") || mensaje.includes("❌")
+                ? "bg-red-100 text-red-700 border border-red-300" 
+                : "bg-green-100 text-green-700 border border-green-300"
+            }`}>
+              {mensaje}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Modal de cancelación */}
+      <Dialog open={cancelModal} onOpenChange={(open) => {
+        if (!open) {
+          setCancelModal(false);
+          setMotivoCancelacion("");
+          setMensaje("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-md bg-white border-2 border-red-200 shadow-xl">
+          <DialogHeader className="bg-red-50 p-4 rounded-t-lg">
+            <DialogTitle className="text-xl font-bold text-red-900 flex items-center gap-2">
+              <XCircle className="w-6 h-6" />
+              Cancelar Pedido
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 p-4">
+            <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+              <h3 className="font-semibold text-lg mb-2 text-red-900">Pedido: {pedido._id.slice(-6)}</h3>
+              <div className="space-y-1 text-sm">
+                <p><strong>Cliente:</strong> {pedido.cliente_nombre}</p>
+                <p><strong>Estado actual:</strong> {ordenMap[pedido.estado_general] || pedido.estado_general}</p>
+                <p><strong>Fecha:</strong> {pedido.fecha_creacion ? new Date(pedido.fecha_creacion).toLocaleDateString() : 'N/A'}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="motivo" className="text-sm font-medium text-gray-700">
+                Motivo de cancelación *
+              </Label>
+              <Input
+                id="motivo"
+                type="text"
+                placeholder="Ej: Cliente solicitó cancelación, problema con materiales, etc."
+                value={motivoCancelacion}
+                onChange={(e) => setMotivoCancelacion(e.target.value)}
+                className="w-full"
+                disabled={cancelando}
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCancelModal(false);
+                  setMotivoCancelacion("");
+                  setMensaje("");
+                }}
+                disabled={cancelando}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={cancelarPedido}
+                disabled={cancelando || !motivoCancelacion.trim()}
+                className="flex items-center gap-2"
+              >
+                {cancelando ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Cancelando...
+                  </>
+                ) : (
+                  <>
+                    <XCircle className="w-4 h-4" />
+                    Confirmar Cancelación
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </li>
   );
 };
