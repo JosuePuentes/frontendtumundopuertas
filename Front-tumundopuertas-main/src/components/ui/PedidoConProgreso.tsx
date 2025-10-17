@@ -113,7 +113,7 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       console.log(`🚫 Cancelando pedido ${pedido._id} con motivo: ${motivoCancelacion}`);
       
       // Verificar que el token existe
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('access_token');
       if (!token) {
         throw new Error('No hay token de autenticación. Por favor, inicia sesión nuevamente.');
       }
@@ -163,7 +163,7 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       console.error('❌ Error al cancelar pedido:', error);
       if (error.message.includes('401') || error.message.includes('Unauthorized')) {
         setMensaje('❌ Error de autenticación. Verifica tu sesión o contacta al administrador.');
-        console.log('🔍 Token actual:', localStorage.getItem('token')?.substring(0, 20) + '...');
+        console.log('🔍 Token actual:', localStorage.getItem('access_token')?.substring(0, 20) + '...');
         // NO redirigir automáticamente, solo mostrar mensaje
       } else if (error.message.includes('400')) {
         setMensaje('❌ Este pedido no se puede cancelar en su estado actual');

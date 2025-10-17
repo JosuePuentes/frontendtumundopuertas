@@ -53,12 +53,12 @@ const MonitorPedidos: React.FC = () => {
         }
         url += `ordenar=fecha_desc&`;
         
-        const res = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
+              const res = await fetch(url, {
+                headers: {
+                  'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                  'Content-Type': 'application/json'
+                }
+              });
         const data = await res.json();
         
         console.log('✅ Pedidos obtenidos del endpoint optimizado:', Array.isArray(data) ? data.length : 0);
