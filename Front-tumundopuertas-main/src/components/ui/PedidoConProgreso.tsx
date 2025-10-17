@@ -118,6 +118,8 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
         throw new Error('No hay token de autenticación. Por favor, inicia sesión nuevamente.');
       }
       
+      console.log('🔑 Token encontrado, enviando request...');
+      
       const response = await fetch(`${getApiUrl()}/pedidos/cancelar/${pedido._id}`, {
         method: 'PUT',
         headers: {
@@ -128,6 +130,9 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           motivo_cancelacion: motivoCancelacion
         })
       });
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -156,12 +161,10 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       
     } catch (error: any) {
       console.error('❌ Error al cancelar pedido:', error);
-      if (error.message.includes('401') || error.message.includes('token')) {
-        setMensaje('❌ Sesión expirada. Por favor, inicia sesión nuevamente.');
-        // Opcional: redirigir al login
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 3000);
+      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        setMensaje('❌ Error de autenticación. Verifica tu sesión o contacta al administrador.');
+        console.log('🔍 Token actual:', localStorage.getItem('token')?.substring(0, 20) + '...');
+        // NO redirigir automáticamente, solo mostrar mensaje
       } else if (error.message.includes('400')) {
         setMensaje('❌ Este pedido no se puede cancelar en su estado actual');
       } else if (error.message.includes('403')) {
@@ -359,15 +362,15 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           setMensaje("");
         }
       }}>
-        <DialogContent className="sm:max-w-md bg-white border-2 border-red-200 shadow-xl">
-          <DialogHeader className="bg-red-50 p-4 rounded-t-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto bg-white border-2 border-red-200 shadow-xl">
+          <DialogHeader className="bg-red-50 p-4 rounded-t-lg sticky top-0 z-10">
             <DialogTitle className="text-xl font-bold text-red-900 flex items-center gap-2">
               <XCircle className="w-6 h-6" />
               Cancelar Pedido
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 p-4">
+          <div className="space-y-4 p-4 max-h-[calc(90vh-120px)] overflow-y-auto">
             <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
               <h3 className="font-semibold text-lg mb-2 text-red-900">Pedido: {pedido._id.slice(-6)}</h3>
               <div className="space-y-1 text-sm">
@@ -392,7 +395,21 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
               />
             </div>
 
-            <div className="flex justify-between gap-4 pt-6 border-t border-gray-200">
+            {/* Mensaje de estado dentro del modal */}
+            {mensaje && (
+              <div className={`p-3 rounded text-sm ${
+                mensaje.includes("Error") || mensaje.includes("❌")
+                  ? "bg-red-100 text-red-700 border border-red-300" 
+                  : "bg-green-100 text-green-700 border border-green-300"
+              }`}>
+                {mensaje}
+              </div>
+            )}
+          </div>
+          
+          {/* Botones fijos en la parte inferior */}
+          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
+            <div className="flex justify-between gap-4">
               <Button
                 variant="outline"
                 onClick={() => {
