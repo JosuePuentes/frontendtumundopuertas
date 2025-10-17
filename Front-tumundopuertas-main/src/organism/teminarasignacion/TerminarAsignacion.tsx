@@ -70,15 +70,24 @@ const TerminarAsignacion: React.FC = () => {
       
       setArticuloTerminado(asig.item_id);
       
-      await terminarEmpleado({
-        orden: asig.orden,
-        pedido_id: asig.pedido_id,
-        item_id: asig.item_id,
-        empleado_id: identificador,
-        estado: "terminado",
-        fecha_fin: new Date().toISOString(),
-        pin: pin // ← NUEVO: incluir el PIN
+      // Cambiar la llamada de terminación al nuevo endpoint
+      const response = await fetch(`${getApiUrl()}/asignacion/terminar-mejorado`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pedido_id: asig.pedido_id,
+          item_id: asig.item_id,
+          empleado_id: identificador,
+          pin: pin
+        })
       });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Asignación terminada con nuevo endpoint:', result);
       
       console.log('=== TERMINACIÓN CON PIN COMPLETADA ===');
       
@@ -119,7 +128,7 @@ const TerminarAsignacion: React.FC = () => {
     console.log('📅 TIMESTAMP:', new Date().toISOString());
   }, []);
 
-  const { terminarEmpleado, loading: terminando } = useTerminarEmpleado({
+  const { loading: terminando } = useTerminarEmpleado({
     onSuccess: (data) => {
       console.log('✅ Asignación terminada exitosamente:', data);
       setMensaje("¡Asignación terminada exitosamente!");

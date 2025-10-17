@@ -86,7 +86,7 @@ const TimeTracker: React.FC<{ inicio?: string; fin?: string; now: number }> = ({
   );
 };
 
-const PedidoRow: React.FC<{ pedido: PedidoRuta; now: number; isProduccion: boolean }> = ({ pedido, now, isProduccion }) => {
+const PedidoRow: React.FC<{ pedido: PedidoRuta; now: number; isProduccion: boolean; progreso?: number }> = ({ pedido, now, isProduccion, progreso = 0 }) => {
   const ordenActual = Number(pedido.estado_general.replace("orden", ""));
   const subestadoActual = pedido.seguimiento?.find((s) => Number(s.orden) === ordenActual);
 
@@ -162,11 +162,23 @@ const PedidoRow: React.FC<{ pedido: PedidoRuta; now: number; isProduccion: boole
       <td className="p-3">
         {isProduccion && <TimeTracker inicio={subestadoActual?.fecha_inicio} fin={subestadoActual?.fecha_fin} now={now} />}
       </td>
+      <td className="p-3">
+        {/* Barra de progreso del pedido */}
+        <div className="progreso-bar bg-gray-200 rounded-full h-4 relative w-24">
+          <div 
+            className="progreso bg-green-500 h-4 rounded-full transition-all duration-300"
+            style={{width: `${progreso}%`}}
+          ></div>
+          <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
+            {progreso}%
+          </span>
+        </div>
+      </td>
     </tr>
   );
 };
 
-const PedidoGroup: React.FC<{ title: string; pedidos: PedidoRuta[]; now: number }> = ({ title, pedidos, now }) => (
+const PedidoGroup: React.FC<{ title: string; pedidos: PedidoRuta[]; now: number; progresoPedidos: Record<string, number> }> = ({ title, pedidos, now, progresoPedidos }) => (
   <Card className="overflow-hidden border-gray-200 shadow-lg rounded-2xl">
     <CardHeader className="bg-gray-50 border-b border-gray-200 px-6 py-4">
       <CardTitle className="flex items-center gap-3 text-lg font-bold text-gray-900">
@@ -190,11 +202,18 @@ const PedidoGroup: React.FC<{ title: string; pedidos: PedidoRuta[]; now: number 
                 <th className="p-3 font-semibold">Estado Actual</th>
                 <th className="p-3 font-semibold">Asignado a</th>
                 <th className="p-3 font-semibold">Tiempo</th>
+                <th className="p-3 font-semibold">Progreso</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {pedidos.map((pedido) => (
-                <PedidoRow key={pedido._id} pedido={pedido} now={now} isProduccion={title === "En Producción"} />
+                <PedidoRow 
+                  key={pedido._id} 
+                  pedido={pedido} 
+                  now={now} 
+                  isProduccion={title === "En Producción"} 
+                  progreso={progresoPedidos[pedido._id] || 0}
+                />
               ))}
             </tbody>
           </table>
@@ -209,11 +228,35 @@ const PedidoGroup: React.FC<{ title: string; pedidos: PedidoRuta[]; now: number 
 const DashboardPedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<PedidoRuta[]>([]);
   const [now, setNow] = useState(Date.now());
+  const [progresoPedidos, setProgresoPedidos] = useState<Record<string, number>>({});
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      
+      // Función para obtener progreso general de un pedido
+      const obtenerProgresoPedido = async (pedidoId: string) => {
+        try {
+          const response = await fetch(`${apiUrl}/pedidos/progreso-pedido/${pedidoId}`);
+          const data = await response.json();
+          return data.progreso_general || 0;
+        } catch (error) {
+          console.error('Error al obtener progreso del pedido:', error);
+          return 0;
+        }
+      };
+      
       const fetchPedidos = () => {
     fetch(`${apiUrl}/pedidos/produccion/ruta`)
       .then((res) => res.json())
-      .then((data) => setPedidos(data))
+      .then(async (data) => {
+        setPedidos(data);
+        
+        // Cargar progreso de todos los pedidos
+        const progresoData: Record<string, number> = {};
+        for (const pedido of data) {
+          const progreso = await obtenerProgresoPedido(pedido._id);
+          progresoData[pedido._id] = progreso;
+        }
+        setProgresoPedidos(progresoData);
+      })
       .catch(console.error);
   };
 
@@ -252,7 +295,7 @@ const DashboardPedidos: React.FC = () => {
   return (
     <div className="container mx-auto p-4 md:p-8 space-y-8">
       {ESTADOS_SECCIONES.map(({ key, label }) => (
-        <PedidoGroup key={key} title={label} pedidos={agrupados[key]} now={now} />
+        <PedidoGroup key={key} title={label} pedidos={agrupados[key]} now={now} progresoPedidos={progresoPedidos} />
       ))}
     </div>
   );

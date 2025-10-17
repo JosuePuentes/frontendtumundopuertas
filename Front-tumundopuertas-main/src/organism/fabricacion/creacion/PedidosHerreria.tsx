@@ -56,6 +56,21 @@ const PedidosHerreria: React.FC = () => {
   const [filtroAsignacion, setFiltroAsignacion] = useState<string>("todos");
   const [filtrosAplicados, setFiltrosAplicados] = useState<{estado: string, asignacion: string}>({estado: "todos", asignacion: "todos"});
   
+  // Estado para barra de progreso por item
+  const [progresoItems, setProgresoItems] = useState<Record<string, number>>({});
+  
+  // Función para obtener progreso de un item
+  const obtenerProgresoItem = async (pedidoId: string, itemId: string) => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/item-estado/${pedidoId}/${itemId}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error al obtener progreso del item:', error);
+      return { progreso: 0 };
+    }
+  };
+  
   // Función para construir URL de filtrado dinámico - CORREGIDA para mostrar TODOS los pedidos
   const construirUrlFiltro = () => {
     // CAMBIO CRÍTICO: Usar /pedidos/all/ para obtener TODOS los pedidos sin filtro de estado
@@ -148,6 +163,20 @@ const PedidosHerreria: React.FC = () => {
       } else {
         console.log('❌ PEDIDO NUEVO NO ENCONTRADO');
       }
+      
+      // Cargar progreso de todos los items
+      const cargarProgresoItems = async () => {
+        const progresoData: Record<string, number> = {};
+        for (const pedido of dataPedidos) {
+          for (const item of pedido.items || []) {
+            const progresoItem = await obtenerProgresoItem(pedido._id, item.id);
+            progresoData[item.id] = progresoItem.progreso || 0;
+          }
+        }
+        setProgresoItems(progresoData);
+      };
+      
+      cargarProgresoItems();
     } else {
       console.log('⚠️ No hay pedidos o dataPedidos no es un array:', dataPedidos);
     }
@@ -293,13 +322,27 @@ const PedidosHerreria: React.FC = () => {
                       const estadoItem = item.estado_item || 1;
                       return estadoItem < 5; // Solo mostrar items que NO estén completamente terminados
                     })
-                    .map((item: any) => (
-                    <IndicadorEstadosItem
-                      key={item.id}
-                      estadoItem={item.estado_item || 1}
-                      itemNombre={item.nombre}
-                    />
-                  ))}
+                    .map((item: any) => {
+                      const progreso = progresoItems[item.id] || 0;
+                      return (
+                        <div key={item.id} className="space-y-2">
+                          <IndicadorEstadosItem
+                            estadoItem={item.estado_item || 1}
+                            itemNombre={item.nombre}
+                          />
+                          {/* Barra de progreso del item */}
+                          <div className="progreso-bar bg-gray-200 rounded-full h-4 relative">
+                            <div 
+                              className="progreso bg-blue-500 h-4 rounded-full transition-all duration-300"
+                              style={{width: `${progreso}%`}}
+                            ></div>
+                            <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
+                              {progreso}%
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
                 
                 <div className="mt-4">
