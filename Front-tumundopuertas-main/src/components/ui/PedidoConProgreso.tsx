@@ -120,22 +120,37 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       
       console.log('🔑 Token encontrado, enviando request...');
       
+      const requestBody = {
+        motivo_cancelacion: motivoCancelacion
+      };
+      
+      console.log('📤 Datos enviados:', requestBody);
+      console.log('📤 URL:', `${getApiUrl()}/pedidos/cancelar/${pedido._id}`);
+      
       const response = await fetch(`${getApiUrl()}/pedidos/cancelar/${pedido._id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          motivo_cancelacion: motivoCancelacion
-        })
+        body: JSON.stringify(requestBody)
       });
       
       console.log('📡 Response status:', response.status);
       console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        // Obtener detalles del error del backend
+        let errorDetails = '';
+        try {
+          const errorData = await response.json();
+          console.log('📋 Error details from backend:', errorData);
+          errorDetails = errorData.detail || errorData.message || errorData.error || '';
+        } catch (e) {
+          console.log('⚠️ No se pudo parsear el error del backend');
+        }
+        
+        throw new Error(`Error ${response.status}: ${response.statusText}${errorDetails ? ' - ' + errorDetails : ''}`);
       }
 
       const result = await response.json();
@@ -164,7 +179,9 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       if (error.message.includes('401') || error.message.includes('Unauthorized')) {
         setMensaje('❌ Error de autenticación. Verifica tu sesión o contacta al administrador.');
         console.log('🔍 Token actual:', localStorage.getItem('access_token')?.substring(0, 20) + '...');
-        // NO redirigir automáticamente, solo mostrar mensaje
+      } else if (error.message.includes('422')) {
+        setMensaje('❌ Error 422: Datos inválidos. Verifica que el motivo de cancelación no esté vacío y que el pedido sea cancelable.');
+        console.log('🔍 Posibles causas: motivo vacío, pedido no cancelable, formato incorrecto');
       } else if (error.message.includes('400')) {
         setMensaje('❌ Este pedido no se puede cancelar en su estado actual');
       } else if (error.message.includes('403')) {
