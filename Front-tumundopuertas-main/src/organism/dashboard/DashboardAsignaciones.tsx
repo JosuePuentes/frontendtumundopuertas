@@ -2,7 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Package } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RefreshCw, Package, CheckCircle } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
 
 interface Asignacion {
@@ -25,6 +28,15 @@ const DashboardAsignaciones: React.FC = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Estados para el modal de PIN
+  const [pinModal, setPinModal] = useState<{
+    isOpen: boolean;
+    asignacion: Asignacion | null;
+  }>({ isOpen: false, asignacion: null });
+  const [pin, setPin] = useState("");
+  const [verificandoPin, setVerificandoPin] = useState(false);
+  const [mensaje, setMensaje] = useState("");
 
   // Función simplificada para cargar asignaciones
   const cargarAsignaciones = async () => {
@@ -83,6 +95,59 @@ const DashboardAsignaciones: React.FC = () => {
     }
   };
 
+  // Función para manejar la terminación con PIN
+  const handleConfirmarPin = async () => {
+    if (!pinModal.asignacion || pin.length !== 4) {
+      setMensaje("Por favor ingresa un PIN válido de 4 dígitos");
+      setTimeout(() => setMensaje(""), 3000);
+      return;
+    }
+
+    setVerificandoPin(true);
+    try {
+      const asig = pinModal.asignacion;
+      
+      console.log('=== INICIANDO TERMINACIÓN CON PIN ===');
+      console.log('Marcando artículo como terminado:', asig.item_id);
+      console.log('PIN ingresado:', pin);
+      
+      // Usar el endpoint optimizado para terminar asignaciones
+      const response = await fetch(`${getApiUrl()}/asignacion/terminar-mejorado/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pedido_id: asig.pedido_id,
+          item_id: asig.item_id,
+          empleado_id: asig.empleado_id,
+          pin: pin
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Asignación terminada con endpoint optimizado:', result);
+      
+      console.log('=== TERMINACIÓN CON PIN COMPLETADA ===');
+      
+      // Cerrar modal y limpiar
+      setPinModal({ isOpen: false, asignacion: null });
+      setPin("");
+      setMensaje("✅ Asignación terminada exitosamente");
+      
+      // Recargar asignaciones
+      await cargarAsignaciones();
+      
+    } catch (error: any) {
+      console.error('❌ Error al terminar asignación con PIN:', error);
+      setMensaje("❌ Error al terminar la asignación: " + error.message);
+    } finally {
+      setVerificandoPin(false);
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
@@ -106,6 +171,17 @@ const DashboardAsignaciones: React.FC = () => {
       {error && (
         <div className="mb-4 p-3 rounded bg-red-100 text-red-700 border border-red-300">
           {error}
+        </div>
+      )}
+
+      {/* Mensaje de éxito/error */}
+      {mensaje && (
+        <div className={`mb-4 p-3 rounded ${
+          mensaje.includes("Error") || mensaje.includes("❌")
+            ? "bg-red-100 text-red-700 border border-red-300" 
+            : "bg-green-100 text-green-700 border border-green-300"
+        }`}>
+          {mensaje}
         </div>
       )}
 
@@ -240,11 +316,94 @@ const DashboardAsignaciones: React.FC = () => {
                     </p>
                   </div>
                 )}
+
+                <div className="flex justify-end gap-2">
+                  {asignacion.estado === "en_proceso" && (
+                    <Button
+                      size="sm"
+                      onClick={() => setPinModal({ isOpen: true, asignacion })}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Terminar Asignación
+                    </Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      {/* Modal de verificación PIN */}
+      <Dialog open={pinModal.isOpen} onOpenChange={(open) => {
+        if (!open) {
+          setPinModal({ isOpen: false, asignacion: null });
+          setPin("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Terminar Asignación</DialogTitle>
+          </DialogHeader>
+          
+          {pinModal.asignacion && (
+            <div className="space-y-4">
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-lg mb-2">{pinModal.asignacion.descripcionitem}</h3>
+                <div className="space-y-2 text-sm">
+                  <p><span className="font-medium">Empleado:</span> {pinModal.asignacion.empleado_nombre}</p>
+                  <p><span className="font-medium">Módulo:</span> {pinModal.asignacion.modulo}</p>
+                  <p><span className="font-medium">Cliente:</span> {pinModal.asignacion.cliente_nombre || "Sin cliente"}</p>
+                  <p><span className="font-medium">Pedido:</span> #{pinModal.asignacion.pedido_id ? pinModal.asignacion.pedido_id.slice(-4) : 'N/A'}</p>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="pin" className="text-sm font-medium">
+                  Ingresa tu PIN de 4 dígitos
+                </Label>
+                <Input
+                  id="pin"
+                  type="password"
+                  placeholder="0000"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  maxLength={4}
+                  className="mt-1 text-center text-lg tracking-widest"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setPinModal({ isOpen: false, asignacion: null });
+                    setPin("");
+                  }}
+                  disabled={verificandoPin}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleConfirmarPin}
+                  disabled={pin.length !== 4 || verificandoPin}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  {verificandoPin ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Verificando...
+                    </div>
+                  ) : (
+                    "Confirmar Terminación"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
