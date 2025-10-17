@@ -100,9 +100,12 @@ const DashboardAsignaciones: React.FC = () => {
           console.log('👥 Empleados únicos:', [...new Set(asignacionesData.map((a: any) => a.empleado_nombre))]);
           console.log('👥 Clientes únicos:', [...new Set(asignacionesData.map((a: any) => a.cliente_nombre))]);
           console.log('📅 Fechas:', [...new Set(asignacionesData.map((a: any) => new Date(a.fecha_asignacion).toLocaleDateString()))]);
+          console.log('🎯 ESTADO FINAL - asignacionesData.length:', asignacionesData.length);
+          console.log('🎯 ESTADO FINAL - asignacionesData[0]:', asignacionesData[0]);
           setAsignaciones(asignacionesData);
         } else {
-          console.log('⚠️ No hay asignaciones en proceso');
+          console.log('⚠️ No hay asignaciones en proceso - data no es array o está vacío');
+          console.log('⚠️ data:', data);
           setAsignaciones([]);
         }
       } else {
@@ -117,6 +120,11 @@ const DashboardAsignaciones: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Debug del estado de asignaciones
+  useEffect(() => {
+    console.log('🔍 ESTADO ASIGNACIONES CAMBIÓ:', asignaciones.length, asignaciones);
+  }, [asignaciones]);
 
   // Cargar datos solo al montar el componente
   useEffect(() => {
