@@ -28,6 +28,7 @@ const DashboardAsignaciones: React.FC = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [empleados, setEmpleados] = useState<any[]>([]);
   
   // Estados para el modal de PIN
   const [pinModal, setPinModal] = useState<{
@@ -38,6 +39,20 @@ const DashboardAsignaciones: React.FC = () => {
   const [verificandoPin, setVerificandoPin] = useState(false);
   const [mensaje, setMensaje] = useState("");
 
+  // Función para cargar empleados
+  const cargarEmpleados = async () => {
+    try {
+      const response = await fetch(`${getApiUrl()}/empleados/all/`);
+      const data = await response.json();
+      const empleadosActivos = Array.isArray(data) ? data.filter(emp => emp.activo) : [];
+      setEmpleados(empleadosActivos);
+      console.log('✅ Empleados activos cargados:', empleadosActivos.length);
+    } catch (error) {
+      console.error('❌ Error al cargar empleados:', error);
+      setEmpleados([]);
+    }
+  };
+
   // Función simplificada para cargar asignaciones
   const cargarAsignaciones = async () => {
     setLoading(true);
@@ -46,50 +61,47 @@ const DashboardAsignaciones: React.FC = () => {
     try {
       console.log('🔄 Cargando asignaciones...');
       
-      // TEMPORAL: Usar el mismo endpoint que PedidosHerreria para comparar
-      console.log('🔄 Probando endpoint de PedidosHerreria...');
-      const response = await fetch(`${getApiUrl()}/pedidos/herreria/`);
+      // Usar endpoint de comisiones en proceso que tiene asignaciones reales
+      console.log('🔄 Cargando asignaciones reales...');
+      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('📋 Datos de PedidosHerreria:', data);
+        console.log('📋 Asignaciones reales obtenidas:', data);
         console.log('🔍 Tipo de datos:', Array.isArray(data) ? 'Array' : typeof data);
         console.log('📊 Cantidad:', Array.isArray(data) ? data.length : 'No es array');
         
         if (Array.isArray(data) && data.length > 0) {
-          console.log('📋 Primer pedido:', data[0]);
-          console.log('🔍 Campos del pedido:', Object.keys(data[0]));
+          console.log('📋 Primera asignación:', data[0]);
+          console.log('🔍 Campos de la asignación:', Object.keys(data[0]));
           
-          // Convertir pedidos a formato de asignaciones para comparar
-          const asignacionesData: Asignacion[] = [];
-          data.forEach((pedido: any) => {
-            if (pedido.items && Array.isArray(pedido.items)) {
-              pedido.items.forEach((item: any) => {
-                asignacionesData.push({
-                  _id: `${pedido._id}_${item.id}`,
-                  pedido_id: pedido._id,
-                  item_id: item.id,
-                  empleado_id: "sin_asignar",
-                  empleado_nombre: "Sin asignar",
-                  modulo: "herreria",
-                  estado: "en_proceso",
-                  fecha_asignacion: pedido.fecha_creacion || new Date().toISOString(),
-                  descripcionitem: item.descripcion || item.nombre || "Sin descripción",
-                  detalleitem: item.detalleitem || "",
-                  cliente_nombre: pedido.cliente_nombre || "Sin cliente",
-                  costo_produccion: item.costoProduccion || item.costo || 0,
-                  imagenes: item.imagenes || []
-                });
-              });
-            }
-          });
+          // Convertir asignaciones del backend al formato esperado
+          const asignacionesData: Asignacion[] = data.map((asig: any) => ({
+            _id: asig._id || `${asig.pedido_id}_${asig.item_id}`,
+            pedido_id: asig.pedido_id,
+            item_id: asig.item_id,
+            empleado_id: asig.empleado_id || "sin_asignar",
+            empleado_nombre: asig.nombreempleado || "Sin asignar",
+            modulo: asig.orden === 1 ? 'herreria' : 
+                   asig.orden === 2 ? 'masillar' : 
+                   asig.orden === 3 ? 'preparar' : 
+                   asig.orden === 4 ? 'facturar' : 'herreria',
+            estado: asig.estado || "en_proceso",
+            fecha_asignacion: asig.fecha_inicio || new Date().toISOString(),
+            descripcionitem: asig.descripcionitem || "Sin descripción",
+            detalleitem: asig.detalleitem || "",
+            cliente_nombre: asig.cliente?.cliente_nombre || "Sin cliente",
+            costo_produccion: asig.costoproduccion || 0,
+            imagenes: asig.imagenes || []
+          }));
           
           console.log('✅ Asignaciones convertidas:', asignacionesData.length);
           console.log('📋 Datos de ejemplo convertido:', asignacionesData[0]);
           console.log('👥 Empleados únicos:', [...new Set(asignacionesData.map(a => a.empleado_nombre))]);
+          console.log('📅 Fechas:', [...new Set(asignacionesData.map(a => new Date(a.fecha_asignacion).toLocaleDateString()))]);
           setAsignaciones(asignacionesData);
         } else {
-          console.log('⚠️ No hay datos válidos en el endpoint');
+          console.log('⚠️ No hay asignaciones en proceso');
           setAsignaciones([]);
         }
       } else {
@@ -108,6 +120,7 @@ const DashboardAsignaciones: React.FC = () => {
   // Cargar datos solo al montar el componente
   useEffect(() => {
     cargarAsignaciones();
+    cargarEmpleados();
   }, []);
 
   // Función para obtener color del módulo
