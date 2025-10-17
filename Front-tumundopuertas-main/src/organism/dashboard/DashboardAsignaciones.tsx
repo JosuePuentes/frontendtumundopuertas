@@ -61,49 +61,19 @@ const DashboardAsignaciones: React.FC = () => {
     try {
       console.log('🔄 Cargando asignaciones...');
       
-      // Usar endpoint de comisiones en proceso que tiene asignaciones reales
-      console.log('🔄 Cargando asignaciones reales...');
-      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
+      // Usar endpoint optimizado /asignaciones (solo asignaciones "en_proceso")
+      console.log('🔄 Cargando asignaciones activas...');
+      const response = await fetch(`${getApiUrl()}/asignaciones`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('📋 Asignaciones reales obtenidas:', data);
-        console.log('🔍 Tipo de datos:', Array.isArray(data) ? 'Array' : typeof data);
-        console.log('📊 Cantidad:', Array.isArray(data) ? data.length : 'No es array');
-        
-        if (Array.isArray(data) && data.length > 0) {
-          console.log('📋 Primera asignación:', data[0]);
-          console.log('🔍 Campos de la asignación:', Object.keys(data[0]));
-          
-          // Convertir asignaciones del backend al formato esperado
-          const asignacionesData: Asignacion[] = data.map((asig: any) => ({
-            _id: asig._id || `${asig.pedido_id}_${asig.item_id}`,
-            pedido_id: asig.pedido_id,
-            item_id: asig.item_id,
-            empleado_id: asig.empleado_id || "sin_asignar",
-            empleado_nombre: asig.nombreempleado || "Sin asignar",
-            modulo: asig.orden === 1 ? 'herreria' : 
-                   asig.orden === 2 ? 'masillar' : 
-                   asig.orden === 3 ? 'preparar' : 
-                   asig.orden === 4 ? 'facturar' : 'herreria',
-            estado: asig.estado || "en_proceso",
-            fecha_asignacion: asig.fecha_inicio || new Date().toISOString(),
-            descripcionitem: asig.descripcionitem || "Sin descripción",
-            detalleitem: asig.detalleitem || "",
-            cliente_nombre: asig.cliente?.cliente_nombre || "Sin cliente",
-            costo_produccion: asig.costoproduccion || 0,
-            imagenes: asig.imagenes || []
-          }));
-          
-          console.log('✅ Asignaciones convertidas:', asignacionesData.length);
-          console.log('📋 Datos de ejemplo convertido:', asignacionesData[0]);
-          console.log('👥 Empleados únicos:', [...new Set(asignacionesData.map(a => a.empleado_nombre))]);
-          console.log('📅 Fechas:', [...new Set(asignacionesData.map(a => new Date(a.fecha_asignacion).toLocaleDateString()))]);
-          setAsignaciones(asignacionesData);
-        } else {
-          console.log('⚠️ No hay asignaciones en proceso');
-          setAsignaciones([]);
-        }
+        const asignacionesData = data.asignaciones || [];
+        console.log('✅ Asignaciones activas obtenidas:', asignacionesData.length);
+        console.log('📋 Datos de ejemplo:', asignacionesData[0]);
+        console.log('🔍 Campos disponibles:', asignacionesData[0] ? Object.keys(asignacionesData[0]) : []);
+        console.log('👥 Empleados únicos:', [...new Set(asignacionesData.map((a: any) => a.empleado_nombre))]);
+        console.log('📅 Fechas:', [...new Set(asignacionesData.map((a: any) => new Date(a.fecha_asignacion).toLocaleDateString()))]);
+        setAsignaciones(asignacionesData);
       } else {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
@@ -146,6 +116,41 @@ const DashboardAsignaciones: React.FC = () => {
     }
   };
 
+  // Función para asignar al siguiente módulo
+  const handleAsignarSiguienteModulo = async (asignacion: Asignacion) => {
+    try {
+      console.log('🔄 Asignando al siguiente módulo:', asignacion.item_id);
+      
+      const response = await fetch(`${getApiUrl()}/asignar-siguiente-modulo/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pedido_id: asignacion.pedido_id,
+          item_id: asignacion.item_id,
+          empleado_id: asignacion.empleado_id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Asignado al siguiente módulo:', result);
+      
+      setMensaje("✅ Item asignado al siguiente módulo exitosamente");
+      setTimeout(() => setMensaje(""), 3000);
+      
+      // Recargar asignaciones
+      await cargarAsignaciones();
+      
+    } catch (error: any) {
+      console.error('❌ Error al asignar siguiente módulo:', error);
+      setMensaje("❌ Error al asignar siguiente módulo: " + error.message);
+      setTimeout(() => setMensaje(""), 5000);
+    }
+  };
+
   // Función para manejar la terminación con PIN
   const handleConfirmarPin = async () => {
     if (!pinModal.asignacion || pin.length !== 4) {
@@ -162,7 +167,7 @@ const DashboardAsignaciones: React.FC = () => {
       console.log('Marcando artículo como terminado:', asig.item_id);
       console.log('PIN ingresado:', pin);
       
-      // Usar el endpoint optimizado para terminar asignaciones
+      // Usar el endpoint optimizado para terminar asignaciones (SIN mover automáticamente)
       const response = await fetch(`${getApiUrl()}/asignacion/terminar-mejorado/`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -370,14 +375,24 @@ const DashboardAsignaciones: React.FC = () => {
 
                 <div className="flex justify-end gap-2">
                   {asignacion.estado === "en_proceso" && (
-                    <Button
-                      size="sm"
-                      onClick={() => setPinModal({ isOpen: true, asignacion })}
-                      className="bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-1" />
-                      Terminar Asignación
-                    </Button>
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() => handleAsignarSiguienteModulo(asignacion)}
+                        variant="outline"
+                        className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                      >
+                        📋 Asignar Siguiente Módulo
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => setPinModal({ isOpen: true, asignacion })}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Terminar Asignación
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardContent>
