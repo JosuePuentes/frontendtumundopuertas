@@ -44,10 +44,10 @@ const MonitorPedidos: React.FC = () => {
     const fetchPedidos = async () => {
       setLoading(true);
       try {
-        console.log('🔄 Cargando pedidos usando endpoint optimizado /pedidos/cancelables/...');
+        console.log('🔄 Cargando pedidos usando endpoint optimizado /pedidos/all/...');
         
-        // NUEVO: Usar el endpoint optimizado para pedidos cancelables
-        let url = `${apiUrl}/pedidos/cancelables/?`;
+        // NUEVO: Usar el endpoint optimizado para todos los pedidos
+        let url = `${apiUrl}/pedidos/all/?`;
         if (fechaInicio && fechaFin) {
           url += `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&`;
         }
