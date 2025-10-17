@@ -60,10 +60,14 @@ const DashboardAsignaciones: React.FC = () => {
     
     try {
       console.log('🔄 Cargando asignaciones...');
+      console.log('🌐 API URL:', getApiUrl());
       
       // Usar endpoint de comisiones en proceso que tiene datos completos
       console.log('🔄 Cargando asignaciones con datos completos...');
-      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
+      const url = `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`;
+      console.log('📡 URL completa:', url);
+      
+      const response = await fetch(url);
       
       console.log('📡 Response status:', response.status);
       console.log('📡 Response ok:', response.ok);
@@ -243,6 +247,16 @@ const DashboardAsignaciones: React.FC = () => {
           {error}
         </div>
       )}
+
+      {/* Debug Info */}
+      <div className="mb-4 p-3 rounded bg-blue-100 text-blue-700 border border-blue-300">
+        <p><strong>🔍 DEBUG INFO:</strong></p>
+        <p>• Asignaciones cargadas: {asignaciones.length}</p>
+        <p>• Empleados activos: {empleados.length}</p>
+        <p>• Estado de carga: {loading ? 'Cargando...' : 'Completado'}</p>
+        <p>• Error: {error || 'Ninguno'}</p>
+        <p>• API URL: {getApiUrl()}</p>
+      </div>
 
       {/* Mensaje de éxito/error */}
       {mensaje && (
