@@ -248,7 +248,6 @@ const DashboardAsignaciones: React.FC = () => {
     try {
       const data = await fetchAsignaciones();
       setAsignaciones(data);
-      aplicarFiltros(data, modulosSeleccionados, empleadoSeleccionado, filtroFecha, filtroEstado);
       setMensaje(`Cargadas ${data.length} asignaciones`);
       setTimeout(() => setMensaje(""), 3000);
     } catch (err) {
@@ -763,6 +762,16 @@ const DashboardAsignaciones: React.FC = () => {
     cargarAsignaciones();
     cargarEmpleados();
   }, []);
+
+  // Aplicar filtros cuando cambien las asignaciones o los filtros
+  useEffect(() => {
+    if (asignaciones.length > 0) {
+      // Usar setTimeout para evitar llamadas durante el renderizado
+      setTimeout(() => {
+        aplicarFiltros(asignaciones, modulosSeleccionados, empleadoSeleccionado, filtroFecha, filtroEstado);
+      }, 0);
+    }
+  }, [asignaciones, modulosSeleccionados, empleadoSeleccionado, filtroFecha, filtroEstado]);
 
   return (
     <div className="max-w-7xl mx-auto p-6">
