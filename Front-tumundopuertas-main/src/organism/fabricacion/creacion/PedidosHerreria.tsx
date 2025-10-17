@@ -31,34 +31,7 @@ interface ItemIndividual {
   fecha_creacion?: string; // NUEVO: Fecha de creación del pedido
 }
 
-// Mantener interfaces existentes para compatibilidad
-interface PedidoItem {
-  id: string;
-  codigo: string;
-  nombre: string;
-  descripcion: string;
-  categoria: string;
-  precio: number;
-  costo: number;
-  cantidad: number;
-  activo: boolean;
-  costoProduccion: number;
-  detalleitem?: string;
-  imagenes?: string[];
-  estado_item?: number;
-}
-
-interface PedidoSeguimiento {
-  orden: number;
-  nombre_subestado: string;
-  estado: string;
-  asignado_a?: string;
-  fecha_inicio?: string;
-  fecha_fin?: string;
-  notas?: string;
-}
-
-// Interface Pedido removida - ya no se usa con la nueva estructura de items individuales
+// Interfaces PedidoItem y PedidoSeguimiento removidas - ya no se usan con la nueva estructura de items individuales
 
 const PedidosHerreria: React.FC = () => {
   // NUEVA ESTRUCTURA: Manejar items individuales en lugar de pedidos completos
