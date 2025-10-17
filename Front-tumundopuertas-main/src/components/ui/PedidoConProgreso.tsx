@@ -112,10 +112,16 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
     try {
       console.log(`🚫 Cancelando pedido ${pedido._id} con motivo: ${motivoCancelacion}`);
       
+      // Verificar que el token existe
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No hay token de autenticación. Por favor, inicia sesión nuevamente.');
+      }
+      
       const response = await fetch(`${getApiUrl()}/pedidos/cancelar/${pedido._id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -150,10 +156,18 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       
     } catch (error: any) {
       console.error('❌ Error al cancelar pedido:', error);
-      if (error.message.includes('400')) {
+      if (error.message.includes('401') || error.message.includes('token')) {
+        setMensaje('❌ Sesión expirada. Por favor, inicia sesión nuevamente.');
+        // Opcional: redirigir al login
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 3000);
+      } else if (error.message.includes('400')) {
         setMensaje('❌ Este pedido no se puede cancelar en su estado actual');
       } else if (error.message.includes('403')) {
         setMensaje('❌ No tienes permisos para cancelar este pedido');
+      } else if (error.message.includes('404')) {
+        setMensaje('❌ Pedido no encontrado');
       } else {
         setMensaje(`❌ Error al cancelar pedido: ${error.message}`);
       }
@@ -378,7 +392,7 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-4">
+            <div className="flex justify-between gap-4 pt-6 border-t border-gray-200">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -387,24 +401,25 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
                   setMensaje("");
                 }}
                 disabled={cancelando}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
               >
-                Cancelar
+                ❌ Cancelar Operación
               </Button>
               <Button
                 variant="destructive"
                 onClick={cancelarPedido}
                 disabled={cancelando || !motivoCancelacion.trim()}
-                className="flex items-center gap-2"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2"
               >
                 {cancelando ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                     Cancelando...
                   </>
                 ) : (
                   <>
-                    <XCircle className="w-4 h-4" />
-                    Confirmar Cancelación
+                    <XCircle className="w-5 h-5" />
+                    ✅ Confirmar Cancelación
                   </>
                 )}
               </Button>
