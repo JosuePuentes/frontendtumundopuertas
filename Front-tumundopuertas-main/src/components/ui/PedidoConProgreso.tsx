@@ -306,12 +306,12 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           <div className="mt-4 pr-32">
             <Button
               variant="destructive"
-              size="sm"
+              size="default"
               onClick={() => setCancelModal(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md"
             >
-              <XCircle className="w-4 h-4" />
-              Cancelar Pedido
+              <XCircle className="w-5 h-5" />
+              🚫 Cancelar Pedido
             </Button>
           </div>
 
