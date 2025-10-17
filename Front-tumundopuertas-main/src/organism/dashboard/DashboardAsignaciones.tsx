@@ -78,12 +78,17 @@ const DashboardAsignaciones: React.FC = () => {
         console.log('🔍 Tipo de datos:', Array.isArray(data) ? 'Array' : typeof data);
         console.log('📊 Cantidad:', Array.isArray(data) ? data.length : 'No es array');
         
-        if (Array.isArray(data) && data.length > 0) {
-          console.log('📋 Primera asignación:', data[0]);
-          console.log('🔍 Campos disponibles:', Object.keys(data[0]));
+        // ARREGLADO: El backend devuelve {asignaciones: Array, total: number, success: boolean}
+        const asignacionesArray = data.asignaciones || data;
+        console.log('📋 Asignaciones extraídas:', asignacionesArray);
+        console.log('📊 Cantidad de asignaciones:', Array.isArray(asignacionesArray) ? asignacionesArray.length : 'No es array');
+        
+        if (Array.isArray(asignacionesArray) && asignacionesArray.length > 0) {
+          console.log('📋 Primera asignación:', asignacionesArray[0]);
+          console.log('🔍 Campos disponibles:', Object.keys(asignacionesArray[0]));
           
           // Convertir asignaciones del backend al formato esperado
-          const asignacionesData: Asignacion[] = data.map((asig: any) => ({
+          const asignacionesData: Asignacion[] = asignacionesArray.map((asig: any) => ({
             _id: asig._id || `${asig.pedido_id}_${asig.item_id}`,
             pedido_id: asig.pedido_id,
             item_id: asig.item_id,
@@ -116,8 +121,8 @@ const DashboardAsignaciones: React.FC = () => {
           console.log('✅ Estado actualizado');
           
         } else {
-          console.log('⚠️ No hay asignaciones en proceso - data no es array o está vacío');
-          console.log('⚠️ data:', data);
+          console.log('⚠️ No hay asignaciones en proceso - asignacionesArray no es array o está vacío');
+          console.log('⚠️ asignacionesArray:', asignacionesArray);
           setAsignaciones([]);
         }
       } else {
