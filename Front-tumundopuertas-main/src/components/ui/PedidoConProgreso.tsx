@@ -303,19 +303,17 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           )}
 
           {/* Botón de cancelar pedido - SIEMPRE VISIBLE */}
-          {pedido.estado_general !== "cancelado" && (
-            <div className="mt-4 pr-32">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setCancelModal(true)}
-                className="flex items-center gap-2"
-              >
-                <XCircle className="w-4 h-4" />
-                Cancelar Pedido
-              </Button>
-            </div>
-          )}
+          <div className="mt-4 pr-32">
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setCancelModal(true)}
+              className="flex items-center gap-2"
+            >
+              <XCircle className="w-4 h-4" />
+              Cancelar Pedido
+            </Button>
+          </div>
 
           {/* Mensaje de estado */}
           {mensaje && (
