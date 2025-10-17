@@ -71,7 +71,7 @@ const TerminarAsignacion: React.FC = () => {
       setArticuloTerminado(asig.item_id);
       
       // OPTIMIZADO: Usar el endpoint optimizado para terminar asignaciones
-      const response = await fetch(`${getApiUrl()}/asignacion/terminar-mejorado`, {
+      const response = await fetch(`${getApiUrl()}/asignacion/terminar-mejorado/`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

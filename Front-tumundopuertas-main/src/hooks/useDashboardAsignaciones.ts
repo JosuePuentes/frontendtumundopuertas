@@ -76,7 +76,7 @@ export const useDashboardAsignaciones = () => {
 
   const terminarAsignacion = async (data: TerminarAsignacionData): Promise<TerminarAsignacionResponse> => {
     try {
-      const response = await fetch(`${getApiUrl()}/pedidos/asignacion/terminar`, {
+      const response = await fetch(`${getApiUrl()}/asignacion/terminar-mejorado/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
