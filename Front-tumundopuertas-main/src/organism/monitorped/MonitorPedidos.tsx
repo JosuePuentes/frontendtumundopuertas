@@ -80,9 +80,31 @@ const MonitorPedidos: React.FC = () => {
       setShouldSearch(true);
     };
 
+    const handleActualizarPedido = (event: CustomEvent) => {
+      const { pedidoId, nuevoEstado } = event.detail;
+      console.log(`🔄 Actualizando pedido ${pedidoId} a estado: ${nuevoEstado}`);
+      
+      // Actualizar el estado local del pedido inmediatamente
+      setPedidos(prevPedidos => 
+        prevPedidos.map(pedido => 
+          pedido._id === pedidoId 
+            ? { ...pedido, estado_general: nuevoEstado }
+            : pedido
+        )
+      );
+      
+      // También recargar la lista completa después de un breve delay
+      setTimeout(() => {
+        setShouldSearch(true);
+      }, 1000);
+    };
+
     window.addEventListener('pedidoCancelado', handlePedidoCancelado);
+    window.addEventListener('actualizarPedido', handleActualizarPedido as EventListener);
+    
     return () => {
       window.removeEventListener('pedidoCancelado', handlePedidoCancelado);
+      window.removeEventListener('actualizarPedido', handleActualizarPedido as EventListener);
     };
   }, []);
 

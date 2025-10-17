@@ -139,6 +139,15 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
         detail: { pedidoId: pedido._id }
       }));
       
+      // También disparar evento para actualizar el estado del pedido localmente
+      window.dispatchEvent(new CustomEvent('actualizarPedido', {
+        detail: { 
+          pedidoId: pedido._id, 
+          nuevoEstado: 'cancelado',
+          motivo: motivoCancelacion
+        }
+      }));
+      
     } catch (error: any) {
       console.error('❌ Error al cancelar pedido:', error);
       if (error.message.includes('400')) {
