@@ -285,6 +285,31 @@ const PedidosHerreria: React.FC = () => {
                   console.log('🔍 DEBUG - Respuesta directa:', data);
                   console.log('🔍 DEBUG - Status:', response.status);
                   console.log('🔍 DEBUG - Headers:', Object.fromEntries(response.headers.entries()));
+                  
+                  // Debug detallado de los items
+                  if (data.items && Array.isArray(data.items)) {
+                    console.log('🔍 DEBUG - Items encontrados:', data.items.length);
+                    console.log('🔍 DEBUG - Detalles de cada item:');
+                    data.items.forEach((item: any, index: number) => {
+                      console.log(`🔍 DEBUG - Item ${index + 1}:`, {
+                        id: item.id,
+                        pedido_id: item.pedido_id,
+                        nombre: item.nombre,
+                        estado_item: item.estado_item,
+                        cliente_nombre: item.cliente_nombre,
+                        fecha_creacion: item.fecha_creacion
+                      });
+                    });
+                    
+                    // Buscar específicamente nuestro pedido
+                    const nuestroPedido = data.items.filter((item: any) => item.pedido_id === "68f2bc424dbb7f6039f6ec09");
+                    console.log('🔍 DEBUG - Items del pedido 68f2bc424dbb7f6039f6ec09:', nuestroPedido);
+                    
+                    if (nuestroPedido.length === 0) {
+                      console.log('❌ DEBUG - NO SE ENCONTRÓ EL PEDIDO');
+                      console.log('🔍 DEBUG - Todos los pedido_ids disponibles:', data.items.map((item: any) => item.pedido_id));
+                    }
+                  }
                 } catch (error) {
                   console.error('🔍 DEBUG - Error:', error);
                 }
