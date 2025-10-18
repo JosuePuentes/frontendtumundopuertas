@@ -380,6 +380,12 @@ const PedidosHerreria: React.FC = () => {
                 // Mostrar items pendientes (0) y en proceso (1, 2, 3)
                 return item.estado_item >= 0 && item.estado_item <= 3;
               })
+              .sort((a, b) => {
+                // Ordenar por fecha de creación del pedido (más recientes primero)
+                const fechaA = new Date(a.fecha_creacion || 0).getTime();
+                const fechaB = new Date(b.fecha_creacion || 0).getTime();
+                return fechaB - fechaA; // Descendente (más recientes primero)
+              })
               .map((item) => {
                 const progreso = progresoItems[item.id] || 0;
                 return (
@@ -392,7 +398,14 @@ const PedidosHerreria: React.FC = () => {
                           <h3 className="text-lg font-semibold text-gray-900">{item.nombre}</h3>
                           <p className="text-sm text-gray-600">Pedido: {item.pedido_id.slice(-6)}</p>
                           <p className="text-sm text-gray-600">Cliente: {item.cliente_nombre || 'Sin cliente'}</p>
-                          <p className="text-sm text-gray-600">Fecha: {item.fecha_creacion ? new Date(item.fecha_creacion).toLocaleDateString() : 'N/A'}</p>
+                          <p className="text-sm text-gray-600">
+                            📅 Fecha: {item.fecha_creacion ? new Date(item.fecha_creacion).toLocaleDateString() : 'N/A'}
+                            {item.fecha_creacion && (
+                              <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                {new Date(item.fecha_creacion).toLocaleTimeString()}
+                              </span>
+                            )}
+                          </p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-gray-900">Costo: ${item.costoProduccion?.toFixed(2) || '0.00'}</p>
