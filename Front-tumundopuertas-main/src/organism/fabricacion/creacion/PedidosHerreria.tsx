@@ -99,11 +99,26 @@ const PedidosHerreria: React.FC = () => {
       const data = await response.json();
       
       console.log('📋 Respuesta del backend:', data);
+      console.log('🔍 Tipo de respuesta:', typeof data);
+      console.log('🔍 Es array?', Array.isArray(data));
+      console.log('🔍 Tiene propiedad items?', 'items' in data);
       
       // El backend ahora devuelve {items: Array} o Array directo
       const itemsArray = data.items || data;
       console.log('📋 Items extraídos:', itemsArray);
       console.log('📊 Cantidad de items:', Array.isArray(itemsArray) ? itemsArray.length : 'No es array');
+      
+      // Debug específico para el pedido que estamos buscando
+      if (Array.isArray(itemsArray)) {
+        const itemsDelPedido = itemsArray.filter((item: any) => item.pedido_id === "68f2bc424dbb7f6039f6ec09");
+        console.log('🎯 ITEMS DEL PEDIDO 68f2bc424dbb7f6039f6ec09:', itemsDelPedido);
+        console.log('📊 Cantidad encontrada:', itemsDelPedido.length);
+        
+        if (itemsDelPedido.length === 0) {
+          console.log('❌ NO SE ENCONTRARON ITEMS DEL PEDIDO');
+          console.log('🔍 Todos los pedido_ids disponibles:', itemsArray.map((item: any) => item.pedido_id));
+        }
+      }
       
       if (Array.isArray(itemsArray)) {
         setItemsIndividuales(itemsArray);
@@ -254,12 +269,29 @@ const PedidosHerreria: React.FC = () => {
             </Select>
           </div>
           
-          <div className="flex items-end">
+          <div className="flex items-end gap-2">
             <Button 
               onClick={aplicarFiltros}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
             >
               Aplicar Filtros
+            </Button>
+            <Button 
+              onClick={async () => {
+                console.log('🔍 DEBUG: Consultando endpoint directamente...');
+                try {
+                  const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/herreria/`);
+                  const data = await response.json();
+                  console.log('🔍 DEBUG - Respuesta directa:', data);
+                  console.log('🔍 DEBUG - Status:', response.status);
+                  console.log('🔍 DEBUG - Headers:', Object.fromEntries(response.headers.entries()));
+                } catch (error) {
+                  console.error('🔍 DEBUG - Error:', error);
+                }
+              }}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2"
+            >
+              Debug API
             </Button>
           </div>
         </div>
