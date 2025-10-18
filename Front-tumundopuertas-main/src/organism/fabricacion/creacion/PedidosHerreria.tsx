@@ -84,6 +84,35 @@ const PedidosHerreria: React.FC = () => {
     });
   };
 
+  // Función para inicializar estado_item en items existentes
+  const inicializarItemsExistentes = async () => {
+    try {
+      console.log('🔄 Inicializando estado_item en items existentes...');
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/inicializar-estado-items/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const result = await response.json();
+      console.log('✅ Resultado:', result);
+      
+      if (result.items_actualizados > 0) {
+        console.log(`✅ Se inicializaron ${result.items_actualizados} items`);
+        // Recargar los datos después de la inicialización
+        await recargarDatos();
+      } else {
+        console.log('ℹ️ No había items para inicializar');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Error inicializando items:', error);
+    }
+  };
+
   // Función para recargar datos - NUEVA ESTRUCTURA: Items individuales
   const recargarDatos = async () => {
     console.log('🔄 Recargando items individuales de PedidosHerreria usando endpoint optimizado /pedidos/herreria/...');
@@ -117,6 +146,13 @@ const PedidosHerreria: React.FC = () => {
         if (itemsDelPedido.length === 0) {
           console.log('❌ NO SE ENCONTRARON ITEMS DEL PEDIDO');
           console.log('🔍 Todos los pedido_ids disponibles:', itemsArray.map((item: any) => item.pedido_id));
+          console.log('💡 SOLUCIÓN: Haz clic en "🔧 Inicializar Items Existentes" para inicializar items sin estado_item');
+        } else {
+          console.log('✅ ITEMS ENCONTRADOS - Estados:', itemsDelPedido.map((item: any) => ({
+            id: item.id,
+            nombre: item.nombre,
+            estado_item: item.estado_item
+          })));
         }
       }
       
@@ -318,6 +354,12 @@ const PedidosHerreria: React.FC = () => {
             >
               Debug API
             </Button>
+            <Button 
+              onClick={inicializarItemsExistentes}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2"
+            >
+              🔧 Inicializar Items Existentes
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -335,8 +377,8 @@ const PedidosHerreria: React.FC = () => {
           <ul className="space-y-6">
             {itemsIndividuales
               .filter((item) => {
-                // Solo mostrar items que NO estén completamente terminados (estado_item < 4)
-                return item.estado_item < 4;
+                // Mostrar items pendientes (0) y en proceso (1, 2, 3)
+                return item.estado_item >= 0 && item.estado_item <= 3;
               })
               .map((item) => {
                 const progreso = progresoItems[item.id] || 0;

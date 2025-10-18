@@ -10,10 +10,11 @@ const IndicadorEstadosItem: React.FC<IndicadorEstadosItemProps> = ({
   itemNombre 
 }) => {
   const estados = [
+    { numero: 0, nombre: "Pendiente", modulo: "pendiente" },
     { numero: 1, nombre: "Herrería", modulo: "herreria" },
     { numero: 2, nombre: "Masillar/Pintar", modulo: "masillar" },
     { numero: 3, nombre: "Manillar", modulo: "manillar" },
-    { numero: 4, nombre: "Facturar", modulo: "facturar" }
+    { numero: 4, nombre: "Terminado", modulo: "terminado" }
   ];
 
   return (
