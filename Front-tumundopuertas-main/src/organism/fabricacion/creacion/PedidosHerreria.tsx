@@ -584,13 +584,8 @@ const PedidosHerreria: React.FC = () => {
                 // Solo mostrar los primeros 3 items con información detallada
                 console.log('🔍 PRIMEROS 3 ITEMS:');
                 itemsIndividuales.slice(0, 3).forEach((item, index) => {
-                  const fechaItem = new Date(
-                    item.pedido_fecha_creacion || 
-                    item.fecha_creacion || 
-                    item.created_at || 
-                    item.fecha_asignacion || 
-                    0
-                  );
+                  // Usar fecha_creacion como campo principal (que es el que tiene datos)
+                  const fechaItem = new Date(item.fecha_creacion || 0);
                   
                   const esValido = !isNaN(fechaItem.getTime());
                   const esReciente = esValido && fechaItem >= hace7Dias;
@@ -598,6 +593,7 @@ const PedidosHerreria: React.FC = () => {
                   console.log(`Item ${index + 1}:`, {
                     nombre: item.nombre.substring(0, 30) + '...',
                     fechaItem: fechaItem.toLocaleDateString(),
+                    fechaItemISO: fechaItem.toISOString(),
                     esValido,
                     esReciente,
                     campos_fecha: {
@@ -611,25 +607,20 @@ const PedidosHerreria: React.FC = () => {
                 
                 // Contar items por rango de fechas
                 const itemsRecientes = itemsIndividuales.filter(item => {
-                  const fechaItem = new Date(
-                    item.pedido_fecha_creacion || 
-                    item.fecha_creacion || 
-                    item.created_at || 
-                    item.fecha_asignacion || 
-                    0
-                  );
+                  const fechaItem = new Date(item.fecha_creacion || 0);
                   return !isNaN(fechaItem.getTime()) && fechaItem >= hace7Dias;
                 });
                 
                 const itemsHoy = itemsIndividuales.filter(item => {
-                  const fechaItem = new Date(
-                    item.pedido_fecha_creacion || 
-                    item.fecha_creacion || 
-                    item.created_at || 
-                    item.fecha_asignacion || 
-                    0
-                  );
+                  const fechaItem = new Date(item.fecha_creacion || 0);
                   return !isNaN(fechaItem.getTime()) && fechaItem.toDateString() === hoy.toDateString();
+                });
+                
+                const itemsEsteMes = itemsIndividuales.filter(item => {
+                  const fechaItem = new Date(item.fecha_creacion || 0);
+                  return !isNaN(fechaItem.getTime()) && 
+                         fechaItem.getMonth() === hoy.getMonth() && 
+                         fechaItem.getFullYear() === hoy.getFullYear();
                 });
                 
                 console.log('');
@@ -637,6 +628,7 @@ const PedidosHerreria: React.FC = () => {
                 console.log(`Total items: ${itemsIndividuales.length}`);
                 console.log(`Items de hoy: ${itemsHoy.length}`);
                 console.log(`Items últimos 7 días: ${itemsRecientes.length}`);
+                console.log(`Items este mes (octubre 2025): ${itemsEsteMes.length}`);
                 console.log(`Filtro actual: ${filtroFecha}`);
                 
                 if (itemsRecientes.length === 0) {
@@ -680,14 +672,8 @@ const PedidosHerreria: React.FC = () => {
                 
                 // Filtro por fecha
                 if (filtroFecha !== "todos") {
-                  // Intentar múltiples campos de fecha
-                  const fechaItem = new Date(
-                    item.pedido_fecha_creacion || 
-                    item.fecha_creacion || 
-                    item.created_at || 
-                    item.fecha_asignacion || 
-                    0
-                  );
+                  // Usar fecha_creacion como campo principal (que es el que tiene datos)
+                  const fechaItem = new Date(item.fecha_creacion || 0);
                   const hoy = new Date();
                   
                   // Debug de fechas solo para los primeros 3 items para no saturar la consola
@@ -701,12 +687,8 @@ const PedidosHerreria: React.FC = () => {
                       hoy: hoy.toLocaleDateString(),
                       hoyISO: hoy.toISOString(),
                       fechaValida: !isNaN(fechaItem.getTime()),
-                      campos_fecha_disponibles: {
-                        pedido_fecha_creacion: item.pedido_fecha_creacion,
-                        fecha_creacion: item.fecha_creacion,
-                        created_at: item.created_at,
-                        fecha_asignacion: item.fecha_asignacion
-                      }
+                      campo_usado: 'fecha_creacion',
+                      valor_campo: item.fecha_creacion
                     });
                   }
                   
