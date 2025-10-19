@@ -204,10 +204,7 @@ const PedidosHerreria: React.FC = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Cache-Control': 'no-cache', // Evitar caché
-          'Pragma': 'no-cache',
-          'If-Modified-Since': '0' // Forzar actualización
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
         signal: AbortSignal.timeout(25000) // 25 segundos timeout para carga principal
       });
