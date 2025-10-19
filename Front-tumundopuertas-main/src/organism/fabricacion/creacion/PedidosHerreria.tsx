@@ -167,9 +167,23 @@ const PedidosHerreria: React.FC = () => {
           console.log('🎯 ITEMS DEL PEDIDO NUEVO 68f446c8b2b5fb8a533eff63:', itemsDelPedidoNuevo);
           console.log('📊 Cantidad encontrada (nuevo):', itemsDelPedidoNuevo.length);
         
+        // Debug de fechas de todos los items
+        console.log('📅 DEBUG DE FECHAS - Primeros 10 items:');
+        itemsArray.slice(0, 10).forEach((item: any, index: number) => {
+          console.log(`📅 Item ${index + 1}:`, {
+            id: item.id,
+            pedido_id: item.pedido_id,
+            nombre: item.nombre,
+            fecha_creacion: item.fecha_creacion,
+            pedido_fecha_creacion: item.pedido_fecha_creacion,
+            fecha_usada: item.pedido_fecha_creacion || item.fecha_creacion,
+            fecha_formateada: item.pedido_fecha_creacion || item.fecha_creacion ? new Date(item.pedido_fecha_creacion || item.fecha_creacion).toLocaleDateString() : 'N/A'
+          });
+        });
+        
         // Verificar si hay items del 18/10/2025
         const items18Oct = itemsArray.filter((item: any) => {
-          const fechaCreacion = item.fecha_creacion || item.pedido_fecha_creacion;
+          const fechaCreacion = item.pedido_fecha_creacion || item.fecha_creacion;
           if (fechaCreacion) {
             const fecha = new Date(fechaCreacion);
             const es18Oct = fecha.getDate() === 18 && fecha.getMonth() === 9; // Octubre es mes 9 (0-indexado)
@@ -504,8 +518,18 @@ const PedidosHerreria: React.FC = () => {
               })
               .sort((a, b) => {
                 // Ordenar por fecha de creación del pedido (más recientes primero)
-                const fechaA = new Date(a.fecha_creacion || 0).getTime();
-                const fechaB = new Date(b.fecha_creacion || 0).getTime();
+                // Usar pedido_fecha_creacion si está disponible, sino fecha_creacion
+                const fechaA = new Date(a.pedido_fecha_creacion || a.fecha_creacion || 0).getTime();
+                const fechaB = new Date(b.pedido_fecha_creacion || b.fecha_creacion || 0).getTime();
+                
+                // Debug del ordenamiento
+                console.log('🔄 Ordenando items:', {
+                  itemA: { id: a.id, pedido_id: a.pedido_id, fecha: a.pedido_fecha_creacion || a.fecha_creacion },
+                  itemB: { id: b.id, pedido_id: b.pedido_id, fecha: b.pedido_fecha_creacion || b.fecha_creacion },
+                  fechaA: new Date(fechaA).toLocaleDateString(),
+                  fechaB: new Date(fechaB).toLocaleDateString()
+                });
+                
                 return fechaB - fechaA; // Descendente (más recientes primero)
               })
               .map((item) => {
