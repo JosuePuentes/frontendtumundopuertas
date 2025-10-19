@@ -30,6 +30,7 @@ interface ItemIndividual {
   cliente_nombre?: string; // NUEVO: Nombre del cliente
   fecha_creacion?: string; // NUEVO: Fecha de creación del pedido
   pedido_fecha_creacion?: string; // NUEVO: Fecha de creación del pedido (alternativa)
+  created_at?: string; // NUEVO: Campo adicional de fecha para debug
 }
 
 // Interfaces PedidoItem y PedidoSeguimiento removidas - ya no se usan con la nueva estructura de items individuales
