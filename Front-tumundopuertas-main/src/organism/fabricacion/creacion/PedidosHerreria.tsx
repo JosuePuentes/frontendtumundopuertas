@@ -328,7 +328,7 @@ const PedidosHerreria: React.FC = () => {
         <div className="flex gap-4 mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
           <div className="flex-1">
             <Label htmlFor="filtro-estado" className="text-sm font-medium text-gray-700 mb-2 block">
-              Estado del Pedido:
+              Estado del Item:
             </Label>
             <Select value={filtroEstado} onValueChange={setFiltroEstado}>
               <SelectTrigger className="w-full bg-white border-gray-300">
@@ -336,13 +336,10 @@ const PedidosHerreria: React.FC = () => {
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-200 shadow-lg">
                 <SelectItem value="todos" className="hover:bg-gray-100">Todos los Estados Activos</SelectItem>
-                <SelectItem value="pendiente" className="hover:bg-gray-100">Pendientes</SelectItem>
-                <SelectItem value="orden1" className="hover:bg-gray-100">Orden 1 (Herrería)</SelectItem>
-                <SelectItem value="orden2" className="hover:bg-gray-100">Orden 2 (Masillar/Pintar)</SelectItem>
-                <SelectItem value="orden3" className="hover:bg-gray-100">Orden 3 (Manillar)</SelectItem>
-                <SelectItem value="orden4" className="hover:bg-gray-100">Orden 4 (Facturar)</SelectItem>
-                <SelectItem value="terminado" className="hover:bg-gray-100">Terminados</SelectItem>
-                <SelectItem value="cancelado" className="hover:bg-gray-100">Cancelados</SelectItem>
+                <SelectItem value="pendiente" className="hover:bg-gray-100">Pendientes (0)</SelectItem>
+                <SelectItem value="herreria" className="hover:bg-gray-100">Herrería (1)</SelectItem>
+                <SelectItem value="masillar" className="hover:bg-gray-100">Masillar (2)</SelectItem>
+                <SelectItem value="preparar" className="hover:bg-gray-100">Preparar (3)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -359,6 +356,21 @@ const PedidosHerreria: React.FC = () => {
                 <SelectItem value="todos" className="hover:bg-gray-100">Todos</SelectItem>
                 <SelectItem value="sin_asignar" className="hover:bg-gray-100">Sin Asignar</SelectItem>
                 <SelectItem value="asignados" className="hover:bg-gray-100">Asignados</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex-1">
+            <Label htmlFor="filtro-fecha" className="text-sm font-medium text-gray-700 mb-2 block">
+              Fecha:
+            </Label>
+            <Select value="recientes" onValueChange={() => {}}>
+              <SelectTrigger className="w-full bg-white border-gray-300">
+                <SelectValue placeholder="Seleccionar período" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                <SelectItem value="recientes" className="hover:bg-gray-100">Últimos 7 días</SelectItem>
+                <SelectItem value="todos" className="hover:bg-gray-100">Todos</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -441,7 +453,7 @@ const PedidosHerreria: React.FC = () => {
               onClick={inicializarItemsExistentes}
               className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2"
             >
-              🔧 Inicializar Items Existentes (PRUEBA)
+              🔧 Inicializar Items Existentes
             </Button>
           </div>
         </div>
