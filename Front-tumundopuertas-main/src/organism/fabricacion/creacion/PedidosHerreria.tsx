@@ -135,17 +135,17 @@ const PedidosHerreria: React.FC = () => {
   // Función para construir URL de filtrado dinámico - OPTIMIZADA para herrería
   const construirUrlFiltro = () => {
     // NUEVO: Usar el endpoint optimizado específico para herrería
-    let url = "/pedidos/herreria/?";
+    const params = new URLSearchParams();
     
     // Agregar parámetro de asignación si es necesario
     if (filtrosAplicados.asignacion === "sin_asignar") {
-      url += "sin_asignar=true&";
+      params.append("sin_asignar", "true");
     }
     
     // Agregar ordenamiento por fecha (más recientes primero)
-    url += "ordenar=fecha_desc&";
+    params.append("ordenar", "fecha_desc");
     
-    return url;
+    return `/pedidos/herreria/?${params.toString()}`;
   };
 
   // Función para aplicar filtros con debounce
