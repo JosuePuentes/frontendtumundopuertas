@@ -65,13 +65,31 @@ const PedidosHerreria: React.FC = () => {
   const inicializarItemsExistentes = async () => {
     try {
       console.log('🔄 Inicializando estado_item en items existentes...');
+      console.log('📡 URL:', `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/inicializar-estado-items/`);
+      
+      // Crear un AbortController para timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos timeout
       
       const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/inicializar-estado-items/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+      
+      if (!response.ok) {
+        console.error('❌ Error en response:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('❌ Error details:', errorText);
+        return;
+      }
       
       const result = await response.json();
       console.log('✅ Resultado:', result);
