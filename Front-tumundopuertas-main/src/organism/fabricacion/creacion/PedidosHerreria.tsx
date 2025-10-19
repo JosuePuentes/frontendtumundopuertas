@@ -45,7 +45,8 @@ const PedidosHerreria: React.FC = () => {
   // Estados para filtros
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [filtroAsignacion, setFiltroAsignacion] = useState<string>("todos");
-  const [filtrosAplicados, setFiltrosAplicados] = useState<{estado: string, asignacion: string}>({estado: "todos", asignacion: "todos"});
+  const [filtroFecha, setFiltroFecha] = useState<string>("todos"); // NUEVO: Filtro por fecha
+  const [filtrosAplicados, setFiltrosAplicados] = useState<{estado: string, asignacion: string, fecha: string}>({estado: "todos", asignacion: "todos", fecha: "todos"});
   
   // Estado para barra de progreso por item
   const [progresoItems, setProgresoItems] = useState<Record<string, number>>({});
@@ -129,14 +130,16 @@ const PedidosHerreria: React.FC = () => {
   const aplicarFiltros = () => {
     setFiltrosAplicados({
       estado: filtroEstado,
-      asignacion: filtroAsignacion
+      asignacion: filtroAsignacion,
+      fecha: filtroFecha
     });
+    console.log('🔍 Filtros aplicados:', { estado: filtroEstado, asignacion: filtroAsignacion, fecha: filtroFecha });
   };
 
   // Función para recargar datos - NUEVA ESTRUCTURA: Items individuales
   const recargarDatos = async () => {
     console.log('🔄 Recargando items individuales de PedidosHerreria usando endpoint optimizado /pedidos/herreria/...');
-    console.log('🎯 Filtros aplicados:', { filtroEstado, filtroAsignacion });
+    console.log('🎯 Filtros aplicados:', { filtroEstado, filtroAsignacion, filtroFecha });
     
     setLoading(true);
     try {
@@ -309,7 +312,7 @@ const PedidosHerreria: React.FC = () => {
           id: i.id,
           nombre: i.nombre,
           estado_item: i.estado_item
-        })));
+      })));
       } else {
         console.log('❌ NO SE ENCONTRARON ITEMS DEL PEDIDO NUEVO');
       }
@@ -406,13 +409,18 @@ const PedidosHerreria: React.FC = () => {
             <Label htmlFor="filtro-fecha" className="text-sm font-medium text-gray-700 mb-2 block">
               Fecha:
             </Label>
-            <Select value="recientes" onValueChange={() => {}}>
+            <Select value={filtroFecha} onValueChange={setFiltroFecha}>
               <SelectTrigger className="w-full bg-white border-gray-300">
                 <SelectValue placeholder="Seleccionar período" />
               </SelectTrigger>
               <SelectContent className="bg-white border border-gray-200 shadow-lg">
-                <SelectItem value="recientes" className="hover:bg-gray-100">Últimos 7 días</SelectItem>
                 <SelectItem value="todos" className="hover:bg-gray-100">Todos</SelectItem>
+                <SelectItem value="hoy" className="hover:bg-gray-100">Hoy</SelectItem>
+                <SelectItem value="ayer" className="hover:bg-gray-100">Ayer</SelectItem>
+                <SelectItem value="esta_semana" className="hover:bg-gray-100">Esta Semana</SelectItem>
+                <SelectItem value="ultima_semana" className="hover:bg-gray-100">Última Semana</SelectItem>
+                <SelectItem value="este_mes" className="hover:bg-gray-100">Este Mes</SelectItem>
+                <SelectItem value="octubre_2025" className="hover:bg-gray-100">Octubre 2025</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -515,7 +523,40 @@ const PedidosHerreria: React.FC = () => {
             {itemsIndividuales
               .filter((item) => {
                 // Mostrar items pendientes (0) y en proceso (1, 2, 3)
-                return item.estado_item >= 0 && item.estado_item <= 3;
+                const estadoValido = item.estado_item >= 0 && item.estado_item <= 3;
+                
+                // Filtro por fecha
+                if (filtroFecha !== "todos") {
+                  const fechaItem = new Date(item.pedido_fecha_creacion || item.fecha_creacion || 0);
+                  const hoy = new Date();
+                  
+                  switch (filtroFecha) {
+                    case "hoy":
+                      return estadoValido && fechaItem.toDateString() === hoy.toDateString();
+                    case "ayer":
+                      const ayer = new Date(hoy);
+                      ayer.setDate(hoy.getDate() - 1);
+                      return estadoValido && fechaItem.toDateString() === ayer.toDateString();
+                    case "esta_semana":
+                      const inicioSemana = new Date(hoy);
+                      inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+                      return estadoValido && fechaItem >= inicioSemana;
+                    case "ultima_semana":
+                      const inicioUltimaSemana = new Date(hoy);
+                      inicioUltimaSemana.setDate(hoy.getDate() - hoy.getDay() - 7);
+                      const finUltimaSemana = new Date(hoy);
+                      finUltimaSemana.setDate(hoy.getDate() - hoy.getDay());
+                      return estadoValido && fechaItem >= inicioUltimaSemana && fechaItem < finUltimaSemana;
+                    case "este_mes":
+                      return estadoValido && fechaItem.getMonth() === hoy.getMonth() && fechaItem.getFullYear() === hoy.getFullYear();
+                    case "octubre_2025":
+                      return estadoValido && fechaItem.getMonth() === 9 && fechaItem.getFullYear() === 2025; // Octubre es mes 9
+                    default:
+                      return estadoValido;
+                  }
+                }
+                
+                return estadoValido;
               })
               .sort((a, b) => {
                 // Ordenar por fecha de creación del pedido (más recientes primero)
@@ -569,10 +610,10 @@ const PedidosHerreria: React.FC = () => {
                       
                       {/* Estado del item */}
                       <div className="space-y-2">
-                        <IndicadorEstadosItem
+                    <IndicadorEstadosItem
                           estadoItem={item.estado_item}
-                          itemNombre={item.nombre}
-                        />
+                      itemNombre={item.nombre}
+                    />
                         
                         {/* Barra de progreso del item */}
                         <div className="progreso-bar bg-gray-200 rounded-full h-4 relative">
@@ -584,8 +625,8 @@ const PedidosHerreria: React.FC = () => {
                             {progreso}%
                           </span>
                         </div>
-                      </div>
-                      
+                </div>
+                
                       {/* Información de asignación */}
                       {item.empleado_asignado && (
                         <div className="bg-blue-50 p-3 rounded-lg">
@@ -595,18 +636,18 @@ const PedidosHerreria: React.FC = () => {
                       )}
                       
                       {/* Componente de asignación */}
-                      <div className="mt-4">
-                        <AsignarArticulos
+                <div className="mt-4">
+                  <AsignarArticulos
                           estado_general="independiente"
-                          numeroOrden="independiente"
+                    numeroOrden="independiente"
                           items={[item]} // Pasar solo este item individual
-                          empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
+                    empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
                           pedidoId={item.pedido_id}
                           tipoEmpleado={[]}
-                        />
+                  />
                       </div>
-                    </div>
-                  </li>
+                </div>
+              </li>
                 );
               })}
           </ul>
