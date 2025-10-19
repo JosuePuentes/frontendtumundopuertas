@@ -37,6 +37,7 @@ const PedidosHerreria: React.FC = () => {
   // NUEVA ESTRUCTURA: Manejar items individuales en lugar de pedidos completos
   const [itemsIndividuales, setItemsIndividuales] = useState<ItemIndividual[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [ultimaActualizacion, setUltimaActualizacion] = useState<Date>(new Date());
   const [loading, setLoading] = useState<boolean>(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
   
@@ -85,33 +86,6 @@ const PedidosHerreria: React.FC = () => {
   };
 
   // Función para inicializar estado_item en items existentes
-  const inicializarItemsExistentes = async () => {
-    try {
-      console.log('🔄 Inicializando estado_item en items existentes...');
-      
-      const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/inicializar-estado-items/`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      const result = await response.json();
-      console.log('✅ Resultado:', result);
-      
-      if (result.items_actualizados > 0) {
-        console.log(`✅ Se inicializaron ${result.items_actualizados} items`);
-        // Recargar los datos después de la inicialización
-        await recargarDatos();
-      } else {
-        console.log('ℹ️ No había items para inicializar');
-      }
-      
-      return result;
-    } catch (error) {
-      console.error('❌ Error inicializando items:', error);
-    }
-  };
 
   // Función para recargar datos - NUEVA ESTRUCTURA: Items individuales
   const recargarDatos = async () => {
@@ -143,6 +117,37 @@ const PedidosHerreria: React.FC = () => {
         console.log('🎯 ITEMS DEL PEDIDO 68f2bc424dbb7f6039f6ec09:', itemsDelPedido);
         console.log('📊 Cantidad encontrada:', itemsDelPedido.length);
         
+        // Verificar si hay items del 18/10/2025
+        const items18Oct = itemsArray.filter((item: any) => {
+          const fechaCreacion = item.fecha_creacion || item.pedido_fecha_creacion;
+          if (fechaCreacion) {
+            const fecha = new Date(fechaCreacion);
+            const es18Oct = fecha.getDate() === 18 && fecha.getMonth() === 9; // Octubre es mes 9 (0-indexado)
+            if (es18Oct) {
+              console.log('🎯 ITEM DEL 18/10/2025 ENCONTRADO:', item);
+            }
+            return es18Oct;
+          }
+          return false;
+        });
+        
+        console.log('📅 Items del 18/10/2025 encontrados:', items18Oct.length);
+        console.log('📅 Items del 18/10/2025:', items18Oct);
+        
+        // Verificar estados de items
+        const estadosCount = itemsArray.reduce((acc: any, item: any) => {
+          const estado = item.estado_item || 0;
+          acc[estado] = (acc[estado] || 0) + 1;
+          return acc;
+        }, {});
+        
+        console.log('📊 Conteo de estados_item:', estadosCount);
+        
+        // Verificar pedidos únicos
+        const pedidosUnicos = [...new Set(itemsArray.map((item: any) => item.pedido_id))];
+        console.log('📋 Pedidos únicos encontrados:', pedidosUnicos.length);
+        console.log('📋 Primeros 5 pedidos:', pedidosUnicos.slice(0, 5));
+        
         if (itemsDelPedido.length === 0) {
           console.log('❌ NO SE ENCONTRARON ITEMS DEL PEDIDO');
           console.log('🔍 Todos los pedido_ids disponibles:', itemsArray.map((item: any) => item.pedido_id));
@@ -158,6 +163,7 @@ const PedidosHerreria: React.FC = () => {
       
       if (Array.isArray(itemsArray)) {
         setItemsIndividuales(itemsArray);
+        setUltimaActualizacion(new Date()); // Actualizar timestamp
         console.log('✅ Items individuales cargados:', itemsArray.length);
         
         // Cargar progreso de todos los items
@@ -195,6 +201,17 @@ const PedidosHerreria: React.FC = () => {
   useEffect(() => {
     recargarDatos();
   }, [filtrosAplicados]);
+
+  // Actualización automática cada 5 minutos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log('🔄 Actualización automática cada 5 minutos...');
+      recargarDatos();
+    }, 5 * 60 * 1000); // 5 minutos en milisegundos
+
+    // Limpiar el intervalo cuando el componente se desmonte
+    return () => clearInterval(interval);
+  }, []);
 
   // Debug: Log todos los items cuando cambien
   useEffect(() => {
@@ -265,6 +282,15 @@ const PedidosHerreria: React.FC = () => {
     <Card className="max-w-4xl mx-auto mt-8 border-gray-200">
       <CardHeader>
         <CardTitle>Gestión de Items Individuales - PedidosHerreria</CardTitle>
+        
+        {/* Indicador de última actualización */}
+        <div className="text-sm text-gray-600 mt-2">
+          <span className="inline-flex items-center gap-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            Última actualización: {ultimaActualizacion.toLocaleTimeString()}
+            <span className="text-gray-400">(Se actualiza cada 5 minutos)</span>
+          </span>
+        </div>
         
         {/* Controles de Filtro Mejorados */}
         <div className="flex gap-4 mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
@@ -345,6 +371,22 @@ const PedidosHerreria: React.FC = () => {
                       console.log('❌ DEBUG - NO SE ENCONTRÓ EL PEDIDO');
                       console.log('🔍 DEBUG - Todos los pedido_ids disponibles:', data.items.map((item: any) => item.pedido_id));
                     }
+                    
+                    // Debug: Mostrar todos los estados de items
+                    console.log('🔍 DEBUG - Estados de todos los items:', data.items.map((item: any) => ({
+                      pedido_id: item.pedido_id,
+                      nombre: item.nombre,
+                      estado_item: item.estado_item,
+                      fecha_creacion: item.fecha_creacion
+                    })));
+                    
+                    // Debug: Contar items por estado
+                    const estadosCount = data.items.reduce((acc: any, item: any) => {
+                      const estado = item.estado_item || 'sin_estado';
+                      acc[estado] = (acc[estado] || 0) + 1;
+                      return acc;
+                    }, {});
+                    console.log('🔍 DEBUG - Conteo por estado:', estadosCount);
                   }
                 } catch (error) {
                   console.error('🔍 DEBUG - Error:', error);
@@ -355,10 +397,13 @@ const PedidosHerreria: React.FC = () => {
               Debug API
             </Button>
             <Button 
-              onClick={inicializarItemsExistentes}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2"
+              onClick={() => {
+                console.log('🔄 Recargando datos manualmente...');
+                recargarDatos();
+              }}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2"
             >
-              🔧 Inicializar Items Existentes
+              🔄 Recargar Datos
             </Button>
           </div>
         </div>
