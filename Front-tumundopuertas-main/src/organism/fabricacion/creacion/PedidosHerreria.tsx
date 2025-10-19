@@ -54,11 +54,32 @@ const PedidosHerreria: React.FC = () => {
   // Función para obtener progreso de un item
   const obtenerProgresoItem = async (pedidoId: string, itemId: string) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/item-estado/${pedidoId}/${itemId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/item-estado/${pedidoId}/${itemId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Agregar timeout y manejo de errores de conectividad
+        signal: AbortSignal.timeout(10000) // 10 segundos timeout
+      });
+      
+      if (!response.ok) {
+        console.warn(`⚠️ Error ${response.status} al obtener progreso del item ${itemId}`);
+        return { progreso: 0 };
+      }
+      
       const data = await response.json();
       return data;
-    } catch (error) {
-      console.error('Error al obtener progreso del item:', error);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.warn('⏰ Timeout al obtener progreso del item:', itemId);
+      } else if (error.message?.includes('ERR_CERT_VERIFIER_CHANGED')) {
+        console.warn('🔒 Error de certificado SSL - backend puede estar reiniciando');
+      } else if (error.message?.includes('Failed to fetch')) {
+        console.warn('🌐 Error de conectividad con el backend');
+      } else {
+        console.error('❌ Error al obtener progreso del item:', error);
+      }
       return { progreso: 0 };
     }
   };
@@ -147,7 +168,20 @@ const PedidosHerreria: React.FC = () => {
       console.log('📡 URL de filtro optimizada:', urlFiltro);
       
       // NUEVA ESTRUCTURA: Obtener items individuales directamente
-      const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}${urlFiltro}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}${urlFiltro}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(15000) // 15 segundos timeout para carga principal
+      });
+      
+      if (!response.ok) {
+        console.error(`❌ Error ${response.status} al cargar items de herrería`);
+        setError(`Error del servidor: ${response.status}`);
+        return;
+      }
+      
       const data = await response.json();
       
       console.log('📋 Respuesta del backend:', data);
@@ -261,9 +295,20 @@ const PedidosHerreria: React.FC = () => {
       
       await fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
       console.log('✅ Datos recargados exitosamente usando nueva estructura');
-    } catch (error) {
-      console.error('❌ Error al recargar datos:', error);
-      setError("Error al recargar los items");
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        console.warn('⏰ Timeout al cargar datos de herrería');
+        setError('La carga está tardando demasiado. Por favor, intenta nuevamente.');
+      } else if (error.message?.includes('ERR_CERT_VERIFIER_CHANGED')) {
+        console.warn('🔒 Error de certificado SSL - backend puede estar reiniciando');
+        setError('El servidor está reiniciando. Por favor, espera unos minutos e intenta nuevamente.');
+      } else if (error.message?.includes('Failed to fetch')) {
+        console.warn('🌐 Error de conectividad con el backend');
+        setError('Error de conectividad. Verifica tu conexión a internet e intenta nuevamente.');
+      } else {
+        console.error('❌ Error al recargar datos:', error);
+        setError('Error al cargar los datos. Por favor, intenta nuevamente.');
+      }
     } finally {
       setLoading(false);
     }
