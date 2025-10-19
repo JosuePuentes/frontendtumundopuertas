@@ -190,41 +190,25 @@ const PedidosHerreria: React.FC = () => {
       console.log('🔍 Es array?', Array.isArray(data));
       console.log('🔍 Tiene propiedad items?', 'items' in data);
       
-      // Debug detallado de fechas
+      // Debug simplificado de fechas
       if (data.items && Array.isArray(data.items)) {
-        console.log('🔍 DEBUG FECHAS - Primeros 5 items con todas sus fechas:');
-        data.items.slice(0, 5).forEach((item: any, index: number) => {
-          console.log(`Item ${index + 1}:`, {
-            id: item.id,
-            pedido_id: item.pedido_id,
-            nombre: item.nombre,
-            fecha_creacion: item.fecha_creacion,
-            pedido_fecha_creacion: item.pedido_fecha_creacion,
-            fecha_asignacion: item.fecha_asignacion,
-            fecha_terminacion: item.fecha_terminacion,
-            todas_las_fechas: Object.keys(item).filter(key => key.includes('fecha') || key.includes('date') || key.includes('creacion'))
-          });
-        });
+        console.log('📋 Items cargados:', data.items.length);
         
-        // Debug de fechas más recientes
-        const fechasRecientes = data.items
-          .map((item: any) => ({
-            id: item.id,
-            pedido_id: item.pedido_id,
-            nombre: item.nombre,
-            fecha_creacion: item.fecha_creacion,
-            pedido_fecha_creacion: item.pedido_fecha_creacion,
-            fecha_creacion_parsed: item.fecha_creacion ? new Date(item.fecha_creacion) : null,
-            pedido_fecha_creacion_parsed: item.pedido_fecha_creacion ? new Date(item.pedido_fecha_creacion) : null
-          }))
-          .sort((a: any, b: any) => {
-            const fechaA = new Date(a.pedido_fecha_creacion || a.fecha_creacion || 0).getTime();
-            const fechaB = new Date(b.pedido_fecha_creacion || b.fecha_creacion || 0).getTime();
-            return fechaB - fechaA;
-          })
-          .slice(0, 3);
-          
-        console.log('🔍 DEBUG FECHAS - Los 3 items más recientes:', fechasRecientes);
+        // Solo mostrar un resumen de fechas
+        const itemsConFechas = data.items.filter((item: any) => 
+          item.pedido_fecha_creacion || item.fecha_creacion || item.created_at
+        );
+        
+        console.log('📅 Items con fechas:', itemsConFechas.length);
+        
+        if (itemsConFechas.length > 0) {
+          const primerItem = itemsConFechas[0];
+          console.log('📅 Ejemplo de fecha (primer item):', {
+            pedido_fecha_creacion: primerItem.pedido_fecha_creacion,
+            fecha_creacion: primerItem.fecha_creacion,
+            created_at: primerItem.created_at
+          });
+        }
       }
       
       // El backend ahora devuelve {items: Array} o Array directo
@@ -585,12 +569,21 @@ const PedidosHerreria: React.FC = () => {
             </Button>
             <Button 
               onClick={() => {
-                console.log('🔍 DEBUG FECHAS - Analizando todos los items:');
+                console.clear(); // Limpiar consola primero
+                console.log('🔍 DEBUG FECHAS SIMPLIFICADO');
+                console.log('================================');
+                
                 const hoy = new Date();
                 const hace7Dias = new Date(hoy);
                 hace7Dias.setDate(hoy.getDate() - 7);
                 
-                itemsIndividuales.forEach((item, index) => {
+                console.log(`📅 Hoy: ${hoy.toLocaleDateString()}`);
+                console.log(`📅 Hace 7 días: ${hace7Dias.toLocaleDateString()}`);
+                console.log('');
+                
+                // Solo mostrar los primeros 3 items con información detallada
+                console.log('🔍 PRIMEROS 3 ITEMS:');
+                itemsIndividuales.slice(0, 3).forEach((item, index) => {
                   const fechaItem = new Date(
                     item.pedido_fecha_creacion || 
                     item.fecha_creacion || 
@@ -602,24 +595,21 @@ const PedidosHerreria: React.FC = () => {
                   const esValido = !isNaN(fechaItem.getTime());
                   const esReciente = esValido && fechaItem >= hace7Dias;
                   
-                  if (index < 10) { // Solo mostrar los primeros 10 para no saturar
-                    console.log(`Item ${index + 1}:`, {
-                      id: item.id,
-                      pedido_id: item.pedido_id,
-                      nombre: item.nombre,
-                      fechaItem: fechaItem.toLocaleDateString(),
-                      esValido,
-                      esReciente,
-                      campos_fecha: {
-                        pedido_fecha_creacion: item.pedido_fecha_creacion,
-                        fecha_creacion: item.fecha_creacion,
-                        created_at: item.created_at,
-                        fecha_asignacion: item.fecha_asignacion
-                      }
-                    });
-                  }
+                  console.log(`Item ${index + 1}:`, {
+                    nombre: item.nombre.substring(0, 30) + '...',
+                    fechaItem: fechaItem.toLocaleDateString(),
+                    esValido,
+                    esReciente,
+                    campos_fecha: {
+                      pedido_fecha_creacion: item.pedido_fecha_creacion,
+                      fecha_creacion: item.fecha_creacion,
+                      created_at: item.created_at,
+                      fecha_asignacion: item.fecha_asignacion
+                    }
+                  });
                 });
                 
+                // Contar items por rango de fechas
                 const itemsRecientes = itemsIndividuales.filter(item => {
                   const fechaItem = new Date(
                     item.pedido_fecha_creacion || 
@@ -631,9 +621,32 @@ const PedidosHerreria: React.FC = () => {
                   return !isNaN(fechaItem.getTime()) && fechaItem >= hace7Dias;
                 });
                 
-                console.log(`📊 Total items: ${itemsIndividuales.length}`);
-                console.log(`📊 Items de últimos 7 días: ${itemsRecientes.length}`);
-                console.log(`📊 Filtro actual: ${filtroFecha}`);
+                const itemsHoy = itemsIndividuales.filter(item => {
+                  const fechaItem = new Date(
+                    item.pedido_fecha_creacion || 
+                    item.fecha_creacion || 
+                    item.created_at || 
+                    item.fecha_asignacion || 
+                    0
+                  );
+                  return !isNaN(fechaItem.getTime()) && fechaItem.toDateString() === hoy.toDateString();
+                });
+                
+                console.log('');
+                console.log('📊 RESUMEN:');
+                console.log(`Total items: ${itemsIndividuales.length}`);
+                console.log(`Items de hoy: ${itemsHoy.length}`);
+                console.log(`Items últimos 7 días: ${itemsRecientes.length}`);
+                console.log(`Filtro actual: ${filtroFecha}`);
+                
+                if (itemsRecientes.length === 0) {
+                  console.log('');
+                  console.log('⚠️ PROBLEMA: No hay items recientes');
+                  console.log('Posibles causas:');
+                  console.log('1. Las fechas están en formato incorrecto');
+                  console.log('2. Las fechas son muy antiguas');
+                  console.log('3. El campo de fecha es diferente al esperado');
+                }
               }}
               className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2"
             >
