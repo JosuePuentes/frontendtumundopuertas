@@ -85,7 +85,34 @@ const PedidosHerreria: React.FC = () => {
     });
   };
 
-  // Función para inicializar estado_item en items existentes
+  // Función temporal para inicializar items existentes (SOLO PARA PRUEBAS)
+  const inicializarItemsExistentes = async () => {
+    try {
+      console.log('🔄 Inicializando estado_item en items existentes...');
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/inicializar-estado-items/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const result = await response.json();
+      console.log('✅ Resultado:', result);
+      
+      if (result.items_actualizados > 0) {
+        console.log(`✅ Se inicializaron ${result.items_actualizados} items`);
+        // Recargar los datos después de la inicialización
+        await recargarDatos();
+      } else {
+        console.log('ℹ️ No había items para inicializar');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Error inicializando items:', error);
+    }
+  };
 
   // Función para recargar datos - NUEVA ESTRUCTURA: Items individuales
   const recargarDatos = async () => {
@@ -111,11 +138,16 @@ const PedidosHerreria: React.FC = () => {
       console.log('📋 Items extraídos:', itemsArray);
       console.log('📊 Cantidad de items:', Array.isArray(itemsArray) ? itemsArray.length : 'No es array');
       
-      // Debug específico para el pedido que estamos buscando
-      if (Array.isArray(itemsArray)) {
-        const itemsDelPedido = itemsArray.filter((item: any) => item.pedido_id === "68f2bc424dbb7f6039f6ec09");
-        console.log('🎯 ITEMS DEL PEDIDO 68f2bc424dbb7f6039f6ec09:', itemsDelPedido);
-        console.log('📊 Cantidad encontrada:', itemsDelPedido.length);
+        // Debug específico para los pedidos que estamos buscando
+        if (Array.isArray(itemsArray)) {
+          const itemsDelPedidoAntiguo = itemsArray.filter((item: any) => item.pedido_id === "68f2bc424dbb7f6039f6ec09");
+          const itemsDelPedidoNuevo = itemsArray.filter((item: any) => item.pedido_id === "68f446c8b2b5fb8a533eff63");
+          
+          console.log('🎯 ITEMS DEL PEDIDO ANTIGUO 68f2bc424dbb7f6039f6ec09:', itemsDelPedidoAntiguo);
+          console.log('📊 Cantidad encontrada (antiguo):', itemsDelPedidoAntiguo.length);
+          
+          console.log('🎯 ITEMS DEL PEDIDO NUEVO 68f446c8b2b5fb8a533eff63:', itemsDelPedidoNuevo);
+          console.log('📊 Cantidad encontrada (nuevo):', itemsDelPedidoNuevo.length);
         
         // Verificar si hay items del 18/10/2025
         const items18Oct = itemsArray.filter((item: any) => {
@@ -404,6 +436,12 @@ const PedidosHerreria: React.FC = () => {
               className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2"
             >
               🔄 Recargar Datos
+            </Button>
+            <Button 
+              onClick={inicializarItemsExistentes}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2"
+            >
+              🔧 Inicializar Items Existentes (PRUEBA)
             </Button>
           </div>
         </div>
