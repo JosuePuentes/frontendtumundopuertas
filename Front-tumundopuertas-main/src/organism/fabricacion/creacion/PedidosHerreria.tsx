@@ -85,6 +85,34 @@ const PedidosHerreria: React.FC = () => {
     }
   };
 
+  // Función de prueba para verificar la conexión con el backend
+  const testBackendConnection = async () => {
+    try {
+      console.log('🔍 Probando conexión con el backend...');
+      
+      const response = await fetch('https://crafteo.onrender.com/pedidos/herreria/?ordenar=fecha_desc&limite=5', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('📡 Status:', response.status);
+      console.log('📡 Headers:', response.headers);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Datos recibidos:', data);
+        console.log('✅ Total items:', data.total_items);
+        console.log('✅ Items mostrados:', data.items_mostrados);
+      } else {
+        console.error('❌ Error:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('❌ Error de conexión:', error);
+    }
+  };
+
   // Función temporal para inicializar items existentes (SOLO PARA PRUEBAS)
   const inicializarItemsExistentes = async () => {
     try {
@@ -355,6 +383,8 @@ const PedidosHerreria: React.FC = () => {
 
 
   useEffect(() => {
+    // Ejecutar prueba de conexión al cargar
+    testBackendConnection();
     recargarDatos();
   }, []);
 
@@ -666,6 +696,13 @@ const PedidosHerreria: React.FC = () => {
               className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2"
             >
               🔧 Inicializar Items Existentes
+            </Button>
+            
+            <Button 
+              onClick={testBackendConnection}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 ml-2"
+            >
+              🔍 Probar Conexión Backend
             </Button>
           </div>
         </div>
