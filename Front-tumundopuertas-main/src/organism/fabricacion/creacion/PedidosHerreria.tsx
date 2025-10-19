@@ -417,6 +417,7 @@ const PedidosHerreria: React.FC = () => {
                 <SelectItem value="todos" className="hover:bg-gray-100">Todos</SelectItem>
                 <SelectItem value="hoy" className="hover:bg-gray-100">Hoy</SelectItem>
                 <SelectItem value="ayer" className="hover:bg-gray-100">Ayer</SelectItem>
+                <SelectItem value="ultimos_7_dias" className="hover:bg-gray-100">Últimos 7 Días</SelectItem>
                 <SelectItem value="esta_semana" className="hover:bg-gray-100">Esta Semana</SelectItem>
                 <SelectItem value="ultima_semana" className="hover:bg-gray-100">Última Semana</SelectItem>
                 <SelectItem value="este_mes" className="hover:bg-gray-100">Este Mes</SelectItem>
@@ -530,6 +531,18 @@ const PedidosHerreria: React.FC = () => {
                   const fechaItem = new Date(item.pedido_fecha_creacion || item.fecha_creacion || 0);
                   const hoy = new Date();
                   
+                  // Debug de fechas
+                  console.log('🔍 Debug filtro fecha:', {
+                    filtro: filtroFecha,
+                    itemId: item.id,
+                    pedidoId: item.pedido_id,
+                    fechaItem: fechaItem.toLocaleDateString(),
+                    fechaItemISO: fechaItem.toISOString(),
+                    hoy: hoy.toLocaleDateString(),
+                    hoyISO: hoy.toISOString(),
+                    fechaValida: !isNaN(fechaItem.getTime())
+                  });
+                  
                   switch (filtroFecha) {
                     case "hoy":
                       return estadoValido && fechaItem.toDateString() === hoy.toDateString();
@@ -551,6 +564,10 @@ const PedidosHerreria: React.FC = () => {
                       return estadoValido && fechaItem.getMonth() === hoy.getMonth() && fechaItem.getFullYear() === hoy.getFullYear();
                     case "octubre_2025":
                       return estadoValido && fechaItem.getMonth() === 9 && fechaItem.getFullYear() === 2025; // Octubre es mes 9
+                    case "ultimos_7_dias":
+                      const hace7Dias = new Date(hoy);
+                      hace7Dias.setDate(hoy.getDate() - 7);
+                      return estadoValido && fechaItem >= hace7Dias;
                     default:
                       return estadoValido;
                   }
