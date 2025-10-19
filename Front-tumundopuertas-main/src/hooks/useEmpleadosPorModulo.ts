@@ -28,28 +28,33 @@ export const useEmpleadosPorModulo = () => {
     try {
       console.log(`🔍 Obteniendo empleados para pedido ${pedidoId}, item ${itemId}...`);
       
-      const response = await fetch(
-        `${getApiUrl()}/pedidos/empleados-por-modulo/${pedidoId}/${itemId}`
-      );
+      // TEMPORAL: El endpoint no existe en el backend, usar fallback
+      console.warn(`⚠️ Endpoint /pedidos/empleados-por-modulo/ no existe en el backend - usando fallback`);
+      
+      // Fallback: Obtener todos los empleados activos
+      const response = await fetch(`${getApiUrl()}/empleados/all/`);
       
       if (!response.ok) {
-        // Para errores 500, no lanzar excepción, devolver array vacío
-        if (response.status === 500) {
-          console.warn(`⚠️ Error 500 en endpoint para pedido ${pedidoId}, item ${itemId} - usando fallback`);
-          return [];
-        }
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        console.warn(`⚠️ Error ${response.status} al obtener empleados - devolviendo array vacío`);
+        return [];
       }
       
-      const data: EmpleadosPorModuloResponse = await response.json();
+      const data = await response.json();
+      const empleadosArray = data.empleados || data;
       
-      console.log('👥 Empleados obtenidos:', {
-        modulo_actual: data.modulo_actual,
-        total_empleados: data.total_empleados,
-        empleados: data.empleados
-      });
+      if (Array.isArray(empleadosArray)) {
+        const empleadosActivos = empleadosArray.filter((emp: any) => emp.activo !== false);
+        console.log(`✅ Fallback: ${empleadosActivos.length} empleados activos obtenidos`);
+        
+        // Convertir al formato esperado
+        return empleadosActivos.map((emp: any) => ({
+          _id: emp._id,
+          nombreCompleto: emp.nombreCompleto || emp.nombre || 'Sin nombre',
+          permisos: emp.permisos || []
+        }));
+      }
       
-      return data.empleados || [];
+      return [];
       
     } catch (error: any) {
       console.error('❌ Error al obtener empleados por módulo:', error);

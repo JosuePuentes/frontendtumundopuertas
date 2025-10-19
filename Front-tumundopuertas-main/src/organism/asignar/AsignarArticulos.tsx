@@ -113,29 +113,17 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     for (const item of items) {
       try {
-        console.log(`🔍 Cargando empleados para item ${item.id} del pedido ${pedidoId} usando endpoint optimizado...`);
+        console.log(`🔍 Cargando empleados para item ${item.id} del pedido ${pedidoId}...`);
         
-        // OPTIMIZADO: Usar el endpoint optimizado del backend para obtener empleados filtrados
-        const response = await fetch(`${getApiUrl()}/pedidos/empleados-por-modulo/${pedidoId}/${item.id}`);
+        // TEMPORAL: El endpoint no existe en el backend, usar fallback
+        console.warn(`⚠️ Endpoint /pedidos/empleados-por-modulo/ no existe en el backend - usando empleados generales`);
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`✅ Empleados filtrados obtenidos del backend para item ${item.id}:`, data);
-          
-          if (data.empleados && Array.isArray(data.empleados)) {
-            empleadosPorItemData[item.id] = data.empleados;
-            console.log(`✅ ${data.empleados.length} empleados filtrados para item ${item.id}`);
-          } else {
-            // Fallback a empleados generales si no hay respuesta válida
-            empleadosPorItemData[item.id] = empleados;
-            console.log(`⚠️ Respuesta inválida del backend, usando empleados generales para item ${item.id}`);
-          }
-        } else {
-          console.warn(`⚠️ Error ${response.status} al obtener empleados filtrados para item ${item.id}, usando empleados generales`);
-          empleadosPorItemData[item.id] = empleados;
-        }
+        // Fallback: Usar empleados generales
+        empleadosPorItemData[item.id] = empleados;
+        console.log(`✅ ${empleados.length} empleados generales para item ${item.id}`);
+        
       } catch (error) {
-        console.error(`❌ Error al cargar empleados filtrados para item ${item.id}:`, error);
+        console.error(`❌ Error al cargar empleados para item ${item.id}:`, error);
         // Fallback a empleados generales si hay error
         empleadosPorItemData[item.id] = empleados;
         console.log(`🔄 Usando empleados generales como fallback para item ${item.id}`);

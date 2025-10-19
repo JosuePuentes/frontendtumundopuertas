@@ -60,6 +60,35 @@ const PedidosHerreria: React.FC = () => {
       return { progreso: 0 };
     }
   };
+
+  // Función temporal para inicializar items existentes (SOLO PARA PRUEBAS)
+  const inicializarItemsExistentes = async () => {
+    try {
+      console.log('🔄 Inicializando estado_item en items existentes...');
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/inicializar-estado-items/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const result = await response.json();
+      console.log('✅ Resultado:', result);
+      
+      if (result.items_actualizados > 0) {
+        console.log(`✅ Se inicializaron ${result.items_actualizados} items`);
+        // Recargar los datos después de la inicialización
+        await recargarDatos();
+      } else {
+        console.log('ℹ️ No había items para inicializar');
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Error inicializando items:', error);
+    }
+  };
   
   // Función para construir URL de filtrado dinámico - OPTIMIZADA para herrería
   const construirUrlFiltro = () => {

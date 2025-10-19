@@ -116,16 +116,45 @@ export const useItemsDisponibles = () => {
         itemId
       });
       
-      const response = await fetch(`${getApiUrl()}/pedidos/empleados-por-modulo/${pedidoId}/${itemId}`);
+      // TEMPORAL: El endpoint no existe en el backend, usar fallback
+      console.warn(`⚠️ Endpoint /pedidos/empleados-por-modulo/ no existe en el backend - usando fallback`);
+      
+      // Fallback: Obtener todos los empleados activos
+      const response = await fetch(`${getApiUrl()}/empleados/all/`);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
-      const result = await response.json();
-      console.log('👥 Empleados obtenidos:', result);
+      const data = await response.json();
+      const empleadosArray = data.empleados || data;
       
-      return result;
+      if (Array.isArray(empleadosArray)) {
+        const empleadosActivos = empleadosArray.filter((emp: any) => emp.activo !== false);
+        
+        const result = {
+          empleados: empleadosActivos.map((emp: any) => ({
+            _id: emp._id,
+            nombre: emp.nombreCompleto || emp.nombre || 'Sin nombre',
+            tipo: emp.tipo || 'general',
+            activo: emp.activo !== false
+          })),
+          modulo_actual: 'herreria', // Valor por defecto
+          tipos_requeridos: ['herreria'],
+          total_empleados: empleadosActivos.length
+        };
+        
+        console.log('👥 Empleados obtenidos (fallback):', result);
+        return result;
+      }
+      
+      // Devolver estructura vacía si no hay empleados
+      return {
+        empleados: [],
+        modulo_actual: 'herreria',
+        tipos_requeridos: ['herreria'],
+        total_empleados: 0
+      };
       
     } catch (err: any) {
       console.error('❌ Error al obtener empleados:', err);
