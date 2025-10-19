@@ -173,8 +173,12 @@ const PedidosHerreria: React.FC = () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Cache-Control': 'no-cache', // Evitar caché
+          'Pragma': 'no-cache',
+          'If-Modified-Since': '0' // Forzar actualización
         },
-        signal: AbortSignal.timeout(15000) // 15 segundos timeout para carga principal
+        signal: AbortSignal.timeout(25000) // 25 segundos timeout para carga principal
       });
       
       if (!response.ok) {
@@ -226,6 +230,19 @@ const PedidosHerreria: React.FC = () => {
           
           console.log('🎯 ITEMS DEL PEDIDO NUEVO 68f446c8b2b5fb8a533eff63:', itemsDelPedidoNuevo);
           console.log('📊 Cantidad encontrada (nuevo):', itemsDelPedidoNuevo.length);
+          
+          // Debug específico del pedido de hoy (19/10/2025)
+          if (itemsDelPedidoNuevo.length > 0) {
+            console.log('🎯 ¡ENCONTRADO! Pedido de hoy:', {
+              pedido_id: itemsDelPedidoNuevo[0].pedido_id,
+              fecha_creacion: itemsDelPedidoNuevo[0].fecha_creacion,
+              pedido_fecha_creacion: itemsDelPedidoNuevo[0].pedido_fecha_creacion,
+              estado_item: itemsDelPedidoNuevo[0].estado_item,
+              nombre: itemsDelPedidoNuevo[0].nombre
+            });
+          } else {
+            console.log('❌ NO ENCONTRADO: El pedido de hoy no está en la respuesta del backend');
+          }
         
         // Debug de fechas de todos los items
         console.log('📅 DEBUG DE FECHAS - Primeros 10 items:');
