@@ -50,7 +50,8 @@ export const useEmpleadosPorModulo = () => {
         return empleadosActivos.map((emp: any) => ({
           _id: emp._id,
           nombreCompleto: emp.nombreCompleto || emp.nombre || 'Sin nombre',
-          permisos: emp.permisos || []
+          permisos: emp.permisos || [],
+          identificador: emp.identificador || emp._id // Agregar identificador requerido
         }));
       }
       

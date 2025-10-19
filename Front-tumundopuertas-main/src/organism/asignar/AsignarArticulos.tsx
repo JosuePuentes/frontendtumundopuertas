@@ -5,7 +5,7 @@ import { useEstadoItems } from "@/hooks/useEstadoItems";
 import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
 import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
 import GestorEmpleadosAutomatico from "@/components/GestorEmpleadosAutomatico";
-import { getApiUrl } from "@/lib/api";
+// import { getApiUrl } from "@/lib/api"; // Removido - no se usa
 
 interface PedidoItem {
   id: string;
