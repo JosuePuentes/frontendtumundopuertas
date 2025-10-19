@@ -180,16 +180,25 @@ const PedidosHerreria: React.FC = () => {
         console.log('📋 Pedidos únicos encontrados:', pedidosUnicos.length);
         console.log('📋 Primeros 5 pedidos:', pedidosUnicos.slice(0, 5));
         
-        if (itemsDelPedido.length === 0) {
-          console.log('❌ NO SE ENCONTRARON ITEMS DEL PEDIDO');
+        if (itemsDelPedidoAntiguo.length === 0 && itemsDelPedidoNuevo.length === 0) {
+          console.log('❌ NO SE ENCONTRARON ITEMS DE LOS PEDIDOS BUSCADOS');
           console.log('🔍 Todos los pedido_ids disponibles:', itemsArray.map((item: any) => item.pedido_id));
           console.log('💡 SOLUCIÓN: Haz clic en "🔧 Inicializar Items Existentes" para inicializar items sin estado_item');
         } else {
-          console.log('✅ ITEMS ENCONTRADOS - Estados:', itemsDelPedido.map((item: any) => ({
-            id: item.id,
-            nombre: item.nombre,
-            estado_item: item.estado_item
-          })));
+          if (itemsDelPedidoAntiguo.length > 0) {
+            console.log('✅ ITEMS DEL PEDIDO ANTIGUO ENCONTRADOS - Estados:', itemsDelPedidoAntiguo.map((item: any) => ({
+              id: item.id,
+              nombre: item.nombre,
+              estado_item: item.estado_item
+            })));
+          }
+          if (itemsDelPedidoNuevo.length > 0) {
+            console.log('✅ ITEMS DEL PEDIDO NUEVO ENCONTRADOS - Estados:', itemsDelPedidoNuevo.map((item: any) => ({
+              id: item.id,
+              nombre: item.nombre,
+              estado_item: item.estado_item
+            })));
+          }
         }
       }
       
