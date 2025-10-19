@@ -173,6 +173,9 @@ const PedidosHerreria: React.FC = () => {
     // Agregar ordenamiento por fecha (más recientes primero)
     params.append("ordenar", "fecha_desc");
     
+    // SOLUCIÓN: Siempre agregar un límite para evitar problemas de CORS
+    params.append("limite", "100");
+    
     return `/pedidos/herreria/?${params.toString()}`;
   };
 
