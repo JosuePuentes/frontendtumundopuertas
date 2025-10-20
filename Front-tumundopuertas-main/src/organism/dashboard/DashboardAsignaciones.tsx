@@ -136,10 +136,24 @@ const DashboardAsignaciones: React.FC = () => {
           console.log('🎯 ESTADO FINAL - asignacionesData.length:', asignacionesData.length);
           console.log('🎯 ESTADO FINAL - asignacionesData[0]:', asignacionesData[0]);
           
+          // ORDENAR POR FECHA DE ASIGNACIÓN (MÁS RECIENTES PRIMERO)
+          const asignacionesOrdenadas = asignacionesData.sort((a, b) => {
+            const fechaA = new Date(a.fecha_asignacion).getTime();
+            const fechaB = new Date(b.fecha_asignacion).getTime();
+            return fechaB - fechaA; // Orden descendente (más recientes primero)
+          });
+          
+          console.log('📅 Asignaciones ordenadas por fecha (más recientes primero)');
+          console.log('📅 Primeras 3 fechas:', asignacionesOrdenadas.slice(0, 3).map(a => ({
+            item: a.descripcionitem,
+            fecha: new Date(a.fecha_asignacion).toLocaleDateString(),
+            timestamp: new Date(a.fecha_asignacion).getTime()
+          })));
+          
           // FORZAR ACTUALIZACIÓN DEL ESTADO
-          console.log('🔄 Actualizando estado con asignaciones...');
-          setAsignaciones(asignacionesData);
-          console.log('✅ Estado actualizado');
+          console.log('🔄 Actualizando estado con asignaciones ordenadas...');
+          setAsignaciones(asignacionesOrdenadas);
+          console.log('✅ Estado actualizado con ordenamiento');
           
         } else {
           console.log('⚠️ No hay asignaciones en proceso - asignacionesArray no es array o está vacío');
