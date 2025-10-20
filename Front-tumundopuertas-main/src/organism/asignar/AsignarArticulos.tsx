@@ -56,7 +56,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   empleados,
   pedidoId,
   numeroOrden,
-  estado_general,
+  estado_general: _estado_general, // Prefijo con _ para indicar que no se usa
   tipoEmpleado,
 }) => {
   const [asignaciones, setAsignaciones] = useState<
