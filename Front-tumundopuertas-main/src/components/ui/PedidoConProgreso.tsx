@@ -73,7 +73,14 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       setLoadingProgreso(true);
       console.log(`🔍 Obteniendo progreso preciso para pedido ${pedido._id}...`);
       
-      const response = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`);
+      const response = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // OPTIMIZACIÓN: Reducir timeout para evitar bloqueos
+        signal: AbortSignal.timeout(5000) // 5 segundos en lugar de 10
+      });
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -92,7 +99,11 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       setProgresoBackend(dataCompatible);
       
     } catch (err: any) {
-      console.error('❌ Error al obtener progreso preciso:', err);
+      if (err.name === 'AbortError') {
+        console.warn(`⏰ Timeout al obtener progreso del pedido ${pedido._id} - usando progreso del hook`);
+      } else {
+        console.error('❌ Error al obtener progreso preciso:', err);
+      }
       // Mantener progreso del hook como fallback
     } finally {
       setLoadingProgreso(false);

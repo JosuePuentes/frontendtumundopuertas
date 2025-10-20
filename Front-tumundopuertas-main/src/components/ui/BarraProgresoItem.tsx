@@ -37,7 +37,14 @@ const BarraProgresoItem: React.FC<BarraProgresoItemProps> = ({
       
       console.log(`🔍 Obteniendo progreso para pedido ${pedidoId}...`);
       
-      const response = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedidoId}`);
+      const response = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedidoId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // OPTIMIZACIÓN: Reducir timeout para evitar bloqueos
+        signal: AbortSignal.timeout(5000) // 5 segundos en lugar de 10
+      });
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -63,8 +70,12 @@ const BarraProgresoItem: React.FC<BarraProgresoItemProps> = ({
       }
       
     } catch (err: any) {
-      console.error('❌ Error al obtener progreso:', err);
-      setError(err.message);
+      if (err.name === 'AbortError') {
+        console.warn(`⏰ Timeout al obtener progreso del pedido ${pedidoId} - usando progreso básico`);
+      } else {
+        console.error('❌ Error al obtener progreso:', err);
+        setError(err.message);
+      }
       
       // Fallback: crear progreso básico en caso de error
       const progresoBasico: ProgresoModulo[] = modulos.map(modulo => ({
