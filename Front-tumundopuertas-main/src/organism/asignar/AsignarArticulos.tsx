@@ -280,37 +280,57 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     const asignacionesParaEnviar = asignacionesValidas.map(([key, asignacion]) => {
       const [itemId] = key.split('-');
       
+      // Encontrar el item completo para obtener sus propiedades
+      const itemCompleto = items.find(item => item.id === itemId);
+      
+      console.log('🔍 DEBUG FRONTEND - Datos antes de enviar:');
+      console.log('itemId:', itemId);
+      console.log('itemCompleto:', itemCompleto);
+      console.log('asignacion:', asignacion);
+      
+      // Verificar propiedades del item
+      console.log('Propiedades del item:', Object.keys(itemCompleto || {}));
+      console.log('Propiedades de la asignación:', Object.keys(asignacion));
+      
       // Determinar el módulo basado en el estado del item
       const estadoItem = obtenerEstadoItem(itemId);
       let modulo = "herreria"; // Por defecto
       
-      switch (estadoItem) {
-        case "1":
-        case "herreria":
-          modulo = "herreria";
-          break;
-        case "2":
-        case "masillar":
-          modulo = "masillar";
-          break;
-        case "3":
-        case "preparar":
-          modulo = "preparar";
-          break;
-        case "4":
-        case "facturar":
-          modulo = "facturar";
-          break;
-        default:
-          modulo = "herreria";
+      // Mapeo del módulo según el estado del item
+      const moduloMap = {
+        1: "herreria",
+        2: "masillar", 
+        3: "preparar",
+        4: "facturar"
+      };
+      
+      modulo = moduloMap[estadoItem] || "herreria";
+      
+      console.log('Estado item:', estadoItem);
+      console.log('Módulo mapeado:', modulo);
+      
+      // Construir el objeto con los nombres correctos de propiedades
+      const datosParaEnviar = {
+        pedido_id: pedidoId,  // ✅ Debe tener valor
+        item_id: itemCompleto?.id || itemId,  // Usar el ID correcto del item
+        empleado_id: asignacion.empleadoId,    // Usar el ID del empleado
+        modulo: modulo              // Usar el módulo mapeado
+      };
+      
+      console.log('📤 Datos que se enviarán:', datosParaEnviar);
+      
+      // Verificar que ningún campo sea null/undefined
+      if (!datosParaEnviar.pedido_id || !datosParaEnviar.item_id || 
+          !datosParaEnviar.empleado_id || !datosParaEnviar.modulo) {
+        console.error('❌ Faltan datos requeridos:', datosParaEnviar);
+        console.error('❌ Verificar:');
+        console.error('  - pedido_id:', datosParaEnviar.pedido_id);
+        console.error('  - item_id:', datosParaEnviar.item_id);
+        console.error('  - empleado_id:', datosParaEnviar.empleado_id);
+        console.error('  - modulo:', datosParaEnviar.modulo);
       }
       
-      return {
-        pedido_id: pedidoId,
-        item_id: itemId,
-        empleado_id: asignacion.empleadoId,
-        modulo: modulo
-      };
+      return datosParaEnviar;
     });
     
     console.log('📤 Datos a enviar (formato corregido):', asignacionesParaEnviar);
