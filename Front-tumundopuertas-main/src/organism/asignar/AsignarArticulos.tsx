@@ -315,6 +315,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       };
       
       console.log('📤 Datos que se enviarán (formato exacto):', datosParaEnviar);
+      console.log('🚀 Deploy fix - Forzar actualización');
       
       // Verificar que ningún campo sea null/undefined/vacío
       if (!datosParaEnviar.pedido_id || !datosParaEnviar.item_id || 
