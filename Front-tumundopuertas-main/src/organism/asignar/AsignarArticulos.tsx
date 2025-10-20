@@ -276,15 +276,44 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     setLoading(true);
     setMessage("");
     
-    const asignacionPorItem = asignacionesValidas.map(([key, asignacion]) => {
+    // CORREGIDO: Enviar cada asignación individualmente con el formato correcto
+    const asignacionesParaEnviar = asignacionesValidas.map(([key, asignacion]) => {
       const [itemId] = key.split('-');
+      
+      // Determinar el módulo basado en el estado del item
+      const estadoItem = obtenerEstadoItem(itemId);
+      let modulo = "herreria"; // Por defecto
+      
+      switch (estadoItem) {
+        case "1":
+        case "herreria":
+          modulo = "herreria";
+          break;
+        case "2":
+        case "masillar":
+          modulo = "masillar";
+          break;
+        case "3":
+        case "preparar":
+          modulo = "preparar";
+          break;
+        case "4":
+        case "facturar":
+          modulo = "facturar";
+          break;
+        default:
+          modulo = "herreria";
+      }
+      
       return {
-        itemId: itemId,
-        ...asignacion
+        pedido_id: pedidoId,
+        item_id: itemId,
+        empleado_id: asignacion.empleadoId,
+        modulo: modulo
       };
     });
     
-    console.log('📤 Datos a enviar:', asignacionPorItem);
+    console.log('📤 Datos a enviar (formato corregido):', asignacionesParaEnviar);
     
     // Detectar si es cambio (ya existe asignación previa)
     const esCambio = Object.keys(asignadosPrevios).length > 0;
@@ -303,7 +332,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
 
     const consulta: any = {
       pedido_id: pedidoId,
-      asignaciones: asignacionPorItem,
+      asignaciones: asignacionesParaEnviar,
       numero_orden: numeroOrdenFinal, // Usar el número convertido
       estado: "en_proceso",
       estado_general: nuevoEstadoGeneral, // Usar el nuevo estado
@@ -322,6 +351,23 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     console.log('  - estado_general:', consulta.estado_general);
     console.log('  - asignaciones:', consulta.asignaciones);
     console.log('  - tipo_fecha:', consulta.tipo_fecha);
+    
+    // DEBUG ESPECÍFICO: Verificar cada asignación individual
+    console.log('🔍 VERIFICACIÓN DE CAMPOS REQUERIDOS:');
+    asignacionesParaEnviar.forEach((asignacion, index) => {
+      console.log(`📋 Asignación ${index + 1}:`);
+      console.log(`  ✅ pedido_id: "${asignacion.pedido_id}" (${typeof asignacion.pedido_id})`);
+      console.log(`  ✅ item_id: "${asignacion.item_id}" (${typeof asignacion.item_id})`);
+      console.log(`  ✅ empleado_id: "${asignacion.empleado_id}" (${typeof asignacion.empleado_id})`);
+      console.log(`  ✅ modulo: "${asignacion.modulo}" (${typeof asignacion.modulo})`);
+      
+      // Verificar que no sean null/undefined
+      if (!asignacion.pedido_id || !asignacion.item_id || !asignacion.empleado_id || !asignacion.modulo) {
+        console.error(`❌ ERROR: Campos faltantes en asignación ${index + 1}:`, asignacion);
+      } else {
+        console.log(`✅ Asignación ${index + 1} válida`);
+      }
+    });
     
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
@@ -355,7 +401,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       window.dispatchEvent(new CustomEvent('asignacionRealizada', { 
         detail: { 
           pedidoId: pedidoId,
-          asignaciones: asignacionPorItem,
+          asignaciones: asignacionesParaEnviar,
           timestamp: new Date().toISOString()
         } 
       }));
