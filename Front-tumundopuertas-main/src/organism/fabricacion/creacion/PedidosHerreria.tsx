@@ -404,6 +404,26 @@ const PedidosHerreria: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // NUEVO: Escuchar asignaciones realizadas
+  useEffect(() => {
+    const handleAsignacionRealizada = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { pedidoId, asignaciones, timestamp } = customEvent.detail;
+      console.log(`🎯 PedidosHerreria: Asignación realizada detectada:`, { pedidoId, asignaciones, timestamp });
+      
+      // Recargar datos para mostrar el empleado asignado
+      await recargarDatos();
+      
+      console.log(`✅ PedidosHerreria: Datos actualizados después de asignación`);
+    };
+
+    window.addEventListener('asignacionRealizada', handleAsignacionRealizada);
+    
+    return () => {
+      window.removeEventListener('asignacionRealizada', handleAsignacionRealizada);
+    };
+  }, []);
+
   // Debug: Log todos los items cuando cambien
   useEffect(() => {
     if (Array.isArray(itemsIndividuales) && itemsIndividuales.length > 0) {
@@ -902,17 +922,28 @@ const PedidosHerreria: React.FC = () => {
                         </div>
                       )}
                       
-                      {/* Componente de asignación */}
-                <div className="mt-4">
-                  <AsignarArticulos
-                          estado_general="independiente"
-                    numeroOrden="independiente"
-                          items={[item]} // Pasar solo este item individual
-                    empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
-                          pedidoId={item.pedido_id}
-                          tipoEmpleado={[]}
-                  />
-                      </div>
+                      {/* Componente de asignación - Solo mostrar si no hay empleado asignado */}
+                      {!item.empleado_asignado ? (
+                        <div className="mt-4">
+                          <AsignarArticulos
+                            estado_general="independiente"
+                            numeroOrden="independiente"
+                            items={[item]} // Pasar solo este item individual
+                            empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
+                            pedidoId={item.pedido_id}
+                            tipoEmpleado={[]}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm text-green-800 font-medium">
+                            ✅ Item asignado - No se puede reasignar hasta que se termine la asignación
+                          </p>
+                          <p className="text-xs text-green-600 mt-1">
+                            Ve al Dashboard de Asignaciones para terminar esta asignación
+                          </p>
+                        </div>
+                      )}
                 </div>
               </li>
                 );

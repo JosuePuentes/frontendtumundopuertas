@@ -185,6 +185,24 @@ const DashboardAsignaciones: React.FC = () => {
     cargarEmpleados();
   }, []);
 
+  // NUEVO: Escuchar eventos de asignación realizada
+  useEffect(() => {
+    const handleAsignacionRealizada = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { pedidoId, asignaciones, timestamp } = customEvent.detail;
+      console.log('🎯 DashboardAsignaciones: Asignación realizada detectada:', { pedidoId, asignaciones, timestamp });
+      
+      // Recargar asignaciones para mostrar la nueva asignación
+      cargarAsignaciones();
+    };
+
+    window.addEventListener('asignacionRealizada', handleAsignacionRealizada);
+    
+    return () => {
+      window.removeEventListener('asignacionRealizada', handleAsignacionRealizada);
+    };
+  }, []);
+
   // Función para obtener color del módulo
   const obtenerColorModulo = (modulo: string) => {
     const colores: { [key: string]: string } = {
