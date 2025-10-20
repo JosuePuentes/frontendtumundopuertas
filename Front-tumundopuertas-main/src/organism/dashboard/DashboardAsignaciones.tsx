@@ -74,7 +74,7 @@ const DashboardAsignaciones: React.FC = () => {
     }
   };
 
-  // Función simplificada para cargar asignaciones
+  // Función optimizada para cargar asignaciones con múltiples endpoints
   const cargarAsignaciones = async () => {
     setLoading(true);
     setError(null);
@@ -83,30 +83,75 @@ const DashboardAsignaciones: React.FC = () => {
       console.log('🔄 Cargando asignaciones...');
       console.log('🌐 API URL:', getApiUrl());
       
-      // Usar endpoint de comisiones en proceso que tiene datos completos
-      console.log('🔄 Cargando asignaciones con datos completos...');
+      // Intentar primero el endpoint optimizado /asignaciones
+      try {
+        console.log('🔄 Intentando endpoint /asignaciones...');
+        const response = await fetch(`${getApiUrl()}/asignaciones`);
+        console.log('📡 Response /asignaciones status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📋 Datos /asignaciones obtenidos:', data);
+          
+          const asignacionesArray = data.asignaciones || data;
+          console.log('📋 Asignaciones extraídas:', asignacionesArray);
+          
+          if (Array.isArray(asignacionesArray) && asignacionesArray.length > 0) {
+            console.log('✅ Asignaciones obtenidas del endpoint /asignaciones:', asignacionesArray.length);
+            
+            // Convertir al formato esperado
+            const asignacionesData: Asignacion[] = asignacionesArray.map((asig: any) => ({
+              _id: asig._id || `${asig.pedido_id}_${asig.item_id}`,
+              pedido_id: asig.pedido_id,
+              item_id: asig.item_id,
+              empleado_id: asig.empleado_id || "sin_asignar",
+              empleado_nombre: asig.empleado_nombre || asig.nombreempleado || "Sin asignar",
+              modulo: asig.modulo || (asig.orden === 1 ? 'herreria' : 
+                     asig.orden === 2 ? 'masillar' : 
+                     asig.orden === 3 ? 'preparar' : 
+                     asig.orden === 4 ? 'facturar' : 'herreria'),
+              estado: asig.estado || "en_proceso",
+              fecha_asignacion: asig.fecha_asignacion || asig.fecha_inicio || new Date().toISOString(),
+              descripcionitem: asig.descripcionitem || "Sin descripción",
+              detalleitem: asig.detalleitem || "",
+              cliente_nombre: asig.cliente_nombre || asig.cliente?.cliente_nombre || "Sin cliente",
+              costo_produccion: Number(asig.costo_produccion || asig.costoproduccion) || 0,
+              imagenes: asig.imagenes || []
+            }));
+            
+            // Ordenar por fecha (más recientes primero)
+            const asignacionesOrdenadas = asignacionesData.sort((a, b) => {
+              const fechaA = new Date(a.fecha_asignacion).getTime();
+              const fechaB = new Date(b.fecha_asignacion).getTime();
+              return fechaB - fechaA;
+            });
+            
+            setAsignaciones(asignacionesOrdenadas);
+            console.log('✅ Estado actualizado con asignaciones del endpoint /asignaciones');
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Endpoint /asignaciones no disponible, usando fallback...', error);
+      }
+      
+      // Fallback: Usar endpoint de comisiones en proceso
+      console.log('🔄 Usando endpoint de fallback /pedidos/comisiones/produccion/enproceso/...');
       const url = `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`;
       console.log('📡 URL completa:', url);
       
       const response = await fetch(url);
-      
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
+      console.log('📡 Response fallback status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('📋 Datos completos obtenidos:', data);
-        console.log('🔍 Tipo de datos:', Array.isArray(data) ? 'Array' : typeof data);
-        console.log('📊 Cantidad:', Array.isArray(data) ? data.length : 'No es array');
+        console.log('📋 Datos fallback obtenidos:', data);
         
-        // ARREGLADO: El backend devuelve {asignaciones: Array, total: number, success: boolean}
         const asignacionesArray = data.asignaciones || data;
-        console.log('📋 Asignaciones extraídas:', asignacionesArray);
-        console.log('📊 Cantidad de asignaciones:', Array.isArray(asignacionesArray) ? asignacionesArray.length : 'No es array');
+        console.log('📋 Asignaciones fallback extraídas:', asignacionesArray);
         
         if (Array.isArray(asignacionesArray) && asignacionesArray.length > 0) {
-          console.log('📋 Primera asignación:', asignacionesArray[0]);
-          console.log('🔍 Campos disponibles:', Object.keys(asignacionesArray[0]));
+          console.log('✅ Asignaciones obtenidas del endpoint fallback:', asignacionesArray.length);
           
           // Convertir asignaciones del backend al formato esperado
           const asignacionesData: Asignacion[] = asignacionesArray.map((asig: any) => ({
@@ -128,40 +173,21 @@ const DashboardAsignaciones: React.FC = () => {
             imagenes: asig.imagenes || []
           }));
           
-          console.log('✅ Asignaciones convertidas:', asignacionesData.length);
-          console.log('📋 Datos de ejemplo convertido:', asignacionesData[0]);
-          console.log('👥 Empleados únicos:', [...new Set(asignacionesData.map((a: any) => a.empleado_nombre))]);
-          console.log('👥 Clientes únicos:', [...new Set(asignacionesData.map((a: any) => a.cliente_nombre))]);
-          console.log('📅 Fechas:', [...new Set(asignacionesData.map((a: any) => new Date(a.fecha_asignacion).toLocaleDateString()))]);
-          console.log('🎯 ESTADO FINAL - asignacionesData.length:', asignacionesData.length);
-          console.log('🎯 ESTADO FINAL - asignacionesData[0]:', asignacionesData[0]);
-          
-          // ORDENAR POR FECHA DE ASIGNACIÓN (MÁS RECIENTES PRIMERO)
+          // Ordenar por fecha (más recientes primero)
           const asignacionesOrdenadas = asignacionesData.sort((a, b) => {
             const fechaA = new Date(a.fecha_asignacion).getTime();
             const fechaB = new Date(b.fecha_asignacion).getTime();
-            return fechaB - fechaA; // Orden descendente (más recientes primero)
+            return fechaB - fechaA;
           });
           
-          console.log('📅 Asignaciones ordenadas por fecha (más recientes primero)');
-          console.log('📅 Primeras 3 fechas:', asignacionesOrdenadas.slice(0, 3).map(a => ({
-            item: a.descripcionitem,
-            fecha: new Date(a.fecha_asignacion).toLocaleDateString(),
-            timestamp: new Date(a.fecha_asignacion).getTime()
-          })));
-          
-          // FORZAR ACTUALIZACIÓN DEL ESTADO
-          console.log('🔄 Actualizando estado con asignaciones ordenadas...');
           setAsignaciones(asignacionesOrdenadas);
-          console.log('✅ Estado actualizado con ordenamiento');
-          
+          console.log('✅ Estado actualizado con asignaciones del endpoint fallback');
         } else {
-          console.log('⚠️ No hay asignaciones en proceso - asignacionesArray no es array o está vacío');
-          console.log('⚠️ asignacionesArray:', asignacionesArray);
+          console.log('⚠️ No hay asignaciones en proceso');
           setAsignaciones([]);
         }
       } else {
-        console.error('❌ Response no ok:', response.status, response.statusText);
+        console.error('❌ Response fallback no ok:', response.status, response.statusText);
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
@@ -287,16 +313,31 @@ const DashboardAsignaciones: React.FC = () => {
           <h1 className="text-3xl font-bold">Dashboard de Asignaciones</h1>
           <p className="text-gray-600">Gestiona todas las asignaciones de producción</p>
         </div>
-        <Button
-          onClick={cargarAsignaciones}
-          disabled={loading}
-          variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Refrescar
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={cargarAsignaciones}
+            disabled={loading}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refrescar
+          </Button>
+          <Button
+            onClick={() => {
+              console.log('🔍 DEBUG: Verificando pedido específico 68f5d8e235699cda22fa83fa');
+              console.log('🔍 Asignaciones actuales:', asignaciones);
+              console.log('🔍 Asignaciones con pedido_id:', asignaciones.filter(a => a.pedido_id === '68f5d8e235699cda22fa83fa'));
+              console.log('🔍 Asignaciones que contienen el ID:', asignaciones.filter(a => a.pedido_id?.includes('68f5d8e235699cda22fa83fa')));
+            }}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 bg-yellow-100 hover:bg-yellow-200"
+          >
+            🔍 Debug Pedido
+          </Button>
+        </div>
       </div>
 
       {/* Mensaje de estado */}
