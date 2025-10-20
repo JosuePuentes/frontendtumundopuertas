@@ -51,6 +51,19 @@ interface AsignarArticulosProps {
   tipoEmpleado: string[];
 }
 
+// Función debounce para evitar múltiples clicks
+const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return function executedFunction(...args: any[]) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
 const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   items,
   empleados,
@@ -252,7 +265,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     setShowCambio((prev) => ({ ...prev, [`${item.id}-${idx}`]: false }));
   };
 
-  const handleAsignar = async () => {
+  const handleAsignarOriginal = async () => {
     console.log('🚀 INICIANDO ASIGNACIÓN...');
     console.log('📋 Items:', items.length);
     console.log('📋 Asignaciones actuales:', Object.keys(asignaciones).length);
@@ -339,31 +352,61 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       const apiUrl = (import.meta.env.VITE_API_URL || "https://crafteo.onrender.com").replace('http://', 'https://');
       console.log('🔄 Enviando asignaciones individuales a:', `${apiUrl}/pedidos/asignar-item/`);
       
-      // CORREGIDO: Enviar cada asignación individualmente con el formato EXACTO
+      // Función de retry con backoff exponencial para manejar error 429
+      const asignarItemConRetry = async (asignacion: any, maxRetries = 3) => {
+        for (let intento = 0; intento < maxRetries; intento++) {
+          try {
+            console.log(`📤 Intento ${intento + 1}/${maxRetries} - Enviando asignación:`, asignacion);
+            
+            const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
+              method: "PUT",
+              headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem('access_token')}`
+              },
+              body: JSON.stringify(asignacion),
+            });
+            
+            console.log('📡 Respuesta del servidor:', res.status, res.statusText);
+            
+            if (res.ok) {
+              const result = await res.json();
+              console.log('✅ Asignación exitosa:', result);
+              return result;
+            }
+
+            // Manejar error 429 con retry
+            if (res.status === 429 && intento < maxRetries - 1) {
+              const delay = Math.pow(2, intento) * 1000; // 1s, 2s, 4s
+              console.log(`⚠️ Rate limited (429), esperando ${delay}ms antes del intento ${intento + 2}`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              continue;
+            }
+
+            // Otros errores
+            const errorText = await res.text();
+            console.error('❌ Error del servidor:', errorText);
+            throw new Error(`Error ${res.status}: ${errorText}`);
+            
+          } catch (error: any) {
+            if (intento === maxRetries - 1) {
+              console.error(`❌ Todos los intentos fallaron para asignación:`, asignacion);
+              throw error;
+            }
+            console.log(`⚠️ Intento ${intento + 1} falló, reintentando...`, error.message);
+            
+            // Delay antes del siguiente intento
+            const delay = Math.pow(2, intento) * 1000;
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      };
+      
+      // CORREGIDO: Enviar cada asignación individualmente con retry
       const resultados = [];
       
       for (const asignacion of asignacionesParaEnviar) {
-        console.log('📤 Enviando asignación individual:', asignacion);
-        
-        const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
-          method: "PUT",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem('access_token')}`
-          },
-          body: JSON.stringify(asignacion), // Enviar solo los 4 campos requeridos
-        });
-        
-        console.log('📡 Respuesta del servidor:', res.status, res.statusText);
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          console.error('❌ Error del servidor:', errorText);
-          throw new Error(`Error ${res.status}: ${errorText}`);
-        }
-        
-        const result = await res.json();
-        console.log('✅ Asignación exitosa:', result);
+        const result = await asignarItemConRetry(asignacion);
         resultados.push(result);
       }
       
@@ -391,6 +434,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       setLoading(false);
     }
   };
+
+  // Función debounced para evitar múltiples clicks
+  const handleAsignar = debounce(handleAsignarOriginal, 1000);
 
   // Función para manejar la terminación de asignaciones
   const handleTerminarAsignacion = async (itemId: string, empleadoId: string) => {
