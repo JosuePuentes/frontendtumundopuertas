@@ -458,12 +458,33 @@ const PedidosHerreria: React.FC = () => {
       }
     };
 
-    // Suscribirse al evento personalizado
-    window.addEventListener('cambioEstadoItem', handleCambioEstado);
+    // NUEVO: Escuchar cancelación de pedidos
+    const handlePedidoCancelado = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { pedidoId } = customEvent.detail;
+      console.log(`🚫 PedidosHerreria: Pedido cancelado detectado:`, pedidoId);
+      
+      // Verificar si hay items de este pedido en la lista actual
+      const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
+      
+      if (itemsDelPedido.length > 0) {
+        console.log(`🎯 Pedido cancelado tiene ${itemsDelPedido.length} items en PedidosHerreria, recargando datos...`);
+        
+        // Recargar datos para que los items del pedido cancelado desaparezcan
+        await recargarDatos();
+        
+        console.log(`✅ PedidosHerreria: Items del pedido cancelado removidos`);
+      }
+    };
 
-    // Cleanup: remover el listener cuando el componente se desmonte
+    // Suscribirse a los eventos personalizados
+    window.addEventListener('cambioEstadoItem', handleCambioEstado);
+    window.addEventListener('pedidoCancelado', handlePedidoCancelado);
+
+    // Cleanup: remover los listeners cuando el componente se desmonte
     return () => {
       window.removeEventListener('cambioEstadoItem', handleCambioEstado);
+      window.removeEventListener('pedidoCancelado', handlePedidoCancelado);
     };
   }, [itemsIndividuales]);
 
