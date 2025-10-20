@@ -410,37 +410,82 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           setMensaje("");
         }
       }}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto bg-white border-2 border-red-200 shadow-xl">
-          <DialogHeader className="bg-red-50 p-4 rounded-t-lg sticky top-0 z-10">
-            <DialogTitle className="text-xl font-bold text-red-900 flex items-center gap-2">
-              <XCircle className="w-6 h-6" />
-              Cancelar Pedido
+        <DialogContent className="sm:max-w-2xl max-h-[95vh] overflow-y-auto bg-white border-4 border-red-300 shadow-2xl">
+          <DialogHeader className="bg-red-100 p-6 rounded-t-lg sticky top-0 z-10 border-b-2 border-red-200">
+            <DialogTitle className="text-2xl font-bold text-red-900 flex items-center gap-3">
+              <XCircle className="w-8 h-8" />
+              ⚠️ CANCELAR PEDIDO
             </DialogTitle>
+            <p className="text-red-700 font-medium mt-2">Esta acción no se puede deshacer</p>
           </DialogHeader>
           
           <div className="space-y-4 p-4 max-h-[calc(90vh-120px)] overflow-y-auto">
-            <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
-              <h3 className="font-semibold text-lg mb-2 text-red-900">Pedido: {pedido._id.slice(-6)}</h3>
-              <div className="space-y-1 text-sm">
-                <p><strong>Cliente:</strong> {pedido.cliente_nombre}</p>
-                <p><strong>Estado actual:</strong> {ordenMap[pedido.estado_general] || pedido.estado_general}</p>
-                <p><strong>Fecha:</strong> {pedido.fecha_creacion ? new Date(pedido.fecha_creacion).toLocaleDateString() : 'N/A'}</p>
+            <div className="bg-red-50 border-2 border-red-300 p-6 rounded-lg shadow-md">
+              <h3 className="font-bold text-xl mb-4 text-red-900 flex items-center gap-2">
+                📋 Pedido: {pedido._id.slice(-6)}
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2">
+                  <p className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-700">👤 Cliente:</span>
+                    <span className="text-gray-900 font-medium">{pedido.cliente_nombre}</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-700">📅 Fecha:</span>
+                    <span className="text-gray-900">{pedido.fecha_creacion ? new Date(pedido.fecha_creacion).toLocaleDateString() : 'N/A'}</span>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-700">🔄 Estado:</span>
+                    <span className="text-gray-900 font-medium">{ordenMap[pedido.estado_general] || pedido.estado_general}</span>
+                  </p>
+                  {pedido.creado_por && (
+                    <p className="flex items-center gap-2">
+                      <span className="font-semibold text-gray-700">👨‍💼 Creado por:</span>
+                      <span className="text-gray-900">{pedido.creado_por}</span>
+                    </p>
+                  )}
+                </div>
               </div>
+              
+              {/* Mostrar items del pedido */}
+              {Array.isArray(pedido.items) && pedido.items.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-red-200">
+                  <h4 className="font-semibold text-gray-800 mb-2">📦 Items del pedido:</h4>
+                  <ul className="space-y-1">
+                    {pedido.items.map((item, idx) => (
+                      <li key={idx} className="text-sm text-gray-700 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                        <span className="font-medium">{item.nombre}</span>
+                        <span className="text-gray-500">- {item.descripcion}</span>
+                        <span className="text-gray-500">x{item.cantidad}</span>
+                        {item.costoProduccion && (
+                          <span className="text-green-700 font-semibold ml-auto">${item.costoProduccion}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="motivo" className="text-sm font-medium text-gray-700">
-                Motivo de cancelación *
+            <div className="space-y-3">
+              <Label htmlFor="motivo" className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                ⚠️ Motivo de cancelación *
               </Label>
               <Input
                 id="motivo"
                 type="text"
-                placeholder="Ej: Cliente solicitó cancelación, problema con materiales, etc."
+                placeholder="Ej: Cliente solicitó cancelación, problema con materiales, cambio de especificaciones, etc."
                 value={motivoCancelacion}
                 onChange={(e) => setMotivoCancelacion(e.target.value)}
-                className="w-full"
+                className="w-full text-lg p-4 border-2 border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-200 rounded-lg"
                 disabled={cancelando}
               />
+              <p className="text-sm text-gray-600">
+                💡 <strong>Importante:</strong> Este motivo quedará registrado en el sistema y será visible para el cliente.
+              </p>
             </div>
 
             {/* Mensaje de estado dentro del modal */}
@@ -456,8 +501,8 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           </div>
           
           {/* Botones fijos en la parte inferior */}
-          <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
-            <div className="flex justify-between gap-4">
+          <div className="sticky bottom-0 bg-white border-t-4 border-gray-300 p-6 shadow-lg">
+            <div className="flex justify-between gap-6">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -466,7 +511,7 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
                   setMensaje("");
                 }}
                 disabled={cancelando}
-                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border-2 border-gray-400 font-semibold px-6 py-4 text-lg rounded-lg"
               >
                 ❌ Cancelar Operación
               </Button>
@@ -474,17 +519,17 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
                 variant="destructive"
                 onClick={cancelarPedido}
                 disabled={cancelando || !motivoCancelacion.trim()}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg shadow-md flex items-center justify-center gap-2"
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-4 rounded-lg shadow-lg flex items-center justify-center gap-3 text-lg border-2 border-red-700"
               >
                 {cancelando ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
                     Cancelando...
                   </>
                 ) : (
                   <>
-                    <XCircle className="w-5 h-5" />
-                    ✅ Confirmar Cancelación
+                    <XCircle className="w-6 h-6" />
+                    ✅ CONFIRMAR CANCELACIÓN
                   </>
                 )}
               </Button>
