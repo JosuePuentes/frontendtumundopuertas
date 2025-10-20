@@ -463,9 +463,12 @@ const PedidosHerreria: React.FC = () => {
       const customEvent = event as CustomEvent;
       const { pedidoId } = customEvent.detail;
       console.log(`🚫 PedidosHerreria: Pedido cancelado detectado:`, pedidoId);
+      console.log(`🔍 Items actuales en PedidosHerreria:`, itemsIndividuales.length);
+      console.log(`📋 IDs de pedidos en items actuales:`, itemsIndividuales.map(item => item.pedido_id));
       
       // Verificar si hay items de este pedido en la lista actual
       const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
+      console.log(`🎯 Items encontrados del pedido ${pedidoId}:`, itemsDelPedido.length);
       
       if (itemsDelPedido.length > 0) {
         console.log(`🎯 Pedido cancelado tiene ${itemsDelPedido.length} items en PedidosHerreria, recargando datos...`);
@@ -474,6 +477,8 @@ const PedidosHerreria: React.FC = () => {
         await recargarDatos();
         
         console.log(`✅ PedidosHerreria: Items del pedido cancelado removidos`);
+      } else {
+        console.log(`ℹ️ No hay items del pedido ${pedidoId} en PedidosHerreria actualmente`);
       }
     };
 
