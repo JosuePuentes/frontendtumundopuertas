@@ -8,20 +8,47 @@ import { Label } from "@/components/ui/label";
 import { RefreshCw, Package, CheckCircle } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
 
+// Normalizador canónico para asignaciones
+const toArray = (v: any) => Array.isArray(v) ? v : (v ? [v] : []);
+
+const normalizeAsignacion = (a: any) => ({
+  pedido_id: a.pedido_id ?? a.pedidoId ?? a.pedidoID,
+  orden: a.orden ?? (a.modulo === "herreria" ? 1 : a.modulo === "masillar" ? 2 : a.modulo === "preparar" ? 3 : undefined),
+  modulo: a.modulo,
+  estado: a.estado ?? "en_proceso",
+  itemId: a.itemId ?? a.item_id ?? a.itemID,
+  empleadoId: a.empleadoId ?? a.empleado_id ?? a.empleadoID,
+  nombreempleado: a.nombreempleado ?? a.nombre_empleado ?? a.nombreEmpleado,
+  fecha_inicio: a.fecha_inicio ?? a.fechaInicio,
+  fecha_fin: a.fecha_fin ?? a.fechaFin ?? null,
+});
+
+const normalizeAsignacionesResponse = (resp: any) => ({
+  success: !!resp.success,
+  asignaciones: toArray(resp.asignaciones).map(normalizeAsignacion),
+});
+
 interface Asignacion {
-  _id: string;
   pedido_id: string;
-  item_id: string;
-  empleado_id: string;
-  empleado_nombre: string;
+  orden: number;
   modulo: string;
   estado: string;
-  fecha_asignacion: string;
-  descripcionitem: string;
-  detalleitem: string;
-  cliente_nombre: string;
-  costo_produccion: number;
-  imagenes: string[];
+  itemId: string;
+  empleadoId: string;
+  nombreempleado: string;
+  fecha_inicio: string;
+  fecha_fin: string | null;
+  // Campos adicionales para compatibilidad
+  _id?: string;
+  item_id?: string;
+  empleado_id?: string;
+  empleado_nombre?: string;
+  fecha_asignacion?: string;
+  descripcionitem?: string;
+  detalleitem?: string;
+  cliente_nombre?: string;
+  costo_produccion?: number;
+  imagenes?: string[];
 }
 
 const DashboardAsignaciones: React.FC = () => {
@@ -74,120 +101,97 @@ const DashboardAsignaciones: React.FC = () => {
     }
   };
 
-  // Función optimizada para cargar asignaciones con múltiples endpoints
+  // Función optimizada para cargar asignaciones con formato canónico
   const cargarAsignaciones = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('🔄 Cargando asignaciones...');
+      console.log('🔄 Cargando asignaciones con formato canónico...');
       console.log('🌐 API URL:', getApiUrl());
       
-      // Intentar primero el endpoint optimizado /asignaciones
-      try {
-        console.log('🔄 Intentando endpoint /asignaciones...');
-        const response = await fetch(`${getApiUrl()}/asignaciones`);
-        console.log('📡 Response /asignaciones status:', response.status);
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('📋 Datos /asignaciones obtenidos:', data);
-          
-          const asignacionesArray = data.asignaciones || data;
-          console.log('📋 Asignaciones extraídas:', asignacionesArray);
-          
-          if (Array.isArray(asignacionesArray) && asignacionesArray.length > 0) {
-            console.log('✅ Asignaciones obtenidas del endpoint /asignaciones:', asignacionesArray.length);
-            
-            // Convertir al formato esperado
-            const asignacionesData: Asignacion[] = asignacionesArray.map((asig: any) => ({
-              _id: asig._id || `${asig.pedido_id}_${asig.item_id}`,
-              pedido_id: asig.pedido_id,
-              item_id: asig.item_id,
-              empleado_id: asig.empleado_id || "sin_asignar",
-              empleado_nombre: asig.empleado_nombre || asig.nombreempleado || "Sin asignar",
-              modulo: asig.modulo || (asig.orden === 1 ? 'herreria' : 
-                     asig.orden === 2 ? 'masillar' : 
-                     asig.orden === 3 ? 'preparar' : 
-                     asig.orden === 4 ? 'facturar' : 'herreria'),
-              estado: asig.estado || "en_proceso",
-              fecha_asignacion: asig.fecha_asignacion || asig.fecha_inicio || new Date().toISOString(),
-              descripcionitem: asig.descripcionitem || "Sin descripción",
-              detalleitem: asig.detalleitem || "",
-              cliente_nombre: asig.cliente_nombre || asig.cliente?.cliente_nombre || "Sin cliente",
-              costo_produccion: Number(asig.costo_produccion || asig.costoproduccion) || 0,
-              imagenes: asig.imagenes || []
-            }));
-            
-            // Ordenar por fecha (más recientes primero)
-            const asignacionesOrdenadas = asignacionesData.sort((a, b) => {
-              const fechaA = new Date(a.fecha_asignacion).getTime();
-              const fechaB = new Date(b.fecha_asignacion).getTime();
-              return fechaB - fechaA;
-            });
-            
-            setAsignaciones(asignacionesOrdenadas);
-            console.log('✅ Estado actualizado con asignaciones del endpoint /asignaciones');
-            return;
-          }
-        }
-      } catch (error) {
-        console.log('⚠️ Endpoint /asignaciones no disponible, usando fallback...', error);
-      }
-      
-      // Fallback: Usar endpoint de comisiones en proceso
-      console.log('🔄 Usando endpoint de fallback /pedidos/comisiones/produccion/enproceso/...');
-      const url = `${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`;
-      console.log('📡 URL completa:', url);
-      
-      const response = await fetch(url);
-      console.log('📡 Response fallback status:', response.status);
+      // Usar endpoint canónico /asignaciones
+      console.log('🔄 Consumiendo endpoint /asignaciones...');
+      const response = await fetch(`${getApiUrl()}/asignaciones`);
+      console.log('📡 Response /asignaciones status:', response.status);
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('📋 Datos fallback obtenidos:', data);
+        const rawData = await response.json();
+        console.log('📋 Datos raw obtenidos:', rawData);
         
-        const asignacionesArray = data.asignaciones || data;
-        console.log('📋 Asignaciones fallback extraídas:', asignacionesArray);
+        // Normalizar respuesta usando el normalizador canónico
+        const normalizedData = normalizeAsignacionesResponse(rawData);
+        console.log('📋 Datos normalizados:', normalizedData);
         
-        if (Array.isArray(asignacionesArray) && asignacionesArray.length > 0) {
-          console.log('✅ Asignaciones obtenidas del endpoint fallback:', asignacionesArray.length);
+        if (normalizedData.success && normalizedData.asignaciones.length > 0) {
+          console.log('✅ Asignaciones normalizadas obtenidas:', normalizedData.asignaciones.length);
           
-          // Convertir asignaciones del backend al formato esperado
-          const asignacionesData: Asignacion[] = asignacionesArray.map((asig: any) => ({
-            _id: asig._id || `${asig.pedido_id}_${asig.item_id}`,
+          // Filtrar por módulo y estado según especificación
+          const asignacionesFiltradas = normalizedData.asignaciones.filter((asig: any) => {
+            const isEnProceso = asig.estado === "en_proceso";
+            const hasModulo = asig.modulo && asig.modulo !== "";
+            const hasEmpleado = asig.empleadoId && asig.empleadoId !== "";
+            
+            console.log(`🔍 Filtro asignación ${asig.itemId}:`, {
+              modulo: asig.modulo,
+              estado: asig.estado,
+              empleadoId: asig.empleadoId,
+              isEnProceso,
+              hasModulo,
+              hasEmpleado,
+              pasaFiltro: isEnProceso && hasModulo && hasEmpleado
+            });
+            
+            return isEnProceso && hasModulo && hasEmpleado;
+          });
+          
+          console.log('✅ Asignaciones filtradas:', asignacionesFiltradas.length);
+          
+          // Convertir al formato de la interfaz (mantener compatibilidad)
+          const asignacionesData: Asignacion[] = asignacionesFiltradas.map((asig: any) => ({
+            // Campos canónicos
             pedido_id: asig.pedido_id,
-            item_id: asig.item_id,
-            empleado_id: asig.empleado_id || "sin_asignar",
-            empleado_nombre: asig.nombreempleado || "Sin asignar",
-            modulo: asig.orden === 1 ? 'herreria' : 
-                   asig.orden === 2 ? 'masillar' : 
-                   asig.orden === 3 ? 'preparar' : 
-                   asig.orden === 4 ? 'facturar' : 'herreria',
-            estado: asig.estado || "en_proceso",
-            fecha_asignacion: asig.fecha_inicio || new Date().toISOString(),
-            descripcionitem: asig.descripcionitem || "Sin descripción",
-            detalleitem: asig.detalleitem || "",
-            cliente_nombre: asig.cliente?.cliente_nombre || "Sin cliente",
-            costo_produccion: Number(asig.costoproduccion) || 0,
-            imagenes: asig.imagenes || []
+            orden: asig.orden,
+            modulo: asig.modulo,
+            estado: asig.estado,
+            itemId: asig.itemId,
+            empleadoId: asig.empleadoId,
+            nombreempleado: asig.nombreempleado,
+            fecha_inicio: asig.fecha_inicio,
+            fecha_fin: asig.fecha_fin,
+            // Campos adicionales para compatibilidad
+            _id: `${asig.pedido_id}_${asig.itemId}`,
+            item_id: asig.itemId,
+            empleado_id: asig.empleadoId,
+            empleado_nombre: asig.nombreempleado,
+            fecha_asignacion: asig.fecha_inicio,
+            descripcionitem: `Item ${asig.itemId}`,
+            detalleitem: "",
+            cliente_nombre: "Sin cliente",
+            costo_produccion: 0,
+            imagenes: []
           }));
           
           // Ordenar por fecha (más recientes primero)
           const asignacionesOrdenadas = asignacionesData.sort((a, b) => {
-            const fechaA = new Date(a.fecha_asignacion).getTime();
-            const fechaB = new Date(b.fecha_asignacion).getTime();
+            const fechaA = new Date(a.fecha_inicio).getTime();
+            const fechaB = new Date(b.fecha_inicio).getTime();
             return fechaB - fechaA;
           });
           
           setAsignaciones(asignacionesOrdenadas);
-          console.log('✅ Estado actualizado con asignaciones del endpoint fallback');
+          console.log('✅ Estado actualizado con asignaciones normalizadas:', asignacionesOrdenadas.length);
+          
+          // Debug específico para el pedido
+          const pedidoEspecifico = asignacionesOrdenadas.filter(a => a.pedido_id === '68f5d8e235699cda22fa83fa');
+          console.log('🔍 Pedido específico encontrado:', pedidoEspecifico.length, pedidoEspecifico);
+          
         } else {
-          console.log('⚠️ No hay asignaciones en proceso');
+          console.log('⚠️ No hay asignaciones válidas en la respuesta normalizada');
           setAsignaciones([]);
         }
       } else {
-        console.error('❌ Response fallback no ok:', response.status, response.statusText);
+        console.error('❌ Response /asignaciones no ok:', response.status, response.statusText);
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
@@ -330,6 +334,15 @@ const DashboardAsignaciones: React.FC = () => {
               console.log('🔍 Asignaciones actuales:', asignaciones);
               console.log('🔍 Asignaciones con pedido_id:', asignaciones.filter(a => a.pedido_id === '68f5d8e235699cda22fa83fa'));
               console.log('🔍 Asignaciones que contienen el ID:', asignaciones.filter(a => a.pedido_id?.includes('68f5d8e235699cda22fa83fa')));
+              console.log('🔍 Campos canónicos de primera asignación:', asignaciones[0] ? {
+                pedido_id: asignaciones[0].pedido_id,
+                itemId: asignaciones[0].itemId,
+                empleadoId: asignaciones[0].empleadoId,
+                nombreempleado: asignaciones[0].nombreempleado,
+                modulo: asignaciones[0].modulo,
+                estado: asignaciones[0].estado,
+                fecha_inicio: asignaciones[0].fecha_inicio
+              } : 'No hay asignaciones');
             }}
             variant="outline"
             size="sm"
