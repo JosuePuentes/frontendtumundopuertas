@@ -276,7 +276,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     setLoading(true);
     setMessage("");
     
-    // CORREGIDO: Enviar cada asignación individualmente con el formato correcto
+    // CORREGIDO: Enviar cada asignación individualmente con el formato EXACTO requerido
     const asignacionesParaEnviar = asignacionesValidas.map(([key, asignacion]) => {
       const [itemId] = key.split('-');
       
@@ -287,10 +287,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       console.log('itemId:', itemId);
       console.log('itemCompleto:', itemCompleto);
       console.log('asignacion:', asignacion);
-      
-      // Verificar propiedades del item
-      console.log('Propiedades del item:', Object.keys(itemCompleto || {}));
-      console.log('Propiedades de la asignación:', Object.keys(asignacion));
       
       // Determinar el módulo basado en el estado del item
       const estadoItem = obtenerEstadoItem(itemId);
@@ -310,17 +306,17 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       console.log('Estado item:', estadoItem);
       console.log('Módulo mapeado:', modulo);
       
-      // Construir el objeto con los nombres correctos de propiedades
+      // FORMATO EXACTO requerido por el endpoint /pedidos/asignar-item/
       const datosParaEnviar = {
-        pedido_id: pedidoId,  // ✅ Debe tener valor
-        item_id: itemCompleto?.id || itemId,  // Usar el ID correcto del item
-        empleado_id: asignacion.empleadoId,    // Usar el ID del empleado
-        modulo: modulo              // Usar el módulo mapeado
+        pedido_id: pedidoId,                    // ✅ ID del pedido (string)
+        item_id: itemCompleto?.id || itemId,    // ✅ ID del item específico (string)
+        empleado_id: asignacion.empleadoId,     // ✅ ID del empleado (string)
+        modulo: modulo                          // ✅ Módulo: "herreria", "masillar", "preparar"
       };
       
-      console.log('📤 Datos que se enviarán:', datosParaEnviar);
+      console.log('📤 Datos que se enviarán (formato exacto):', datosParaEnviar);
       
-      // Verificar que ningún campo sea null/undefined
+      // Verificar que ningún campo sea null/undefined/vacío
       if (!datosParaEnviar.pedido_id || !datosParaEnviar.item_id || 
           !datosParaEnviar.empleado_id || !datosParaEnviar.modulo) {
         console.error('❌ Faltan datos requeridos:', datosParaEnviar);
@@ -329,100 +325,55 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         console.error('  - item_id:', datosParaEnviar.item_id);
         console.error('  - empleado_id:', datosParaEnviar.empleado_id);
         console.error('  - modulo:', datosParaEnviar.modulo);
+        throw new Error(`Datos incompletos para asignación: ${JSON.stringify(datosParaEnviar)}`);
       }
       
       return datosParaEnviar;
     });
     
-    console.log('📤 Datos a enviar (formato corregido):', asignacionesParaEnviar);
-    
-    // Detectar si es cambio (ya existe asignación previa)
-    const esCambio = Object.keys(asignadosPrevios).length > 0;
-    
-    // Determinar el nuevo estado general del pedido
-    let nuevoEstadoGeneral = estado_general;
-    if (!esCambio && estado_general === "pendiente") {
-      // Si es la primera asignación y está pendiente, cambiar a orden1
-      nuevoEstadoGeneral = "orden1";
-      console.log("🔄 Cambiando estado del pedido de 'pendiente' a 'orden1'");
-    }
-    
-    // SOLUCIÓN: Convertir "independiente" a "1" para herreria
-    const numeroOrdenFinal = numeroOrden === "independiente" ? "1" : numeroOrden;
-    console.log('🔧 CONVERSIÓN numero_orden:', numeroOrden, '→', numeroOrdenFinal);
-
-    const consulta: any = {
-      pedido_id: pedidoId,
-      asignaciones: asignacionesParaEnviar,
-      numero_orden: numeroOrdenFinal, // Usar el número convertido
-      estado: "en_proceso",
-      estado_general: nuevoEstadoGeneral, // Usar el nuevo estado
-    };
-    
-    if (!esCambio) {
-      consulta.tipo_fecha = "inicio";
-    } else {
-      consulta.tipo_fecha = "";
-    }
-    
-    console.log('📤 Consulta completa:', consulta);
-    console.log('🔍 DEBUG FRONTEND - Datos enviados:');
-    console.log('  - pedido_id:', consulta.pedido_id);
-    console.log('  - numero_orden:', consulta.numero_orden);
-    console.log('  - estado_general:', consulta.estado_general);
-    console.log('  - asignaciones:', consulta.asignaciones);
-    console.log('  - tipo_fecha:', consulta.tipo_fecha);
-    
-    // DEBUG ESPECÍFICO: Verificar cada asignación individual
-    console.log('🔍 VERIFICACIÓN DE CAMPOS REQUERIDOS:');
-    asignacionesParaEnviar.forEach((asignacion, index) => {
-      console.log(`📋 Asignación ${index + 1}:`);
-      console.log(`  ✅ pedido_id: "${asignacion.pedido_id}" (${typeof asignacion.pedido_id})`);
-      console.log(`  ✅ item_id: "${asignacion.item_id}" (${typeof asignacion.item_id})`);
-      console.log(`  ✅ empleado_id: "${asignacion.empleado_id}" (${typeof asignacion.empleado_id})`);
-      console.log(`  ✅ modulo: "${asignacion.modulo}" (${typeof asignacion.modulo})`);
-      
-      // Verificar que no sean null/undefined
-      if (!asignacion.pedido_id || !asignacion.item_id || !asignacion.empleado_id || !asignacion.modulo) {
-        console.error(`❌ ERROR: Campos faltantes en asignación ${index + 1}:`, asignacion);
-      } else {
-        console.log(`✅ Asignación ${index + 1} válida`);
-      }
-    });
+    console.log('📤 Datos a enviar (formato exacto requerido):', asignacionesParaEnviar);
     
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-      console.log('🔄 Enviando asignación a:', `${apiUrl}/pedidos/asignar-item/`);
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://crafteo.onrender.com").replace('http://', 'https://');
+      console.log('🔄 Enviando asignaciones individuales a:', `${apiUrl}/pedidos/asignar-item/`);
       
-      const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(consulta),
-      });
+      // CORREGIDO: Enviar cada asignación individualmente con el formato EXACTO
+      const resultados = [];
       
-      console.log('📡 Respuesta del servidor:', res.status, res.statusText);
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('❌ Error del servidor:', errorText);
-        throw new Error(`Error ${res.status}: ${errorText}`);
+      for (const asignacion of asignacionesParaEnviar) {
+        console.log('📤 Enviando asignación individual:', asignacion);
+        
+        const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem('access_token')}`
+          },
+          body: JSON.stringify(asignacion), // Enviar solo los 4 campos requeridos
+        });
+        
+        console.log('📡 Respuesta del servidor:', res.status, res.statusText);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('❌ Error del servidor:', errorText);
+          throw new Error(`Error ${res.status}: ${errorText}`);
+        }
+        
+        const result = await res.json();
+        console.log('✅ Asignación exitosa:', result);
+        resultados.push(result);
       }
       
-      const result = await res.json();
-      console.log('✅ Respuesta exitosa:', result);
-      
-      setMessage("✅ Asignación enviada correctamente");
-      
-      // Si el estado cambió, mostrar mensaje adicional
-      if (nuevoEstadoGeneral !== estado_general) {
-        setMessage(`✅ Asignación enviada correctamente. Estado cambiado a ${nuevoEstadoGeneral}`);
-      }
+      // Todas las asignaciones fueron exitosas
+      setMessage(`✅ ${asignacionesParaEnviar.length} asignación(es) enviada(s) correctamente`);
       
       // NUEVO: Disparar evento personalizado para notificar asignación exitosa
       window.dispatchEvent(new CustomEvent('asignacionRealizada', { 
         detail: { 
           pedidoId: pedidoId,
           asignaciones: asignacionesParaEnviar,
+          resultados: resultados,
           timestamp: new Date().toISOString()
         } 
       }));
