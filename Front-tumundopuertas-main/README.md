@@ -52,3 +52,7 @@ export default tseslint.config({
   },
 })
 ```
+
+## Deploy Fix
+- Commit para resolver error interno de Vercel
+- Build funciona correctamente localmente
