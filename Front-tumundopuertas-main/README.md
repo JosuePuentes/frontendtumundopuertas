@@ -1,59 +1,87 @@
-# React + TypeScript + Vite
+# Frontend Tu Mundo Puertas
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplicación frontend para el sistema de gestión de pedidos de Tu Mundo Puertas.
 
-Currently, two official plugins are available:
+## 🚀 Características
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Gestión de Pedidos**: Creación, seguimiento y cancelación de pedidos
+- **Dashboard de Asignaciones**: Visualización de tareas asignadas a empleados
+- **Pedidos Herrería**: Gestión de items en proceso de herrería
+- **Monitor de Pedidos**: Seguimiento en tiempo real del progreso
+- **Autenticación**: Sistema de login seguro
+- **Responsive Design**: Interfaz adaptable a diferentes dispositivos
 
-## Expanding the ESLint configuration
+## 🛠️ Tecnologías
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **React 19** con TypeScript
+- **Vite** como bundler
+- **Tailwind CSS** para estilos
+- **Radix UI** para componentes
+- **React Router** para navegación
+- **React Hook Form** para formularios
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## 📦 Instalación
+
+```bash
+# Instalar dependencias
+npm install
+
+# Ejecutar en modo desarrollo
+npm run dev
+
+# Construir para producción
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🔧 Configuración
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+La aplicación se conecta al backend en `https://crafteo.onrender.com` por defecto.
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+## 📱 Funcionalidades Principales
 
-## Deploy Fix
-- Commit para resolver error interno de Vercel
-- Build funciona correctamente localmente
-- Deploy desde rama main para mantener URL original
+### Dashboard de Asignaciones
+- Visualización de tareas asignadas
+- Filtrado por módulo y empleado
+- Terminación de tareas con PIN
+
+### Pedidos Herrería
+- Lista de items pendientes de asignación
+- Asignación de empleados por módulo
+- Actualización automática cada 5 minutos
+
+### Monitor de Pedidos
+- Seguimiento del progreso general
+- Visualización de estados por item
+- Cancelación de pedidos
+
+## 🎯 Estados de Items
+
+- **0**: Pendiente → Aparecen en PedidosHerreria
+- **1**: Herrería → Asignado a empleado
+- **2**: Masillar → En proceso
+- **3**: Preparar → En proceso
+- **4**: Terminado → Desaparecen de PedidosHerreria
+
+## 🔄 Sincronización
+
+La aplicación incluye múltiples mecanismos de sincronización:
+
+- **Eventos personalizados**: Para comunicación entre componentes
+- **Actualización automática**: Cada 5 minutos en PedidosHerreria
+- **Recarga manual**: Botones de refresh en cada sección
+- **Manejo de errores**: Reintentos automáticos con backoff exponencial
+
+## 🚀 Deploy
+
+El proyecto está configurado para deploy automático en Vercel.
+
+## 📝 Notas de Desarrollo
+
+- Todos los cambios están implementados y probados
+- Manejo robusto de errores de conectividad
+- Optimización de rendimiento con debounce
+- Interfaz de usuario mejorada con mejor UX
+
+---
+
+**Última actualización**: Octubre 2025

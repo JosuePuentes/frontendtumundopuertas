@@ -373,7 +373,7 @@ const PedidosHerreria: React.FC = () => {
         console.warn('🌐 Error de conectividad con el backend');
         setError('Error de conectividad. Verifica tu conexión a internet e intenta nuevamente.');
       } else {
-        console.error('❌ Error al recargar datos:', error);
+      console.error('❌ Error al recargar datos:', error);
         setError('Error al cargar los datos. Por favor, intenta nuevamente.');
       }
     } finally {
@@ -924,12 +924,12 @@ const PedidosHerreria: React.FC = () => {
                       
                       {/* Componente de asignación - Solo mostrar si no hay empleado asignado */}
                       {!item.empleado_asignado ? (
-                        <div className="mt-4">
-                          <AsignarArticulos
+                <div className="mt-4">
+                  <AsignarArticulos
                             estado_general="independiente"
-                            numeroOrden="independiente"
+                    numeroOrden="independiente"
                             items={[item]} // Pasar solo este item individual
-                            empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
+                    empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
                             pedidoId={item.pedido_id}
                             tipoEmpleado={[]}
                           />

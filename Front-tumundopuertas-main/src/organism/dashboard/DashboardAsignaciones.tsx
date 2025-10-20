@@ -91,7 +91,7 @@ const DashboardAsignaciones: React.FC = () => {
           console.log('⚠️ Datos de empleados no es array:', empleadosArray);
           setEmpleados([]);
         }
-      } else {
+    } else {
         console.error('❌ Response empleados no ok:', response.status);
         setEmpleados([]);
       }
@@ -190,7 +190,7 @@ const DashboardAsignaciones: React.FC = () => {
           console.log('⚠️ No hay asignaciones válidas en la respuesta normalizada');
           setAsignaciones([]);
         }
-      } else {
+        } else {
         console.error('❌ Response /asignaciones no ok:', response.status, response.statusText);
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
@@ -351,13 +351,13 @@ const DashboardAsignaciones: React.FC = () => {
             🔍 Debug Pedido
           </Button>
         </div>
-      </div>
-
+        </div>
+        
       {/* Mensaje de estado */}
       {error && (
         <div className="mb-4 p-3 rounded bg-red-100 text-red-700 border border-red-300">
           {error}
-        </div>
+      </div>
       )}
 
 
@@ -369,8 +369,8 @@ const DashboardAsignaciones: React.FC = () => {
             : "bg-green-100 text-green-700 border border-green-300"
         }`}>
           {mensaje}
-        </div>
-      )}
+                  </div>
+                )}
 
       {/* Estadísticas simples */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -430,17 +430,17 @@ const DashboardAsignaciones: React.FC = () => {
         <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mr-2"></div>
           <span className="text-blue-600 font-semibold">Cargando asignaciones...</span>
-        </div>
+              </div>
       ) : asignaciones.length === 0 ? (
         <div className="text-center py-8">
           <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-600 mb-2">No hay asignaciones</h3>
-          <p className="text-gray-500">
+            <p className="text-gray-500">
             {error 
               ? "Error al cargar las asignaciones. Verifica que el backend esté funcionando."
               : "No se encontraron asignaciones en el sistema."
-            }
-          </p>
+              }
+            </p>
         </div>
       ) : (
         <div className="grid gap-6">
@@ -494,7 +494,7 @@ const DashboardAsignaciones: React.FC = () => {
                     <p className="font-medium">{asignacion.item_id}</p>
                   </div>
                 </div>
-
+                
                 {asignacion.detalleitem && (
                   <div className="mb-4">
                     <p className="text-sm text-gray-600">Detalles:</p>
