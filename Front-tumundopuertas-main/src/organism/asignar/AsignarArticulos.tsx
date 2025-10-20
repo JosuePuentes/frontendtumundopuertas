@@ -347,31 +347,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       console.log("🔄 Cambiando estado del pedido de 'pendiente' a 'orden1'");
     }
     
-    // SOLUCIÓN: Convertir "independiente" a "1" para herreria
-    const numeroOrdenFinal = numeroOrden === "independiente" ? "1" : numeroOrden;
-    console.log('🔧 CONVERSIÓN numero_orden:', numeroOrden, '→', numeroOrdenFinal);
-
-    const consulta: any = {
-      pedido_id: pedidoId,
-      asignaciones: asignacionesParaEnviar,
-      numero_orden: numeroOrdenFinal, // Usar el número convertido
-      estado: "en_proceso",
-      estado_general: nuevoEstadoGeneral, // Usar el nuevo estado
-    };
-    
-    if (!esCambio) {
-      consulta.tipo_fecha = "inicio";
-    } else {
-      consulta.tipo_fecha = "";
-    }
-    
-    console.log('📤 Consulta completa:', consulta);
-    console.log('🔍 DEBUG FRONTEND - Datos enviados:');
-    console.log('  - pedido_id:', consulta.pedido_id);
-    console.log('  - numero_orden:', consulta.numero_orden);
-    console.log('  - estado_general:', consulta.estado_general);
-    console.log('  - asignaciones:', consulta.asignaciones);
-    console.log('  - tipo_fecha:', consulta.tipo_fecha);
+    console.log('📤 Datos a enviar (formato corregido):', asignacionesParaEnviar);
     
     // DEBUG ESPECÍFICO: Verificar cada asignación individual
     console.log('🔍 VERIFICACIÓN DE CAMPOS REQUERIDOS:');
@@ -391,26 +367,37 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     });
     
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-      console.log('🔄 Enviando asignación a:', `${apiUrl}/pedidos/asignar-item/`);
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://crafteo.onrender.com");
+      console.log('🔄 Enviando asignaciones individuales a:', `${apiUrl}/pedidos/asignar-item/`);
       
-      const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(consulta),
-      });
-      
-      console.log('📡 Respuesta del servidor:', res.status, res.statusText);
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('❌ Error del servidor:', errorText);
-        throw new Error(`Error ${res.status}: ${errorText}`);
+      // CORREGIDO: Enviar cada asignación individualmente con el formato correcto
+      const resultados = [];
+      for (const asignacion of asignacionesParaEnviar) {
+        console.log('📤 Enviando asignación individual:', asignacion);
+        
+        const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem('access_token')}`
+          },
+          body: JSON.stringify(asignacion),
+        });
+        
+        console.log('📡 Respuesta del servidor:', res.status, res.statusText);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('❌ Error del servidor:', errorText);
+          throw new Error(`Error ${res.status}: ${errorText}`);
+        }
+        
+        const result = await res.json();
+        console.log('✅ Asignación exitosa:', result);
+        resultados.push(result);
       }
       
-      const result = await res.json();
-      console.log('✅ Respuesta exitosa:', result);
-      
+      console.log('✅ Todas las asignaciones completadas:', resultados);
       setMessage("✅ Asignación enviada correctamente");
       
       // Si el estado cambió, mostrar mensaje adicional
