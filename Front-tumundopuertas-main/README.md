@@ -56,3 +56,6 @@ export default tseslint.config({
 ## Deploy Fix
 - Commit para resolver error interno de Vercel
 - Build funciona correctamente localmente
+
+### 2025-10-20
+- Forzar preview deploy para evitar rate limit 429 de Vercel.
