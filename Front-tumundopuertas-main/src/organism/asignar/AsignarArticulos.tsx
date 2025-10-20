@@ -297,11 +297,11 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       let modulo = "herreria"; // Por defecto
       
       // Mapeo del módulo según el estado del item
-      const moduloMap = {
-        1: "herreria",
-        2: "masillar", 
-        3: "preparar",
-        4: "facturar"
+      const moduloMap: { [key: string]: string } = {
+        "1": "herreria",
+        "2": "masillar", 
+        "3": "preparar",
+        "4": "facturar"
       };
       
       modulo = moduloMap[estadoItem] || "herreria";
