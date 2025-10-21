@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "cd Front-tumundopuertas-main && npm run build",
+  "outputDirectory": "Front-tumundopuertas-main/dist",
+  "installCommand": "cd Front-tumundopuertas-main && npm install",
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "VITE_API_URL": "https://crafteo.onrender.com"
+  }
+}
