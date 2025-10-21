@@ -1,14 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
+  "buildCommand": "cd Front-tumundopuertas-main && npm run build",
+  "outputDirectory": "Front-tumundopuertas-main/dist",
+  "installCommand": "cd Front-tumundopuertas-main && npm install",
   "routes": [
     {
       "src": "/(.*)",
