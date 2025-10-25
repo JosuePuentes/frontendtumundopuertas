@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "cd Front-tumundopuertas-main && npm run build",
-  "outputDirectory": "Front-tumundopuertas-main/dist",
-  "installCommand": "cd Front-tumundopuertas-main && npm install",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
   "routes": [
     {
       "src": "/(.*)",
