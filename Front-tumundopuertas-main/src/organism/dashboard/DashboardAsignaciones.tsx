@@ -134,6 +134,13 @@ const DashboardAsignaciones: React.FC = () => {
           }
         }
         
+        // Ordenar por fecha de asignación (más recientes primero)
+        asignaciones.sort((a, b) => {
+          const fechaA = new Date(a.fecha_asignacion).getTime();
+          const fechaB = new Date(b.fecha_asignacion).getTime();
+          return fechaB - fechaA; // Descendente (más recientes primero)
+        });
+        
         setAsignaciones(asignaciones);
         console.log('✅ Asignaciones cargadas exitosamente:', asignaciones.length);
       } else {
@@ -165,7 +172,7 @@ const DashboardAsignaciones: React.FC = () => {
     console.log('🔍 ESTADO ASIGNACIONES CAMBIÓ:', asignaciones.length, asignaciones);
   }, [asignaciones]);
 
-  // Cargar datos solo al montar el componente
+  // Cargar datos al montar el componente
   useEffect(() => {
     cargarAsignaciones();
     cargarEmpleados();
@@ -271,7 +278,7 @@ const DashboardAsignaciones: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold">Dashboard de Asignaciones</h1>
-          <p className="text-gray-600">Gestiona todas las asignaciones de producción</p>
+          <p className="text-gray-600">Gestiona todas las asignaciones de producción (ordenadas por fecha)</p>
         </div>
         <div className="flex gap-2">
           <Button
