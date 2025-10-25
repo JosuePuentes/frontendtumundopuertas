@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RefreshCw, Package, CheckCircle } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
+import ImageDisplay from "@/upfile/ImageDisplay";
 
 interface Asignacion {
   _id: string;
@@ -109,13 +110,17 @@ const DashboardAsignaciones: React.FC = () => {
                   // Buscar información del item
                   const item = pedido.items?.find((item: any) => item.id === asignacion.itemId);
                   
+                  // Buscar el nombre del empleado desde la lista de empleados
+                  const empleado = empleados.find(emp => emp.id === asignacion.empleadoId);
+                  const nombreEmpleado = empleado?.nombre || asignacion.nombreempleado || "Sin asignar";
+                  
                   const asignacionCompleta: Asignacion = {
                     _id: `${pedido_id}_${asignacion.itemId}_${sub.orden}`,
                     pedido_id: pedido_id,
                     orden: sub.orden || 1,
                     item_id: asignacion.itemId,
                     empleado_id: asignacion.empleadoId || "sin_asignar",
-                    empleado_nombre: asignacion.nombreempleado || "Sin asignar",
+                    empleado_nombre: nombreEmpleado,
                     modulo: obtenerModuloPorOrden(sub.orden || 1),
                     estado: asignacion.estado || "en_proceso",
                     fecha_asignacion: asignacion.fecha_inicio || new Date().toISOString(),
@@ -464,6 +469,24 @@ const DashboardAsignaciones: React.FC = () => {
                     <p className="text-sm bg-gray-50 p-2 rounded border">
                       {asignacion.detalleitem}
                     </p>
+                  </div>
+                )}
+
+                {/* Mostrar imágenes del item */}
+                {asignacion.imagenes && asignacion.imagenes.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 mb-2">Imágenes del item:</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {asignacion.imagenes.map((imagen: string, index: number) => (
+                        <div key={index} className="relative">
+                          <ImageDisplay
+                            imageUrl={imagen}
+                            alt={`Imagen ${index + 1} del item`}
+                            className="w-full h-24 object-cover rounded border"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

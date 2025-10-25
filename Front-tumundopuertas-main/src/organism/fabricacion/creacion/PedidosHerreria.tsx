@@ -521,16 +521,37 @@ const PedidosHerreria: React.FC = () => {
       }
     };
 
+    // NUEVO: Escuchar asignaciones realizadas
+    const handleAsignacionRealizada = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { pedidoId, asignaciones } = customEvent.detail;
+      console.log(`🎯 PedidosHerreria: Asignación realizada detectada:`, { pedidoId, asignaciones });
+      
+      // Verificar si hay items de este pedido en la lista actual
+      const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
+      
+      if (itemsDelPedido.length > 0) {
+        console.log(`🎯 Asignación realizada en pedido con ${itemsDelPedido.length} items en PedidosHerreria, recargando datos...`);
+        
+        // Recargar datos para actualizar el estado de asignación
+        await recargarDatos();
+        
+        console.log(`✅ PedidosHerreria: Estado de asignación actualizado`);
+      }
+    };
+
     // Suscribirse a los eventos personalizados
     window.addEventListener('cambioEstadoItem', handleCambioEstado);
     window.addEventListener('pedidoCancelado', handlePedidoCancelado);
     window.addEventListener('pedidoEliminado', handlePedidoEliminado);
+    window.addEventListener('asignacionRealizada', handleAsignacionRealizada);
 
     // Cleanup: remover los listeners cuando el componente se desmonte
     return () => {
       window.removeEventListener('cambioEstadoItem', handleCambioEstado);
       window.removeEventListener('pedidoCancelado', handlePedidoCancelado);
       window.removeEventListener('pedidoEliminado', handlePedidoEliminado);
+      window.removeEventListener('asignacionRealizada', handleAsignacionRealizada);
     };
   }, [itemsIndividuales]);
 
