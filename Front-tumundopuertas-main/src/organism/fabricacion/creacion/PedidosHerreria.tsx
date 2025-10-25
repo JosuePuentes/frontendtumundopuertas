@@ -992,12 +992,15 @@ const PedidosHerreria: React.FC = () => {
                 </div>
                 
                       {/* DEBUG: Mostrar estado de asignación */}
-                      {console.log('🔍 DEBUG renderizado item:', {
-                        itemId: item.id,
-                        itemNombre: item.nombre,
-                        tieneAsignacion: !!asignacionesActivas[item.id],
-                        asignacion: asignacionesActivas[item.id]
-                      })}
+                      {(() => {
+                        console.log('🔍 DEBUG renderizado item:', {
+                          itemId: item.id,
+                          itemNombre: item.nombre,
+                          tieneAsignacion: !!asignacionesActivas[item.id],
+                          asignacion: asignacionesActivas[item.id]
+                        });
+                        return null;
+                      })()}
                       
                       {/* Información de asignación */}
                       {asignacionesActivas[item.id] && (
