@@ -111,7 +111,9 @@ const DashboardAsignaciones: React.FC = () => {
                   const item = pedido.items?.find((item: any) => item.id === asignacion.itemId);
                   
                   // Buscar el nombre del empleado desde la lista de empleados
-                  const empleado = empleados.find(emp => emp.id === asignacion.empleadoId);
+                  const empleado = empleados.find(emp => 
+                    emp._id === asignacion.empleadoId || emp.identificador === asignacion.empleadoId
+                  );
                   console.log('🔍 DEBUG empleado:', {
                     empleadoId: asignacion.empleadoId,
                     empleadoEncontrado: empleado,
@@ -121,8 +123,8 @@ const DashboardAsignaciones: React.FC = () => {
                   
                   // Usar múltiples fuentes para el nombre del empleado
                   let nombreEmpleado = "Sin asignar";
-                  if (empleado?.nombre) {
-                    nombreEmpleado = empleado.nombre;
+                  if (empleado?.nombreCompleto) {
+                    nombreEmpleado = empleado.nombreCompleto;
                   } else if (asignacion.nombreempleado) {
                     nombreEmpleado = asignacion.nombreempleado;
                   } else if (asignacion.nombreEmpleado) {
