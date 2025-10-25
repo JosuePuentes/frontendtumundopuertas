@@ -8,21 +8,6 @@ import { Label } from "@/components/ui/label";
 import { RefreshCw, Package, CheckCircle } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
 
-// Normalizador canónico para asignaciones
-const toArray = (v: any) => Array.isArray(v) ? v : (v ? [v] : []);
-
-const normalizeAsignacion = (a: any) => ({
-  pedido_id: a.pedido_id ?? a.pedidoId ?? a.pedidoID,
-  orden: a.orden ?? (a.modulo === "herreria" ? 1 : a.modulo === "masillar" ? 2 : a.modulo === "preparar" ? 3 : undefined),
-  modulo: a.modulo,
-  estado: a.estado ?? "en_proceso",
-  itemId: a.itemId ?? a.item_id ?? a.itemID,
-  empleadoId: a.empleadoId ?? a.empleado_id ?? a.empleadoID,
-  nombreempleado: a.nombreempleado ?? a.nombre_empleado ?? a.nombreEmpleado,
-  fecha_inicio: a.fecha_inicio ?? a.fechaInicio,
-  fecha_fin: a.fecha_fin ?? a.fechaFin ?? null,
-});
-
 interface Asignacion {
   _id: string;
   pedido_id: string;
@@ -307,12 +292,12 @@ const DashboardAsignaciones: React.FC = () => {
               console.log('🔍 Asignaciones que contienen el ID:', asignaciones.filter(a => a.pedido_id?.includes('68f5d8e235699cda22fa83fa')));
               console.log('🔍 Campos canónicos de primera asignación:', asignaciones[0] ? {
                 pedido_id: asignaciones[0].pedido_id,
-                itemId: asignaciones[0].itemId,
-                empleadoId: asignaciones[0].empleadoId,
-                nombreempleado: asignaciones[0].nombreempleado,
+                item_id: asignaciones[0].item_id,
+                empleado_id: asignaciones[0].empleado_id,
+                empleado_nombre: asignaciones[0].empleado_nombre,
                 modulo: asignaciones[0].modulo,
                 estado: asignaciones[0].estado,
-                fecha_inicio: asignaciones[0].fecha_inicio
+                fecha_asignacion: asignaciones[0].fecha_asignacion
               } : 'No hay asignaciones');
             }}
             variant="outline"
