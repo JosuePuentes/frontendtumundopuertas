@@ -80,6 +80,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const [asignadosPrevios, setAsignadosPrevios] = useState<Record<string, AsignacionArticulo>>({});
   const [showCambio, setShowCambio] = useState<Record<string, boolean>>({});
   const [empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
+  
+  // Estado para items ya asignados localmente
+  const [itemsAsignadosLocalmente, setItemsAsignadosLocalmente] = useState<Record<string, {empleado_nombre: string, fecha_asignacion: string}>>({});
 
   // Hook para obtener empleados por módulo
   const { loading: loadingEmpleados } = useEmpleadosPorModulo();
@@ -454,6 +457,26 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       // Todas las asignaciones fueron exitosas
       setMessage(`✅ ${asignacionesParaEnviar.length} asignación(es) enviada(s) correctamente`);
       
+      // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE - SOLUCIÓN SIMPLE
+      const nuevosItemsAsignados: Record<string, {empleado_nombre: string, fecha_asignacion: string}> = {};
+      
+      for (const asignacion of asignacionesParaEnviar) {
+        // Buscar el nombre del empleado
+        const empleadosDisponibles = empleadosPorItem[asignacion.item_id] || empleados;
+        const empleado = empleadosDisponibles.find(emp => 
+          emp._id === asignacion.empleado_id || emp.identificador === asignacion.empleado_id
+        );
+        const nombreEmpleado = empleado?.nombreCompleto || "Empleado asignado";
+        
+        nuevosItemsAsignados[asignacion.item_id] = {
+          empleado_nombre: nombreEmpleado,
+          fecha_asignacion: new Date().toISOString()
+        };
+      }
+      
+      setItemsAsignadosLocalmente(prev => ({ ...prev, ...nuevosItemsAsignados }));
+      console.log('✅ Items marcados como asignados localmente:', nuevosItemsAsignados);
+      
       // NUEVO: Disparar evento personalizado para notificar asignación exitosa
       console.log('🎯 Disparando evento asignacionRealizada con datos:', {
         pedidoId: pedidoId,
@@ -539,6 +562,10 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
           const asignacion = asignaciones[key] || {};
           const asignadoPrevio = asignadosPrevios[key];
           const cambioActivo = showCambio[key];
+          
+          // VERIFICAR SI EL ITEM ESTÁ ASIGNADO LOCALMENTE
+          const itemAsignadoLocalmente = itemsAsignadosLocalmente[item.id];
+          
           return (
             <li key={key} className="flex flex-col gap-2 border rounded p-3">
               <span className="font-medium">{item.nombre}</span>
@@ -565,7 +592,20 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                   </div>
                 </div>
               )}
-              {asignadoPrevio && !cambioActivo ? (
+              {/* MOSTRAR SI ESTÁ ASIGNADO LOCALMENTE */}
+              {itemAsignadoLocalmente ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-green-600 font-medium">
+                    <span>✅ Asignado a: {itemAsignadoLocalmente.empleado_nombre}</span>
+                    <span className="text-xs text-gray-500">
+                      ({new Date(itemAsignadoLocalmente.fecha_asignacion).toLocaleDateString()})
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-600 bg-green-50 p-2 rounded">
+                    🚫 Este item ya está asignado y no se puede reasignar
+                  </div>
+                </div>
+              ) : asignadoPrevio && !cambioActivo ? (
                 <div className="flex flex-col gap-2">
                   <span className="text-blue-700 text-sm font-semibold">
                     Ya asignado a: {asignadoPrevio.nombreempleado}
