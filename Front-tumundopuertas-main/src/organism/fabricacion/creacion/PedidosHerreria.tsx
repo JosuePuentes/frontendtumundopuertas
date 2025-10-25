@@ -524,22 +524,32 @@ const PedidosHerreria: React.FC = () => {
 
     // NUEVO: Escuchar asignaciones realizadas
     const handleAsignacionRealizada = async (event: Event) => {
+      console.log('🔍 EVENTO RECIBIDO en PedidosHerreria:', event);
       const customEvent = event as CustomEvent;
+      console.log('🔍 CustomEvent detail:', customEvent.detail);
+      
       const { pedidoId, asignaciones } = customEvent.detail;
       console.log(`🎯 PedidosHerreria: Asignación realizada detectada:`, { pedidoId, asignaciones });
+      console.log(`🔍 Items actuales en PedidosHerreria:`, itemsIndividuales.length);
+      console.log(`🔍 IDs de pedidos actuales:`, itemsIndividuales.map(item => item.pedido_id));
       
       // Verificar si hay items de este pedido en la lista actual
       const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
+      console.log(`🔍 Items del pedido ${pedidoId}:`, itemsDelPedido);
       
       if (itemsDelPedido.length > 0) {
         console.log(`🎯 Asignación realizada en pedido con ${itemsDelPedido.length} items en PedidosHerreria, actualizando estado local...`);
         
         // Actualizar estado local inmediatamente para mostrar asignación
         setItemsIndividuales(prevItems => {
-          return prevItems.map(item => {
+          console.log('🔍 Items antes de actualizar:', prevItems.length);
+          const nuevosItems = prevItems.map(item => {
             if (item.pedido_id === pedidoId) {
+              console.log(`🔍 Procesando item ${item.id} del pedido ${pedidoId}`);
               // Buscar si este item fue asignado
               const asignacion = asignaciones.find((a: any) => a.item_id === item.id);
+              console.log(`🔍 Asignación encontrada para item ${item.id}:`, asignacion);
+              
               if (asignacion) {
                 console.log(`✅ Actualizando item ${item.id} como asignado a ${asignacion.empleado_nombre}`);
                 return {
@@ -551,9 +561,13 @@ const PedidosHerreria: React.FC = () => {
             }
             return item;
           });
+          console.log('🔍 Items después de actualizar:', nuevosItems.length);
+          return nuevosItems;
         });
         
         console.log(`✅ PedidosHerreria: Estado local actualizado inmediatamente`);
+      } else {
+        console.log(`⚠️ No se encontraron items del pedido ${pedidoId} en PedidosHerreria`);
       }
     };
 
