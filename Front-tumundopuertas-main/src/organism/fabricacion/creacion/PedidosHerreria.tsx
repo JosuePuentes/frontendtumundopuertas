@@ -43,6 +43,9 @@ const PedidosHerreria: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
   
+  // Estado para almacenar asignaciones activas
+  const [asignacionesActivas, setAsignacionesActivas] = useState<Record<string, {empleado_nombre: string, fecha_asignacion: string}>>({});
+  
   // Estados para filtros
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [filtroAsignacion, setFiltroAsignacion] = useState<string>("todos");
@@ -157,6 +160,47 @@ const PedidosHerreria: React.FC = () => {
       return result;
     } catch (error) {
       console.error('❌ Error inicializando items:', error);
+    }
+  };
+
+  // Función para cargar asignaciones activas desde el Dashboard
+  const cargarAsignacionesActivas = async () => {
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const response = await fetch(`${apiUrl}/pedidos/all/`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const pedidos = await response.json();
+        const asignaciones: Record<string, {empleado_nombre: string, fecha_asignacion: string}> = {};
+        
+        for (const pedido of pedidos) {
+          const seguimiento = pedido.seguimiento || [];
+          
+          for (const sub of seguimiento) {
+            if (sub.asignaciones_articulos && Array.isArray(sub.asignaciones_articulos)) {
+              for (const asignacion of sub.asignaciones_articulos) {
+                if (asignacion.estado === "en_proceso") {
+                  asignaciones[asignacion.itemId] = {
+                    empleado_nombre: asignacion.nombreempleado || "Sin asignar",
+                    fecha_asignacion: asignacion.fecha_inicio || new Date().toISOString()
+                  };
+                }
+              }
+            }
+          }
+        }
+        
+        setAsignacionesActivas(asignaciones);
+        console.log('✅ Asignaciones activas cargadas:', Object.keys(asignaciones).length);
+      }
+    } catch (error) {
+      console.error('❌ Error cargando asignaciones activas:', error);
     }
   };
   
@@ -355,6 +399,9 @@ const PedidosHerreria: React.FC = () => {
         };
         
         cargarProgresoItems();
+        
+        // Cargar asignaciones activas para determinar qué items están asignados
+        await cargarAsignacionesActivas();
       } else {
         console.log('⚠️ No hay items - itemsArray no es array:', itemsArray);
         setItemsIndividuales([]);
@@ -936,15 +983,15 @@ const PedidosHerreria: React.FC = () => {
                 </div>
                 
                       {/* Información de asignación */}
-                      {item.empleado_asignado && (
+                      {asignacionesActivas[item.id] && (
                         <div className="bg-blue-50 p-3 rounded-lg">
-                          <p className="text-sm text-blue-800"><strong>Asignado a:</strong> {item.empleado_asignado}</p>
-                          <p className="text-sm text-blue-600">Fecha asignación: {item.fecha_asignacion ? new Date(item.fecha_asignacion).toLocaleDateString() : 'N/A'}</p>
+                          <p className="text-sm text-blue-800"><strong>Asignado a:</strong> {asignacionesActivas[item.id].empleado_nombre}</p>
+                          <p className="text-sm text-blue-600">Fecha asignación: {asignacionesActivas[item.id].fecha_asignacion ? new Date(asignacionesActivas[item.id].fecha_asignacion).toLocaleDateString() : 'N/A'}</p>
                         </div>
                       )}
                       
                       {/* Componente de asignación - Solo mostrar si no hay empleado asignado */}
-                      {!item.empleado_asignado ? (
+                      {!asignacionesActivas[item.id] ? (
                 <div className="mt-4">
                   <AsignarArticulos
                             estado_general="independiente"
