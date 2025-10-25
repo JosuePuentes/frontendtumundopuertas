@@ -101,97 +101,46 @@ const DashboardAsignaciones: React.FC = () => {
     }
   };
 
-  // Función optimizada para cargar asignaciones con formato canónico
+  // Función optimizada para cargar asignaciones con endpoint existente
   const cargarAsignaciones = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      console.log('🔄 Cargando asignaciones con formato canónico...');
+      console.log('🔄 Cargando asignaciones con endpoint existente...');
       console.log('🌐 API URL:', getApiUrl());
       
-      // Usar endpoint canónico /asignaciones
-      console.log('🔄 Consumiendo endpoint /asignaciones...');
-      const response = await fetch(`${getApiUrl()}/asignaciones`);
-      console.log('📡 Response /asignaciones status:', response.status);
+      // Usar endpoint existente /pedidos/comisiones/produccion/enproceso/
+      console.log('🔄 Consumiendo endpoint existente...');
+      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
+      console.log('📡 Response status:', response.status);
       
       if (response.ok) {
         const rawData = await response.json();
         console.log('📋 Datos raw obtenidos:', rawData);
         
-        // Normalizar respuesta usando el normalizador canónico
-        const normalizedData = normalizeAsignacionesResponse(rawData);
-        console.log('📋 Datos normalizados:', normalizedData);
+        // Convertir datos al formato esperado
+        const asignaciones: Asignacion[] = Array.isArray(rawData) ? rawData.map((asig: any) => ({
+          _id: asig._id || `${asig.pedido_id}_${asig.item_id}`,
+          pedido_id: asig.pedido_id,
+          orden: asig.orden || 1,
+          item_id: asig.item_id,
+          empleado_id: asig.empleadoId || "sin_asignar",
+          empleado_nombre: asig.nombreempleado || "Sin asignar",
+          modulo: obtenerModuloPorOrden(asig.orden || 1),
+          estado: asig.estado || "en_proceso",
+          fecha_asignacion: asig.fecha_inicio || new Date().toISOString(),
+          fecha_fin: asig.fecha_fin,
+          descripcionitem: asig.descripcionitem || "",
+          detalleitem: asig.detalleitem || "",
+          cliente_nombre: asig.cliente?.cliente_nombre || "",
+          costo_produccion: asig.costoproduccion || 0,
+          imagenes: asig.imagenes || []
+        })) : [];
         
-        if (normalizedData.success && normalizedData.asignaciones.length > 0) {
-          console.log('✅ Asignaciones normalizadas obtenidas:', normalizedData.asignaciones.length);
-          
-          // Filtrar por módulo y estado según especificación
-          const asignacionesFiltradas = normalizedData.asignaciones.filter((asig: any) => {
-            const isEnProceso = asig.estado === "en_proceso";
-            const hasModulo = asig.modulo && asig.modulo !== "";
-            const hasEmpleado = asig.empleadoId && asig.empleadoId !== "";
-            
-            console.log(`🔍 Filtro asignación ${asig.itemId}:`, {
-              modulo: asig.modulo,
-              estado: asig.estado,
-              empleadoId: asig.empleadoId,
-              isEnProceso,
-              hasModulo,
-              hasEmpleado,
-              pasaFiltro: isEnProceso && hasModulo && hasEmpleado
-            });
-            
-            return isEnProceso && hasModulo && hasEmpleado;
-          });
-          
-          console.log('✅ Asignaciones filtradas:', asignacionesFiltradas.length);
-          
-          // Convertir al formato de la interfaz (mantener compatibilidad)
-          const asignacionesData: Asignacion[] = asignacionesFiltradas.map((asig: any) => ({
-            // Campos canónicos
-            pedido_id: asig.pedido_id,
-            orden: asig.orden,
-            modulo: asig.modulo,
-            estado: asig.estado,
-            itemId: asig.itemId,
-            empleadoId: asig.empleadoId,
-            nombreempleado: asig.nombreempleado,
-            fecha_inicio: asig.fecha_inicio,
-            fecha_fin: asig.fecha_fin,
-            // Campos adicionales para compatibilidad
-            _id: `${asig.pedido_id}_${asig.itemId}`,
-            item_id: asig.itemId,
-            empleado_id: asig.empleadoId,
-            empleado_nombre: asig.nombreempleado,
-            fecha_asignacion: asig.fecha_inicio,
-            descripcionitem: `Item ${asig.itemId}`,
-            detalleitem: "",
-            cliente_nombre: "Sin cliente",
-            costo_produccion: 0,
-            imagenes: []
-          }));
-          
-          // Ordenar por fecha (más recientes primero)
-          const asignacionesOrdenadas = asignacionesData.sort((a, b) => {
-            const fechaA = new Date(a.fecha_inicio).getTime();
-            const fechaB = new Date(b.fecha_inicio).getTime();
-            return fechaB - fechaA;
-          });
-          
-          setAsignaciones(asignacionesOrdenadas);
-          console.log('✅ Estado actualizado con asignaciones normalizadas:', asignacionesOrdenadas.length);
-          
-          // Debug específico para el pedido
-          const pedidoEspecifico = asignacionesOrdenadas.filter(a => a.pedido_id === '68f5d8e235699cda22fa83fa');
-          console.log('🔍 Pedido específico encontrado:', pedidoEspecifico.length, pedidoEspecifico);
-          
-        } else {
-          console.log('⚠️ No hay asignaciones válidas en la respuesta normalizada');
-          setAsignaciones([]);
-        }
-        } else {
-        console.error('❌ Response /asignaciones no ok:', response.status, response.statusText);
+        setAsignaciones(asignaciones);
+        console.log('✅ Asignaciones cargadas exitosamente:', asignaciones.length);
+      } else {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
@@ -201,6 +150,17 @@ const DashboardAsignaciones: React.FC = () => {
       setAsignaciones([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Función helper para obtener módulo por orden
+  const obtenerModuloPorOrden = (orden: number): string => {
+    switch (orden) {
+      case 1: return 'herreria';
+      case 2: return 'masillar';
+      case 3: return 'preparar';
+      case 4: return 'facturar';
+      default: return 'herreria';
     }
   };
 

@@ -56,22 +56,14 @@ export const useDashboardAsignaciones = () => {
     try {
       console.log('🔄 Cargando asignaciones...');
       
-      // Intentar primero el endpoint optimizado /asignaciones
-      try {
-        const response = await fetch(`${getApiUrl()}/asignaciones`);
-        if (response.ok) {
-          const data = await response.json();
-          const asignaciones = data.asignaciones || [];
-          console.log('✅ Asignaciones obtenidas del endpoint /asignaciones:', asignaciones.length);
-          return asignaciones;
-        }
-      } catch (error) {
-        console.log('⚠️ Endpoint /asignaciones no disponible, usando fallback...');
+      // Usar el endpoint existente /pedidos/comisiones/produccion/enproceso/
+      console.log('🔄 Usando endpoint existente...');
+      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
-      // Fallback: Usar el endpoint de comisiones en proceso
-      console.log('🔄 Usando endpoint de fallback...');
-      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
       const data = await response.json();
       
       // Convertir las asignaciones del backend al formato esperado
@@ -80,7 +72,7 @@ export const useDashboardAsignaciones = () => {
         pedido_id: asig.pedido_id,
         orden: asig.orden || 1,
         item_id: asig.item_id,
-        empleado_id: asig.empleado_id || "sin_asignar",
+        empleado_id: asig.empleadoId || "sin_asignar",
         empleado_nombre: asig.nombreempleado || "Sin asignar",
         modulo: obtenerModuloPorOrden(asig.orden || 1),
         estado: asig.estado || "en_proceso",
@@ -93,7 +85,7 @@ export const useDashboardAsignaciones = () => {
         imagenes: asig.imagenes || []
       })) : [];
       
-      console.log('✅ Asignaciones obtenidas del endpoint de fallback:', asignaciones.length);
+      console.log('✅ Asignaciones obtenidas:', asignaciones.length);
       return asignaciones;
       
     } catch (err: any) {

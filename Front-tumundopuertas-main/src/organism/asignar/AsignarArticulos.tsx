@@ -350,21 +350,42 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://crafteo.onrender.com").replace('http://', 'https://');
-      console.log('🔄 Enviando asignaciones individuales a:', `${apiUrl}/pedidos/asignar-item/`);
+      console.log('🔄 Enviando asignaciones individuales a:', `${apiUrl}/pedidos/subestados/`);
       
-      // Función de retry con backoff exponencial para manejar error 429
+      // Función para asignar usando el endpoint existente /pedidos/subestados/
       const asignarItemConRetry = async (asignacion: any, maxRetries = 3) => {
         for (let intento = 0; intento < maxRetries; intento++) {
           try {
             console.log(`📤 Intento ${intento + 1}/${maxRetries} - Enviando asignación:`, asignacion);
             
-            const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
+            // Usar el endpoint existente /pedidos/subestados/ que ya maneja asignaciones
+            const datosSubestado = {
+              pedido_id: asignacion.pedido_id,
+              numero_orden: asignacion.modulo === "herreria" ? "1" : 
+                           asignacion.modulo === "masillar" ? "2" :
+                           asignacion.modulo === "preparar" ? "3" : "4",
+              tipo_fecha: "inicio",
+              estado: "en_proceso",
+              asignaciones: [{
+                itemId: asignacion.item_id,
+                empleadoId: asignacion.empleado_id,
+                nombreempleado: empleados.find(emp => emp._id === asignacion.empleado_id)?.nombre || "Sin nombre",
+                descripcionitem: items.find(item => item.id === asignacion.item_id)?.nombre || "",
+                costoproduccion: items.find(item => item.id === asignacion.item_id)?.costoProduccion || 0,
+                fecha_inicio: new Date().toISOString(),
+                estado: "en_proceso"
+              }]
+            };
+            
+            console.log('📤 Datos para subestado:', datosSubestado);
+            
+            const res = await fetch(`${apiUrl}/pedidos/subestados/`, {
               method: "PUT",
               headers: { 
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${localStorage.getItem('access_token')}`
               },
-              body: JSON.stringify(asignacion),
+              body: JSON.stringify(datosSubestado),
             });
             
             console.log('📡 Respuesta del servidor:', res.status, res.statusText);
