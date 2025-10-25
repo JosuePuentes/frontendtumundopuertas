@@ -532,12 +532,28 @@ const PedidosHerreria: React.FC = () => {
       const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
       
       if (itemsDelPedido.length > 0) {
-        console.log(`🎯 Asignación realizada en pedido con ${itemsDelPedido.length} items en PedidosHerreria, recargando datos...`);
+        console.log(`🎯 Asignación realizada en pedido con ${itemsDelPedido.length} items en PedidosHerreria, actualizando estado local...`);
         
-        // Recargar datos para actualizar el estado de asignación
-        await recargarDatos();
+        // Actualizar estado local inmediatamente para mostrar asignación
+        setItemsIndividuales(prevItems => {
+          return prevItems.map(item => {
+            if (item.pedido_id === pedidoId) {
+              // Buscar si este item fue asignado
+              const asignacion = asignaciones.find((a: any) => a.item_id === item.id);
+              if (asignacion) {
+                console.log(`✅ Actualizando item ${item.id} como asignado a ${asignacion.empleado_nombre}`);
+                return {
+                  ...item,
+                  empleado_asignado: asignacion.empleado_nombre || "Empleado asignado",
+                  fecha_asignacion: new Date().toISOString()
+                };
+              }
+            }
+            return item;
+          });
+        });
         
-        console.log(`✅ PedidosHerreria: Estado de asignación actualizado`);
+        console.log(`✅ PedidosHerreria: Estado local actualizado inmediatamente`);
       }
     };
 
