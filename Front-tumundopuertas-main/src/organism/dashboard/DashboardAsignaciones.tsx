@@ -23,32 +23,22 @@ const normalizeAsignacion = (a: any) => ({
   fecha_fin: a.fecha_fin ?? a.fechaFin ?? null,
 });
 
-const normalizeAsignacionesResponse = (resp: any) => ({
-  success: !!resp.success,
-  asignaciones: toArray(resp.asignaciones).map(normalizeAsignacion),
-});
-
 interface Asignacion {
+  _id: string;
   pedido_id: string;
   orden: number;
   modulo: string;
   estado: string;
-  itemId: string;
-  empleadoId: string;
-  nombreempleado: string;
-  fecha_inicio: string;
-  fecha_fin: string | null;
-  // Campos adicionales para compatibilidad
-  _id?: string;
-  item_id?: string;
-  empleado_id?: string;
-  empleado_nombre?: string;
-  fecha_asignacion?: string;
-  descripcionitem?: string;
-  detalleitem?: string;
-  cliente_nombre?: string;
-  costo_produccion?: number;
-  imagenes?: string[];
+  item_id: string;
+  empleado_id: string;
+  empleado_nombre: string;
+  fecha_asignacion: string;
+  fecha_fin?: string;
+  descripcionitem: string;
+  detalleitem: string;
+  cliente_nombre: string;
+  costo_produccion: number;
+  imagenes: string[];
 }
 
 const DashboardAsignaciones: React.FC = () => {

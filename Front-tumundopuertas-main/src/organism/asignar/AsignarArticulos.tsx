@@ -369,7 +369,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
               asignaciones: [{
                 itemId: asignacion.item_id,
                 empleadoId: asignacion.empleado_id,
-                nombreempleado: empleados.find(emp => emp._id === asignacion.empleado_id)?.nombre || "Sin nombre",
+                nombreempleado: empleados.find(emp => emp.id === asignacion.empleado_id)?.nombre || "Sin nombre",
                 descripcionitem: items.find(item => item.id === asignacion.item_id)?.nombre || "",
                 costoproduccion: items.find(item => item.id === asignacion.item_id)?.costoProduccion || 0,
                 fecha_inicio: new Date().toISOString(),
