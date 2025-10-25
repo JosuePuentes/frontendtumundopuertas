@@ -43,6 +43,13 @@ const PedidosHerreria: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
   
+  // Estado para mostrar notificaciones de asignación
+  const [notificacionAsignacion, setNotificacionAsignacion] = useState<{
+    mostrar: boolean;
+    mensaje: string;
+    tipo: 'success' | 'error' | 'info';
+  }>({ mostrar: false, mensaje: '', tipo: 'info' });
+  
   // Estados para filtros
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [filtroAsignacion, setFiltroAsignacion] = useState<string>("todos");
@@ -524,34 +531,42 @@ const PedidosHerreria: React.FC = () => {
 
     // NUEVO: Escuchar asignaciones realizadas
     const handleAsignacionRealizada = async (event: Event) => {
-      console.log('🔍 EVENTO RECIBIDO en PedidosHerreria:', event);
       const customEvent = event as CustomEvent;
-      console.log('🔍 CustomEvent detail:', customEvent.detail);
-      
       const { pedidoId, asignaciones } = customEvent.detail;
-      console.log(`🎯 PedidosHerreria: Asignación realizada detectada:`, { pedidoId, asignaciones });
-      console.log(`🔍 Items actuales en PedidosHerreria:`, itemsIndividuales.length);
-      console.log(`🔍 IDs de pedidos actuales:`, itemsIndividuales.map(item => item.pedido_id));
+      
+      // Mostrar notificación de que se recibió el evento
+      setNotificacionAsignacion({
+        mostrar: true,
+        mensaje: `🎯 Evento recibido: Pedido ${pedidoId.slice(-4)} con ${asignaciones.length} asignación(es)`,
+        tipo: 'info'
+      });
       
       // Verificar si hay items de este pedido en la lista actual
       const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
-      console.log(`🔍 Items del pedido ${pedidoId}:`, itemsDelPedido);
       
       if (itemsDelPedido.length > 0) {
-        console.log(`🎯 Asignación realizada en pedido con ${itemsDelPedido.length} items en PedidosHerreria, actualizando estado local...`);
+        // Mostrar notificación de procesamiento
+        setNotificacionAsignacion({
+          mostrar: true,
+          mensaje: `🔄 Procesando ${itemsDelPedido.length} item(s) del pedido ${pedidoId.slice(-4)}...`,
+          tipo: 'info'
+        });
         
         // Actualizar estado local inmediatamente para mostrar asignación
         setItemsIndividuales(prevItems => {
-          console.log('🔍 Items antes de actualizar:', prevItems.length);
           const nuevosItems = prevItems.map(item => {
             if (item.pedido_id === pedidoId) {
-              console.log(`🔍 Procesando item ${item.id} del pedido ${pedidoId}`);
               // Buscar si este item fue asignado
               const asignacion = asignaciones.find((a: any) => a.item_id === item.id);
-              console.log(`🔍 Asignación encontrada para item ${item.id}:`, asignacion);
               
               if (asignacion) {
-                console.log(`✅ Actualizando item ${item.id} como asignado a ${asignacion.empleado_nombre}`);
+                // Mostrar notificación de éxito
+                setNotificacionAsignacion({
+                  mostrar: true,
+                  mensaje: `✅ Item asignado a: ${asignacion.empleado_nombre}`,
+                  tipo: 'success'
+                });
+                
                 return {
                   ...item,
                   empleado_asignado: asignacion.empleado_nombre || "Empleado asignado",
@@ -561,13 +576,26 @@ const PedidosHerreria: React.FC = () => {
             }
             return item;
           });
-          console.log('🔍 Items después de actualizar:', nuevosItems.length);
           return nuevosItems;
         });
         
-        console.log(`✅ PedidosHerreria: Estado local actualizado inmediatamente`);
+        // Ocultar notificación después de 3 segundos
+        setTimeout(() => {
+          setNotificacionAsignacion(prev => ({ ...prev, mostrar: false }));
+        }, 3000);
+        
       } else {
-        console.log(`⚠️ No se encontraron items del pedido ${pedidoId} en PedidosHerreria`);
+        // Mostrar notificación de error
+        setNotificacionAsignacion({
+          mostrar: true,
+          mensaje: `⚠️ No se encontraron items del pedido ${pedidoId.slice(-4)} en PedidosHerreria`,
+          tipo: 'error'
+        });
+        
+        // Ocultar notificación después de 5 segundos
+        setTimeout(() => {
+          setNotificacionAsignacion(prev => ({ ...prev, mostrar: false }));
+        }, 5000);
       }
     };
 
@@ -589,9 +617,29 @@ const PedidosHerreria: React.FC = () => {
   // ...
 
   return (
-    <Card className="max-w-4xl mx-auto mt-8 border-gray-200">
-      <CardHeader>
-        <CardTitle>Gestión de Items Individuales - PedidosHerreria</CardTitle>
+    <div className="max-w-4xl mx-auto mt-8">
+      {/* Notificación de asignación */}
+      {notificacionAsignacion.mostrar && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-md ${
+          notificacionAsignacion.tipo === 'success' ? 'bg-green-100 border-green-500 text-green-800' :
+          notificacionAsignacion.tipo === 'error' ? 'bg-red-100 border-red-500 text-red-800' :
+          'bg-blue-100 border-blue-500 text-blue-800'
+        } border-2`}>
+          <div className="flex items-center justify-between">
+            <p className="font-medium">{notificacionAsignacion.mensaje}</p>
+            <button 
+              onClick={() => setNotificacionAsignacion(prev => ({ ...prev, mostrar: false }))}
+              className="ml-2 text-lg font-bold hover:opacity-70"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
+      <Card className="border-gray-200">
+        <CardHeader>
+          <CardTitle>Gestión de Items Individuales - PedidosHerreria</CardTitle>
         
         {/* Indicador de última actualización */}
         <div className="text-sm text-gray-600 mt-2">
@@ -1005,6 +1053,7 @@ const PedidosHerreria: React.FC = () => {
         )}
       </CardContent>
     </Card>
+    </div>
   );
 };
 
