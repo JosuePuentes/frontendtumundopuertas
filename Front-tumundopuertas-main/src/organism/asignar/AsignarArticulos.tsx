@@ -319,11 +319,16 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       console.log('Estado item:', estadoItem);
       console.log('Módulo mapeado:', modulo);
       
+      // Buscar el nombre del empleado
+      const empleado = empleados.find(emp => emp.id === asignacion.empleadoId);
+      const nombreEmpleado = empleado?.nombre || "Empleado asignado";
+      
       // FORMATO EXACTO requerido por el endpoint /pedidos/asignar-item/
       const datosParaEnviar = {
         pedido_id: pedidoId,                    // ✅ ID del pedido (string)
         item_id: itemCompleto?.id || itemId,    // ✅ ID del item específico (string)
         empleado_id: asignacion.empleadoId,     // ✅ ID del empleado (string)
+        empleado_nombre: nombreEmpleado,        // ✅ Nombre del empleado (string)
         modulo: modulo                          // ✅ Módulo: "herreria", "masillar", "preparar"
       };
       
@@ -435,6 +440,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       setMessage(`✅ ${asignacionesParaEnviar.length} asignación(es) enviada(s) correctamente`);
       
       // NUEVO: Disparar evento personalizado para notificar asignación exitosa
+      console.log('🎯 Disparando evento asignacionRealizada con datos:', {
+        pedidoId: pedidoId,
+        asignaciones: asignacionesParaEnviar,
+        timestamp: new Date().toISOString()
+      });
+      
       window.dispatchEvent(new CustomEvent('asignacionRealizada', { 
         detail: { 
           pedidoId: pedidoId,
@@ -443,6 +454,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
           timestamp: new Date().toISOString()
         } 
       }));
+      
+      console.log('✅ Evento asignacionRealizada disparado exitosamente');
       
       // Recargar datos después de la asignación
       await cargarEstadosItems();
