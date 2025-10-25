@@ -320,8 +320,15 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       console.log('Módulo mapeado:', modulo);
       
       // Buscar el nombre del empleado
+      console.log('🔍 DEBUG empleados disponibles:', empleados.length);
+      console.log('🔍 DEBUG buscando empleado con ID:', asignacion.empleadoId);
+      console.log('🔍 DEBUG empleados:', empleados.map(emp => ({ id: emp.id, nombre: emp.nombre })));
+      
       const empleado = empleados.find(emp => emp.id === asignacion.empleadoId);
+      console.log('🔍 DEBUG empleado encontrado:', empleado);
+      
       const nombreEmpleado = empleado?.nombre || "Empleado asignado";
+      console.log('🔍 DEBUG nombre empleado final:', nombreEmpleado);
       
       // FORMATO EXACTO requerido por el endpoint /pedidos/asignar-item/
       const datosParaEnviar = {
