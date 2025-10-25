@@ -479,11 +479,13 @@ const DashboardAsignaciones: React.FC = () => {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {asignacion.imagenes.map((imagen: string, index: number) => (
                         <div key={index} className="relative">
-                          <ImageDisplay
-                            imageUrl={imagen}
-                            alt={`Imagen ${index + 1} del item`}
-                            className="w-full h-24 object-cover rounded border"
-                          />
+                          <div className="w-full h-24 object-cover rounded border overflow-hidden">
+                            <ImageDisplay
+                              imageName={imagen}
+                              alt={`Imagen ${index + 1} del item`}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          </div>
                         </div>
                       ))}
                     </div>
