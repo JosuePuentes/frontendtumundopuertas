@@ -185,11 +185,20 @@ const PedidosHerreria: React.FC = () => {
           for (const sub of seguimiento) {
             if (sub.asignaciones_articulos && Array.isArray(sub.asignaciones_articulos)) {
               for (const asignacion of sub.asignaciones_articulos) {
+                console.log('🔍 DEBUG asignación encontrada:', {
+                  itemId: asignacion.itemId,
+                  estado: asignacion.estado,
+                  empleadoId: asignacion.empleadoId,
+                  nombreempleado: asignacion.nombreempleado,
+                  fecha_inicio: asignacion.fecha_inicio
+                });
+                
                 if (asignacion.estado === "en_proceso") {
                   asignaciones[asignacion.itemId] = {
                     empleado_nombre: asignacion.nombreempleado || "Sin asignar",
                     fecha_asignacion: asignacion.fecha_inicio || new Date().toISOString()
                   };
+                  console.log('✅ Item marcado como asignado:', asignacion.itemId);
                 }
               }
             }
@@ -982,6 +991,14 @@ const PedidosHerreria: React.FC = () => {
                         </div>
                 </div>
                 
+                      {/* DEBUG: Mostrar estado de asignación */}
+                      {console.log('🔍 DEBUG renderizado item:', {
+                        itemId: item.id,
+                        itemNombre: item.nombre,
+                        tieneAsignacion: !!asignacionesActivas[item.id],
+                        asignacion: asignacionesActivas[item.id]
+                      })}
+                      
                       {/* Información de asignación */}
                       {asignacionesActivas[item.id] && (
                         <div className="bg-blue-50 p-3 rounded-lg">
