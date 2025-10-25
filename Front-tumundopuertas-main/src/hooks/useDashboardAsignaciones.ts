@@ -56,34 +56,56 @@ export const useDashboardAsignaciones = () => {
     try {
       console.log('🔄 Cargando asignaciones...');
       
-      // Usar el endpoint existente /pedidos/comisiones/produccion/enproceso/
-      console.log('🔄 Usando endpoint existente...');
-      const response = await fetch(`${getApiUrl()}/pedidos/comisiones/produccion/enproceso/`);
+      // Obtener todos los pedidos y extraer asignaciones manualmente
+      console.log('🔄 Obteniendo todos los pedidos...');
+      const response = await fetch(`${getApiUrl()}/pedidos/all/`);
       
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
-      const data = await response.json();
+      const pedidos = await response.json();
+      console.log('📋 Pedidos obtenidos:', pedidos.length);
       
-      // Convertir las asignaciones del backend al formato esperado
-      const asignaciones: Asignacion[] = Array.isArray(data) ? data.map((asig: any) => ({
-        _id: asig._id || `${asig.pedido_id}_${asig.item_id}`,
-        pedido_id: asig.pedido_id,
-        orden: asig.orden || 1,
-        item_id: asig.item_id,
-        empleado_id: asig.empleadoId || "sin_asignar",
-        empleado_nombre: asig.nombreempleado || "Sin asignar",
-        modulo: obtenerModuloPorOrden(asig.orden || 1),
-        estado: asig.estado || "en_proceso",
-        fecha_asignacion: asig.fecha_inicio || new Date().toISOString(),
-        fecha_fin: asig.fecha_fin,
-        descripcionitem: asig.descripcionitem || "",
-        detalleitem: asig.detalleitem || "",
-        cliente_nombre: asig.cliente?.cliente_nombre || "",
-        costo_produccion: asig.costoproduccion || 0,
-        imagenes: asig.imagenes || []
-      })) : [];
+      // Extraer todas las asignaciones en proceso de todos los pedidos
+      const asignaciones: Asignacion[] = [];
+      
+      for (const pedido of pedidos) {
+        const pedido_id = pedido._id;
+        const seguimiento = pedido.seguimiento || [];
+        
+        for (const sub of seguimiento) {
+          if (sub.asignaciones_articulos && Array.isArray(sub.asignaciones_articulos)) {
+            for (const asignacion of sub.asignaciones_articulos) {
+              // Solo incluir asignaciones en proceso
+              if (asignacion.estado === "en_proceso") {
+                // Buscar información del item
+                const item = pedido.items?.find((item: any) => item.id === asignacion.itemId);
+                
+                const asignacionCompleta: Asignacion = {
+                  _id: `${pedido_id}_${asignacion.itemId}_${sub.orden}`,
+                  pedido_id: pedido_id,
+                  orden: sub.orden || 1,
+                  item_id: asignacion.itemId,
+                  empleado_id: asignacion.empleadoId || "sin_asignar",
+                  empleado_nombre: asignacion.nombreempleado || "Sin asignar",
+                  modulo: obtenerModuloPorOrden(sub.orden || 1),
+                  estado: asignacion.estado || "en_proceso",
+                  fecha_asignacion: asignacion.fecha_inicio || new Date().toISOString(),
+                  fecha_fin: asignacion.fecha_fin,
+                  descripcionitem: asignacion.descripcionitem || item?.nombre || "",
+                  detalleitem: item?.detalleitem || "",
+                  cliente_nombre: pedido.cliente_nombre || "",
+                  costo_produccion: asignacion.costoproduccion || item?.costoProduccion || 0,
+                  imagenes: item?.imagenes || []
+                };
+                
+                asignaciones.push(asignacionCompleta);
+              }
+            }
+          }
+        }
+      }
       
       console.log('✅ Asignaciones obtenidas:', asignaciones.length);
       return asignaciones;
