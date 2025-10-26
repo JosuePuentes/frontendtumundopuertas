@@ -433,7 +433,7 @@ const PedidosHerreria: React.FC = () => {
               empleado_asignado: resultado.item_info.nombre_empleado || asignacion.empleado_nombre || "Empleado asignado",
               fecha_asignacion: resultado.item_info.fecha_asignacion || new Date().toISOString(),
               // Actualizar información del item con datos del backend
-              descripcionitem: resultado.item_info.descripcion || item.descripcionitem,
+              descripcion: resultado.item_info.descripcion || item.descripcion,
               costoProduccion: resultado.item_info.costoProduccion || item.costoProduccion,
               imagenes: resultado.item_info.imagenes || item.imagenes
             };
