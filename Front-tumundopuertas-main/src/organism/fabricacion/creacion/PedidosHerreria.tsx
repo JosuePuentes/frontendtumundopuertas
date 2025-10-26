@@ -416,17 +416,29 @@ const PedidosHerreria: React.FC = () => {
   useEffect(() => {
     const handleAsignacionRealizada = async (event: Event) => {
       const customEvent = event as CustomEvent;
-      const { pedidoId, asignaciones, timestamp } = customEvent.detail;
-      console.log(`🎯 PedidosHerreria: Asignación realizada detectada:`, { pedidoId, asignaciones, timestamp });
+      const { pedidoId, asignaciones, resultados, timestamp } = customEvent.detail;
+      console.log(`🎯 PedidosHerreria: Asignación realizada detectada:`, { pedidoId, asignaciones, resultados, timestamp });
       
-      // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE
+      // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE usando información completa del backend
       setItemsIndividuales(prevItems => {
         const nuevosItems = prevItems.map(item => {
           // Buscar si este item fue asignado
           const asignacion = asignaciones.find((a: any) => a.item_id === item.id);
+          const resultado = resultados?.find((r: any) => r.item_info?.id === item.id);
           
-          if (asignacion) {
-            console.log(`✅ Actualizando item ${item.id} con asignación:`, asignacion);
+          if (asignacion && resultado?.item_info) {
+            console.log(`✅ Actualizando item ${item.id} con información completa:`, resultado.item_info);
+            return {
+              ...item,
+              empleado_asignado: resultado.item_info.nombre_empleado || asignacion.empleado_nombre || "Empleado asignado",
+              fecha_asignacion: resultado.item_info.fecha_asignacion || new Date().toISOString(),
+              // Actualizar información del item con datos del backend
+              descripcionitem: resultado.item_info.descripcion || item.descripcionitem,
+              costoProduccion: resultado.item_info.costoProduccion || item.costoProduccion,
+              imagenes: resultado.item_info.imagenes || item.imagenes
+            };
+          } else if (asignacion) {
+            console.log(`✅ Actualizando item ${item.id} con asignación básica:`, asignacion);
             return {
               ...item,
               empleado_asignado: asignacion.empleado_nombre || "Empleado asignado",

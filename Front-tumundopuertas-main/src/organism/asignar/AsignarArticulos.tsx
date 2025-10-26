@@ -80,7 +80,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const [asignadosPrevios, setAsignadosPrevios] = useState<Record<string, AsignacionArticulo>>({});
   const [showCambio, setShowCambio] = useState<Record<string, boolean>>({});
   const [empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
-  
+
   // Estado para items ya asignados localmente
   const [itemsAsignadosLocalmente, setItemsAsignadosLocalmente] = useState<Record<string, {empleado_nombre: string, fecha_asignacion: string}>>({});
 
@@ -402,42 +402,32 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://crafteo.onrender.com").replace('http://', 'https://');
-      console.log('🔄 Enviando asignaciones individuales a:', `${apiUrl}/pedidos/subestados/`);
+      console.log('🔄 Enviando asignaciones individuales a:', `${apiUrl}/pedidos/asignar-item/`);
       
-      // Función para asignar usando el endpoint existente /pedidos/subestados/
+      // Función para asignar usando el NUEVO endpoint /pedidos/asignar-item/
       const asignarItemConRetry = async (asignacion: any, maxRetries = 3) => {
         for (let intento = 0; intento < maxRetries; intento++) {
           try {
             console.log(`📤 Intento ${intento + 1}/${maxRetries} - Enviando asignación:`, asignacion);
             
-            // Usar el endpoint existente /pedidos/subestados/ que ya maneja asignaciones
-            const datosSubestado = {
+            // Usar el NUEVO endpoint /pedidos/asignar-item/ que devuelve información completa
+            const datosAsignacion = {
               pedido_id: asignacion.pedido_id,
-              numero_orden: asignacion.modulo === "herreria" ? "1" : 
-                           asignacion.modulo === "masillar" ? "2" :
-                           asignacion.modulo === "preparar" ? "3" : "4",
-              tipo_fecha: "inicio",
-              estado: "en_proceso",
-              asignaciones: [{
-                itemId: asignacion.item_id,
-                empleadoId: asignacion.empleado_id,
-                nombreempleado: empleados.find(emp => emp.id === asignacion.empleado_id)?.nombre || "Sin nombre",
-                descripcionitem: items.find(item => item.id === asignacion.item_id)?.nombre || "",
-                costoproduccion: items.find(item => item.id === asignacion.item_id)?.costoProduccion || 0,
-                fecha_inicio: new Date().toISOString(),
-                estado: "en_proceso"
-              }]
+              item_id: asignacion.item_id,
+              empleado_id: asignacion.empleado_id,
+              empleado_nombre: asignacion.empleado_nombre,
+              modulo: asignacion.modulo
             };
             
-            console.log('📤 Datos para subestado:', datosSubestado);
+            console.log('📤 Datos para asignación:', datosAsignacion);
             
-            const res = await fetch(`${apiUrl}/pedidos/subestados/`, {
+            const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
               method: "PUT",
               headers: { 
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${localStorage.getItem('access_token')}`
               },
-              body: JSON.stringify(datosSubestado),
+              body: JSON.stringify(datosAsignacion),
             });
             
             console.log('📡 Respuesta del servidor:', res.status, res.statusText);
@@ -445,6 +435,26 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
             if (res.ok) {
               const result = await res.json();
               console.log('✅ Asignación exitosa:', result);
+              
+              // NUEVA: Usar la información completa que devuelve el backend
+              console.log('📋 Información básica:', {
+                message: result.message,
+                estado_item: result.estado_item,
+                modulo: result.modulo,
+                empleado: result.empleado
+              });
+              
+              console.log('📋 Información completa del item:', result.item_info);
+              console.log('📋 Información del pedido:', result.pedido_info);
+              
+              // Guardar información completa en localStorage para uso posterior
+              if (result.item_info) {
+                localStorage.setItem(`item_asignado_${asignacion.item_id}`, JSON.stringify(result.item_info));
+              }
+              if (result.pedido_info) {
+                localStorage.setItem(`pedido_info_${asignacion.pedido_id}`, JSON.stringify(result.pedido_info));
+              }
+              
               return result;
             }
 
@@ -487,19 +497,20 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       setMessage(`✅ ${asignacionesParaEnviar.length} asignación(es) enviada(s) correctamente`);
       
       // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE - SOLUCIÓN SIMPLE
-      const nuevosItemsAsignados: Record<string, {empleado_nombre: string, fecha_asignacion: string}> = {};
+      const nuevosItemsAsignados: Record<string, {empleado_nombre: string, fecha_asignacion: string, item_info?: any}> = {};
       
-      for (const asignacion of asignacionesParaEnviar) {
-        // Buscar el nombre del empleado
-        const empleadosDisponibles = empleadosPorItem[asignacion.item_id] || empleados;
-        const empleado = empleadosDisponibles.find(emp => 
-          emp._id === asignacion.empleado_id || emp.identificador === asignacion.empleado_id
-        );
-        const nombreEmpleado = empleado?.nombreCompleto || "Empleado asignado";
+      for (let i = 0; i < asignacionesParaEnviar.length; i++) {
+        const asignacion = asignacionesParaEnviar[i];
+        const resultado = resultados[i];
+        
+        // Usar información del resultado del backend si está disponible
+        const itemInfo = resultado?.item_info;
+        const empleadoNombre = itemInfo?.nombre_empleado || asignacion.empleado_nombre || "Empleado asignado";
         
         nuevosItemsAsignados[asignacion.item_id] = {
-          empleado_nombre: nombreEmpleado,
-          fecha_asignacion: new Date().toISOString()
+          empleado_nombre: empleadoNombre,
+          fecha_asignacion: itemInfo?.fecha_asignacion || new Date().toISOString(),
+          item_info: itemInfo // Incluir información completa del item
         };
       }
       
@@ -510,6 +521,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       console.log('🎯 Disparando evento asignacionRealizada con datos:', {
         pedidoId: pedidoId,
         asignaciones: asignacionesParaEnviar,
+        resultados: resultados, // Incluir información completa del backend
         timestamp: new Date().toISOString()
       });
       
@@ -517,7 +529,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         detail: { 
           pedidoId: pedidoId,
           asignaciones: asignacionesParaEnviar,
-          resultados: resultados,
+          resultados: resultados, // NUEVA: Información completa del backend
           timestamp: new Date().toISOString()
         } 
       }));
