@@ -507,8 +507,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
   };
 
-  // Función debounced para evitar múltiples clicks
-  const handleAsignar = debounce(handleAsignarOriginal, 1000);
+  // Función debounced para evitar múltiples clicks (reducido a 300ms)
+  const handleAsignar = debounce(handleAsignarOriginal, 300);
 
   // Función para manejar la terminación de asignaciones
   const handleTerminarAsignacion = async (itemId: string, empleadoId: string) => {
