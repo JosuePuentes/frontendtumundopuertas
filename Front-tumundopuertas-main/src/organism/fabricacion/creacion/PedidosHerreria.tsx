@@ -419,10 +419,31 @@ const PedidosHerreria: React.FC = () => {
       const { pedidoId, asignaciones, timestamp } = customEvent.detail;
       console.log(`🎯 PedidosHerreria: Asignación realizada detectada:`, { pedidoId, asignaciones, timestamp });
       
-      // Recargar datos para mostrar el empleado asignado
+      // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE
+      setItemsIndividuales(prevItems => {
+        const nuevosItems = prevItems.map(item => {
+          // Buscar si este item fue asignado
+          const asignacion = asignaciones.find((a: any) => a.item_id === item.id);
+          
+          if (asignacion) {
+            console.log(`✅ Actualizando item ${item.id} con asignación:`, asignacion);
+            return {
+              ...item,
+              empleado_asignado: asignacion.empleado_nombre || "Empleado asignado",
+              fecha_asignacion: new Date().toISOString()
+            };
+          }
+          
+          return item;
+        });
+        
+        return nuevosItems;
+      });
+      
+      // También recargar datos del backend para sincronizar
       await recargarDatos();
       
-      console.log(`✅ PedidosHerreria: Datos actualizados después de asignación`);
+      console.log(`✅ PedidosHerreria: Estado local y datos actualizados después de asignación`);
     };
 
     window.addEventListener('asignacionRealizada', handleAsignacionRealizada);

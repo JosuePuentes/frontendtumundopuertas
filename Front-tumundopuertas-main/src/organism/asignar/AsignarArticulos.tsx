@@ -253,10 +253,30 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     empleadoId: string,
     nombreempleado: string
   ) => {
+    // VALIDACIÓN: Verificar que item e idx sean válidos
+    if (!item || !item.id || idx === undefined || idx === null) {
+      console.error('❌ ERROR: handleEmpleadoChange recibió datos inválidos:', {
+        item: item,
+        idx: idx,
+        empleadoId: empleadoId,
+        nombreempleado: nombreempleado
+      });
+      return;
+    }
+    
+    const key = `${item.id}-${idx}`;
+    console.log('✅ handleEmpleadoChange - Creando asignación:', {
+      key: key,
+      itemId: item.id,
+      idx: idx,
+      empleadoId: empleadoId,
+      nombreempleado: nombreempleado
+    });
+    
     setAsignaciones((prev) => ({
       ...prev,
-      [`${item.id}-${idx}`]: {
-        key: `${item.id}-${idx}`,
+      [key]: {
+        key: key,
         empleadoId,
         nombreempleado,
         fecha_inicio: new Date().toISOString(),
@@ -265,7 +285,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         costoproduccion: String(item.costoProduccion),
       },
     }));
-    setShowCambio((prev) => ({ ...prev, [`${item.id}-${idx}`]: false }));
+    setShowCambio((prev) => ({ ...prev, [key]: false }));
   };
 
   const handleAsignarOriginal = async () => {
@@ -276,9 +296,18 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     console.log('📋 Estado de asignaciones:', asignaciones);
     
     // Verificar que hay asignaciones para enviar
-    const asignacionesValidas = Object.entries(asignaciones).filter(([, asignacion]) => 
-      asignacion.empleadoId && asignacion.empleadoId.trim() !== ""
-    );
+    const asignacionesValidas = Object.entries(asignaciones).filter(([key, asignacion]) => {
+      const isValid = asignacion.empleadoId && 
+                     asignacion.empleadoId.trim() !== "" && 
+                     key !== "undefined" && 
+                     !key.includes("undefined");
+      
+      if (!isValid) {
+        console.warn('⚠️ FILTRANDO asignación inválida:', { key, asignacion });
+      }
+      
+      return isValid;
+    });
     
     console.log('✅ Asignaciones válidas:', asignacionesValidas.length);
     console.log('📋 Asignaciones válidas detalle:', asignacionesValidas);
