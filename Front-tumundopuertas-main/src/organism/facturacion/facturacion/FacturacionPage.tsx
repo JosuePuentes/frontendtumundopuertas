@@ -19,53 +19,66 @@ const FacturacionPage: React.FC = () => {
       if (!res.ok) throw new Error("Error al obtener pedidos");
       const pedidos = await res.json();
       
-      // Filtrar pedidos que necesitan facturación (progreso 100%)
-      const pedidosParaFacturar = [];
-      
-      for (const pedido of pedidos) {
-        // Verificar progreso del pedido
-        try {
-          const progresoRes = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`);
-          if (progresoRes.ok) {
+      // OPTIMIZACIÓN: Cargar todos los pedidos en paralelo
+      const pedidosConProgreso = await Promise.all(
+        pedidos.map(async (pedido) => {
+          try {
+            // Verificar progreso del pedido
+            const progresoRes = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`);
+            if (!progresoRes.ok) return null;
+            
             const progresoData = await progresoRes.json();
             // Solo incluir pedidos al 100%
-            if (progresoData.progreso_general === 100) {
-              // Obtener historial de pagos
-              const pagosRes = await fetch(`${getApiUrl()}/pagos/pedido/${pedido._id}`);
-              let historialPagos = [];
-              if (pagosRes.ok) {
-                historialPagos = await pagosRes.json();
-              }
-              
-              // Calcular montos
-              const montoTotal = pedido.items?.reduce((acc: number, item: any) => acc + (item.precio || 0) * (item.cantidad || 0), 0) || 0;
-              const montoAbonado = historialPagos.reduce((acc: number, pago: any) => acc + (pago.monto || 0), 0);
-              
-              // Buscar fecha de finalización (último seguimiento con fecha_fin)
-              let fecha100Porciento = null;
-              if (pedido.seguimiento && Array.isArray(pedido.seguimiento)) {
-                for (const seguimiento of pedido.seguimiento.reverse()) {
-                  if (seguimiento.fecha_fin) {
-                    fecha100Porciento = seguimiento.fecha_fin;
-                    break;
-                  }
+            if (progresoData.progreso_general !== 100) return null;
+            
+            // Obtener información de pagos del pedido (NUEVO ENDPOINT)
+            const pagosRes = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/pagos`);
+            let montoTotal = pedido.items?.reduce((acc: number, item: any) => acc + (item.precio || 0) * (item.cantidad || 0), 0) || 0;
+            let montoAbonado = 0;
+            let historialPagos: any[] = [];
+            
+            if (pagosRes.ok) {
+              const pagosData = await pagosRes.json();
+              // Usar datos del backend que ya traen los totales calculados
+              montoTotal = pagosData.total_pedido || montoTotal;
+              montoAbonado = pagosData.total_abonado || 0;
+              historialPagos = pagosData.historial_pagos || [];
+            }
+            
+            // Buscar fecha de finalización (último seguimiento con fecha_fin)
+            let fecha100Porciento = null;
+            if (pedido.seguimiento && Array.isArray(pedido.seguimiento)) {
+              for (const seguimiento of pedido.seguimiento.reverse()) {
+                if (seguimiento.fecha_fin) {
+                  fecha100Porciento = seguimiento.fecha_fin;
+                  break;
                 }
               }
-              
-              pedidosParaFacturar.push({
-                ...pedido,
-                montoTotal,
-                montoAbonado,
-                fecha100Porciento,
-                historialPagos,
-                puedeFacturar: montoAbonado >= montoTotal
-              });
             }
+            
+            return {
+              ...pedido,
+              montoTotal,
+              montoAbonado,
+              fecha100Porciento,
+              historialPagos,
+              puedeFacturar: montoAbonado >= montoTotal
+            };
+          } catch (err) {
+            // console.error(`Error al obtener progreso del pedido ${pedido._id}:`, err);
+            return null;
           }
-        } catch (err) {
-          console.error(`Error al obtener progreso del pedido ${pedido._id}:`, err);
-        }
-      }
+        })
+      );
+      
+      // Filtrar nulos y ordenar por fecha más reciente
+      const pedidosParaFacturar = pedidosConProgreso
+        .filter((p) => p !== null)
+        .sort((a, b) => {
+          const fechaA = new Date(a.fecha_creacion || 0).getTime();
+          const fechaB = new Date(b.fecha_creacion || 0).getTime();
+          return fechaB - fechaA; // Más reciente primero
+        });
       
       setFacturacion(pedidosParaFacturar);
     } catch (err: any) {
