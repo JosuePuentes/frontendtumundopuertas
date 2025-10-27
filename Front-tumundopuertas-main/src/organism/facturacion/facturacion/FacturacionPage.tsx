@@ -21,7 +21,7 @@ const FacturacionPage: React.FC = () => {
       
       // OPTIMIZACIÓN: Cargar todos los pedidos en paralelo
       const pedidosConProgreso = await Promise.all(
-        pedidos.map(async (pedido) => {
+        pedidos.map(async (pedido: any) => {
           try {
             // Verificar progreso del pedido
             const progresoRes = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`);
