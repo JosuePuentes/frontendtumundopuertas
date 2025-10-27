@@ -19,6 +19,23 @@ const FacturacionPage: React.FC = () => {
       if (!res.ok) throw new Error("Error al obtener pedidos");
       const pedidos = await res.json();
       
+      // TEST: Filtrar solo el pedido específico que está al 100%
+      const pedidoEspecifico = pedidos.find((p: any) => p._id === '68ff2db63d0cf1dc45e64c81');
+      console.log('🔍 Pedido específico encontrado:', pedidoEspecifico);
+      
+      // TEST: Obtener progreso del pedido específico
+      if (pedidoEspecifico) {
+        try {
+          const progresoTest = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/68ff2db63d0cf1dc45e64c81`);
+          if (progresoTest.ok) {
+            const progresoTestData = await progresoTest.json();
+            console.log('🧪 PROGRESO DEL PEDIDO ESPECÍFICO:', progresoTestData);
+          }
+        } catch (err) {
+          console.error('❌ Error al obtener progreso del pedido específico:', err);
+        }
+      }
+      
       // OPTIMIZACIÓN: Limitar cantidad de pedidos para evitar timeout
       const pedidosLimitados = pedidos.slice(0, 50); // Solo primeros 50 pedidos
       
