@@ -230,9 +230,6 @@ const totalGeneralPrecios = empleadosFiltrados.reduce((acc, empleado) => {
         <span className="px-4 py-2 rounded-xl bg-green-100 text-green-800 text-lg font-bold shadow-sm">
           Total General: ${totalGeneral.toFixed(2)}
         </span>
-        <span className="block text-xl font-bold text-blue-700">
-    Venta: ${totalGeneralPrecios.toFixed(2)}
-  </span>
       </div>
 
       {/* FILTROS */}
@@ -407,6 +404,11 @@ const totalGeneralPrecios = empleadosFiltrados.reduce((acc, empleado) => {
                                 {permiso}
                               </Badge>
                             ))}
+                          </div>
+                          {/* Total de costo de producción del empleado */}
+                          <div className="mt-3">
+                            <span className="text-sm font-semibold text-gray-600">Total Costo Producción: </span>
+                            <span className="text-lg font-bold text-green-700">${total.toFixed(2)}</span>
                           </div>
                         </div>
                       </CardTitle>
