@@ -19,25 +19,15 @@ const FacturacionPage: React.FC = () => {
       if (!res.ok) throw new Error("Error al obtener pedidos");
       const pedidos = await res.json();
       
-      // TEST: Filtrar solo el pedido específico que está al 100%
-      const pedidoEspecifico = pedidos.find((p: any) => p._id === '68ff2db63d0cf1dc45e64c81');
-      console.log('🔍 Pedido específico encontrado:', pedidoEspecifico);
-      
-      // TEST: Obtener progreso del pedido específico
-      if (pedidoEspecifico) {
-        try {
-          const progresoTest = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/68ff2db63d0cf1dc45e64c81`);
-          if (progresoTest.ok) {
-            const progresoTestData = await progresoTest.json();
-            console.log('🧪 PROGRESO DEL PEDIDO ESPECÍFICO:', progresoTestData);
-          }
-        } catch (err) {
-          console.error('❌ Error al obtener progreso del pedido específico:', err);
-        }
-      }
+      // OPTIMIZACIÓN: Ordenar pedidos por fecha (más recientes primero) y limitar
+      const pedidosOrdenados = [...pedidos].sort((a: any, b: any) => {
+        const fechaA = new Date(a.fecha_creacion || 0).getTime();
+        const fechaB = new Date(b.fecha_creacion || 0).getTime();
+        return fechaB - fechaA; // Más reciente primero
+      });
       
       // OPTIMIZACIÓN: Limitar cantidad de pedidos para evitar timeout
-      const pedidosLimitados = pedidos.slice(0, 50); // Solo primeros 50 pedidos
+      const pedidosLimitados = pedidosOrdenados.slice(0, 50); // Solo primeros 50 pedidos más recientes
       
       // OPTIMIZACIÓN: Cargar todos los pedidos en paralelo con timeout
       const pedidosConProgreso = await Promise.all(
@@ -101,14 +91,8 @@ const FacturacionPage: React.FC = () => {
         })
       );
       
-      // Filtrar nulos y ordenar por fecha más reciente
-      const pedidosParaFacturar = pedidosConProgreso
-        .filter((p) => p !== null)
-        .sort((a, b) => {
-          const fechaA = new Date(a.fecha_creacion || 0).getTime();
-          const fechaB = new Date(b.fecha_creacion || 0).getTime();
-          return fechaB - fechaA; // Más reciente primero
-        });
+      // Filtrar nulos (ya están ordenados por fecha)
+      const pedidosParaFacturar = pedidosConProgreso.filter((p) => p !== null);
       
       console.log('📊 Total pedidos obtenidos:', pedidos.length);
       console.log('📊 Pedidos limitados:', pedidosLimitados.length);
