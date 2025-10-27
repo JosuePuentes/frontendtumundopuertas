@@ -280,6 +280,15 @@ const DashboardAsignaciones: React.FC = () => {
       const result = await response.json();
       console.log('✅ Asignación terminada:', result);
       
+      // Disparar evento de asignación terminada para que PedidosHerreria limpie el estado
+      window.dispatchEvent(new CustomEvent('asignacionTerminada', {
+        detail: {
+          pedidoId: asig.pedido_id,
+          itemId: asig.item_id,
+          timestamp: new Date().toISOString()
+        }
+      }));
+      
       // Mostrar información de la comisión si está disponible
       if (result.comision) {
         console.log('💰 Comisión registrada:', result.comision);

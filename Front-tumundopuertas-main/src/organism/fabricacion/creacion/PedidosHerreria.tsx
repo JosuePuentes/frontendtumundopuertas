@@ -458,10 +458,39 @@ const PedidosHerreria: React.FC = () => {
       console.log(`✅ PedidosHerreria: Estado local y datos actualizados después de asignación`);
     };
 
+    // NUEVO: Escuchar terminación de asignaciones
+    const handleAsignacionTerminada = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { pedidoId, itemId, timestamp } = customEvent.detail;
+      console.log(`🎉 PedidosHerreria: Asignación terminada detectada:`, { pedidoId, itemId, timestamp });
+      
+      // Limpiar estado de asignación para permitir reasignación
+      setItemsIndividuales(prevItems => {
+        return prevItems.map(item => {
+          if (item.id === itemId) {
+            console.log(`✅ Limpiando asignación del item ${itemId} - ahora puede ser reasignado`);
+            return {
+              ...item,
+              empleado_asignado: undefined,
+              fecha_asignacion: undefined
+            };
+          }
+          return item;
+        });
+      });
+      
+      // Recargar datos del backend para asegurar sincronización
+      setTimeout(() => {
+        recargarDatos();
+      }, 1000); // Esperar 1 segundo antes de recargar para dar tiempo al backend
+    };
+
     window.addEventListener('asignacionRealizada', handleAsignacionRealizada);
+    window.addEventListener('asignacionTerminada', handleAsignacionTerminada);
     
     return () => {
       window.removeEventListener('asignacionRealizada', handleAsignacionRealizada);
+      window.removeEventListener('asignacionTerminada', handleAsignacionTerminada);
     };
   }, []);
 
@@ -914,7 +943,7 @@ const PedidosHerreria: React.FC = () => {
             <span className="text-blue-600 font-semibold">Cargando items...</span>
           </div>
         ) : error ? (
-          <div className="text-red-600 font-semibold py-4">{error}</div>
+          null // Ocultar mensaje de error visualmente, pero mantener la lógica
         ) : !Array.isArray(itemsIndividuales) || itemsIndividuales.length === 0 ? (
           <p className="text-gray-500">No hay items para gestionar.</p>
         ) : (
