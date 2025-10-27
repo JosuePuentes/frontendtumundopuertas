@@ -20,6 +20,7 @@ type TerminarEmpleadoPayload = {
       estado: "terminado",
       fecha_fin: string,
       orden?: string,
+      pin?: string,
     };
 
 function useTerminarEmpleado<T = any>(
