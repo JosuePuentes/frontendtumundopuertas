@@ -33,10 +33,13 @@ const FacturacionPage: React.FC = () => {
             if (!progresoRes.ok) return null;
             
             const progresoData = await progresoRes.json();
-            console.log(`📊 Pedido ${pedido._id.slice(-4)}: progreso=${progresoData.progreso_general}%`);
-            // Solo incluir pedidos al 100%
-            if (progresoData.progreso_general !== 100) {
-              console.log(`❌ Pedido ${pedido._id.slice(-4)} no está al 100%, progreso: ${progresoData.progreso_general}%`);
+            console.log(`📊 Pedido ${pedido._id.slice(-4)}:`, progresoData);
+            console.log(`📊 progreso_general: ${progresoData.progreso_general}, porcentaje: ${progresoData.porcentaje}`);
+            // Solo incluir pedidos al 100% - verificar ambos campos
+            const progreso = progresoData.progreso_general || progresoData.porcentaje || 0;
+            console.log(`✅ Progreso final calculado: ${progreso}%`);
+            if (progreso !== 100) {
+              console.log(`❌ Pedido ${pedido._id.slice(-4)} no está al 100%, progreso: ${progreso}%`);
               return null;
             }
             
