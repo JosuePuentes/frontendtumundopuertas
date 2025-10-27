@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import * as XLSX from 'xlsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +42,10 @@ const CargarInventarioExcel: React.FC = () => {
   const [showInventoryPreview, setShowInventoryPreview] = useState(false);
   const [showApartadosPreview, setShowApartadosPreview] = useState(false);
   const { data: currentInventory, fetchItems } = useItems();
+
+  // Estados para búsqueda
+  const [searchTermInventario, setSearchTermInventario] = useState('');
+  const [searchTermApartados, setSearchTermApartados] = useState('');
 
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 
@@ -280,6 +284,34 @@ const CargarInventarioExcel: React.FC = () => {
     setMensaje('Exportando a Excel... (funcionalidad no implementada)');
   };
 
+  // Filtrar inventario normal por término de búsqueda
+  const filteredInventory = useMemo(() => {
+    if (!currentInventory) return [];
+    if (!searchTermInventario) return currentInventory;
+    
+    const searchLower = searchTermInventario.toLowerCase();
+    return currentInventory.filter((item: any) => 
+      item.nombre?.toLowerCase().includes(searchLower) ||
+      item.descripcion?.toLowerCase().includes(searchLower) ||
+      item.codigo?.toLowerCase().includes(searchLower) ||
+      item.modelo?.toLowerCase().includes(searchLower)
+    );
+  }, [currentInventory, searchTermInventario]);
+
+  // Filtrar apartados por término de búsqueda
+  const filteredApartados = useMemo(() => {
+    if (!currentInventory) return [];
+    if (!searchTermApartados) return currentInventory;
+    
+    const searchLower = searchTermApartados.toLowerCase();
+    return currentInventory.filter((item: any) => 
+      item.nombre?.toLowerCase().includes(searchLower) ||
+      item.descripcion?.toLowerCase().includes(searchLower) ||
+      item.codigo?.toLowerCase().includes(searchLower) ||
+      item.modelo?.toLowerCase().includes(searchLower)
+    );
+  }, [currentInventory, searchTermApartados]);
+
   return (
     <div className="w-full max-w-6xl mx-auto my-8 space-y-8">
       {/* Card de Inventario Normal */}
@@ -442,6 +474,23 @@ const CargarInventarioExcel: React.FC = () => {
             {showInventoryPreview && currentInventory && currentInventory.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-4">Inventario Actual</h3>
+                
+                {/* Buscador */}
+                <div className="mb-4">
+                  <Input
+                    type="text"
+                    placeholder="Buscar por nombre, descripción, código o modelo..."
+                    value={searchTermInventario}
+                    onChange={(e) => setSearchTermInventario(e.target.value)}
+                    className="w-full"
+                  />
+                  {searchTermInventario && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Mostrando {filteredInventory.length} de {currentInventory.length} items
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex gap-2 mb-4">
                   <Button onClick={handleExportPdf} variant="outline">Exportar a PDF</Button>
                   <Button onClick={handleExportExcel} variant="outline">Exportar a Excel</Button>
@@ -459,7 +508,7 @@ const CargarInventarioExcel: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {currentInventory.map((item: any, index: number) => (
+                      {filteredInventory.map((item: any, index: number) => (
                         <TableRow key={index}>
                           <TableCell>{item.codigo}</TableCell>
                           <TableCell>{item.descripcion}</TableCell>
@@ -492,6 +541,23 @@ const CargarInventarioExcel: React.FC = () => {
             {showApartadosPreview && currentInventory && currentInventory.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-4">Apartados Actuales (Todos los items del inventario sin existencia)</h3>
+                
+                {/* Buscador */}
+                <div className="mb-4">
+                  <Input
+                    type="text"
+                    placeholder="Buscar por nombre, descripción, código o modelo..."
+                    value={searchTermApartados}
+                    onChange={(e) => setSearchTermApartados(e.target.value)}
+                    className="w-full"
+                  />
+                  {searchTermApartados && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Mostrando {filteredApartados.length} de {currentInventory.length} items
+                    </p>
+                  )}
+                </div>
+
                 <div className="max-h-96 overflow-y-auto border rounded-md">
                   <Table>
                     <TableHeader>
@@ -505,7 +571,7 @@ const CargarInventarioExcel: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {currentInventory.map((item: any, index: number) => (
+                      {filteredApartados.map((item: any, index: number) => (
                         <TableRow key={index}>
                           <TableCell>{item.codigo}</TableCell>
                           <TableCell>{item.descripcion}</TableCell>
