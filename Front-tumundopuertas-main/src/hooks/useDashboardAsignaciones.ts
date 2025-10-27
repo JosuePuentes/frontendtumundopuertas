@@ -54,10 +54,10 @@ export const useDashboardAsignaciones = () => {
     setError(null);
     
     try {
-      console.log('🔄 Cargando asignaciones...');
+      // console.log('🔄 Cargando asignaciones...');
       
       // Obtener todos los pedidos y extraer asignaciones manualmente
-      console.log('🔄 Obteniendo todos los pedidos...');
+      // console.log('🔄 Obteniendo todos los pedidos...');
       const response = await fetch(`${getApiUrl()}/pedidos/all/`);
       
       if (!response.ok) {
@@ -65,7 +65,7 @@ export const useDashboardAsignaciones = () => {
       }
       
       const pedidos = await response.json();
-      console.log('📋 Pedidos obtenidos:', pedidos.length);
+      // console.log('📋 Pedidos obtenidos:', pedidos.length);
       
       // Extraer todas las asignaciones en proceso de todos los pedidos
       const asignaciones: Asignacion[] = [];
@@ -107,11 +107,11 @@ export const useDashboardAsignaciones = () => {
         }
       }
       
-      console.log('✅ Asignaciones obtenidas:', asignaciones.length);
+      // console.log('✅ Asignaciones obtenidas:', asignaciones.length);
       return asignaciones;
       
     } catch (err: any) {
-      console.error('❌ Error al cargar asignaciones:', err);
+      // console.error('❌ Error al cargar asignaciones:', err);
       setError(`Error al cargar asignaciones: ${err.message}`);
       throw err;
     } finally {

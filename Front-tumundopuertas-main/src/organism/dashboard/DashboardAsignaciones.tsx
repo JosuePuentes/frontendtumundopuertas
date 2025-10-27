@@ -45,34 +45,34 @@ const DashboardAsignaciones: React.FC = () => {
   // Función para cargar empleados
   const cargarEmpleados = async () => {
     try {
-      console.log('🔄 Cargando empleados...');
+      // console.log('🔄 Cargando empleados...');
       const response = await fetch(`${getApiUrl()}/empleados/all/`);
-      console.log('📡 Response empleados status:', response.status);
+      // console.log('📡 Response empleados status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('📋 Datos empleados obtenidos:', data);
-        console.log('🔍 Tipo de datos empleados:', Array.isArray(data) ? 'Array' : typeof data);
+        // console.log('📋 Datos empleados obtenidos:', data);
+        // console.log('🔍 Tipo de datos empleados:', Array.isArray(data) ? 'Array' : typeof data);
         
         // ARREGLADO: El backend puede devolver {empleados: Array} o Array directo
         const empleadosArray = data.empleados || data;
-        console.log('📋 Empleados extraídos:', empleadosArray);
+        // console.log('📋 Empleados extraídos:', empleadosArray);
         
         if (Array.isArray(empleadosArray)) {
           const empleadosActivos = empleadosArray.filter(emp => emp.activo !== false);
           setEmpleados(empleadosActivos);
-          console.log('✅ Empleados activos cargados:', empleadosActivos.length);
-          console.log('📋 Primer empleado:', empleadosActivos[0]);
+          // console.log('✅ Empleados activos cargados:', empleadosActivos.length);
+          // console.log('📋 Primer empleado:', empleadosActivos[0]);
         } else {
-          console.log('⚠️ Datos de empleados no es array:', empleadosArray);
+          // console.log('⚠️ Datos de empleados no es array:', empleadosArray);
           setEmpleados([]);
         }
     } else {
-        console.error('❌ Response empleados no ok:', response.status);
+        // console.error('❌ Response empleados no ok:', response.status);
         setEmpleados([]);
       }
     } catch (error) {
-      console.error('❌ Error al cargar empleados:', error);
+      // console.error('❌ Error al cargar empleados:', error);
       setEmpleados([]);
     }
   };
@@ -83,17 +83,17 @@ const DashboardAsignaciones: React.FC = () => {
     setError(null);
     
     try {
-      console.log('🔄 Cargando asignaciones desde todos los pedidos...');
-      console.log('🌐 API URL:', getApiUrl());
+      // console.log('🔄 Cargando asignaciones desde todos los pedidos...');
+      // console.log('🌐 API URL:', getApiUrl());
       
       // Obtener todos los pedidos y extraer asignaciones manualmente
-      console.log('🔄 Obteniendo todos los pedidos...');
+      // console.log('🔄 Obteniendo todos los pedidos...');
       const response = await fetch(`${getApiUrl()}/pedidos/all/`);
-      console.log('📡 Response status:', response.status);
+      // console.log('📡 Response status:', response.status);
       
       if (response.ok) {
         const pedidos = await response.json();
-        console.log('📋 Pedidos obtenidos:', pedidos.length);
+        // console.log('📋 Pedidos obtenidos:', pedidos.length);
         
         // Extraer todas las asignaciones en proceso de todos los pedidos
         const asignaciones: Asignacion[] = [];
@@ -114,12 +114,12 @@ const DashboardAsignaciones: React.FC = () => {
                   const empleado = empleados.find(emp => 
                     emp._id === asignacion.empleadoId || emp.identificador === asignacion.empleadoId
                   );
-                  console.log('🔍 DEBUG empleado:', {
-                    empleadoId: asignacion.empleadoId,
-                    empleadoEncontrado: empleado,
-                    nombreempleado: asignacion.nombreempleado,
-                    totalEmpleados: empleados.length
-                  });
+                  // console.log('🔍 DEBUG empleado:', {
+                  //   empleadoId: asignacion.empleadoId,
+                  //   empleadoEncontrado: empleado,
+                  //   nombreempleado: asignacion.nombreempleado,
+                  //   totalEmpleados: empleados.length
+                  // });
                   
                   // Usar múltiples fuentes para el nombre del empleado
                   let nombreEmpleado = "Sin asignar";
@@ -164,13 +164,13 @@ const DashboardAsignaciones: React.FC = () => {
         });
         
         setAsignaciones(asignaciones);
-        console.log('✅ Asignaciones cargadas exitosamente:', asignaciones.length);
+        // console.log('✅ Asignaciones cargadas exitosamente:', asignaciones.length);
       } else {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
     } catch (err: any) {
-      console.error('❌ Error al cargar asignaciones:', err);
+      // console.error('❌ Error al cargar asignaciones:', err);
       setError(`Error al cargar asignaciones: ${err.message}`);
       setAsignaciones([]);
     } finally {

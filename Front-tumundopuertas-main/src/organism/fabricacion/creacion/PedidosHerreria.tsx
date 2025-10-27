@@ -205,77 +205,78 @@ const PedidosHerreria: React.FC = () => {
             console.log('❌ NO ENCONTRADO: El pedido de hoy no está en la respuesta del backend');
           }
         
-        // Debug de fechas de todos los items
-        console.log('📅 DEBUG DE FECHAS - Primeros 10 items:');
-        itemsArray.slice(0, 10).forEach((item: any, index: number) => {
-          console.log(`📅 Item ${index + 1}:`, {
-            id: item.id,
-            pedido_id: item.pedido_id,
-            nombre: item.nombre,
-            fecha_creacion: item.fecha_creacion,
-            pedido_fecha_creacion: item.pedido_fecha_creacion,
-            fecha_usada: item.pedido_fecha_creacion || item.fecha_creacion,
-            fecha_formateada: item.pedido_fecha_creacion || item.fecha_creacion ? new Date(item.pedido_fecha_creacion || item.fecha_creacion).toLocaleDateString() : 'N/A'
-          });
-        });
+        // Debug de fechas de todos los items (COMENTADO para mejor rendimiento)
+        // console.log('📅 DEBUG DE FECHAS - Primeros 10 items:');
+        // itemsArray.slice(0, 10).forEach((item: any, index: number) => {
+        //   console.log(`📅 Item ${index + 1}:`, {
+        //     id: item.id,
+        //     pedido_id: item.pedido_id,
+        //     nombre: item.nombre,
+        //     fecha_creacion: item.fecha_creacion,
+        //     pedido_fecha_creacion: item.pedido_fecha_creacion,
+        //     fecha_usada: item.pedido_fecha_creacion || item.fecha_creacion,
+        //     fecha_formateada: item.pedido_fecha_creacion || item.fecha_creacion ? new Date(item.pedido_fecha_creacion || item.fecha_creacion).toLocaleDateString() : 'N/A'
+        //   });
+        // });
         
-        // Verificar si hay items del 18/10/2025
-        const items18Oct = itemsArray.filter((item: any) => {
-          const fechaCreacion = item.pedido_fecha_creacion || item.fecha_creacion;
-          if (fechaCreacion) {
-            const fecha = new Date(fechaCreacion);
-            const es18Oct = fecha.getDate() === 18 && fecha.getMonth() === 9; // Octubre es mes 9 (0-indexado)
-            if (es18Oct) {
-              console.log('🎯 ITEM DEL 18/10/2025 ENCONTRADO:', item);
-            }
-            return es18Oct;
-          }
-          return false;
-        });
+        // Verificar si hay items del 18/10/2025 (COMENTADO para mejor rendimiento)
+        // const items18Oct = itemsArray.filter((item: any) => {
+        //   const fechaCreacion = item.pedido_fecha_creacion || item.fecha_creacion;
+        //   if (fechaCreacion) {
+        //     const fecha = new Date(fechaCreacion);
+        //     const es18Oct = fecha.getDate() === 18 && fecha.getMonth() === 9; // Octubre es mes 9 (0-indexado)
+        //     if (es18Oct) {
+        //       console.log('🎯 ITEM DEL 18/10/2025 ENCONTRADO:', item);
+        //     }
+        //     return es18Oct;
+        //   }
+        //   return false;
+        // });
+        // 
+        // console.log('📅 Items del 18/10/2025 encontrados:', items18Oct.length);
+        // console.log('📅 Items del 18/10/2025:', items18Oct);
+        // 
+        // // Verificar estados de items
+        // const estadosCount = itemsArray.reduce((acc: any, item: any) => {
+        //   const estado = item.estado_item || 0;
+        //   acc[estado] = (acc[estado] || 0) + 1;
+        //   return acc;
+        // }, {});
+        // 
+        // console.log('📊 Conteo de estados_item:', estadosCount);
+        // 
+        // // Verificar pedidos únicos
+        // const pedidosUnicos = [...new Set(itemsArray.map((item: any) => item.pedido_id))];
+        // console.log('📋 Pedidos únicos encontrados:', pedidosUnicos.length);
+        // console.log('📋 Primeros 5 pedidos:', pedidosUnicos.slice(0, 5));
         
-        console.log('📅 Items del 18/10/2025 encontrados:', items18Oct.length);
-        console.log('📅 Items del 18/10/2025:', items18Oct);
-        
-        // Verificar estados de items
-        const estadosCount = itemsArray.reduce((acc: any, item: any) => {
-          const estado = item.estado_item || 0;
-          acc[estado] = (acc[estado] || 0) + 1;
-          return acc;
-        }, {});
-        
-        console.log('📊 Conteo de estados_item:', estadosCount);
-        
-        // Verificar pedidos únicos
-        const pedidosUnicos = [...new Set(itemsArray.map((item: any) => item.pedido_id))];
-        console.log('📋 Pedidos únicos encontrados:', pedidosUnicos.length);
-        console.log('📋 Primeros 5 pedidos:', pedidosUnicos.slice(0, 5));
-        
-        if (itemsDelPedidoAntiguo.length === 0 && itemsDelPedidoNuevo.length === 0) {
-          console.log('❌ NO SE ENCONTRARON ITEMS DE LOS PEDIDOS BUSCADOS');
-          console.log('🔍 Todos los pedido_ids disponibles:', itemsArray.map((item: any) => item.pedido_id));
-          console.log('💡 SOLUCIÓN: Haz clic en "🔧 Inicializar Items Existentes" para inicializar items sin estado_item');
-        } else {
-          if (itemsDelPedidoAntiguo.length > 0) {
-            console.log('✅ ITEMS DEL PEDIDO ANTIGUO ENCONTRADOS - Estados:', itemsDelPedidoAntiguo.map((item: any) => ({
-              id: item.id,
-              nombre: item.nombre,
-              estado_item: item.estado_item
-            })));
-          }
-          if (itemsDelPedidoNuevo.length > 0) {
-            console.log('✅ ITEMS DEL PEDIDO NUEVO ENCONTRADOS - Estados:', itemsDelPedidoNuevo.map((item: any) => ({
-              id: item.id,
-              nombre: item.nombre,
-              estado_item: item.estado_item
-            })));
-          }
-        }
+        // Optimizado: Logs comentados
+        // if (itemsDelPedidoAntiguo.length === 0 && itemsDelPedidoNuevo.length === 0) {
+        //   console.log('❌ NO SE ENCONTRARON ITEMS DE LOS PEDIDOS BUSCADOS');
+        //   console.log('🔍 Todos los pedido_ids disponibles:', itemsArray.map((item: any) => item.pedido_id));
+        //   console.log('💡 SOLUCIÓN: Haz clic en "🔧 Inicializar Items Existentes" para inicializar items sin estado_item');
+        // } else {
+        //   if (itemsDelPedidoAntiguo.length > 0) {
+        //     console.log('✅ ITEMS DEL PEDIDO ANTIGUO ENCONTRADOS - Estados:', itemsDelPedidoAntiguo.map((item: any) => ({
+        //       id: item.id,
+        //       nombre: item.nombre,
+        //       estado_item: item.estado_item
+        //     })));
+        //   }
+        //   if (itemsDelPedidoNuevo.length > 0) {
+        //     console.log('✅ ITEMS DEL PEDIDO NUEVO ENCONTRADOS - Estados:', itemsDelPedidoNuevo.map((item: any) => ({
+        //       id: item.id,
+        //       nombre: item.nombre,
+        //       estado_item: item.estado_item
+        //     })));
+        //   }
+        // }
       }
       
       if (Array.isArray(itemsArray)) {
         setItemsIndividuales(itemsArray);
         setUltimaActualizacion(new Date()); // Actualizar timestamp
-        console.log('✅ Items individuales cargados:', itemsArray.length);
+        // console.log('✅ Items individuales cargados:', itemsArray.length);
         
         // Cargar progreso de todos los items
         const cargarProgresoItems = async () => {
@@ -289,12 +290,12 @@ const PedidosHerreria: React.FC = () => {
         
         cargarProgresoItems();
       } else {
-        console.log('⚠️ No hay items - itemsArray no es array:', itemsArray);
+        // console.log('⚠️ No hay items - itemsArray no es array:', itemsArray);
         setItemsIndividuales([]);
       }
       
       await fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
-      console.log('✅ Datos recargados exitosamente usando nueva estructura');
+      // console.log('✅ Datos recargados exitosamente usando nueva estructura');
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.warn('⏰ Timeout al cargar datos de herrería');

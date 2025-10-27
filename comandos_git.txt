@@ -1,0 +1,27 @@
+# Comandos para subir el código a GitHub
+
+# 1. Navegar al directorio del frontend
+cd Front-tumundopuertas-main
+
+# 2. Inicializar repositorio git
+git init
+
+# 3. Agregar todos los archivos
+git add .
+
+# 4. Hacer commit inicial
+git commit -m "Initial commit: Frontend completo con todas las funcionalidades implementadas"
+
+# 5. Cambiar a rama main
+git branch -M main
+
+# 6. Conectar con repositorio remoto
+git remote add origin https://github.com/JosuePuentes/frontendtumundopuertas.git
+
+# 7. Subir código
+git push -u origin main
+
+# Si hay conflictos, usar:
+# git push -u origin main --force
+
+
