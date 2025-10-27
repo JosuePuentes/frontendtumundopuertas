@@ -2,16 +2,13 @@ import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useEmpleado } from "@/hooks/useEmpleado";
-import ImageDisplay from "@/upfile/ImageDisplay";
 import { getApiUrl } from "@/lib/api";
-import { CheckCircle2, DollarSign, FileInvoice } from "lucide-react";
+import { CheckCircle2, DollarSign, Receipt } from "lucide-react";
 
 const FacturacionPage: React.FC = () => {
   const [facturacion, setFacturacion] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
-  const { dataEmpleados, fetchEmpleado } = useEmpleado();
 
   const fetchPedidosFacturacion = async () => {
     setLoading(true);
@@ -80,7 +77,6 @@ const FacturacionPage: React.FC = () => {
 
   useEffect(() => {
     fetchPedidosFacturacion();
-    fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
   }, []);
 
   const handleFacturar = async (pedido: any) => {
@@ -96,7 +92,7 @@ const FacturacionPage: React.FC = () => {
     <Card className="max-w-5xl mx-auto mt-8">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileInvoice className="w-6 h-6" />
+          <Receipt className="w-6 h-6" />
           Pedidos Listos para Facturar (100% Completados)
         </CardTitle>
       </CardHeader>
@@ -201,7 +197,7 @@ const FacturacionPage: React.FC = () => {
                   >
                     {pedido.puedeFacturar ? (
                       <>
-                        <FileInvoice className="w-6 h-6 mr-2" />✓ LISTO PARA FACTURAR
+                        <Receipt className="w-6 h-6 mr-2" />✓ LISTO PARA FACTURAR
                       </>
                     ) : (
                       <>
