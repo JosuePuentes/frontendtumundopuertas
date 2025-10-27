@@ -19,20 +19,31 @@ const FacturacionPage: React.FC = () => {
       if (!res.ok) throw new Error("Error al obtener pedidos");
       const pedidos = await res.json();
       
-      // OPTIMIZACIÓN: Cargar todos los pedidos en paralelo
+      // OPTIMIZACIÓN: Limitar cantidad de pedidos para evitar timeout
+      const pedidosLimitados = pedidos.slice(0, 50); // Solo primeros 50 pedidos
+      
+      // OPTIMIZACIÓN: Cargar todos los pedidos en paralelo con timeout
       const pedidosConProgreso = await Promise.all(
-        pedidos.map(async (pedido: any) => {
+        pedidosLimitados.map(async (pedido: any) => {
           try {
-            // Verificar progreso del pedido
-            const progresoRes = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`);
+            // Verificar progreso del pedido con timeout
+            const progresoRes = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`, {
+              signal: AbortSignal.timeout(5000) // 5 segundos timeout
+            });
             if (!progresoRes.ok) return null;
             
             const progresoData = await progresoRes.json();
+            console.log(`📊 Pedido ${pedido._id.slice(-4)}: progreso=${progresoData.progreso_general}%`);
             // Solo incluir pedidos al 100%
-            if (progresoData.progreso_general !== 100) return null;
+            if (progresoData.progreso_general !== 100) {
+              console.log(`❌ Pedido ${pedido._id.slice(-4)} no está al 100%, progreso: ${progresoData.progreso_general}%`);
+              return null;
+            }
             
-            // Obtener información de pagos del pedido (NUEVO ENDPOINT)
-            const pagosRes = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/pagos`);
+            // Obtener información de pagos del pedido (NUEVO ENDPOINT) con timeout
+            const pagosRes = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/pagos`, {
+              signal: AbortSignal.timeout(5000) // 5 segundos timeout
+            });
             let montoTotal = pedido.items?.reduce((acc: number, item: any) => acc + (item.precio || 0) * (item.cantidad || 0), 0) || 0;
             let montoAbonado = 0;
             let historialPagos: any[] = [];
@@ -64,8 +75,11 @@ const FacturacionPage: React.FC = () => {
               historialPagos,
               puedeFacturar: montoAbonado >= montoTotal
             };
-          } catch (err) {
-            // console.error(`Error al obtener progreso del pedido ${pedido._id}:`, err);
+          } catch (err: any) {
+            // Ignorar errores de timeout o red
+            if (err.name !== 'AbortError' && err.name !== 'TimeoutError') {
+              // console.error(`Error al obtener progreso del pedido ${pedido._id}:`, err);
+            }
             return null;
           }
         })
@@ -79,6 +93,10 @@ const FacturacionPage: React.FC = () => {
           const fechaB = new Date(b.fecha_creacion || 0).getTime();
           return fechaB - fechaA; // Más reciente primero
         });
+      
+      console.log('📊 Total pedidos obtenidos:', pedidos.length);
+      console.log('📊 Pedidos limitados:', pedidosLimitados.length);
+      console.log('📊 Pedidos al 100%:', pedidosParaFacturar.length);
       
       setFacturacion(pedidosParaFacturar);
     } catch (err: any) {
@@ -106,7 +124,7 @@ const FacturacionPage: React.FC = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Receipt className="w-6 h-6" />
-          Pedidos Listos para Facturar (100% Completados)
+          Facturación
         </CardTitle>
       </CardHeader>
       <CardContent>
