@@ -40,6 +40,7 @@ const CargarInventarioExcel: React.FC = () => {
   const [mensajeApartados, setMensajeApartados] = useState('');
 
   const [showInventoryPreview, setShowInventoryPreview] = useState(false);
+  const [showApartadosPreview, setShowApartadosPreview] = useState(false);
   const { data: currentInventory, fetchItems } = useItems();
 
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
@@ -106,7 +107,7 @@ const CargarInventarioExcel: React.FC = () => {
             modelo: String(row.modelo || ''),
             costo: Number(row.costo || 0),
             costoProduccion: Number(row.costoProduccion || row.costo || 0),
-            cantidad: Number(row.existencia || 0),
+            cantidad: 0, // Sin existencia para apartados
             precio: Number(row.precio || 0),
             activo: true,
             imagenes: [],
@@ -264,6 +265,11 @@ const CargarInventarioExcel: React.FC = () => {
   const handleShowInventoryPreview = () => {
     fetchItems(`${apiUrl}/inventario/all`);
     setShowInventoryPreview(true);
+  };
+
+  const handleShowApartadosPreview = () => {
+    fetchItems(`${apiUrl}/inventario/all`);
+    setShowApartadosPreview(true);
   };
 
   const handleExportPdf = () => {
@@ -463,6 +469,54 @@ const CargarInventarioExcel: React.FC = () => {
                           <TableCell>{item.precio}</TableCell>
                         </TableRow>
                       ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Preview de Apartados */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ver Preliminar de Apartados</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4">
+            <Button onClick={handleShowApartadosPreview} className="w-full">
+              Ver Preliminar de mis Apartados
+            </Button>
+
+            {showApartadosPreview && currentInventory && currentInventory.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">Apartados Actuales</h3>
+                <div className="max-h-96 overflow-y-auto border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Código</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead>Modelo</TableHead>
+                        <TableHead>Costo</TableHead>
+                        <TableHead>Existencia</TableHead>
+                        <TableHead>Precio</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {currentInventory
+                        .filter((item: any) => item.apartado === true)
+                        .map((item: any, index: number) => (
+                          <TableRow key={index}>
+                            <TableCell>{item.codigo}</TableCell>
+                            <TableCell>{item.descripcion}</TableCell>
+                            <TableCell>{item.modelo}</TableCell>
+                            <TableCell>{item.costo}</TableCell>
+                            <TableCell>{item.cantidad}</TableCell>
+                            <TableCell>{item.precio}</TableCell>
+                          </TableRow>
+                        ))}
                     </TableBody>
                   </Table>
                 </div>
