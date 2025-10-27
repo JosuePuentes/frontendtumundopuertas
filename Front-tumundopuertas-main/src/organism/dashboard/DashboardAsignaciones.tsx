@@ -333,28 +333,6 @@ const DashboardAsignaciones: React.FC = () => {
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             Refrescar
           </Button>
-          <Button
-            onClick={() => {
-              console.log('🔍 DEBUG: Verificando pedido específico 68f5d8e235699cda22fa83fa');
-              console.log('🔍 Asignaciones actuales:', asignaciones);
-              console.log('🔍 Asignaciones con pedido_id:', asignaciones.filter(a => a.pedido_id === '68f5d8e235699cda22fa83fa'));
-              console.log('🔍 Asignaciones que contienen el ID:', asignaciones.filter(a => a.pedido_id?.includes('68f5d8e235699cda22fa83fa')));
-              console.log('🔍 Campos canónicos de primera asignación:', asignaciones[0] ? {
-                pedido_id: asignaciones[0].pedido_id,
-                item_id: asignaciones[0].item_id,
-                empleado_id: asignaciones[0].empleado_id,
-                empleado_nombre: asignaciones[0].empleado_nombre,
-                modulo: asignaciones[0].modulo,
-                estado: asignaciones[0].estado,
-                fecha_asignacion: asignaciones[0].fecha_asignacion
-              } : 'No hay asignaciones');
-            }}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2 bg-yellow-100 hover:bg-yellow-200"
-          >
-            🔍 Debug Pedido
-          </Button>
         </div>
         </div>
         
