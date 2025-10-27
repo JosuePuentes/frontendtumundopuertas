@@ -19,8 +19,19 @@ const FacturacionPage: React.FC = () => {
       if (!res.ok) throw new Error("Error al obtener pedidos");
       const pedidos = await res.json();
       
-      // OPTIMIZACIÓN: Ordenar pedidos por fecha (más recientes primero) y limitar
-      const pedidosOrdenados = [...pedidos].sort((a: any, b: any) => {
+      // FILTRO: Solo pedidos de hoy en adelante
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0); // Inicio del día
+      
+      const pedidosRecientes = pedidos.filter((pedido: any) => {
+        const fechaCreacion = new Date(pedido.fecha_creacion);
+        return fechaCreacion >= hoy;
+      });
+      
+      console.log(`📅 Pedidos de hoy en adelante: ${pedidosRecientes.length} de ${pedidos.length}`);
+      
+      // OPTIMIZACIÓN: Ordenar pedidos por fecha (más recientes primero)
+      const pedidosOrdenados = [...pedidosRecientes].sort((a: any, b: any) => {
         const fechaA = new Date(a.fecha_creacion || 0).getTime();
         const fechaB = new Date(b.fecha_creacion || 0).getTime();
         return fechaB - fechaA; // Más reciente primero
