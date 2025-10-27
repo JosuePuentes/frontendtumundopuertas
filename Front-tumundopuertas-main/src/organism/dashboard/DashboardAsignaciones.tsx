@@ -270,7 +270,8 @@ const DashboardAsignaciones: React.FC = () => {
           empleado_id: asig.empleado_id,
           estado: "terminado",
           fecha_fin: new Date().toISOString(),
-          orden: typeof asig.orden === 'string' ? parseInt(asig.orden) : asig.orden // Convertir a int como espera el backend
+          orden: typeof asig.orden === 'string' ? parseInt(asig.orden) : asig.orden, // Convertir a int como espera el backend
+          pin: pin // Agregar PIN que requiere el backend
         })
       });
 
