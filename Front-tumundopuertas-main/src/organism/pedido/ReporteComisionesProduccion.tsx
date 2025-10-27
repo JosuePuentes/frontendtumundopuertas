@@ -198,28 +198,29 @@ const totalGeneral = empleadosFiltrados.reduce((acc, empleado) => {
   return acc + totalEmpleado;
 }, 0);
 
-const totalGeneralPrecios = empleadosFiltrados.reduce((acc, empleado) => {
-  const empleadoComision = data.find(
-    (e) => e.empleado_id === empleado.identificador
-  );
-  if (!empleadoComision) return acc;
-  const asignacionesFiltradas = empleadoComision.asignaciones?.filter((asig) => {
-    if (!fechaInicio && !fechaFin) return true;
-    const fecha = asig.fecha_inicio_subestado || asig.fecha_inicio || "";
-    if (!fecha) return false;
-    const fechaObj = new Date(fecha);
-    if (fechaInicio && fechaObj < new Date(fechaInicio)) return false;
-    if (fechaFin && fechaObj > new Date(fechaFin + "T23:59:59")) return false;
-    return true;
-  }) || [];
-  const subtotal = asignacionesFiltradas.reduce((acc2, asig) => {
-    const precio = asig.precio_item || 0;
-    const cantidad = (asig as any).cantidad ? Number((asig as any).cantidad) : 1;
-    return acc2 + precio * cantidad;
-  }, 0);
-  return acc + subtotal;
-}, 0);
-  totalGeneralCostos
+// Removido: totalGeneralPrecios ya no se usa
+// const totalGeneralPrecios = empleadosFiltrados.reduce((acc, empleado) => {
+//   const empleadoComision = data.find(
+//     (e) => e.empleado_id === empleado.identificador
+//   );
+//   if (!empleadoComision) return acc;
+//   const asignacionesFiltradas = empleadoComision.asignaciones?.filter((asig) => {
+//     if (!fechaInicio && !fechaFin) return true;
+//     const fecha = asig.fecha_inicio_subestado || asig.fecha_inicio || "";
+//     if (!fecha) return false;
+//     const fechaObj = new Date(fecha);
+//     if (fechaInicio && fechaObj < new Date(fechaInicio)) return false;
+//     if (fechaFin && fechaObj > new Date(fechaFin + "T23:59:59")) return false;
+//     return true;
+//   }) || [];
+//   const subtotal = asignacionesFiltradas.reduce((acc2, asig) => {
+//     const precio = asig.precio_item || 0;
+//     const cantidad = (asig as any).cantidad ? Number((asig as any).cantidad) : 1;
+//     return acc2 + precio * cantidad;
+//   }, 0);
+//   return acc + subtotal;
+// }, 0);
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
       {/* HEADER */}
