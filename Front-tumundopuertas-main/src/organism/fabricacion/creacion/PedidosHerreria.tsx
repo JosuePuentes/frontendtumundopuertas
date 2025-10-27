@@ -952,7 +952,8 @@ const PedidosHerreria: React.FC = () => {
             {itemsIndividuales
               .filter((item) => {
                 // Mostrar items pendientes (0) y en proceso (1, 2, 3)
-                const estadoValido = item.estado_item >= 0 && item.estado_item <= 3;
+                // No mostrar items con estado_item = 4 (terminados completamente)
+                const estadoValido = item.estado_item >= 0 && item.estado_item < 4;
                 
                 // Filtro por fecha
                 if (filtroFecha !== "todos") {

@@ -268,8 +268,7 @@ const DashboardAsignaciones: React.FC = () => {
           empleado_id: asig.empleado_id,
           estado: "terminado",
           fecha_fin: new Date().toISOString(),
-          pin: pin,
-          orden: asig.orden // Agregar número de orden
+          orden: parseInt(asig.orden) || asig.orden // Convertir a int como espera el backend
         })
       });
 
