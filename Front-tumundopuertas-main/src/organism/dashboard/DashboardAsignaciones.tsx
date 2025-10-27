@@ -278,16 +278,23 @@ const DashboardAsignaciones: React.FC = () => {
       }
 
       const result = await response.json();
-      console.log('✅ Asignación terminada con endpoint optimizado:', result);
+      console.log('✅ Asignación terminada:', result);
+      
+      // Mostrar información de la comisión si está disponible
+      if (result.comision) {
+        console.log('💰 Comisión registrada:', result.comision);
+        setMensaje(`✅ Asignación terminada exitosamente. Costo de producción: $${result.comision.costo_produccion}`);
+      } else {
+        setMensaje("✅ Asignación terminada exitosamente");
+      }
       
       console.log('=== TERMINACIÓN CON PIN COMPLETADA ===');
       
       // Cerrar modal y limpiar
       setPinModal({ isOpen: false, asignacion: null });
       setPin("");
-      setMensaje("✅ Asignación terminada exitosamente");
       
-      // Recargar asignaciones
+      // Recargar asignaciones para actualizar la lista
       await cargarAsignaciones();
       
     } catch (error: any) {
