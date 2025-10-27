@@ -138,7 +138,7 @@ const DashboardAsignaciones: React.FC = () => {
                     item_id: asignacion.itemId,
                     empleado_id: asignacion.empleadoId || "sin_asignar",
                     empleado_nombre: nombreEmpleado,
-                    modulo: obtenerModuloPorOrden(sub.orden || 1),
+                    modulo: obtenerModuloPorEstadoItem(item?.estado_item || 1),
                     estado: asignacion.estado || "en_proceso",
                     fecha_asignacion: asignacion.fecha_inicio || new Date().toISOString(),
                     fecha_fin: asignacion.fecha_fin,
@@ -178,13 +178,14 @@ const DashboardAsignaciones: React.FC = () => {
     }
   };
 
-  // Función helper para obtener módulo por orden
-  const obtenerModuloPorOrden = (orden: number): string => {
-    switch (orden) {
+  // Función helper para obtener módulo por estado_item
+  const obtenerModuloPorEstadoItem = (estadoItem: number): string => {
+    switch (estadoItem) {
+      case 0: return 'pendiente';
       case 1: return 'herreria';
       case 2: return 'masillar';
       case 3: return 'preparar';
-      case 4: return 'facturar';
+      case 4: return 'terminado';
       default: return 'herreria';
     }
   };
@@ -221,10 +222,11 @@ const DashboardAsignaciones: React.FC = () => {
   // Función para obtener color del módulo
   const obtenerColorModulo = (modulo: string) => {
     const colores: { [key: string]: string } = {
+      pendiente: "bg-gray-100 text-gray-800",
       herreria: "bg-orange-100 text-orange-800",
       masillar: "bg-blue-100 text-blue-800", 
       preparar: "bg-green-100 text-green-800",
-      facturar: "bg-purple-100 text-purple-800"
+      terminado: "bg-purple-100 text-purple-800"
     };
     return colores[modulo] || "bg-gray-100 text-gray-800";
   };
