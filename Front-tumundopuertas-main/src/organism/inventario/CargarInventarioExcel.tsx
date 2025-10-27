@@ -491,7 +491,7 @@ const CargarInventarioExcel: React.FC = () => {
 
             {showApartadosPreview && currentInventory && currentInventory.length > 0 && (
               <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">Apartados Actuales</h3>
+                <h3 className="text-lg font-semibold mb-4">Apartados Actuales (Todos los items del inventario sin existencia)</h3>
                 <div className="max-h-96 overflow-y-auto border rounded-md">
                   <Table>
                     <TableHeader>
@@ -505,18 +505,16 @@ const CargarInventarioExcel: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {currentInventory
-                        .filter((item: any) => item.apartado === true)
-                        .map((item: any, index: number) => (
-                          <TableRow key={index}>
-                            <TableCell>{item.codigo}</TableCell>
-                            <TableCell>{item.descripcion}</TableCell>
-                            <TableCell>{item.modelo}</TableCell>
-                            <TableCell>{item.costo}</TableCell>
-                            <TableCell>{item.cantidad}</TableCell>
-                            <TableCell>{item.precio}</TableCell>
-                          </TableRow>
-                        ))}
+                      {currentInventory.map((item: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.codigo}</TableCell>
+                          <TableCell>{item.descripcion}</TableCell>
+                          <TableCell>{item.modelo}</TableCell>
+                          <TableCell>{item.costo}</TableCell>
+                          <TableCell>0</TableCell>
+                          <TableCell>{item.precio}</TableCell>
+                        </TableRow>
+                      ))}
                     </TableBody>
                   </Table>
                 </div>
