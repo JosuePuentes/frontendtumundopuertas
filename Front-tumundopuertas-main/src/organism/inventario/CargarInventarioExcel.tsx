@@ -11,32 +11,40 @@ import {
   TableBody,
   TableCell,
 } from '@/components/ui/table';
-import { useItems } from '@/hooks/useItems'; // Import useItems hook
+import { useItems } from '@/hooks/useItems';
 
 interface InventarioItem {
   codigo: string;
-  nombre: string; // Added for backend compatibility
+  nombre: string;
   descripcion: string;
-  categoria: string; // Added for backend compatibility
+  categoria: string;
   modelo: string;
   costo: number;
-  costoProduccion: number; // Added for backend compatibility
-  cantidad: number; // Changed from existencia to cantidad
+  costoProduccion: number;
+  cantidad: number;
   precio: number;
-  activo: boolean; // Added for backend compatibility
-  imagenes: string[]; // Added for backend compatibility
-  apartado?: boolean; // Campo para apartados
+  activo: boolean;
+  imagenes: string[];
+  apartado?: boolean;
 }
 
 const CargarInventarioExcel: React.FC = () => {
+  // Estados para Inventario Normal
   const [items, setItems] = useState<InventarioItem[]>([]);
   const [fileName, setFileName] = useState('');
   const [mensaje, setMensaje] = useState('');
+
+  // Estados para Apartados
+  const [itemsApartados, setItemsApartados] = useState<InventarioItem[]>([]);
+  const [fileNameApartados, setFileNameApartados] = useState('');
+  const [mensajeApartados, setMensajeApartados] = useState('');
+
   const [showInventoryPreview, setShowInventoryPreview] = useState(false);
-  const { data: currentInventory, fetchItems } = useItems(); // Use useItems hook
+  const { data: currentInventory, fetchItems } = useItems();
 
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 
+  // Función para cargar archivo Excel para Inventario Normal
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -52,16 +60,16 @@ const CargarInventarioExcel: React.FC = () => {
 
           const mappedItems: InventarioItem[] = json.map((row) => ({
             codigo: String(row.codigo || ''),
-            nombre: String(row.nombre || row.descripcion || 'Sin Nombre'), // Use descripcion as fallback for nombre
+            nombre: String(row.nombre || row.descripcion || 'Sin Nombre'),
             descripcion: String(row.descripcion || ''),
-            categoria: String(row.categoria || 'General'), // Default category
+            categoria: String(row.categoria || 'General'),
             modelo: String(row.modelo || ''),
             costo: Number(row.costo || 0),
-            costoProduccion: Number(row.costoProduccion || row.costo || 0), // Use costo as fallback
-            cantidad: Number(row.existencia || 0), // Changed from existencia to cantidad
+            costoProduccion: Number(row.costoProduccion || row.costo || 0),
+            cantidad: Number(row.existencia || 0),
             precio: Number(row.precio || 0),
-            activo: true, // Default to true
-            imagenes: [], // Default to empty array
+            activo: true,
+            imagenes: [],
           }));
 
           setItems(mappedItems);
@@ -70,6 +78,47 @@ const CargarInventarioExcel: React.FC = () => {
           console.error("Error parsing Excel file:", error);
           setMensaje('Error al leer el archivo de Excel. Asegúrate de que el formato es correcto.');
           setItems([]);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  };
+
+  // Función para cargar archivo Excel para Apartados
+  const handleFileUploadApartados = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFileNameApartados(file.name);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const json = XLSX.utils.sheet_to_json<any>(worksheet);
+
+          const mappedItems: InventarioItem[] = json.map((row) => ({
+            codigo: String(row.codigo || ''),
+            nombre: String(row.nombre || row.descripcion || 'Sin Nombre'),
+            descripcion: String(row.descripcion || ''),
+            categoria: String(row.categoria || 'General'),
+            modelo: String(row.modelo || ''),
+            costo: Number(row.costo || 0),
+            costoProduccion: Number(row.costoProduccion || row.costo || 0),
+            cantidad: Number(row.existencia || 0),
+            precio: Number(row.precio || 0),
+            activo: true,
+            imagenes: [],
+            apartado: true,
+          }));
+
+          setItemsApartados(mappedItems);
+          setMensajeApartados(`Se cargaron ${mappedItems.length} items del archivo para apartados.`);
+        } catch (error) {
+          console.error("Error parsing Excel file:", error);
+          setMensajeApartados('Error al leer el archivo de Excel. Asegúrate de que el formato es correcto.');
+          setItemsApartados([]);
         }
       };
       reader.readAsArrayBuffer(file);
@@ -98,7 +147,6 @@ const CargarInventarioExcel: React.FC = () => {
       setMensaje('Nuevo inventario guardado correctamente.');
       setItems([]);
       setFileName('');
-      // Optionally refresh the inventory preview
       fetchItems(`${apiUrl}/inventario/all`);
     } catch (error: any) {
       console.error(error);
@@ -128,7 +176,6 @@ const CargarInventarioExcel: React.FC = () => {
       setMensaje('Inventario actualizado correctamente.');
       setItems([]);
       setFileName('');
-      // Optionally refresh the inventory preview
       fetchItems(`${apiUrl}/inventario/all`);
     } catch (error: any) {
       console.error(error);
@@ -137,19 +184,12 @@ const CargarInventarioExcel: React.FC = () => {
   };
 
   const handleGuardarApartados = async () => {
-    if (items.length === 0) {
-      setMensaje('No hay items para guardar como apartados.');
+    if (itemsApartados.length === 0) {
+      setMensajeApartados('No hay items para guardar como apartados.');
       return;
     }
 
-    setMensaje('Guardando inventario como apartados...');
-    
-    // Marcar todos los items como apartados
-    const itemsApartados = items.map(item => ({
-      ...item,
-      apartado: true
-    }));
-
+    setMensajeApartados('Guardando inventario como apartados...');
     console.log('Datos a enviar al backend para guardar como apartados:', itemsApartados);
 
     try {
@@ -162,14 +202,42 @@ const CargarInventarioExcel: React.FC = () => {
       if (!response.ok) {
         throw new Error('Error al guardar como apartados.');
       }
-      setMensaje('Inventario guardado como apartados correctamente.');
-      setItems([]);
-      setFileName('');
-      // Optionally refresh the inventory preview
+      setMensajeApartados('Inventario guardado como apartados correctamente.');
+      setItemsApartados([]);
+      setFileNameApartados('');
       fetchItems(`${apiUrl}/inventario/all`);
     } catch (error: any) {
       console.error(error);
-      setMensaje(`Error al guardar como apartados: ${error.message}`);
+      setMensajeApartados(`Error al guardar como apartados: ${error.message}`);
+    }
+  };
+
+  const handleActualizarApartados = async () => {
+    if (itemsApartados.length === 0) {
+      setMensajeApartados('No hay items para actualizar como apartados.');
+      return;
+    }
+
+    setMensajeApartados('Actualizando apartados...');
+    console.log('Datos a enviar al backend para actualizar apartados:', itemsApartados);
+
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const response = await fetch(`${apiUrl}/inventario/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemsApartados),
+      });
+      if (!response.ok) {
+        throw new Error('Error al actualizar apartados.');
+      }
+      setMensajeApartados('Apartados actualizados correctamente.');
+      setItemsApartados([]);
+      setFileNameApartados('');
+      fetchItems(`${apiUrl}/inventario/all`);
+    } catch (error: any) {
+      console.error(error);
+      setMensajeApartados(`Error al actualizar apartados: ${error.message}`);
     }
   };
 
@@ -177,145 +245,233 @@ const CargarInventarioExcel: React.FC = () => {
     setItems([]);
     setFileName('');
     setMensaje('');
-    // Reset the file input element
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
     }
   };
 
+  const handleCancelUploadApartados = () => {
+    setItemsApartados([]);
+    setFileNameApartados('');
+    setMensajeApartados('');
+    const fileInputs = document.querySelectorAll('input[type="file"]') as NodeListOf<HTMLInputElement>;
+    if (fileInputs[1]) {
+      fileInputs[1].value = '';
+    }
+  };
+
   const handleShowInventoryPreview = () => {
-    fetchItems(`${apiUrl}/inventario/all`); // Fetch all items
+    fetchItems(`${apiUrl}/inventario/all`);
     setShowInventoryPreview(true);
   };
 
   const handleExportPdf = () => {
     setMensaje('Exportando a PDF... (funcionalidad no implementada)');
-    // Implement PDF export logic here
   };
 
   const handleExportExcel = () => {
     setMensaje('Exportando a Excel... (funcionalidad no implementada)');
-    // Implement Excel export logic here
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto my-8">
-      <CardHeader>
-        <CardTitle>Cargar Inventario desde Excel</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col gap-4">
-          <p>
-            Selecciona un archivo de Excel (.xlsx) con las columnas: `codigo`, `descripcion`, `modelo`, `costo`, `existencia`, `precio`.
-          </p>
-          <div className="flex items-center gap-4">
-            <Input
-              type="file"
-              accept=".xlsx, .xls"
-              onChange={handleFileUpload}
-              className="max-w-sm"
-            />
-            {fileName && <p className="text-sm text-gray-600">{fileName}</p>}
-            {fileName && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancelUpload}
-              >
-                Cancelar
-              </Button>
+    <div className="w-full max-w-6xl mx-auto my-8 space-y-8">
+      {/* Card de Inventario Normal */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Inventario</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4">
+            <p>
+              Selecciona un archivo de Excel (.xlsx) con las columnas: `codigo`, `descripcion`, `modelo`, `costo`, `existencia`, `precio`.
+            </p>
+            <div className="flex items-center gap-4">
+              <Input
+                type="file"
+                accept=".xlsx, .xls"
+                onChange={handleFileUpload}
+                className="max-w-sm"
+              />
+              {fileName && <p className="text-sm text-gray-600">{fileName}</p>}
+              {fileName && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelUpload}
+                >
+                  Cancelar
+                </Button>
+              )}
+            </div>
+
+            {mensaje && <p className="text-sm font-medium">{mensaje}</p>}
+
+            {items.length > 0 && (
+              <>
+                <div className="max-h-96 overflow-y-auto border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Código</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead>Modelo</TableHead>
+                        <TableHead>Costo</TableHead>
+                        <TableHead>Existencia</TableHead>
+                        <TableHead>Precio</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.codigo}</TableCell>
+                          <TableCell>{item.descripcion}</TableCell>
+                          <TableCell>{item.modelo}</TableCell>
+                          <TableCell>{item.costo}</TableCell>
+                          <TableCell>{item.cantidad}</TableCell>
+                          <TableCell>{item.precio}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex justify-end gap-4 mt-4">
+                  <Button onClick={handleGuardarInventario}>
+                    Guardar Nuevo Inventario
+                  </Button>
+                  <Button onClick={handleActualizarInventario} variant="outline">
+                    Actualizar Inventario Existente
+                  </Button>
+                </div>
+              </>
             )}
           </div>
+        </CardContent>
+      </Card>
 
-          {mensaje && <p className="text-sm font-medium">{mensaje}</p>}
+      {/* Card de Apartados */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Apartados</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4">
+            <p>
+              Selecciona un archivo de Excel (.xlsx) con las columnas: `codigo`, `descripcion`, `modelo`, `costo`, `existencia`, `precio`.
+            </p>
+            <div className="flex items-center gap-4">
+              <Input
+                type="file"
+                accept=".xlsx, .xls"
+                onChange={handleFileUploadApartados}
+                className="max-w-sm"
+              />
+              {fileNameApartados && <p className="text-sm text-gray-600">{fileNameApartados}</p>}
+              {fileNameApartados && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancelUploadApartados}
+                >
+                  Cancelar
+                </Button>
+              )}
+            </div>
 
-          {items.length > 0 && (
-            <>
-              <div className="max-h-96 overflow-y-auto border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Código</TableHead>
-                      <TableHead>Descripción</TableHead>
-                      <TableHead>Modelo</TableHead>
-                      <TableHead>Costo</TableHead>
-                      <TableHead>Existencia</TableHead>
-                      <TableHead>Precio</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {items.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{item.codigo}</TableCell>
-                        <TableCell>{item.descripcion}</TableCell>
-                        <TableCell>{item.modelo}</TableCell>
-                        <TableCell>{item.costo}</TableCell>
-                        <TableCell>{item.cantidad}</TableCell>
-                        <TableCell>{item.precio}</TableCell>
+            {mensajeApartados && <p className="text-sm font-medium">{mensajeApartados}</p>}
+
+            {itemsApartados.length > 0 && (
+              <>
+                <div className="max-h-96 overflow-y-auto border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Código</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead>Modelo</TableHead>
+                        <TableHead>Costo</TableHead>
+                        <TableHead>Existencia</TableHead>
+                        <TableHead>Precio</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="flex justify-end gap-4 mt-4">
-                <Button onClick={handleGuardarInventario}>
-                  Guardar Nuevo Inventario
-                </Button>
-                <Button onClick={handleActualizarInventario} variant="outline">
-                  Actualizar Inventario Existente
-                </Button>
-                <Button onClick={handleGuardarApartados}>
-                  Apartados
-                </Button>
-              </div>
-            </>
-          )}
+                    </TableHeader>
+                    <TableBody>
+                      {itemsApartados.map((item, index) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.codigo}</TableCell>
+                          <TableCell>{item.descripcion}</TableCell>
+                          <TableCell>{item.modelo}</TableCell>
+                          <TableCell>{item.costo}</TableCell>
+                          <TableCell>{item.cantidad}</TableCell>
+                          <TableCell>{item.precio}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex justify-end gap-4 mt-4">
+                  <Button onClick={handleGuardarApartados}>
+                    Guardar Apartados
+                  </Button>
+                  <Button onClick={handleActualizarApartados} variant="outline">
+                    Actualizar Apartados
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-          <div className="mt-6">
+      {/* Preview de Inventario */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Ver Preliminar de Inventario</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4">
             <Button onClick={handleShowInventoryPreview} className="w-full">
               Ver Preliminar de mi Inventario
             </Button>
-          </div>
 
-          {showInventoryPreview && currentInventory && currentInventory.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">Inventario Actual</h3>
-              <div className="flex gap-2 mb-4">
-                <Button onClick={handleExportPdf} variant="outline">Exportar a PDF</Button>
-                <Button onClick={handleExportExcel} variant="outline">Exportar a Excel</Button>
-              </div>
-              <div className="max-h-96 overflow-y-auto border rounded-md">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Código</TableHead>
-                      <TableHead>Descripción</TableHead>
-                      <TableHead>Modelo</TableHead>
-                      <TableHead>Costo</TableHead>
-                      <TableHead>Existencia</TableHead>
-                      <TableHead>Precio</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {currentInventory.map((item: any, index: number) => (
-                      <TableRow key={index}>
-                        <TableCell>{item.codigo}</TableCell>
-                        <TableCell>{item.descripcion}</TableCell>
-                        <TableCell>{item.modelo}</TableCell>
-                        <TableCell>{item.costo}</TableCell>
-                        <TableCell>{item.cantidad}</TableCell>
-                        <TableCell>{item.precio}</TableCell>
+            {showInventoryPreview && currentInventory && currentInventory.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-4">Inventario Actual</h3>
+                <div className="flex gap-2 mb-4">
+                  <Button onClick={handleExportPdf} variant="outline">Exportar a PDF</Button>
+                  <Button onClick={handleExportExcel} variant="outline">Exportar a Excel</Button>
+                </div>
+                <div className="max-h-96 overflow-y-auto border rounded-md">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Código</TableHead>
+                        <TableHead>Descripción</TableHead>
+                        <TableHead>Modelo</TableHead>
+                        <TableHead>Costo</TableHead>
+                        <TableHead>Existencia</TableHead>
+                        <TableHead>Precio</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {currentInventory.map((item: any, index: number) => (
+                        <TableRow key={index}>
+                          <TableCell>{item.codigo}</TableCell>
+                          <TableCell>{item.descripcion}</TableCell>
+                          <TableCell>{item.modelo}</TableCell>
+                          <TableCell>{item.costo}</TableCell>
+                          <TableCell>{item.cantidad}</TableCell>
+                          <TableCell>{item.precio}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
