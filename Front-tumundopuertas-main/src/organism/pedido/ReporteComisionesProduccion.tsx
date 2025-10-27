@@ -114,41 +114,6 @@ const ReporteComisionesProduccion: React.FC = () => {
     setLoading(false);
     setBuscando(false);
   };
-// --- calcular el total general ---
-const totalGeneralCostos = empleados
-  .filter((empleado) => {
-    // ... tu mismo filtro de empleados ...
-    const empleadoComision = data.find(
-      (e) => e.empleado_id === empleado.identificador
-    );
-    return (
-      empleadoComision &&
-      empleadoComision.asignaciones &&
-      empleadoComision.asignaciones.length > 0
-    );
-  })
-  .reduce((acc, empleado) => {
-    const empleadoComision = data.find(
-      (e) => e.empleado_id === empleado.identificador
-    );
-    const asignacionesFiltradas =
-      empleadoComision?.asignaciones?.filter((asig) => {
-        if (!fechaInicio && !fechaFin) return true;
-        const fecha = asig.fecha_inicio_subestado || asig.fecha_inicio || "";
-        if (!fecha) return false;
-        const fechaObj = new Date(fecha);
-        if (fechaInicio && fechaObj < new Date(fechaInicio)) return false;
-        if (fechaFin && fechaObj > new Date(fechaFin + "T23:59:59")) return false;
-        return true;
-      }) || [];
-
-    const subtotal = asignacionesFiltradas.reduce((acc2, asig) => {
-      const val = parseFloat(asig.costoproduccion) || 0;
-      return acc2 + val;
-    }, 0);
-  return acc + subtotal;
-  }, 0);
-
 // --- total general de precios (considerando cantidad y filtros) ---
 const empleadosFiltrados = empleados.filter((empleado) => {
   if (
