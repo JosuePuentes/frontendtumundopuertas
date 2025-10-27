@@ -479,10 +479,11 @@ const PedidosHerreria: React.FC = () => {
         });
       });
       
-      // Recargar datos del backend para asegurar sincronización
-      setTimeout(() => {
-        recargarDatos();
-      }, 1000); // Esperar 1 segundo antes de recargar para dar tiempo al backend
+      // Esperar un momento antes de recargar para que el backend procese la terminación
+      setTimeout(async () => {
+        console.log('🔄 Recargando datos después de terminar asignación...');
+        await recargarDatos();
+      }, 2000); // 2 segundos para dar tiempo al backend
     };
 
     window.addEventListener('asignacionRealizada', handleAsignacionRealizada);
