@@ -258,15 +258,18 @@ const DashboardAsignaciones: React.FC = () => {
       console.log('Marcando artículo como terminado:', asig.item_id);
       console.log('PIN ingresado:', pin);
       
-      // Usar el endpoint optimizado para terminar asignaciones (SIN mover automáticamente)
-      const response = await fetch(`${getApiUrl()}/asignacion/terminar-mejorado/`, {
+      // Usar el endpoint correcto para terminar asignaciones
+      const response = await fetch(`${getApiUrl()}/pedidos/asignacion/terminar`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           pedido_id: asig.pedido_id,
           item_id: asig.item_id,
           empleado_id: asig.empleado_id,
-          pin: pin
+          estado: "terminado",
+          fecha_fin: new Date().toISOString(),
+          pin: pin,
+          orden: asig.orden // Agregar número de orden
         })
       });
 
