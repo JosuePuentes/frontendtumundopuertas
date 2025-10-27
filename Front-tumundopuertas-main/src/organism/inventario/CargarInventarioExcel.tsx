@@ -25,6 +25,7 @@ interface InventarioItem {
   precio: number;
   activo: boolean; // Added for backend compatibility
   imagenes: string[]; // Added for backend compatibility
+  apartado?: boolean; // Campo para apartados
 }
 
 const CargarInventarioExcel: React.FC = () => {
@@ -135,6 +136,43 @@ const CargarInventarioExcel: React.FC = () => {
     }
   };
 
+  const handleGuardarApartados = async () => {
+    if (items.length === 0) {
+      setMensaje('No hay items para guardar como apartados.');
+      return;
+    }
+
+    setMensaje('Guardando inventario como apartados...');
+    
+    // Marcar todos los items como apartados
+    const itemsApartados = items.map(item => ({
+      ...item,
+      apartado: true
+    }));
+
+    console.log('Datos a enviar al backend para guardar como apartados:', itemsApartados);
+
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const response = await fetch(`${apiUrl}/inventario/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemsApartados),
+      });
+      if (!response.ok) {
+        throw new Error('Error al guardar como apartados.');
+      }
+      setMensaje('Inventario guardado como apartados correctamente.');
+      setItems([]);
+      setFileName('');
+      // Optionally refresh the inventory preview
+      fetchItems(`${apiUrl}/inventario/all`);
+    } catch (error: any) {
+      console.error(error);
+      setMensaje(`Error al guardar como apartados: ${error.message}`);
+    }
+  };
+
   const handleCancelUpload = () => {
     setItems([]);
     setFileName('');
@@ -226,6 +264,9 @@ const CargarInventarioExcel: React.FC = () => {
                 </Button>
                 <Button onClick={handleActualizarInventario} variant="outline">
                   Actualizar Inventario Existente
+                </Button>
+                <Button onClick={handleGuardarApartados}>
+                  Apartados
                 </Button>
               </div>
             </>
