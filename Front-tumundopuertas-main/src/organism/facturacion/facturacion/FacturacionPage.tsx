@@ -179,20 +179,7 @@ const FacturacionPage: React.FC = () => {
                               ${((item.precio || 0) * (item.cantidad || 0)).toFixed(2)}
                             </span>
                           </div>
-                          {item.imagenes && item.imagenes.length > 0 && (
-                            <div className="flex gap-2 mt-2">
-                              {item.imagenes.map((img: string, imgIdx: number) => (
-                                <ImageDisplay
-                                  key={imgIdx}
-                                  imageName={img}
-                                  alt={`${item.nombre} ${imgIdx + 1}`}
-                                  style={{
-                                    width: 60, height: 60, objectFit: 'cover', borderRadius: 8, border: '1px solid #ddd'
-                                  }}
-                                />
-                              ))}
-                            </div>
-                          )}
+                          {/* Imágenes removidas por solicitud del usuario */}
                           {item.detalleitem && (
                             <p className="text-xs text-gray-600 mt-2">{item.detalleitem}</p>
                           )}
