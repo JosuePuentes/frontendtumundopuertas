@@ -40,37 +40,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
   }, [isOpen, formatos, obtenerFormatoPorTipo]);
 
   const handleImprimir = () => {
-    if (!formatoSeleccionado) return;
-    
-    // Aplicar estilos CSS según configuración de papel
-    const config = formatoSeleccionado.configuracion;
-    const papel = config.papel;
-    
-    // Crear estilos CSS dinámicos
-    const estilosPapel = `
-      @page {
-        size: ${papel.tamaño === 'carta' ? 'letter' : 
-                papel.tamaño === 'media_carta' ? '5.5in 8.5in' :
-                papel.tamaño === 'oficio' ? '8.5in 13in' : 'A4'};
-        margin: ${papel.margenes.superior}mm ${papel.margenes.derecho}mm ${papel.margenes.inferior}mm ${papel.margenes.izquierdo}mm;
-      }
-      
-      @media print {
-        body {
-          width: 100%;
-          height: 100%;
-          margin: 0;
-          padding: 0;
-        }
-        
-        .print-container {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: ${papel.orientacion === 'horizontal' ? 'row' : 'column'};
-        }
-      }
-    `;
+    if (!formatoSeleccionado || !pedido) return;
     
     // Crear ventana de impresión con el mismo HTML que se muestra en la vista previa
     const ventanaImpresion = window.open('', '_blank');
