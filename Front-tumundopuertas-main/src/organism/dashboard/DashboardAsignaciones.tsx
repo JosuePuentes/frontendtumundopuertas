@@ -103,11 +103,11 @@ const DashboardAsignaciones: React.FC = () => {
           const pedido_id = pedido._id;
           const seguimiento = pedido.seguimiento || [];
           
-          for (const sub of seguimiento) {
+            for (const sub of seguimiento) {
             if (sub.asignaciones_articulos && Array.isArray(sub.asignaciones_articulos)) {
               for (const asignacion of sub.asignaciones_articulos) {
-                // Solo incluir asignaciones en proceso
-                if (asignacion.estado === "en_proceso") {
+                // Solo incluir asignaciones en proceso y que NO estén terminadas
+                if (asignacion.estado === "en_proceso" && !asignacion.fecha_fin) {
                   // Buscar información del item
                   const item = pedido.items?.find((item: any) => item.id === asignacion.itemId);
                   
