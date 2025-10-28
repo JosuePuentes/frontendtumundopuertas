@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -67,7 +67,7 @@ const PedidosHerreria: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        signal: AbortSignal.timeout(5000) // Reducido a 5 segundos timeout
+        signal: AbortSignal.timeout(10000) // Aumentado a 10 segundos timeout
       });
       
       if (!response.ok) {
@@ -84,28 +84,34 @@ const PedidosHerreria: React.FC = () => {
   // Función para cargar progreso de todos los items en PARALELO - OPTIMIZADA
   const cargarProgresoItemsParalelo = async (items: ItemIndividual[]) => {
     try {
-      // OPTIMIZACIÓN: Limitar a 20 items a la vez para evitar sobrecarga
-      const itemsACargar = items.slice(0, 20);
+      // OPTIMIZACIÓN: Limitar a solo los primeros 10 items a la vez para evitar sobrecarga
+      const itemsACargar = items.slice(0, 10);
       
       const promesasProgreso = itemsACargar.map(item => 
         obtenerProgresoItem(item.pedido_id, item.id)
       );
       
-      // Ejecutar todas las peticiones en paralelo
-      const resultados = await Promise.all(promesasProgreso);
+      // Ejecutar todas las peticiones en paralelo con timeout individual
+      const resultados = await Promise.allSettled(promesasProgreso);
       
       const progresoData: Record<string, number> = {};
-      itemsACargar.forEach((item, index) => {
-        progresoData[item.id] = resultados[index]?.progreso || 0;
+      resultados.forEach((resultado, index) => {
+        const item = itemsACargar[index];
+        if (resultado.status === 'fulfilled') {
+          progresoData[item.id] = resultado.value?.progreso || 0;
+        } else {
+          progresoData[item.id] = 0;
+        }
       });
       
       // Para los items restantes, establecer progreso en 0
-      items.slice(20).forEach(item => {
+      items.slice(10).forEach(item => {
         progresoData[item.id] = 0;
       });
       
       setProgresoItems(progresoData);
     } catch (error) {
+      console.warn('⚠️ Error al cargar progreso de items:', error);
       // Si falla, establecer progreso en 0 para todos
       const progresoData: Record<string, number> = {};
       items.forEach(item => {
@@ -148,7 +154,7 @@ const PedidosHerreria: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
-        signal: AbortSignal.timeout(15000) // Reducido a 15 segundos timeout para carga principal
+        signal: AbortSignal.timeout(30000) // Aumentado a 30 segundos timeout para carga principal
       });
       
       if (!response.ok) {
@@ -187,27 +193,14 @@ const PedidosHerreria: React.FC = () => {
       
       // El backend ahora devuelve {items: Array} o Array directo
       const itemsArray = data.items || data;
-      console.log('📋 Items extraídos:', itemsArray);
-      console.log('📊 Cantidad de items:', Array.isArray(itemsArray) ? itemsArray.length : 'No es array');
-      
-      // Todos los logs de debug están comentados para mejorar rendimiento
       
       if (Array.isArray(itemsArray)) {
-        console.log('✅ Items individuales cargados:', itemsArray.length);
-        
-        // DEBUG: Ver la estructura del primer item para identificar campos del cliente
-        if (itemsArray.length > 0) {
-          console.log('📋 Estructura del primer item:', Object.keys(itemsArray[0]));
-          console.log('📋 Primer item completo:', itemsArray[0]);
-        }
-        
         // Ordenar items por fecha DESCENDENTE (más recientes primero) antes de guardar
         const itemsOrdenados = [...itemsArray].sort((a, b) => {
           const fechaA = new Date(a.fecha_creacion || 0).getTime();
           const fechaB = new Date(b.fecha_creacion || 0).getTime();
           return fechaB - fechaA; // Descendente
         });
-        console.log('✅ Items ordenados por fecha (más recientes primero)');
         setItemsIndividuales(itemsOrdenados);
         setUltimaActualizacion(new Date()); // Actualizar timestamp
         
@@ -245,6 +238,11 @@ const PedidosHerreria: React.FC = () => {
     }
   };
 
+
+  // Memoizar la función de recargar datos para evitar recrearla en cada render
+  const recargarDatosMemo = useCallback(async () => {
+    await recargarDatos();
+  }, []);
 
   useEffect(() => {
     recargarDatos();
@@ -497,6 +495,108 @@ const PedidosHerreria: React.FC = () => {
     };
   }, [itemsIndividuales]);
 
+  // Memoizar items filtrados para evitar recalcular en cada render
+  const itemsFiltrados = useMemo(() => {
+    const filtrados = itemsIndividuales
+      .filter((item) => {
+        // Mostrar items pendientes (0) y en proceso (1, 2, 3)
+        // No mostrar items con estado_item = 4 (terminados completamente)
+        const estadoValido = item.estado_item >= 0 && item.estado_item < 4;
+
+        // Filtro por fecha - Usar filtroFecha directamente para tiempo real
+        if (filtroFecha !== "todos") {
+          // Usar fecha_creacion como campo principal (que es el que tiene datos)
+          const fechaItem = new Date(item.fecha_creacion || 0);
+          const hoy = new Date();
+
+          switch (filtroFecha) {
+            case "hoy":
+              return estadoValido && fechaItem.toDateString() === hoy.toDateString();
+            case "ayer":
+              const ayer = new Date(hoy);
+              ayer.setDate(hoy.getDate() - 1);
+              return estadoValido && fechaItem.toDateString() === ayer.toDateString();
+            case "esta_semana":
+              const inicioSemana = new Date(hoy);
+              inicioSemana.setDate(hoy.getDate() - hoy.getDay());
+              return estadoValido && fechaItem >= inicioSemana;
+            case "ultima_semana":
+              const inicioUltimaSemana = new Date(hoy);
+              inicioUltimaSemana.setDate(hoy.getDate() - hoy.getDay() - 7);
+              const finUltimaSemana = new Date(hoy);
+              finUltimaSemana.setDate(hoy.getDate() - hoy.getDay());
+              return estadoValido && fechaItem >= inicioUltimaSemana && fechaItem < finUltimaSemana;
+            case "este_mes":
+              return estadoValido && fechaItem.getMonth() === hoy.getMonth() && fechaItem.getFullYear() === hoy.getFullYear();
+            case "octubre_2025":
+              return estadoValido && fechaItem.getMonth() === 9 && fechaItem.getFullYear() === 2025; // Octubre es mes 9
+            case "ultimos_7_dias":
+              const hace7Dias = new Date(hoy);
+              hace7Dias.setDate(hoy.getDate() - 7);
+              return estadoValido && fechaItem >= hace7Dias;
+            default:
+              return estadoValido;
+          }
+        }
+
+        return estadoValido;
+      })
+      .filter((item) => {
+        // Filtro por búsqueda SOLO por nombre del cliente - BUSQUEDA EN TIEMPO REAL
+        if (searchTerm && searchTerm.trim() !== "") {
+          const searchLower = searchTerm.toLowerCase().trim();
+          
+          // Intentar múltiples campos posibles para el cliente
+          const clienteNombre = (
+            item.cliente_nombre?.toLowerCase() || 
+            (item as any).cliente?.toLowerCase() || 
+            (item as any).nombre_cliente?.toLowerCase() || 
+            (item as any).cliente_nombre_completo?.toLowerCase() ||
+            ''
+          );
+          
+          // Buscar SOLO en el nombre del cliente
+          return clienteNombre.includes(searchLower);
+        }
+        return true;
+      })
+      .filter((item) => {
+        // Filtro por estado del item
+        if (filtroEstado === "todos") {
+          return true;
+        }
+        const estadoNumerico = {
+          "pendiente": 0,
+          "herreria": 1,
+          "masillar": 2,
+          "preparar": 3,
+        }[filtroEstado];
+        return item.estado_item === estadoNumerico;
+      })
+      .filter((item) => {
+        // Filtro por asignación
+        if (filtroAsignacion === "todos") {
+          return true;
+        }
+        if (filtroAsignacion === "sin_asignar") {
+          return !item.empleado_asignado;
+        }
+        if (filtroAsignacion === "asignados") {
+          return !!item.empleado_asignado;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        // Ordenar por fecha de creación del pedido (más recientes primero)
+        // Usar pedido_fecha_creacion si está disponible, sino fecha_creacion
+        const fechaA = new Date(a.pedido_fecha_creacion || a.fecha_creacion || 0).getTime();
+        const fechaB = new Date(b.pedido_fecha_creacion || b.fecha_creacion || 0).getTime();
+        return fechaB - fechaA; // Descendente (más recientes primero)
+      });
+    
+    return filtrados;
+  }, [itemsIndividuales, filtroEstado, filtroAsignacion, filtroFecha, searchTerm]);
+
   // ...
 
   return (
@@ -633,116 +733,6 @@ const PedidosHerreria: React.FC = () => {
         ) : (
           <ul className="space-y-6">
             {(() => {
-              const itemsFiltrados = itemsIndividuales
-              .filter((item) => {
-                // Mostrar items pendientes (0) y en proceso (1, 2, 3)
-                // No mostrar items con estado_item = 4 (terminados completamente)
-                const estadoValido = item.estado_item >= 0 && item.estado_item < 4;
-                
-                // Filtro por fecha - Usar filtroFecha directamente para tiempo real
-                if (filtroFecha !== "todos") {
-                  // Usar fecha_creacion como campo principal (que es el que tiene datos)
-                  const fechaItem = new Date(item.fecha_creacion || 0);
-                  const hoy = new Date();
-                  
-                  // Debug de fechas comentado para mejorar rendimiento
-                  // if (item.id === itemsIndividuales[0]?.id || item.id === itemsIndividuales[1]?.id || item.id === itemsIndividuales[2]?.id) {
-                  //   console.log('🔍 Debug filtro fecha:', {
-                  //     filtro: filtrosAplicados.fecha,
-                  //     itemId: item.id,
-                  //     pedidoId: item.pedido_id,
-                  //     fechaItem: fechaItem.toLocaleDateString(),
-                  //     fechaItemISO: fechaItem.toISOString(),
-                  //     hoy: hoy.toLocaleDateString(),
-                  //     hoyISO: hoy.toISOString(),
-                  //     fechaValida: !isNaN(fechaItem.getTime()),
-                  //     campo_usado: 'fecha_creacion',
-                  //     valor_campo: item.fecha_creacion
-                  //   });
-                  // }
-                  
-                  switch (filtroFecha) {
-                    case "hoy":
-                      return estadoValido && fechaItem.toDateString() === hoy.toDateString();
-                    case "ayer":
-                      const ayer = new Date(hoy);
-                      ayer.setDate(hoy.getDate() - 1);
-                      return estadoValido && fechaItem.toDateString() === ayer.toDateString();
-                    case "esta_semana":
-                      const inicioSemana = new Date(hoy);
-                      inicioSemana.setDate(hoy.getDate() - hoy.getDay());
-                      return estadoValido && fechaItem >= inicioSemana;
-                    case "ultima_semana":
-                      const inicioUltimaSemana = new Date(hoy);
-                      inicioUltimaSemana.setDate(hoy.getDate() - hoy.getDay() - 7);
-                      const finUltimaSemana = new Date(hoy);
-                      finUltimaSemana.setDate(hoy.getDate() - hoy.getDay());
-                      return estadoValido && fechaItem >= inicioUltimaSemana && fechaItem < finUltimaSemana;
-                    case "este_mes":
-                      return estadoValido && fechaItem.getMonth() === hoy.getMonth() && fechaItem.getFullYear() === hoy.getFullYear();
-                    case "octubre_2025":
-                      return estadoValido && fechaItem.getMonth() === 9 && fechaItem.getFullYear() === 2025; // Octubre es mes 9
-                    case "ultimos_7_dias":
-                      const hace7Dias = new Date(hoy);
-                      hace7Dias.setDate(hoy.getDate() - 7);
-                      return estadoValido && fechaItem >= hace7Dias;
-                    default:
-                      return estadoValido;
-                  }
-                }
-                
-                return estadoValido;
-              })
-              .filter((item) => {
-                // Filtro por búsqueda SOLO por nombre del cliente - BUSQUEDA EN TIEMPO REAL
-                if (searchTerm && searchTerm.trim() !== "") {
-                  const searchLower = searchTerm.toLowerCase().trim();
-                  
-                  // Intentar múltiples campos posibles para el cliente
-                  const clienteNombre = (
-                    item.cliente_nombre?.toLowerCase() || 
-                    (item as any).cliente?.toLowerCase() || 
-                    (item as any).nombre_cliente?.toLowerCase() || 
-                    (item as any).cliente_nombre_completo?.toLowerCase() ||
-                    ''
-                  );
-                  
-                  // Debug para verificar datos del primer item
-                  if (itemsIndividuales.indexOf(item) === 0) {
-                    console.log('🔍 Debug búsqueda por cliente:', {
-                      searchTerm: searchTerm,
-                      itemId: item.id,
-                      cliente_nombre: item.cliente_nombre,
-                      clienteNombre_buscado: clienteNombre,
-                      match: clienteNombre.includes(searchLower)
-                    });
-                  }
-                  
-                  // Buscar SOLO en el nombre del cliente
-                  return clienteNombre.includes(searchLower);
-                }
-                return true;
-              })
-              .sort((a, b) => {
-                // Ordenar por fecha de creación del pedido (más recientes primero)
-                // Usar pedido_fecha_creacion si está disponible, sino fecha_creacion
-                const fechaA = new Date(a.pedido_fecha_creacion || a.fecha_creacion || 0).getTime();
-                const fechaB = new Date(b.pedido_fecha_creacion || b.fecha_creacion || 0).getTime();
-                
-                // Debug del ordenamiento comentado para mejorar rendimiento
-                // console.log('🔄 Ordenando items:', {
-                //   itemA: { id: a.id, pedido_id: a.pedido_id, fecha: a.pedido_fecha_creacion || a.fecha_creacion },
-                //   itemB: { id: b.id, pedido_id: b.pedido_id, fecha: b.pedido_fecha_creacion || b.fecha_creacion },
-                //   fechaA: new Date(fechaA).toLocaleDateString(),
-                //   fechaB: new Date(fechaB).toLocaleDateString()
-                // });
-                
-                return fechaB - fechaA; // Descendente (más recientes primero)
-              });
-              
-              console.log('📊 Items después de filtros:', itemsFiltrados.length);
-              console.log('🔍 Búsqueda activa:', searchTerm || 'Ninguna');
-              
               // Si no hay items filtrados, mostrar mensaje
               if (itemsFiltrados.length === 0) {
                 return (
