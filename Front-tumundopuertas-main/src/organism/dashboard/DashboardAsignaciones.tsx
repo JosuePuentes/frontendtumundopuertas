@@ -132,10 +132,14 @@ const DashboardAsignaciones: React.FC = () => {
                     nombreEmpleado = asignacion.nombreEmpleado;
                   }
                   
+                  // Obtener orden BASADO EN ESTADO_ITEM ACTUAL, no en el orden del subestado
+                  // esto asegura que enviemos orden 3 cuando el item está en Preparar (estado_item 3)
+                  const ordenActual = obtenerOrdenPorEstadoItem(item?.estado_item || 1);
+                  
                   const asignacionCompleta: Asignacion = {
                     _id: `${pedido_id}_${asignacion.itemId}_${sub.orden}`,
                     pedido_id: pedido_id,
-                    orden: sub.orden || 1,
+                    orden: ordenActual,  // ✅ Usar orden basado en estado_item actual
                     item_id: asignacion.itemId,
                     empleado_id: asignacion.empleadoId || "sin_asignar",
                     empleado_nombre: nombreEmpleado,
@@ -189,6 +193,16 @@ const DashboardAsignaciones: React.FC = () => {
       case 4: return 'terminado';
       default: return 'herreria';
     }
+  };
+
+  // Función helper para obtener orden por estado_item
+  const obtenerOrdenPorEstadoItem = (estadoItem: number): number => {
+    // Mapeo directo: estado_item == orden del módulo
+    // estado_item 1 → orden 1 (Herrería)
+    // estado_item 2 → orden 2 (Masillar)
+    // estado_item 3 → orden 3 (Preparar/Manillar)
+    // estado_item 4 → orden 4 (Terminado)
+    return estadoItem;
   };
 
   // Debug del estado de asignaciones
