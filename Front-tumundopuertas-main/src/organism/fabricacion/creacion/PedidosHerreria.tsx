@@ -215,8 +215,10 @@ const PedidosHerreria: React.FC = () => {
         setItemsIndividuales(itemsOrdenados);
         setUltimaActualizacion(new Date()); // Actualizar timestamp
         
-        // Cargar progreso de todos los items en PARALELO para mejorar rendimiento
-        cargarProgresoItemsParalelo(itemsOrdenados);
+        // Cargar progreso de todos los items en PARALELO para mejorar rendimiento (sin bloquear la UI)
+        cargarProgresoItemsParalelo(itemsOrdenados).catch(err => {
+          console.warn('⚠️ Error al cargar progreso (no crítico):', err);
+        });
       } else {
         // console.log('⚠️ No hay items - itemsArray no es array:', itemsArray);
         setItemsIndividuales([]);
@@ -224,7 +226,11 @@ const PedidosHerreria: React.FC = () => {
       
       await fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
       // console.log('✅ Datos recargados exitosamente usando nueva estructura');
+      
+      // Limpiar cualquier error previo
+      setError(null);
     } catch (error: any) {
+      console.error('❌ Error al cargar datos:', error);
       if (error.name === 'AbortError') {
         setError('La carga está tardando demasiado. Por favor, intenta nuevamente.');
       } else if (error.message?.includes('ERR_CERT_VERIFIER_CHANGED')) {
