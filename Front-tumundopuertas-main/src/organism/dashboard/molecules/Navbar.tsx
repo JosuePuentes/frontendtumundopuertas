@@ -21,6 +21,7 @@ const defaultLinks = [
   { label: "Mis Asignaciones", href: "/terminarasignacion" },
   { label: "Asignar Produccion", href: "/pedidosherreria" },
   { label: "Facturacion", href: "/facturacion" },
+  { label: "Apartados", href: "/apartados" },
   { label: "Pagos", href: "/pagos" },
   { label: "Mis Pagos", href: "/mispagos" },
   { label: "Resumen Venta Diaria", href: "/resumen-venta-diaria" },
