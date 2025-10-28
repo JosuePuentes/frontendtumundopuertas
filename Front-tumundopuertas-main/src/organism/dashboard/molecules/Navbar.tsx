@@ -20,7 +20,7 @@ const defaultLinks = [
   { label: "Dashboard Asignaciones", href: "/dashboard-asignaciones" },
   { label: "Mis Asignaciones", href: "/terminarasignacion" },
   { label: "Asignar Herreria/Soldadura", href: "/pedidosherreria" },
-  { label: "Asignar Facturacion", href: "/facturacion" },
+  { label: "Facturacion", href: "/facturacion" },
   { label: "Pagos", href: "/pagos" },
   { label: "Mis Pagos", href: "/mispagos" },
   { label: "Resumen Venta Diaria", href: "/resumen-venta-diaria" },
