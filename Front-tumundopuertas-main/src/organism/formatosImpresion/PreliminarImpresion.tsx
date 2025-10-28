@@ -221,7 +221,13 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         yPosition += 6;
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        pedido.historial_pagos.forEach((pago: any) => {
+        // Ordenar por fecha descendente (más reciente primero)
+        const historialOrdenado = [...pedido.historial_pagos].sort((a: any, b: any) => {
+          const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
+          const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
+          return fechaB - fechaA; // Descendente
+        });
+        historialOrdenado.forEach((pago: any) => {
           const fechaPago = pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A';
           doc.text(`${fechaPago} - $ ${(pago.monto || 0).toLocaleString()} - ${pago.metodo || 'N/A'}`, 20, yPosition);
           yPosition += 5;
@@ -474,7 +480,13 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         if (pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0) {
           html += '<div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">';
           html += '<p style="font-weight: bold; margin-bottom: 8px;">Historial de Abonos:</p>';
-          pedido.historial_pagos.forEach((pago: any) => {
+          // Ordenar por fecha descendente (más reciente primero)
+          const historialOrdenado = [...pedido.historial_pagos].sort((a: any, b: any) => {
+            const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
+            const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
+            return fechaB - fechaA; // Descendente
+          });
+          historialOrdenado.forEach((pago: any) => {
             const fechaPago = pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A';
             html += `<p style="margin: 4px 0; font-size: 10px;">${fechaPago} - $ ${(pago.monto || 0).toLocaleString()} - ${pago.metodo || 'N/A'}</p>`;
           });
@@ -622,7 +634,12 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
                         <div className="mt-4 pt-3 border-t">
                           <p className="font-bold mb-2 text-sm">Historial de Abonos:</p>
                           <div className="space-y-1">
-                            {pedido.historial_pagos.map((pago: any, index: number) => (
+                            {/* Ordenar por fecha descendente (más reciente primero) */}
+                            {[...pedido.historial_pagos].sort((a: any, b: any) => {
+                              const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
+                              const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
+                              return fechaB - fechaA; // Descendente
+                            }).map((pago: any, index: number) => (
                               <div key={index} className="text-xs text-gray-600">
                                 {pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A'} - $ {(pago.monto || 0).toLocaleString()} - {pago.metodo || 'N/A'}
                               </div>
