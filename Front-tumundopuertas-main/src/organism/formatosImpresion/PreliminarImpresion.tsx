@@ -72,36 +72,10 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       }
     `;
     
-    // Crear ventana de impresión
+    // Crear ventana de impresión con el mismo HTML que se muestra en la vista previa
     const ventanaImpresion = window.open('', '_blank');
     if (ventanaImpresion) {
-      const htmlCompleto = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Preliminar de Pago</title>
-          <style>
-            ${estilosPapel}
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .logo { max-height: 80px; }
-            .document-title { font-size: 24px; font-weight: bold; text-align: center; margin: 20px 0; }
-            .info-section { margin: 20px 0; }
-            .client-info { margin: 20px 0; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            .totals { text-align: right; margin-top: 20px; }
-            .footer { text-align: center; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="print-container">
-            ${generarHTMLImpresion()}
-          </div>
-        </body>
-        </html>
-      `;
+      const htmlCompleto = generarHTMLImpresion();
       ventanaImpresion.document.write(htmlCompleto);
       ventanaImpresion.document.close();
       ventanaImpresion.focus();
@@ -238,17 +212,50 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       }
       if (config.totales.incluirTotal) {
         doc.setFont('helvetica', 'bold');
-        doc.text(`Total: $ ${(pedido.total || 0).toLocaleString()}`, 20, yPosition);
+        doc.text(`Total Factura: $ ${(pedido.total || 0).toLocaleString()}`, 20, yPosition);
         yPosition += 6;
         doc.setFont('helvetica', 'normal');
       }
-      if (config.totales.incluirAbonado) {
-        doc.text(`Abonado: $ ${(pedido.abonado || 0).toLocaleString()}`, 20, yPosition);
+      
+      // Calcular abonos realizados
+      const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
+      const restante = (pedido.total || 0) - totalAbonado;
+      
+      // Mostrar abonos si existen
+      if (totalAbonado > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 128, 0); // Verde
+        doc.text(`Total Abonado: $ ${totalAbonado.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+        doc.setTextColor(255, 0, 0); // Rojo
+        doc.text(`Resta por Pagar: $ ${restante.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+        doc.setTextColor(0, 0, 0); // Negro
+      } else if (config.totales.incluirAbonado) {
+        doc.text(`Abonado: $ ${totalAbonado.toLocaleString()}`, 20, yPosition);
         yPosition += 6;
       }
-      if (config.totales.incluirRestante) {
-        doc.text(`Restante: $ ${((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString()}`, 20, yPosition);
+      
+      if (config.totales.incluirRestante && totalAbonado === 0) {
+        doc.text(`Restante: $ ${restante.toLocaleString()}`, 20, yPosition);
         yPosition += 6;
+      }
+      
+      // Mostrar historial de abonos si existe
+      if (pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0) {
+        yPosition += 10;
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 0, 0);
+        doc.text('Historial de Abonos:', 20, yPosition);
+        yPosition += 6;
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        pedido.historial_pagos.forEach((pago: any) => {
+          const fechaPago = pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A';
+          doc.text(`${fechaPago} - $ ${(pago.monto || 0).toLocaleString()} - ${pago.metodo || 'N/A'}`, 20, yPosition);
+          yPosition += 5;
+        });
       }
     }
 
@@ -481,13 +488,33 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         html += '<p><strong>IVA (16%):</strong> $ ' + (pedido.iva || 0).toLocaleString() + '</p>';
       }
       if (config.totales.incluirTotal) {
-        html += '<p class="total-final"><strong>Total:</strong> $ ' + (pedido.total || 0).toLocaleString() + '</p>';
+        html += '<p class="total-final"><strong>Total Factura:</strong> $ ' + (pedido.total || 0).toLocaleString() + '</p>';
       }
-      if (config.totales.incluirAbonado) {
-        html += '<p><strong>Abonado:</strong> $ ' + (pedido.abonado || 0).toLocaleString() + '</p>';
+      
+      // Calcular abonos realizados
+      const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
+      const restante = (pedido.total || 0) - totalAbonado;
+      
+      // Mostrar abonos si existen
+      if (totalAbonado > 0) {
+        html += '<p style="color: green; font-weight: bold;"><strong>Total Abonado:</strong> $ ' + totalAbonado.toLocaleString() + '</p>';
+        html += '<p style="color: red; font-weight: bold;"><strong>Resta por Pagar:</strong> $ ' + restante.toLocaleString() + '</p>';
+        
+        // Mostrar historial de abonos si existe
+        if (pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0) {
+          html += '<div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">';
+          html += '<p style="font-weight: bold; margin-bottom: 8px;">Historial de Abonos:</p>';
+          pedido.historial_pagos.forEach((pago: any) => {
+            const fechaPago = pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A';
+            html += `<p style="margin: 4px 0; font-size: 10px;">${fechaPago} - $ ${(pago.monto || 0).toLocaleString()} - ${pago.metodo || 'N/A'}</p>`;
+          });
+          html += '</div>';
+        }
+      } else if (config.totales.incluirAbonado) {
+        html += '<p><strong>Abonado:</strong> $ ' + totalAbonado.toLocaleString() + '</p>';
       }
-      if (config.totales.incluirRestante) {
-        html += '<p><strong>Restante:</strong> $ ' + ((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString() + '</p>';
+      if (config.totales.incluirRestante && totalAbonado === 0) {
+        html += '<p><strong>Restante:</strong> $ ' + restante.toLocaleString() + '</p>';
       }
       html += '</div>';
     }
@@ -598,22 +625,60 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
               )}
               {config.totales.incluirTotal && (
                 <div className="flex justify-between font-bold border-t pt-1">
-                  <span>Total:</span>
+                  <span>Total Factura:</span>
                   <span>$ {(pedido.total || 0).toLocaleString()}</span>
                 </div>
               )}
-              {config.totales.incluirAbonado && (
-                <div className="flex justify-between text-green-600">
-                  <span>Abonado:</span>
-                  <span>$ {(pedido.abonado || 0).toLocaleString()}</span>
-                </div>
-              )}
-              {config.totales.incluirRestante && (
-                <div className="flex justify-between text-red-600 font-bold">
-                  <span>Restante:</span>
-                  <span>$ {((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString()}</span>
-                </div>
-              )}
+              
+              {/* Mostrar abonos si existen */}
+              {(() => {
+                const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
+                const restante = (pedido.total || 0) - totalAbonado;
+                
+                if (totalAbonado > 0) {
+                  return (
+                    <>
+                      <div className="flex justify-between text-green-600 font-bold">
+                        <span>Total Abonado:</span>
+                        <span>$ {totalAbonado.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-red-600 font-bold">
+                        <span>Resta por Pagar:</span>
+                        <span>$ {restante.toLocaleString()}</span>
+                      </div>
+                      
+                      {/* Mostrar historial de abonos si existe */}
+                      {pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0 && (
+                        <div className="mt-4 pt-3 border-t">
+                          <p className="font-bold mb-2 text-sm">Historial de Abonos:</p>
+                          <div className="space-y-1">
+                            {pedido.historial_pagos.map((pago: any, index: number) => (
+                              <div key={index} className="text-xs text-gray-600">
+                                {pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A'} - $ {(pago.monto || 0).toLocaleString()} - {pago.metodo || 'N/A'}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                } else if (config.totales.incluirAbonado) {
+                  return (
+                    <div className="flex justify-between text-green-600">
+                      <span>Abonado:</span>
+                      <span>$ {totalAbonado.toLocaleString()}</span>
+                    </div>
+                  );
+                } else if (config.totales.incluirRestante) {
+                  return (
+                    <div className="flex justify-between text-red-600 font-bold">
+                      <span>Restante:</span>
+                      <span>$ {restante.toLocaleString()}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         )}
@@ -636,48 +701,52 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
             <DialogTitle>Preliminar de Pago</DialogTitle>
           </DialogHeader>
 
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="space-y-6 h-full flex flex-col">
-              {/* Selector de formato */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Formato de Impresión</label>
-                <Select
-                  value={formatoSeleccionado?.id || ''}
-                  onValueChange={(value) => {
-                    const formato = formatos.find(f => f.id === value);
-                    setFormatoSeleccionado(formato || null);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecciona un formato" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formatos.filter(f => f.tipo === 'preliminar' && f.activo).map((formato) => (
-                      <SelectItem key={formato.id} value={formato.id}>
-                        {formato.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Vista previa */}
-              {formatoSeleccionado && (
-                <div className="flex-1 flex flex-col">
-                  <h3 className="text-lg font-semibold mb-3">Vista Previa</h3>
-                  <div className="flex-1 overflow-y-auto">
-                    <Card className="w-full h-full">
-                      <CardContent className="p-6 min-h-full">
-                        <div className="max-w-4xl mx-auto">
-                          {renderizarVistaPrevia()}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+          <div className="flex flex-col h-full">
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-6">
+                {/* Selector de formato */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Formato de Impresión</label>
+                  <Select
+                    value={formatoSeleccionado?.id || ''}
+                    onValueChange={(value) => {
+                      const formato = formatos.find(f => f.id === value);
+                      setFormatoSeleccionado(formato || null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona un formato" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {formatos.filter(f => f.tipo === 'preliminar' && f.activo).map((formato) => (
+                        <SelectItem key={formato.id} value={formato.id}>
+                          {formato.nombre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
 
-              {/* Botones de acción */}
+                {/* Vista previa */}
+                {formatoSeleccionado && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3">Vista Previa</h3>
+                    <div className="overflow-y-auto max-h-[60vh]">
+                      <Card className="w-full">
+                        <CardContent className="p-6">
+                          <div className="max-w-4xl mx-auto">
+                            {renderizarVistaPrevia()}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Botones de acción - Fuera del scroll */}
+            <div className="border-t p-6 bg-gray-50">
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={onClose}>
                   Cancelar
