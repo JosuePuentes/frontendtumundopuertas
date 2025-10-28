@@ -70,8 +70,8 @@ const Apartados: React.FC = () => {
   const handleMarcarFacturado = async (item: ItemApartado) => {
     try {
       const apiUrl = getApiUrl().replace('http://', 'https://');
-      const res = await fetch(`${apiUrl}/pedidos/apartados/${item._id}/facturar`, {
-        method: 'POST',
+      const res = await fetch(`${apiUrl}/pedidos/apartados/${item._id}/marcar-facturado`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
