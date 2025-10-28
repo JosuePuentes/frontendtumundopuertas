@@ -224,7 +224,11 @@ const PedidosHerreria: React.FC = () => {
         setItemsIndividuales([]);
       }
       
-      await fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`);
+      // Cargar empleados en segundo plano (no crítico para mostrar los items)
+      fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`)
+        .catch(err => {
+          console.warn('⚠️ Error al cargar empleados (no crítico):', err);
+        });
       // console.log('✅ Datos recargados exitosamente usando nueva estructura');
       
       // Limpiar cualquier error previo
