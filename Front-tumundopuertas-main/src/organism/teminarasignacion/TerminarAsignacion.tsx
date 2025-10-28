@@ -186,14 +186,17 @@ const TerminarAsignacion: React.FC = () => {
           const asignacionesActivas = data.filter((asig: any) => {
             const isEnProceso = asig.estado_subestado === "en_proceso";
             const isNotTerminado = asig.estado !== "terminado";
+            const hasNoFechaFin = !asig.fecha_fin; // ✅ CRÍTICO: Excluir asignaciones con fecha_fin
             const isNotTerminadoLocal = articuloTerminado !== asig.item_id;
-            const shouldShow = isEnProceso && isNotTerminado && isNotTerminadoLocal;
+            const shouldShow = isEnProceso && isNotTerminado && hasNoFechaFin && isNotTerminadoLocal;
             
             console.log(`🔍 Artículo ${asig.item_id}:`, {
               estado_subestado: asig.estado_subestado,
               estado: asig.estado,
+              fecha_fin: asig.fecha_fin,
               isEnProceso,
               isNotTerminado,
+              hasNoFechaFin,
               isNotTerminadoLocal,
               shouldShow
             });
@@ -288,13 +291,16 @@ const TerminarAsignacion: React.FC = () => {
       const asignacionesActivas = data.filter((asig: any) => {
         const isEnProceso = asig.estado_subestado === "en_proceso";
         const isNotTerminado = asig.estado !== "terminado";
-        const shouldShow = isEnProceso && isNotTerminado;
+        const hasNoFechaFin = !asig.fecha_fin; // ✅ CRÍTICO: Excluir asignaciones con fecha_fin
+        const shouldShow = isEnProceso && isNotTerminado && hasNoFechaFin;
         
         console.log(`🔍 INICIAL - Artículo ${asig.item_id}:`, {
           estado_subestado: asig.estado_subestado,
           estado: asig.estado,
+          fecha_fin: asig.fecha_fin,
           isEnProceso,
           isNotTerminado,
+          hasNoFechaFin,
           shouldShow
         });
         
