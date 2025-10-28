@@ -41,6 +41,7 @@ const DashboardAsignaciones: React.FC = () => {
   const [pin, setPin] = useState("");
   const [verificandoPin, setVerificandoPin] = useState(false);
   const [mensaje, setMensaje] = useState("");
+  const [tipoMensaje, setTipoMensaje] = useState<'success' | 'error' | 'manillar'>('success');
 
   // Función para cargar empleados
   const cargarEmpleados = async () => {
@@ -291,12 +292,24 @@ const DashboardAsignaciones: React.FC = () => {
         }
       }));
       
-      // Mostrar información de la comisión si está disponible
-      if (result.comision) {
-        console.log('💰 Comisión registrada:', result.comision);
+      // Detectar si es Manillar (orden == 3)
+      const ordenNum = typeof asig.orden === 'string' ? parseInt(asig.orden) : asig.orden;
+      if (ordenNum === 3) {
+        // Mostrar mensaje especial para Manillar
+        setTipoMensaje('manillar');
+        setMensaje("🎉 ¡Excelente! Tu artículo ha sido terminado y está disponible en tu inventario. ¡Puedes venderlo cuando sea necesario!");
+        setTimeout(() => setMensaje(""), 8000); // Mensaje más largo para Manillar
+        setTimeout(() => setTipoMensaje('success'), 8000);
+      } else if (result.comision) {
+        // Mensaje normal con información de comisión
+        setTipoMensaje('success');
         setMensaje(`✅ Asignación terminada exitosamente. Costo de producción: $${result.comision.costo_produccion}`);
+        setTimeout(() => setMensaje(""), 3000);
       } else {
+        // Mensaje normal
+        setTipoMensaje('success');
         setMensaje("✅ Asignación terminada exitosamente");
+        setTimeout(() => setMensaje(""), 3000);
       }
       
       console.log('=== TERMINACIÓN CON PIN COMPLETADA ===');
@@ -347,12 +360,17 @@ const DashboardAsignaciones: React.FC = () => {
 
       {/* Mensaje de éxito/error */}
       {mensaje && (
-        <div className={`mb-4 p-3 rounded ${
+        <div className={`mb-4 p-4 rounded-lg border-2 shadow-lg ${
           mensaje.includes("Error") || mensaje.includes("❌")
-            ? "bg-red-100 text-red-700 border border-red-300" 
-            : "bg-green-100 text-green-700 border border-green-300"
+            ? "bg-red-100 text-red-700 border-red-300" 
+            : tipoMensaje === 'manillar'
+            ? "bg-blue-100 text-blue-800 border-blue-400 font-semibold"
+            : "bg-green-100 text-green-700 border-green-300"
         }`}>
-          {mensaje}
+          <div className="flex items-center gap-2">
+            {tipoMensaje === 'manillar' && <span className="text-2xl">🎉</span>}
+            <span>{mensaje}</span>
+          </div>
                   </div>
                 )}
 
