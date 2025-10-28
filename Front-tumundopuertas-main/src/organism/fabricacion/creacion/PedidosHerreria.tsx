@@ -61,7 +61,7 @@ const PedidosHerreria: React.FC = () => {
   // Estado para barra de progreso por item
   const [progresoItems, setProgresoItems] = useState<Record<string, number>>({});
   
-  // Función para obtener progreso de un item
+  // Función para obtener progreso de un item - OPTIMIZADA
   const obtenerProgresoItem = async (pedidoId: string, itemId: string) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/item-estado/${pedidoId}/${itemId}`, {
@@ -69,20 +69,51 @@ const PedidosHerreria: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        // Agregar timeout y manejo de errores de conectividad
-        signal: AbortSignal.timeout(10000) // 10 segundos timeout
+        signal: AbortSignal.timeout(5000) // Reducido a 5 segundos timeout
       });
       
       if (!response.ok) {
-        // Error silencioso
         return { progreso: 0 };
       }
       
       const data = await response.json();
       return data;
     } catch (error: any) {
-      // Errores silenciosos para mejor rendimiento
       return { progreso: 0 };
+    }
+  };
+
+  // Función para cargar progreso de todos los items en PARALELO - OPTIMIZADA
+  const cargarProgresoItemsParalelo = async (items: ItemIndividual[]) => {
+    try {
+      // OPTIMIZACIÓN: Limitar a 20 items a la vez para evitar sobrecarga
+      const itemsACargar = items.slice(0, 20);
+      
+      const promesasProgreso = itemsACargar.map(item => 
+        obtenerProgresoItem(item.pedido_id, item.id)
+      );
+      
+      // Ejecutar todas las peticiones en paralelo
+      const resultados = await Promise.all(promesasProgreso);
+      
+      const progresoData: Record<string, number> = {};
+      itemsACargar.forEach((item, index) => {
+        progresoData[item.id] = resultados[index]?.progreso || 0;
+      });
+      
+      // Para los items restantes, establecer progreso en 0
+      items.slice(20).forEach(item => {
+        progresoData[item.id] = 0;
+      });
+      
+      setProgresoItems(progresoData);
+    } catch (error) {
+      // Si falla, establecer progreso en 0 para todos
+      const progresoData: Record<string, number> = {};
+      items.forEach(item => {
+        progresoData[item.id] = 0;
+      });
+      setProgresoItems(progresoData);
     }
   };
 
@@ -128,7 +159,7 @@ const PedidosHerreria: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
-        signal: AbortSignal.timeout(25000) // 25 segundos timeout para carga principal
+        signal: AbortSignal.timeout(15000) // Reducido a 15 segundos timeout para carga principal
       });
       
       if (!response.ok) {
@@ -177,17 +208,8 @@ const PedidosHerreria: React.FC = () => {
         setUltimaActualizacion(new Date()); // Actualizar timestamp
         // console.log('✅ Items individuales cargados:', itemsArray.length);
         
-        // Cargar progreso de todos los items
-        const cargarProgresoItems = async () => {
-          const progresoData: Record<string, number> = {};
-          for (const item of itemsArray) {
-            const progresoItem = await obtenerProgresoItem(item.pedido_id, item.id);
-            progresoData[item.id] = progresoItem.progreso || 0;
-          }
-          setProgresoItems(progresoData);
-        };
-        
-        cargarProgresoItems();
+        // Cargar progreso de todos los items en PARALELO para mejorar rendimiento
+        cargarProgresoItemsParalelo(itemsArray);
       } else {
         // console.log('⚠️ No hay items - itemsArray no es array:', itemsArray);
         setItemsIndividuales([]);
@@ -220,11 +242,11 @@ const PedidosHerreria: React.FC = () => {
     recargarDatos();
   }, [filtrosAplicados]);
 
-  // Actualización automática cada 5 minutos
+  // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
   useEffect(() => {
     const interval = setInterval(() => {
       recargarDatos();
-    }, 5 * 60 * 1000); // 5 minutos en milisegundos
+    }, 10 * 60 * 1000); // 10 minutos en milisegundos
 
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
@@ -499,7 +521,7 @@ const PedidosHerreria: React.FC = () => {
           <span className="inline-flex items-center gap-1">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             Última actualización: {ultimaActualizacion.toLocaleTimeString()}
-            <span className="text-gray-400">(Se actualiza cada 5 minutos)</span>
+            <span className="text-gray-400">(Actualización automática cada 10 minutos)</span>
           </span>
         </div>
         
