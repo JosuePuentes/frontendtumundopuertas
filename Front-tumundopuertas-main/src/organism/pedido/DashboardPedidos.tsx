@@ -302,6 +302,16 @@ const DashboardPedidos: React.FC = () => {
         grupos.entregado.push(p);
       }
     });
+    
+    // Ordenar cada grupo por fecha de creación descendente (más recientes primero)
+    Object.keys(grupos).forEach((key) => {
+      grupos[key].sort((a, b) => {
+        const fechaA = new Date(a.fecha_creacion).getTime();
+        const fechaB = new Date(b.fecha_creacion).getTime();
+        return fechaB - fechaA; // Descendente
+      });
+    });
+    
     return grupos;
   }, [pedidos]);
 
