@@ -35,6 +35,7 @@ const TerminarAsignacion: React.FC = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [loading, setLoading] = useState(false);
   const [mensaje, setMensaje] = useState<string>("");
+  const [tipoMensaje, setTipoMensaje] = useState<'success' | 'error' | 'manillar'>('success');
   const [articuloTerminado, setArticuloTerminado] = useState<string | null>(null);
   const identificador = localStorage.getItem("identificador");
   
@@ -93,6 +94,21 @@ const TerminarAsignacion: React.FC = () => {
       console.log('✅ Asignación terminada con endpoint optimizado:', result);
       
       console.log('=== TERMINACIÓN CON PIN COMPLETADA ===');
+      
+      // Detectar si es Manillar (orden == 3)
+      const ordenNum = parseInt(asig.orden || '0');
+      if (ordenNum === 3) {
+        // Mostrar mensaje especial para Manillar
+        setTipoMensaje('manillar');
+        setMensaje("¡Excelente! Tu artículo ha sido terminado y está disponible en tu inventario. ¡Puedes venderlo cuando sea necesario!");
+        setTimeout(() => setMensaje(""), 8000); // Mensaje más largo para Manillar
+        setTimeout(() => setTipoMensaje('success'), 8000);
+      } else {
+        // Mensaje normal para otros módulos
+        setTipoMensaje('success');
+        setMensaje("¡Asignación terminada exitosamente!");
+        setTimeout(() => setMensaje(""), 3000);
+      }
       
       // Cerrar modal
       setPinModal({ isOpen: false, asignacion: null });
@@ -355,12 +371,17 @@ const TerminarAsignacion: React.FC = () => {
       </div>
       
       {mensaje && (
-        <div className={`mb-4 p-3 rounded ${
+        <div className={`mb-4 p-4 rounded-lg border-2 shadow-lg ${
           mensaje.includes("Error") 
-            ? "bg-red-100 text-red-700 border border-red-300" 
-            : "bg-green-100 text-green-700 border border-green-300"
+            ? "bg-red-100 text-red-700 border-red-300" 
+            : tipoMensaje === 'manillar'
+            ? "bg-blue-100 text-blue-800 border-blue-400 font-semibold"
+            : "bg-green-100 text-green-700 border-green-300"
         }`}>
-          {mensaje}
+          <div className="flex items-center gap-2">
+            {tipoMensaje === 'manillar' && <span className="text-2xl">🎉</span>}
+            <span>{mensaje}</span>
+          </div>
         </div>
       )}
       
