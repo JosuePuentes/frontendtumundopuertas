@@ -260,20 +260,29 @@ const DashboardAsignaciones: React.FC = () => {
       console.log('=== INICIANDO TERMINACIÓN CON PIN ===');
       console.log('Marcando artículo como terminado:', asig.item_id);
       console.log('PIN ingresado:', pin);
+      console.log('ORDEN recibido:', asig.orden, 'tipo:', typeof asig.orden);
+      
+      // Convertir orden a número
+      const ordenNumero = typeof asig.orden === 'string' ? parseInt(asig.orden) : asig.orden;
+      console.log('ORDEN convertido:', ordenNumero, 'tipo:', typeof ordenNumero);
+      
+      const payload = {
+        pedido_id: asig.pedido_id,
+        item_id: asig.item_id,
+        empleado_id: asig.empleado_id,
+        estado: "terminado",
+        fecha_fin: new Date().toISOString(),
+        orden: ordenNumero,
+        pin: pin
+      };
+      
+      console.log('PAYLOAD COMPLETO:', JSON.stringify(payload, null, 2));
       
       // Usar el endpoint correcto para terminar asignaciones
       const response = await fetch(`${getApiUrl()}/pedidos/asignacion/terminar`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pedido_id: asig.pedido_id,
-          item_id: asig.item_id,
-          empleado_id: asig.empleado_id,
-          estado: "terminado",
-          fecha_fin: new Date().toISOString(),
-          orden: typeof asig.orden === 'string' ? parseInt(asig.orden) : asig.orden, // Convertir a int como espera el backend
-          pin: pin // Agregar PIN que requiere el backend
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
