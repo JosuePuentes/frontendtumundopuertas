@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 // Importaciones removidas: usePedido y DetalleHerreria ya no se usan con la nueva estructura
 import { useEmpleado } from "@/hooks/useEmpleado";
 import AsignarArticulos from "@/organism/asignar/AsignarArticulos";
@@ -54,6 +55,7 @@ const PedidosHerreria: React.FC = () => {
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [filtroAsignacion, setFiltroAsignacion] = useState<string>("todos");
   const [filtroFecha, setFiltroFecha] = useState<string>("todos"); // NUEVO: Filtro por fecha
+  const [searchTerm, setSearchTerm] = useState<string>(""); // NUEVO: Buscador por nombre de cliente
   const [filtrosAplicados, setFiltrosAplicados] = useState<{estado: string, asignacion: string, fecha: string}>({estado: "todos", asignacion: "todos", fecha: "todos"});
   
   // Estado para barra de progreso por item
@@ -549,7 +551,23 @@ const PedidosHerreria: React.FC = () => {
         </div>
         
         {/* Controles de Filtro Mejorados */}
-        <div className="flex gap-4 mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div className="flex flex-col gap-4 mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+          {/* Buscador de cliente */}
+          <div className="w-full">
+            <Label htmlFor="buscar-cliente" className="text-sm font-medium text-gray-700 mb-2 block">
+              Buscar por Cliente:
+            </Label>
+            <Input
+              id="buscar-cliente"
+              type="text"
+              placeholder="Escribe el nombre del cliente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-white border-gray-300"
+            />
+          </div>
+          
+          <div className="flex gap-4">
           <div className="flex-1">
             <Label htmlFor="filtro-estado" className="text-sm font-medium text-gray-700 mb-2 block">
               Estado del Item:
@@ -612,6 +630,7 @@ const PedidosHerreria: React.FC = () => {
             >
               Aplicar Filtros
             </Button>
+          </div>
           </div>
         </div>
       </CardHeader>
@@ -686,6 +705,15 @@ const PedidosHerreria: React.FC = () => {
                 }
                 
                 return estadoValido;
+              })
+              .filter((item) => {
+                // Filtro por búsqueda de cliente
+                if (searchTerm && searchTerm.trim() !== "") {
+                  const clienteNombre = item.cliente_nombre?.toLowerCase() || '';
+                  const searchLower = searchTerm.toLowerCase();
+                  return clienteNombre.includes(searchLower);
+                }
+                return true;
               })
               .sort((a, b) => {
                 // Ordenar por fecha de creación del pedido (más recientes primero)
