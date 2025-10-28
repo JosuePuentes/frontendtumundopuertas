@@ -161,59 +161,10 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         yPosition += 6;
       });
       yPosition += 10;
-    }
-
-    // Totales
-    if (config.totales.mostrar) {
-      doc.setFontSize(12);
-      doc.setFont('helvetica', 'bold');
-      doc.text('TOTALES:', 20, yPosition);
-      yPosition += 8;
-
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'normal');
-      if (config.totales.incluirSubtotal) {
-        doc.text(`Subtotal: $ ${(pedido.subtotal || 0).toLocaleString()}`, 20, yPosition);
-        yPosition += 6;
-      }
-      if (config.totales.incluirIva) {
-        doc.text(`IVA (16%): $ ${(pedido.iva || 0).toLocaleString()}`, 20, yPosition);
-        yPosition += 6;
-      }
-      if (config.totales.incluirTotal) {
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Total Factura: $ ${(pedido.total || 0).toLocaleString()}`, 20, yPosition);
-        yPosition += 6;
-        doc.setFont('helvetica', 'normal');
-      }
       
-      // Calcular abonos realizados
-      const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
-      const restante = (pedido.total || 0) - totalAbonado;
-      
-      // Mostrar abonos si existen
-      if (totalAbonado > 0) {
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 128, 0); // Verde
-        doc.text(`Total Abonado: $ ${totalAbonado.toLocaleString()}`, 20, yPosition);
-        yPosition += 6;
-        doc.setTextColor(255, 0, 0); // Rojo
-        doc.text(`Resta por Pagar: $ ${restante.toLocaleString()}`, 20, yPosition);
-        yPosition += 6;
-        doc.setTextColor(0, 0, 0); // Negro
-      } else if (config.totales.incluirAbonado) {
-        doc.text(`Abonado: $ ${totalAbonado.toLocaleString()}`, 20, yPosition);
-        yPosition += 6;
-      }
-      
-      if (config.totales.incluirRestante && totalAbonado === 0) {
-        doc.text(`Restante: $ ${restante.toLocaleString()}`, 20, yPosition);
-        yPosition += 6;
-      }
-      
-      // Mostrar historial de abonos si existe
+      // Historial de abonos - Debajo de los items
       if (pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0) {
-        yPosition += 10;
+        yPosition += 5;
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 0, 0);
@@ -232,6 +183,45 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
           doc.text(`${fechaPago} - $ ${(pago.monto || 0).toLocaleString()} - ${pago.metodo || 'N/A'}`, 20, yPosition);
           yPosition += 5;
         });
+        yPosition += 5;
+      }
+    }
+
+    // Totales
+    if (config.totales.mostrar) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TOTALES:', 20, yPosition);
+      yPosition += 8;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      // Subtotal - siempre mostrarlo
+      doc.text(`Subtotal: $ ${(pedido.subtotal || 0).toLocaleString()}`, 20, yPosition);
+      yPosition += 6;
+      
+      // Total Factura - siempre mostrarlo
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Total Factura: $ ${(pedido.total || 0).toLocaleString()}`, 20, yPosition);
+      yPosition += 6;
+      doc.setFont('helvetica', 'normal');
+      
+      // Calcular abonos realizados
+      const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
+      const restante = (pedido.total || 0) - totalAbonado;
+      
+      // Mostrar abonos si existen
+      if (totalAbonado > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 128, 0); // Verde
+        doc.text(`Total Abonado: $ ${totalAbonado.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+        doc.setTextColor(255, 0, 0); // Rojo
+        doc.text(`Resta por Pagar: $ ${restante.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+        doc.setTextColor(0, 0, 0); // Negro
+        doc.setFont('helvetica', 'normal');
       }
     }
 
@@ -452,20 +442,33 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       });
       
       html += '</tbody></table>';
+      
+      // Historial de abonos - Debajo de la tabla de items
+      if (pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0) {
+        html += '<div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">';
+        html += '<p style="font-weight: bold; margin-bottom: 8px;">Historial de Abonos:</p>';
+        // Ordenar por fecha descendente (más reciente primero)
+        const historialOrdenado = [...pedido.historial_pagos].sort((a: any, b: any) => {
+          const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
+          const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
+          return fechaB - fechaA; // Descendente
+        });
+        historialOrdenado.forEach((pago: any) => {
+          const fechaPago = pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A';
+          html += `<p style="margin: 4px 0; font-size: 10px;">${fechaPago} - $ ${(pago.monto || 0).toLocaleString()} - ${pago.metodo || 'N/A'}</p>`;
+        });
+        html += '</div>';
+      }
     }
 
     // Totales
     if (config.totales.mostrar) {
       html += '<div class="totals">';
-      if (config.totales.incluirSubtotal) {
-        html += '<p><strong>Subtotal:</strong> $ ' + (pedido.subtotal || 0).toLocaleString() + '</p>';
-      }
-      if (config.totales.incluirIva) {
-        html += '<p><strong>IVA (16%):</strong> $ ' + (pedido.iva || 0).toLocaleString() + '</p>';
-      }
-      if (config.totales.incluirTotal) {
-        html += '<p class="total-final"><strong>Total Factura:</strong> $ ' + (pedido.total || 0).toLocaleString() + '</p>';
-      }
+      // Subtotal - siempre mostrarlo
+      html += '<p><strong>Subtotal:</strong> $ ' + (pedido.subtotal || 0).toLocaleString() + '</p>';
+      
+      // Total Factura - siempre mostrarlo
+      html += '<p class="total-final"><strong>Total Factura:</strong> $ ' + (pedido.total || 0).toLocaleString() + '</p>';
       
       // Calcular abonos realizados
       const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
@@ -475,28 +478,6 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       if (totalAbonado > 0) {
         html += '<p style="color: green; font-weight: bold;"><strong>Total Abonado:</strong> $ ' + totalAbonado.toLocaleString() + '</p>';
         html += '<p style="color: red; font-weight: bold;"><strong>Resta por Pagar:</strong> $ ' + restante.toLocaleString() + '</p>';
-        
-        // Mostrar historial de abonos si existe
-        if (pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0) {
-          html += '<div style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">';
-          html += '<p style="font-weight: bold; margin-bottom: 8px;">Historial de Abonos:</p>';
-          // Ordenar por fecha descendente (más reciente primero)
-          const historialOrdenado = [...pedido.historial_pagos].sort((a: any, b: any) => {
-            const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
-            const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
-            return fechaB - fechaA; // Descendente
-          });
-          historialOrdenado.forEach((pago: any) => {
-            const fechaPago = pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A';
-            html += `<p style="margin: 4px 0; font-size: 10px;">${fechaPago} - $ ${(pago.monto || 0).toLocaleString()} - ${pago.metodo || 'N/A'}</p>`;
-          });
-          html += '</div>';
-        }
-      } else if (config.totales.incluirAbonado) {
-        html += '<p><strong>Abonado:</strong> $ ' + totalAbonado.toLocaleString() + '</p>';
-      }
-      if (config.totales.incluirRestante && totalAbonado === 0) {
-        html += '<p><strong>Restante:</strong> $ ' + restante.toLocaleString() + '</p>';
       }
       html += '</div>';
     }
@@ -592,6 +573,25 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
                 ))}
               </TableBody>
             </Table>
+            
+            {/* Historial de abonos - Debajo de los items */}
+            {pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0 && (
+              <div className="mt-4 pt-3 border-t">
+                <p className="font-bold mb-2 text-sm">Historial de Abonos:</p>
+                <div className="space-y-1">
+                  {/* Ordenar por fecha descendente (más reciente primero) */}
+                  {[...pedido.historial_pagos].sort((a: any, b: any) => {
+                    const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
+                    const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
+                    return fechaB - fechaA; // Descendente
+                  }).map((pago: any, index: number) => (
+                    <div key={index} className="text-xs text-gray-600">
+                      {pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A'} - $ {(pago.monto || 0).toLocaleString()} - {pago.metodo || 'N/A'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -599,18 +599,17 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         {config.totales.mostrar && (
           <div className="flex justify-end">
             <div className="w-48 space-y-1 text-sm">
-              {config.totales.incluirSubtotal && (
-                <div className="flex justify-between">
-                  <span>Subtotal:</span>
-                  <span>$ {(pedido.subtotal || 0).toLocaleString()}</span>
-                </div>
-              )}
-              {config.totales.incluirTotal && (
-                <div className="flex justify-between font-bold border-t pt-1">
-                  <span>Total Factura:</span>
-                  <span>$ {(pedido.total || 0).toLocaleString()}</span>
-                </div>
-              )}
+              {/* Subtotal - siempre mostrarlo */}
+              <div className="flex justify-between">
+                <span>Subtotal:</span>
+                <span>$ {(pedido.subtotal || 0).toLocaleString()}</span>
+              </div>
+              
+              {/* Total Factura - siempre mostrarlo */}
+              <div className="flex justify-between font-bold border-t pt-1">
+                <span>Total Factura:</span>
+                <span>$ {(pedido.total || 0).toLocaleString()}</span>
+              </div>
               
               {/* Mostrar abonos si existen */}
               {(() => {
@@ -628,40 +627,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
                         <span>Resta por Pagar:</span>
                         <span>$ {restante.toLocaleString()}</span>
                       </div>
-                      
-                      {/* Mostrar historial de abonos si existe */}
-                      {pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0 && (
-                        <div className="mt-4 pt-3 border-t">
-                          <p className="font-bold mb-2 text-sm">Historial de Abonos:</p>
-                          <div className="space-y-1">
-                            {/* Ordenar por fecha descendente (más reciente primero) */}
-                            {[...pedido.historial_pagos].sort((a: any, b: any) => {
-                              const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
-                              const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
-                              return fechaB - fechaA; // Descendente
-                            }).map((pago: any, index: number) => (
-                              <div key={index} className="text-xs text-gray-600">
-                                {pago.fecha ? new Date(pago.fecha).toLocaleDateString() : 'N/A'} - $ {(pago.monto || 0).toLocaleString()} - {pago.metodo || 'N/A'}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </>
-                  );
-                } else if (config.totales.incluirAbonado) {
-                  return (
-                    <div className="flex justify-between text-green-600">
-                      <span>Abonado:</span>
-                      <span>$ {totalAbonado.toLocaleString()}</span>
-                    </div>
-                  );
-                } else if (config.totales.incluirRestante) {
-                  return (
-                    <div className="flex justify-between text-red-600 font-bold">
-                      <span>Restante:</span>
-                      <span>$ {restante.toLocaleString()}</span>
-                    </div>
                   );
                 }
                 return null;
