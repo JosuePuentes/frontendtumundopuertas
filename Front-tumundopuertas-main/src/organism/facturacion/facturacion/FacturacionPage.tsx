@@ -218,11 +218,6 @@ const FacturacionPage: React.FC = () => {
                   </tfoot>
                 </table>
               </div>
-              <div class="nota-footer">
-                <p>J507172554 TU MUNDO PUERTAS, C.A.</p>
-                <p>DOMICILIO FISCAL AV 50 CASA NRO 158-79 BARRIO RAFAEL URDANETA SUR SAN</p>
-                <p>FRANCISCO ZULIA ZONA POSTAL 4004</p>
-              </div>
             </div>
           </div>
           <script>window.onload = function() { window.print(); };</script>
