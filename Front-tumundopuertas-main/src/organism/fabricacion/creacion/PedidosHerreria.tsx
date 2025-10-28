@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 // Importaciones removidas: usePedido y DetalleHerreria ya no se usan con la nueva estructura
 import { useEmpleado } from "@/hooks/useEmpleado";
@@ -250,11 +249,6 @@ const PedidosHerreria: React.FC = () => {
   useEffect(() => {
     recargarDatos();
   }, []);
-
-  // Recargar datos cuando cambien los filtros aplicados
-  useEffect(() => {
-    recargarDatos();
-  }, [filtrosAplicados]);
 
   // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
   useEffect(() => {
