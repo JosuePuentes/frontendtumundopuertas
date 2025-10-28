@@ -14,7 +14,7 @@ const defaultLinks = [
   { label: "Modificar Cliente", href: "/modificarcliente" },
   { label: "Crear Item", href: "/crearitem" },
   { label: "Modificar Item", href: "/inventario/modificar" },
-  { label: "Cargar Inventario Excel", href: "/inventario/cargar-excel" },
+  { label: "Mi Inventario", href: "/inventario/cargar-excel" },
   { label: "Crear Pedido", href: "/crearpedido" },
   { label: "Monitor Pedidos", href: "/monitorpedidos" },
   { label: "Dashboard Asignaciones", href: "/dashboard-asignaciones" },
