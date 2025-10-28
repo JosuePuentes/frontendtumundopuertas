@@ -341,7 +341,6 @@ const PedidosHerreria: React.FC = () => {
     const handleCambioEstado = async (event: Event) => {
       const customEvent = event as CustomEvent;
       const evento = customEvent.detail;
-      console.log(`🔄 PedidosHerreria: Cambio de estado detectado:`, evento);
       
       // Verificar si el cambio es relevante para los items actuales
       const esRelevante = itemsIndividuales.some(item => 
