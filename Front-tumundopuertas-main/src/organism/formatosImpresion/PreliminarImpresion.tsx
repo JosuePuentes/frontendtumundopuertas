@@ -208,11 +208,11 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
           xPosition += 20;
         }
         if (config.items.columnas.includes('precio')) {
-          doc.text(`Bs. ${(item.precio || 0).toLocaleString()}`, xPosition, yPosition);
+          doc.text(`$ ${(item.precio || 0).toLocaleString()}`, xPosition, yPosition);
           xPosition += 30;
         }
         if (config.items.columnas.includes('subtotal')) {
-          doc.text(`Bs. ${((item.precio || 0) * (item.cantidad || 1)).toLocaleString()}`, xPosition, yPosition);
+          doc.text(`$ ${((item.precio || 0) * (item.cantidad || 1)).toLocaleString()}`, xPosition, yPosition);
         }
         yPosition += 6;
       });
@@ -229,25 +229,25 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       if (config.totales.incluirSubtotal) {
-        doc.text(`Subtotal: Bs. ${(pedido.subtotal || 0).toLocaleString()}`, 20, yPosition);
+        doc.text(`Subtotal: $ ${(pedido.subtotal || 0).toLocaleString()}`, 20, yPosition);
         yPosition += 6;
       }
       if (config.totales.incluirIva) {
-        doc.text(`IVA (16%): Bs. ${(pedido.iva || 0).toLocaleString()}`, 20, yPosition);
+        doc.text(`IVA (16%): $ ${(pedido.iva || 0).toLocaleString()}`, 20, yPosition);
         yPosition += 6;
       }
       if (config.totales.incluirTotal) {
         doc.setFont('helvetica', 'bold');
-        doc.text(`Total: Bs. ${(pedido.total || 0).toLocaleString()}`, 20, yPosition);
+        doc.text(`Total: $ ${(pedido.total || 0).toLocaleString()}`, 20, yPosition);
         yPosition += 6;
         doc.setFont('helvetica', 'normal');
       }
       if (config.totales.incluirAbonado) {
-        doc.text(`Abonado: Bs. ${(pedido.abonado || 0).toLocaleString()}`, 20, yPosition);
+        doc.text(`Abonado: $ ${(pedido.abonado || 0).toLocaleString()}`, 20, yPosition);
         yPosition += 6;
       }
       if (config.totales.incluirRestante) {
-        doc.text(`Restante: Bs. ${((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString()}`, 20, yPosition);
+        doc.text(`Restante: $ ${((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString()}`, 20, yPosition);
         yPosition += 6;
       }
     }
@@ -460,10 +460,10 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
           html += `<td>${item.cantidad || 1}</td>`;
         }
         if (config.items.columnas.includes('precio')) {
-          html += `<td>Bs. ${(item.precio || 0).toLocaleString()}</td>`;
+          html += `<td>$ ${(item.precio || 0).toLocaleString()}</td>`;
         }
         if (config.items.columnas.includes('subtotal')) {
-          html += `<td>Bs. ${((item.precio || 0) * (item.cantidad || 1)).toLocaleString()}</td>`;
+          html += `<td>$ ${((item.precio || 0) * (item.cantidad || 1)).toLocaleString()}</td>`;
         }
         html += '</tr>';
       });
@@ -475,19 +475,19 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
     if (config.totales.mostrar) {
       html += '<div class="totals">';
       if (config.totales.incluirSubtotal) {
-        html += '<p><strong>Subtotal:</strong> Bs. ' + (pedido.subtotal || 0).toLocaleString() + '</p>';
+        html += '<p><strong>Subtotal:</strong> $ ' + (pedido.subtotal || 0).toLocaleString() + '</p>';
       }
       if (config.totales.incluirIva) {
-        html += '<p><strong>IVA (16%):</strong> Bs. ' + (pedido.iva || 0).toLocaleString() + '</p>';
+        html += '<p><strong>IVA (16%):</strong> $ ' + (pedido.iva || 0).toLocaleString() + '</p>';
       }
       if (config.totales.incluirTotal) {
-        html += '<p class="total-final"><strong>Total:</strong> Bs. ' + (pedido.total || 0).toLocaleString() + '</p>';
+        html += '<p class="total-final"><strong>Total:</strong> $ ' + (pedido.total || 0).toLocaleString() + '</p>';
       }
       if (config.totales.incluirAbonado) {
-        html += '<p><strong>Abonado:</strong> Bs. ' + (pedido.abonado || 0).toLocaleString() + '</p>';
+        html += '<p><strong>Abonado:</strong> $ ' + (pedido.abonado || 0).toLocaleString() + '</p>';
       }
       if (config.totales.incluirRestante) {
-        html += '<p><strong>Restante:</strong> Bs. ' + ((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString() + '</p>';
+        html += '<p><strong>Restante:</strong> $ ' + ((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString() + '</p>';
       }
       html += '</div>';
     }
@@ -574,10 +574,10 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
                       <TableCell>{item.cantidad || 1}</TableCell>
                     )}
                     {config.items.columnas.includes('precio') && (
-                      <TableCell>Bs. {(item.precio || 0).toLocaleString()}</TableCell>
+                      <TableCell>$ {(item.precio || 0).toLocaleString()}</TableCell>
                     )}
                     {config.items.columnas.includes('subtotal') && (
-                      <TableCell>Bs. {((item.precio || 0) * (item.cantidad || 1)).toLocaleString()}</TableCell>
+                      <TableCell>$ {((item.precio || 0) * (item.cantidad || 1)).toLocaleString()}</TableCell>
                     )}
                   </TableRow>
                 ))}
@@ -593,25 +593,25 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
               {config.totales.incluirSubtotal && (
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
-                  <span>Bs. {(pedido.subtotal || 0).toLocaleString()}</span>
+                  <span>$ {(pedido.subtotal || 0).toLocaleString()}</span>
                 </div>
               )}
               {config.totales.incluirTotal && (
                 <div className="flex justify-between font-bold border-t pt-1">
                   <span>Total:</span>
-                  <span>Bs. {(pedido.total || 0).toLocaleString()}</span>
+                  <span>$ {(pedido.total || 0).toLocaleString()}</span>
                 </div>
               )}
               {config.totales.incluirAbonado && (
                 <div className="flex justify-between text-green-600">
                   <span>Abonado:</span>
-                  <span>Bs. {(pedido.abonado || 0).toLocaleString()}</span>
+                  <span>$ {(pedido.abonado || 0).toLocaleString()}</span>
                 </div>
               )}
               {config.totales.incluirRestante && (
                 <div className="flex justify-between text-red-600 font-bold">
                   <span>Restante:</span>
-                  <span>Bs. {((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString()}</span>
+                  <span>$ {((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString()}</span>
                 </div>
               )}
             </div>
@@ -630,7 +630,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[98vw] h-[98vh] max-w-none max-h-none overflow-hidden bg-white p-0">
+      <DialogContent className="w-[95vw] max-w-6xl h-[90vh] overflow-hidden bg-white p-0">
         <div className="flex flex-col h-full">
           <DialogHeader className="p-6 border-b">
             <DialogTitle>Preliminar de Pago</DialogTitle>
