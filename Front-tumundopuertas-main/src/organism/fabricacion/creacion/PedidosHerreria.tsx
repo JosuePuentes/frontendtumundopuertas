@@ -711,7 +711,8 @@ const PedidosHerreria: React.FC = () => {
                 if (searchTerm && searchTerm.trim() !== "") {
                   const clienteNombre = item.cliente_nombre?.toLowerCase() || '';
                   const searchLower = searchTerm.toLowerCase();
-                  return clienteNombre.includes(searchLower);
+                  const match = clienteNombre.includes(searchLower);
+                  return match;
                 }
                 return true;
               })
