@@ -241,6 +241,13 @@ const PedidosHerreria: React.FC = () => {
 
   useEffect(() => {
     recargarDatos();
+    
+    // Cargar empleados al montar el componente
+    const apiUrl = import.meta.env.VITE_API_URL?.replace('http://', 'https://') || 'https://crafteo.onrender.com';
+    fetchEmpleado(`${apiUrl}/empleados/all/`)
+      .catch(err => {
+        console.error('❌ Error al cargar empleados:', err);
+      });
   }, []);
 
   // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
@@ -819,7 +826,19 @@ const PedidosHerreria: React.FC = () => {
                             estado_general="independiente"
                     numeroOrden="independiente"
                             items={[item]} // Pasar solo este item individual
-                    empleados={Array.isArray(dataEmpleados) ? dataEmpleados : []}
+                    empleados={(() => {
+                      console.log('🔍 DEBUG - dataEmpleados:', dataEmpleados);
+                      console.log('🔍 DEBUG - es array?', Array.isArray(dataEmpleados));
+                      console.log('🔍 DEBUG - cantidad:', dataEmpleados ? (Array.isArray(dataEmpleados) ? dataEmpleados.length : Object.keys(dataEmpleados).length) : 0);
+                      if (Array.isArray(dataEmpleados)) {
+                        return dataEmpleados;
+                      }
+                      // Si dataEmpleados es un objeto con una propiedad array (como {empleados: [...]})
+                      if (dataEmpleados && typeof dataEmpleados === 'object' && 'empleados' in dataEmpleados && Array.isArray((dataEmpleados as any).empleados)) {
+                        return (dataEmpleados as any).empleados;
+                      }
+                      return [];
+                    })()}
                             pedidoId={item.pedido_id}
                             tipoEmpleado={[]}
                           />

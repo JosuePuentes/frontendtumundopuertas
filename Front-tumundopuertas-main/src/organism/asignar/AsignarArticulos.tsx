@@ -704,70 +704,73 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                           </option>
                           {(() => {
                             // Obtener la lista de empleados disponibles (con fallback)
-                            const listaEmpleadosDisponibles = empleadosPorItem[item.id] || empleados;
+                            const listaEmpleadosDisponibles = (empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0) ? empleadosPorItem[item.id] : empleados;
                             
-                            const empleadosFiltrados = listaEmpleadosDisponibles
-                              .filter((e) => {
-                                // Verificar que el empleado tenga datos válidos
-                                if (!e || !e.identificador || (!e.nombre && !e.nombreCompleto)) {
-                                  return false;
-                                }
+                            console.log('🔍 DEBUG - Empleados disponibles para item:', item.id, listaEmpleadosDisponibles.length);
+                            
+                            // Primero filtrar por datos válidos
+                            const empleadosValidos = listaEmpleadosDisponibles.filter(e => 
+                              e && e.identificador && (e.nombre || e.nombreCompleto)
+                            );
+                            
+                            console.log('🔍 DEBUG - Empleados válidos:', empleadosValidos.length);
+                            
+                            // Intentar filtrar por tipo si es necesario
+                            const tipoEmpleadoItem = obtenerTipoEmpleadoPorItem(item.id);
+                            console.log('🔍 DEBUG - Tipo empleado requerido:', tipoEmpleadoItem);
+                            
+                            let empleadosAFiltrar = empleadosValidos;
+                            
+                            // Si hay tipoEmpleado definido, intentar filtrar
+                            if (tipoEmpleadoItem && Array.isArray(tipoEmpleadoItem) && tipoEmpleadoItem.length > 0) {
+                              const empleadosFiltrados = empleadosValidos.filter((e) => {
+                                let cumpleFiltro = false;
                                 
-                                // Si hay tipoEmpleado definido, filtrar por permisos o cargo
-                                const tipoEmpleadoItem = obtenerTipoEmpleadoPorItem(item.id);
-                                if (tipoEmpleadoItem && Array.isArray(tipoEmpleadoItem) && tipoEmpleadoItem.length > 0) {
-                                  let cumpleFiltro = false;
-                                  
-                                  // Intentar filtrar por permisos primero
-                                  if (Array.isArray(e.permisos) && e.permisos.length > 0) {
-                                    cumpleFiltro = tipoEmpleadoItem.some((tipo) => 
-                                      e.permisos.includes(tipo)
+                                // Intentar filtrar por permisos primero
+                                if (Array.isArray(e.permisos) && e.permisos.length > 0) {
+                                  cumpleFiltro = tipoEmpleadoItem.some((tipo) => 
+                                    e.permisos.includes(tipo)
+                                  );
+                                }
+                                // Si no tiene permisos, intentar filtrar por cargo
+                                else if (e.cargo) {
+                                  const cargo = e.cargo.toLowerCase();
+                                  cumpleFiltro = tipoEmpleadoItem.some((tipo) => {
+                                    const tipoNormalizado = tipo.toLowerCase();
+                                    
+                                    // Mapear tipos a variaciones comunes
+                                    const variacionesTipo: Record<string, string[]> = {
+                                      'herreria': ['herrero', 'herreria'],
+                                      'masillar': ['masillador', 'masillar'],
+                                      'pintar': ['pintor', 'pintar'],
+                                      'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
+                                      'facturacion': ['facturador', 'facturacion', 'administrativo'],
+                                      'ayudante': ['ayudante']
+                                    };
+                                    
+                                    // Verificar coincidencia directa
+                                    if (cargo.includes(tipoNormalizado)) {
+                                      return true;
+                                    }
+                                    
+                                    // Verificar variaciones del tipo
+                                    const variaciones = variacionesTipo[tipoNormalizado] || [];
+                                    return variaciones.some(variacion => 
+                                      cargo.includes(variacion)
                                     );
-                                  }
-                                  // Si no tiene permisos, intentar filtrar por cargo
-                                  else if (e.cargo) {
-                                    const cargo = e.cargo.toLowerCase();
-                                    cumpleFiltro = tipoEmpleadoItem.some((tipo) => {
-                                      const tipoNormalizado = tipo.toLowerCase();
-                                      
-                                      // Mapear tipos a variaciones comunes
-                                      const variacionesTipo: Record<string, string[]> = {
-                                        'herreria': ['herrero', 'herreria'],
-                                        'masillar': ['masillador', 'masillar'],
-                                        'pintar': ['pintor', 'pintar'],
-                                        'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
-                                        'facturacion': ['facturador', 'facturacion', 'administrativo'],
-                                        'ayudante': ['ayudante']
-                                      };
-                                      
-                                      // Verificar coincidencia directa
-                                      if (cargo.includes(tipoNormalizado)) {
-                                        return true;
-                                      }
-                                      
-                                      // Verificar variaciones del tipo
-                                      const variaciones = variacionesTipo[tipoNormalizado] || [];
-                                      return variaciones.some(variacion => 
-                                        cargo.includes(variacion)
-                                      );
-                                    });
-                                  }
-                                  // Si no tiene ni permisos ni cargo, mostrar todos
-                                  else {
-                                    cumpleFiltro = true;
-                                  }
-                                  
-                                  return cumpleFiltro;
+                                  });
                                 }
-                                
-                                // Si no hay filtro específico, mostrar todos los empleados válidos
-                                return true;
+                                // Si no tiene ni permisos ni cargo que cumplan el filtro, NO incluir
+                                return cumpleFiltro;
                               });
-                            
-                            // FALLBACK: Si después del filtro no hay empleados, mostrar TODOS
-                            const empleadosAFiltrar = empleadosFiltrados.length > 0 
-                              ? empleadosFiltrados 
-                              : listaEmpleadosDisponibles.filter(e => e && e.identificador && (e.nombre || e.nombreCompleto));
+                              
+                              console.log('🔍 DEBUG - Empleados después del filtro de tipo:', empleadosFiltrados.length);
+                              
+                              // FALLBACK: Si después del filtro no hay empleados, usar todos los válidos
+                              empleadosAFiltrar = empleadosFiltrados.length > 0 ? empleadosFiltrados : empleadosValidos;
+                              
+                              console.log('🔍 DEBUG - Empleados finales a mostrar:', empleadosAFiltrar.length);
+                            }
                             
                             return empleadosAFiltrar.map((empleado) => {
                               return (
