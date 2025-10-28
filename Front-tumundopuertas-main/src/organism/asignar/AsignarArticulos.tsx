@@ -703,7 +703,10 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             👤 Seleccionar empleado...
                           </option>
                           {(() => {
-                            const empleadosFiltrados = (empleadosPorItem[item.id] || empleados)
+                            // Obtener la lista de empleados disponibles (con fallback)
+                            const listaEmpleadosDisponibles = empleadosPorItem[item.id] || empleados;
+                            
+                            const empleadosFiltrados = listaEmpleadosDisponibles
                               .filter((e) => {
                                 // Verificar que el empleado tenga datos válidos
                                 if (!e || !e.identificador || (!e.nombre && !e.nombreCompleto)) {
@@ -761,7 +764,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 return true;
                               });
                             
-                            return empleadosFiltrados.map((empleado) => {
+                            // FALLBACK: Si después del filtro no hay empleados, mostrar TODOS
+                            const empleadosAFiltrar = empleadosFiltrados.length > 0 
+                              ? empleadosFiltrados 
+                              : listaEmpleadosDisponibles.filter(e => e && e.identificador && (e.nombre || e.nombreCompleto));
+                            
+                            return empleadosAFiltrar.map((empleado) => {
                               return (
                         <option
                           key={empleado.identificador}
