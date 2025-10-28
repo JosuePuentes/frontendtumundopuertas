@@ -74,22 +74,14 @@ const PedidosHerreria: React.FC = () => {
       });
       
       if (!response.ok) {
-        console.warn(`⚠️ Error ${response.status} al obtener progreso del item ${itemId}`);
+        // Error silencioso
         return { progreso: 0 };
       }
       
       const data = await response.json();
       return data;
     } catch (error: any) {
-      if (error.name === 'AbortError') {
-        console.warn('⏰ Timeout al obtener progreso del item:', itemId);
-      } else if (error.message?.includes('ERR_CERT_VERIFIER_CHANGED')) {
-        console.warn('🔒 Error de certificado SSL - backend puede estar reiniciando');
-      } else if (error.message?.includes('Failed to fetch')) {
-        console.warn('🌐 Error de conectividad con el backend');
-      } else {
-        console.error('❌ Error al obtener progreso del item:', error);
-      }
+      // Errores silenciosos para mejor rendimiento
       return { progreso: 0 };
     }
   };
@@ -121,18 +113,13 @@ const PedidosHerreria: React.FC = () => {
       asignacion: filtroAsignacion,
       fecha: filtroFecha
     });
-    console.log('🔍 Filtros aplicados:', { estado: filtroEstado, asignacion: filtroAsignacion, fecha: filtroFecha });
   };
 
   // Función para recargar datos - NUEVA ESTRUCTURA: Items individuales
   const recargarDatos = async () => {
-    console.log('🔄 Recargando items individuales de PedidosHerreria usando endpoint optimizado /pedidos/herreria/...');
-    console.log('🎯 Filtros aplicados:', { filtroEstado, filtroAsignacion, filtroFecha });
-    
     setLoading(true);
     try {
       const urlFiltro = construirUrlFiltro();
-      console.log('📡 URL de filtro optimizada:', urlFiltro);
       
       // NUEVA ESTRUCTURA: Obtener items individuales directamente
       const response = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}${urlFiltro}`, {
@@ -145,7 +132,6 @@ const PedidosHerreria: React.FC = () => {
       });
       
       if (!response.ok) {
-        console.error(`❌ Error ${response.status} al cargar items de herrería`);
         setError(`Error del servidor: ${response.status}`);
         return;
       }
@@ -211,16 +197,12 @@ const PedidosHerreria: React.FC = () => {
       // console.log('✅ Datos recargados exitosamente usando nueva estructura');
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        console.warn('⏰ Timeout al cargar datos de herrería');
         setError('La carga está tardando demasiado. Por favor, intenta nuevamente.');
       } else if (error.message?.includes('ERR_CERT_VERIFIER_CHANGED')) {
-        console.warn('🔒 Error de certificado SSL - backend puede estar reiniciando');
         setError('El servidor está reiniciando. Por favor, espera unos minutos e intenta nuevamente.');
       } else if (error.message?.includes('Failed to fetch')) {
-        console.warn('🌐 Error de conectividad con el backend');
         setError('Error de conectividad. Verifica tu conexión a internet e intenta nuevamente.');
       } else {
-      console.error('❌ Error al recargar datos:', error);
         setError('Error al cargar los datos. Por favor, intenta nuevamente.');
       }
     } finally {
@@ -241,7 +223,6 @@ const PedidosHerreria: React.FC = () => {
   // Actualización automática cada 5 minutos
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('🔄 Actualización automática cada 5 minutos...');
       recargarDatos();
     }, 5 * 60 * 1000); // 5 minutos en milisegundos
 
@@ -254,7 +235,6 @@ const PedidosHerreria: React.FC = () => {
     const handleAsignacionRealizada = async (event: Event) => {
       const customEvent = event as CustomEvent;
       const { pedidoId, asignaciones, resultados, timestamp } = customEvent.detail;
-      console.log(`🎯 PedidosHerreria: Asignación realizada detectada:`, { pedidoId, asignaciones, resultados, timestamp });
       
       // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE usando información completa del backend
       setItemsIndividuales(prevItems => {
@@ -264,7 +244,6 @@ const PedidosHerreria: React.FC = () => {
           const resultado = resultados?.find((r: any) => r.item_info?.id === item.id);
           
           if (asignacion && resultado?.item_info) {
-            console.log(`✅ Actualizando item ${item.id} con información completa:`, resultado.item_info);
             return {
               ...item,
               empleado_asignado: resultado.item_info.nombre_empleado || asignacion.empleado_nombre || "Empleado asignado",
@@ -275,7 +254,6 @@ const PedidosHerreria: React.FC = () => {
               imagenes: resultado.item_info.imagenes || item.imagenes
             };
           } else if (asignacion) {
-            console.log(`✅ Actualizando item ${item.id} con asignación básica:`, asignacion);
             return {
               ...item,
               empleado_asignado: asignacion.empleado_nombre || "Empleado asignado",
@@ -291,21 +269,17 @@ const PedidosHerreria: React.FC = () => {
       
       // También recargar datos del backend para sincronizar
       await recargarDatos();
-      
-      console.log(`✅ PedidosHerreria: Estado local y datos actualizados después de asignación`);
     };
 
     // NUEVO: Escuchar terminación de asignaciones
     const handleAsignacionTerminada = async (event: Event) => {
       const customEvent = event as CustomEvent;
       const { pedidoId, itemId, timestamp } = customEvent.detail;
-      console.log(`🎉 PedidosHerreria: Asignación terminada detectada:`, { pedidoId, itemId, timestamp });
       
       // Limpiar estado de asignación para permitir reasignación
       setItemsIndividuales(prevItems => {
         return prevItems.map(item => {
           if (item.id === itemId) {
-            console.log(`✅ Limpiando asignación del item ${itemId} - ahora puede ser reasignado`);
             return {
               ...item,
               empleado_asignado: undefined,
@@ -318,7 +292,6 @@ const PedidosHerreria: React.FC = () => {
       
       // Esperar un momento antes de recargar para que el backend procese la terminación
       setTimeout(async () => {
-        console.log('🔄 Recargando datos después de terminar asignación...');
         await recargarDatos();
       }, 2000); // 2 segundos para dar tiempo al backend
     };
@@ -377,12 +350,8 @@ const PedidosHerreria: React.FC = () => {
       );
       
       if (esRelevante) {
-        console.log(`🎯 Cambio relevante detectado, recargando datos...`);
-        
         // Recargar datos cuando hay un cambio de estado relevante
         await recargarDatos();
-        
-        console.log(`✅ PedidosHerreria: Datos actualizados después del cambio de estado`);
       }
     };
 
@@ -390,23 +359,13 @@ const PedidosHerreria: React.FC = () => {
     const handlePedidoCancelado = async (event: Event) => {
       const customEvent = event as CustomEvent;
       const { pedidoId } = customEvent.detail;
-      console.log(`🚫 PedidosHerreria: Pedido cancelado detectado:`, pedidoId);
-      console.log(`🔍 Items actuales en PedidosHerreria:`, itemsIndividuales.length);
-      console.log(`📋 IDs de pedidos en items actuales:`, itemsIndividuales.map(item => item.pedido_id));
       
       // Verificar si hay items de este pedido en la lista actual
       const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
-      console.log(`🎯 Items encontrados del pedido ${pedidoId}:`, itemsDelPedido.length);
       
       if (itemsDelPedido.length > 0) {
-        console.log(`🎯 Pedido cancelado tiene ${itemsDelPedido.length} items en PedidosHerreria, recargando datos...`);
-        
         // Recargar datos para que los items del pedido cancelado desaparezcan
         await recargarDatos();
-        
-        console.log(`✅ PedidosHerreria: Items del pedido cancelado removidos`);
-      } else {
-        console.log(`ℹ️ No hay items del pedido ${pedidoId} en PedidosHerreria actualmente`);
       }
     };
 
@@ -414,18 +373,13 @@ const PedidosHerreria: React.FC = () => {
     const handlePedidoEliminado = async (event: Event) => {
       const customEvent = event as CustomEvent;
       const { pedidoId } = customEvent.detail;
-      console.log(`🗑️ PedidosHerreria: Pedido eliminado detectado:`, pedidoId);
       
       // Verificar si hay items de este pedido en la lista actual
       const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
       
       if (itemsDelPedido.length > 0) {
-        console.log(`🎯 Pedido eliminado tiene ${itemsDelPedido.length} items en PedidosHerreria, recargando datos...`);
-        
         // Recargar datos para que los items del pedido eliminado desaparezcan
         await recargarDatos();
-        
-        console.log(`✅ PedidosHerreria: Items del pedido eliminado removidos`);
       }
     };
 
