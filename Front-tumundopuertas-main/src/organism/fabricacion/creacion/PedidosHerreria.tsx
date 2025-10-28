@@ -198,18 +198,25 @@ const PedidosHerreria: React.FC = () => {
       
       // El backend ahora devuelve {items: Array} o Array directo
       const itemsArray = data.items || data;
-      // console.log('📋 Items extraídos:', itemsArray);
-      // console.log('📊 Cantidad de items:', Array.isArray(itemsArray) ? itemsArray.length : 'No es array');
+      console.log('📋 Items extraídos:', itemsArray);
+      console.log('📊 Cantidad de items:', Array.isArray(itemsArray) ? itemsArray.length : 'No es array');
       
       // Todos los logs de debug están comentados para mejorar rendimiento
       
       if (Array.isArray(itemsArray)) {
-        setItemsIndividuales(itemsArray);
+        console.log('✅ Items individuales cargados:', itemsArray.length);
+        // Ordenar items por fecha DESCENDENTE (más recientes primero) antes de guardar
+        const itemsOrdenados = [...itemsArray].sort((a, b) => {
+          const fechaA = new Date(a.fecha_creacion || 0).getTime();
+          const fechaB = new Date(b.fecha_creacion || 0).getTime();
+          return fechaB - fechaA; // Descendente
+        });
+        console.log('✅ Items ordenados por fecha (más recientes primero)');
+        setItemsIndividuales(itemsOrdenados);
         setUltimaActualizacion(new Date()); // Actualizar timestamp
-        // console.log('✅ Items individuales cargados:', itemsArray.length);
         
         // Cargar progreso de todos los items en PARALELO para mejorar rendimiento
-        cargarProgresoItemsParalelo(itemsArray);
+        cargarProgresoItemsParalelo(itemsOrdenados);
       } else {
         // console.log('⚠️ No hay items - itemsArray no es array:', itemsArray);
         setItemsIndividuales([]);
@@ -616,19 +623,23 @@ const PedidosHerreria: React.FC = () => {
             <span className="text-blue-600 font-semibold">Cargando items...</span>
           </div>
         ) : error ? (
-          null // Ocultar mensaje de error visualmente, pero mantener la lógica
+          <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            <p className="font-semibold">Error al cargar datos:</p>
+            <p>{error}</p>
+          </div>
         ) : !Array.isArray(itemsIndividuales) || itemsIndividuales.length === 0 ? (
           <p className="text-gray-500">No hay items para gestionar.</p>
         ) : (
           <ul className="space-y-6">
-            {itemsIndividuales
+            {(() => {
+              const itemsFiltrados = itemsIndividuales
               .filter((item) => {
                 // Mostrar items pendientes (0) y en proceso (1, 2, 3)
                 // No mostrar items con estado_item = 4 (terminados completamente)
                 const estadoValido = item.estado_item >= 0 && item.estado_item < 4;
                 
-                // Filtro por fecha
-                if (filtroFecha !== "todos") {
+                // Filtro por fecha - CORREGIDO: Usar filtrosAplicados en lugar de filtroFecha
+                if (filtrosAplicados.fecha !== "todos") {
                   // Usar fecha_creacion como campo principal (que es el que tiene datos)
                   const fechaItem = new Date(item.fecha_creacion || 0);
                   const hoy = new Date();
@@ -636,7 +647,7 @@ const PedidosHerreria: React.FC = () => {
                   // Debug de fechas comentado para mejorar rendimiento
                   // if (item.id === itemsIndividuales[0]?.id || item.id === itemsIndividuales[1]?.id || item.id === itemsIndividuales[2]?.id) {
                   //   console.log('🔍 Debug filtro fecha:', {
-                  //     filtro: filtroFecha,
+                  //     filtro: filtrosAplicados.fecha,
                   //     itemId: item.id,
                   //     pedidoId: item.pedido_id,
                   //     fechaItem: fechaItem.toLocaleDateString(),
@@ -649,7 +660,7 @@ const PedidosHerreria: React.FC = () => {
                   //   });
                   // }
                   
-                  switch (filtroFecha) {
+                  switch (filtrosAplicados.fecha) {
                     case "hoy":
                       return estadoValido && fechaItem.toDateString() === hoy.toDateString();
                     case "ayer":
@@ -706,8 +717,12 @@ const PedidosHerreria: React.FC = () => {
                 // });
                 
                 return fechaB - fechaA; // Descendente (más recientes primero)
-              })
-              .map((item) => {
+              });
+              
+              console.log('📊 Items después de filtros:', itemsFiltrados.length);
+              console.log('🔍 Filtros aplicados:', filtrosAplicados);
+              
+              return itemsFiltrados.map((item) => {
                 const progreso = progresoItems[item.id] || 0;
                 return (
                   <li key={item.id} className="border rounded-xl bg-white shadow p-6 transition-all duration-300 hover:shadow-lg">
@@ -794,7 +809,8 @@ const PedidosHerreria: React.FC = () => {
                 </div>
               </li>
                 );
-              })}
+              });
+            })()}
           </ul>
         )}
       </CardContent>
