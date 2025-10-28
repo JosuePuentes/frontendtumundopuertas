@@ -25,7 +25,6 @@ interface InventarioItem {
   precio: number;
   activo: boolean;
   imagenes: string[];
-  apartado?: boolean;
 }
 
 const CargarInventarioExcel: React.FC = () => {
@@ -34,18 +33,11 @@ const CargarInventarioExcel: React.FC = () => {
   const [fileName, setFileName] = useState('');
   const [mensaje, setMensaje] = useState('');
 
-  // Estados para Apartados
-  const [itemsApartados, setItemsApartados] = useState<InventarioItem[]>([]);
-  const [fileNameApartados, setFileNameApartados] = useState('');
-  const [mensajeApartados, setMensajeApartados] = useState('');
-
   const [showInventoryPreview, setShowInventoryPreview] = useState(false);
-  const [showApartadosPreview, setShowApartadosPreview] = useState(false);
   const { data: currentInventory, fetchItems } = useItems();
 
   // Estados para búsqueda
   const [searchTermInventario, setSearchTermInventario] = useState('');
-  const [searchTermApartados, setSearchTermApartados] = useState('');
 
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 
@@ -83,47 +75,6 @@ const CargarInventarioExcel: React.FC = () => {
           console.error("Error parsing Excel file:", error);
           setMensaje('Error al leer el archivo de Excel. Asegúrate de que el formato es correcto.');
           setItems([]);
-        }
-      };
-      reader.readAsArrayBuffer(file);
-    }
-  };
-
-  // Función para cargar archivo Excel para Apartados
-  const handleFileUploadApartados = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setFileNameApartados(file.name);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
-          const json = XLSX.utils.sheet_to_json<any>(worksheet);
-
-          const mappedItems: InventarioItem[] = json.map((row) => ({
-            codigo: String(row.codigo || ''),
-            nombre: String(row.nombre || row.descripcion || 'Sin Nombre'),
-            descripcion: String(row.descripcion || ''),
-            categoria: String(row.categoria || 'General'),
-            modelo: String(row.modelo || ''),
-            costo: Number(row.costo || 0),
-            costoProduccion: Number(row.costoProduccion || row.costo || 0),
-            cantidad: 0, // Sin existencia para apartados
-            precio: Number(row.precio || 0),
-            activo: true,
-            imagenes: [],
-            apartado: true,
-          }));
-
-          setItemsApartados(mappedItems);
-          setMensajeApartados(`Se cargaron ${mappedItems.length} items del archivo para apartados.`);
-        } catch (error) {
-          console.error("Error parsing Excel file:", error);
-          setMensajeApartados('Error al leer el archivo de Excel. Asegúrate de que el formato es correcto.');
-          setItemsApartados([]);
         }
       };
       reader.readAsArrayBuffer(file);
@@ -188,64 +139,6 @@ const CargarInventarioExcel: React.FC = () => {
     }
   };
 
-  const handleGuardarApartados = async () => {
-    if (itemsApartados.length === 0) {
-      setMensajeApartados('No hay items para guardar como apartados.');
-      return;
-    }
-
-    setMensajeApartados('Guardando inventario como apartados...');
-    console.log('Datos a enviar al backend para guardar como apartados:', itemsApartados);
-
-    try {
-      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-      const response = await fetch(`${apiUrl}/inventario/bulk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(itemsApartados),
-      });
-      if (!response.ok) {
-        throw new Error('Error al guardar como apartados.');
-      }
-      setMensajeApartados('Inventario guardado como apartados correctamente.');
-      setItemsApartados([]);
-      setFileNameApartados('');
-      fetchItems(`${apiUrl}/inventario/all`);
-    } catch (error: any) {
-      console.error(error);
-      setMensajeApartados(`Error al guardar como apartados: ${error.message}`);
-    }
-  };
-
-  const handleActualizarApartados = async () => {
-    if (itemsApartados.length === 0) {
-      setMensajeApartados('No hay items para actualizar como apartados.');
-      return;
-    }
-
-    setMensajeApartados('Actualizando apartados...');
-    console.log('Datos a enviar al backend para actualizar apartados:', itemsApartados);
-
-    try {
-      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-      const response = await fetch(`${apiUrl}/inventario/bulk`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(itemsApartados),
-      });
-      if (!response.ok) {
-        throw new Error('Error al actualizar apartados.');
-      }
-      setMensajeApartados('Apartados actualizados correctamente.');
-      setItemsApartados([]);
-      setFileNameApartados('');
-      fetchItems(`${apiUrl}/inventario/all`);
-    } catch (error: any) {
-      console.error(error);
-      setMensajeApartados(`Error al actualizar apartados: ${error.message}`);
-    }
-  };
-
   const handleCancelUpload = () => {
     setItems([]);
     setFileName('');
@@ -256,24 +149,9 @@ const CargarInventarioExcel: React.FC = () => {
     }
   };
 
-  const handleCancelUploadApartados = () => {
-    setItemsApartados([]);
-    setFileNameApartados('');
-    setMensajeApartados('');
-    const fileInputs = document.querySelectorAll('input[type="file"]') as NodeListOf<HTMLInputElement>;
-    if (fileInputs[1]) {
-      fileInputs[1].value = '';
-    }
-  };
-
   const handleShowInventoryPreview = () => {
     fetchItems(`${apiUrl}/inventario/all`);
     setShowInventoryPreview(true);
-  };
-
-  const handleShowApartadosPreview = () => {
-    fetchItems(`${apiUrl}/inventario/all`);
-    setShowApartadosPreview(true);
   };
 
   const handleExportPdf = () => {
@@ -297,20 +175,6 @@ const CargarInventarioExcel: React.FC = () => {
       item.modelo?.toLowerCase().includes(searchLower)
     );
   }, [currentInventory, searchTermInventario]);
-
-  // Filtrar apartados por término de búsqueda
-  const filteredApartados = useMemo(() => {
-    if (!currentInventory) return [];
-    if (!searchTermApartados) return currentInventory;
-    
-    const searchLower = searchTermApartados.toLowerCase();
-    return currentInventory.filter((item: any) => 
-      item.nombre?.toLowerCase().includes(searchLower) ||
-      item.descripcion?.toLowerCase().includes(searchLower) ||
-      item.codigo?.toLowerCase().includes(searchLower) ||
-      item.modelo?.toLowerCase().includes(searchLower)
-    );
-  }, [currentInventory, searchTermApartados]);
 
   return (
     <div className="w-full max-w-6xl mx-auto my-8 space-y-8">
@@ -387,79 +251,6 @@ const CargarInventarioExcel: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Card de Apartados */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Apartados</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4">
-            <p>
-              Selecciona un archivo de Excel (.xlsx) con las columnas: `codigo`, `descripcion`, `modelo`, `costo`, `existencia`, `precio`.
-            </p>
-            <div className="flex items-center gap-4">
-              <Input
-                type="file"
-                accept=".xlsx, .xls"
-                onChange={handleFileUploadApartados}
-                className="max-w-sm"
-              />
-              {fileNameApartados && <p className="text-sm text-gray-600">{fileNameApartados}</p>}
-              {fileNameApartados && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancelUploadApartados}
-                >
-                  Cancelar
-                </Button>
-              )}
-            </div>
-
-            {mensajeApartados && <p className="text-sm font-medium">{mensajeApartados}</p>}
-
-            {itemsApartados.length > 0 && (
-              <>
-                <div className="max-h-96 overflow-y-auto border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Código</TableHead>
-                        <TableHead>Descripción</TableHead>
-                        <TableHead>Modelo</TableHead>
-                        <TableHead>Costo</TableHead>
-                        <TableHead>Existencia</TableHead>
-                        <TableHead>Precio</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {itemsApartados.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.codigo}</TableCell>
-                          <TableCell>{item.descripcion}</TableCell>
-                          <TableCell>{item.modelo}</TableCell>
-                          <TableCell>{item.costo}</TableCell>
-                          <TableCell>{item.cantidad}</TableCell>
-                          <TableCell>{item.precio}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div className="flex justify-end gap-4 mt-4">
-                  <Button onClick={handleGuardarApartados}>
-                    Guardar Apartados
-                  </Button>
-                  <Button onClick={handleActualizarApartados} variant="outline">
-                    Actualizar Apartados
-                  </Button>
-                </div>
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Preview de Inventario */}
       <Card>
         <CardHeader>
@@ -527,68 +318,6 @@ const CargarInventarioExcel: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Preview de Apartados */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Ver Preliminar de Apartados</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4">
-            <Button onClick={handleShowApartadosPreview} className="w-full">
-              Ver Preliminar de mis Apartados
-            </Button>
-
-            {showApartadosPreview && currentInventory && currentInventory.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">Apartados Actuales (Todos los items del inventario sin existencia)</h3>
-                
-                {/* Buscador */}
-                <div className="mb-4">
-                  <Input
-                    type="text"
-                    placeholder="Buscar por nombre, descripción, código o modelo..."
-                    value={searchTermApartados}
-                    onChange={(e) => setSearchTermApartados(e.target.value)}
-                    className="w-full"
-                  />
-                  {searchTermApartados && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Mostrando {filteredApartados.length} de {currentInventory.length} items
-                    </p>
-                  )}
-                </div>
-
-                <div className="max-h-96 overflow-y-auto border rounded-md">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Código</TableHead>
-                        <TableHead>Descripción</TableHead>
-                        <TableHead>Modelo</TableHead>
-                        <TableHead>Costo</TableHead>
-                        <TableHead>Existencia</TableHead>
-                        <TableHead>Precio</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredApartados.map((item: any, index: number) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.codigo}</TableCell>
-                          <TableCell>{item.descripcion}</TableCell>
-                          <TableCell>{item.modelo}</TableCell>
-                          <TableCell>{item.costo}</TableCell>
-                          <TableCell>0</TableCell>
-                          <TableCell>{item.precio}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
