@@ -19,7 +19,7 @@ const defaultLinks = [
   { label: "Monitor Pedidos", href: "/monitorpedidos" },
   { label: "Dashboard Asignaciones", href: "/dashboard-asignaciones" },
   { label: "Mis Asignaciones", href: "/terminarasignacion" },
-  { label: "Asignar Herreria/Soldadura", href: "/pedidosherreria" },
+  { label: "Asignar Produccion", href: "/pedidosherreria" },
   { label: "Facturacion", href: "/facturacion" },
   { label: "Pagos", href: "/pagos" },
   { label: "Mis Pagos", href: "/mispagos" },
