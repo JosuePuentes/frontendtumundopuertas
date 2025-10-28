@@ -205,6 +205,13 @@ const PedidosHerreria: React.FC = () => {
       
       if (Array.isArray(itemsArray)) {
         console.log('✅ Items individuales cargados:', itemsArray.length);
+        
+        // DEBUG: Ver la estructura del primer item para identificar campos del cliente
+        if (itemsArray.length > 0) {
+          console.log('📋 Estructura del primer item:', Object.keys(itemsArray[0]));
+          console.log('📋 Primer item completo:', itemsArray[0]);
+        }
+        
         // Ordenar items por fecha DESCENDENTE (más recientes primero) antes de guardar
         const itemsOrdenados = [...itemsArray].sort((a, b) => {
           const fechaA = new Date(a.fecha_creacion || 0).getTime();
@@ -550,15 +557,16 @@ const PedidosHerreria: React.FC = () => {
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              Buscar en Cliente, Item o Descripción
+              Buscar por Nombre del Cliente
             </Label>
             <Input
               id="buscar-cliente"
               type="text"
-              placeholder="🔍 Escribe el nombre del cliente, item o descripción..."
+              placeholder="🔍 Escribe el nombre del cliente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
+              autoComplete="off"
             />
             {searchTerm && (
               <p className="text-xs text-gray-600 mt-1">
@@ -711,18 +719,32 @@ const PedidosHerreria: React.FC = () => {
                 return estadoValido;
               })
               .filter((item) => {
-                // Filtro por búsqueda (cliente, nombre de item, descripción)
+                // Filtro por búsqueda SOLO por nombre del cliente - BUSQUEDA EN TIEMPO REAL
                 if (searchTerm && searchTerm.trim() !== "") {
-                  const searchLower = searchTerm.toLowerCase();
-                  const clienteNombre = item.cliente_nombre?.toLowerCase() || '';
-                  const nombreItem = item.nombre?.toLowerCase() || '';
-                  const descripcion = item.descripcion?.toLowerCase() || '';
+                  const searchLower = searchTerm.toLowerCase().trim();
                   
-                  // Buscar en cliente, nombre del item y descripción
-                  const match = clienteNombre.includes(searchLower) || 
-                                nombreItem.includes(searchLower) || 
-                                descripcion.includes(searchLower);
-                  return match;
+                  // Intentar múltiples campos posibles para el cliente
+                  const clienteNombre = (
+                    item.cliente_nombre?.toLowerCase() || 
+                    (item as any).cliente?.toLowerCase() || 
+                    (item as any).nombre_cliente?.toLowerCase() || 
+                    (item as any).cliente_nombre_completo?.toLowerCase() ||
+                    ''
+                  );
+                  
+                  // Debug para verificar datos del primer item
+                  if (itemsIndividuales.indexOf(item) === 0) {
+                    console.log('🔍 Debug búsqueda por cliente:', {
+                      searchTerm: searchTerm,
+                      itemId: item.id,
+                      cliente_nombre: item.cliente_nombre,
+                      clienteNombre_buscado: clienteNombre,
+                      match: clienteNombre.includes(searchLower)
+                    });
+                  }
+                  
+                  // Buscar SOLO en el nombre del cliente
+                  return clienteNombre.includes(searchLower);
                 }
                 return true;
               })
