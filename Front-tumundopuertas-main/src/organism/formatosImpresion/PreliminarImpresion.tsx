@@ -665,72 +665,67 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[95vw] max-w-6xl h-[90vh] overflow-hidden bg-white p-0">
-        <div className="flex flex-col h-full">
-          <DialogHeader className="p-6 border-b">
-            <DialogTitle>Preliminar de Pago</DialogTitle>
-          </DialogHeader>
+      <DialogContent className="w-[90vw] max-w-5xl h-[85vh] overflow-hidden bg-white p-0 flex flex-col">
+        <DialogHeader className="p-4 border-b shrink-0">
+          <DialogTitle>Preliminar de Pago</DialogTitle>
+        </DialogHeader>
 
-          <div className="flex flex-col h-full">
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="space-y-6">
-                {/* Selector de formato */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Formato de Impresión</label>
-                  <Select
-                    value={formatoSeleccionado?.id || ''}
-                    onValueChange={(value) => {
-                      const formato = formatos.find(f => f.id === value);
-                      setFormatoSeleccionado(formato || null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un formato" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formatos.filter(f => f.tipo === 'preliminar' && f.activo).map((formato) => (
-                        <SelectItem key={formato.id} value={formato.id}>
-                          {formato.nombre}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+        {/* Área de contenido con scroll */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          {/* Selector de formato */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Formato de Impresión</label>
+            <Select
+              value={formatoSeleccionado?.id || ''}
+              onValueChange={(value) => {
+                const formato = formatos.find(f => f.id === value);
+                setFormatoSeleccionado(formato || null);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona un formato" />
+              </SelectTrigger>
+              <SelectContent>
+                {formatos.filter(f => f.tipo === 'preliminar' && f.activo).map((formato) => (
+                  <SelectItem key={formato.id} value={formato.id}>
+                    {formato.nombre}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-                {/* Vista previa */}
-                {formatoSeleccionado && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Vista Previa</h3>
-                    <div className="overflow-y-auto max-h-[60vh]">
-                      <Card className="w-full">
-                        <CardContent className="p-6">
-                          <div className="max-w-4xl mx-auto">
-                            {renderizarVistaPrevia()}
-                          </div>
-                        </CardContent>
-                      </Card>
+          {/* Vista previa */}
+          {formatoSeleccionado && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Vista Previa</h3>
+              <div className="overflow-y-auto max-h-[50vh] border rounded-lg">
+                <Card className="w-full border-0">
+                  <CardContent className="p-6">
+                    <div className="max-w-4xl mx-auto">
+                      {renderizarVistaPrevia()}
                     </div>
-                  </div>
-                )}
+                  </CardContent>
+                </Card>
               </div>
             </div>
+          )}
+        </div>
 
-            {/* Botones de acción - Fuera del scroll */}
-            <div className="border-t p-6 bg-gray-50">
-              <div className="flex justify-end gap-3">
-                <Button variant="outline" onClick={onClose}>
-                  Cancelar
-                </Button>
-                <Button variant="outline" onClick={handleDescargar} disabled={!formatoSeleccionado}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Descargar PDF
-                </Button>
-                <Button onClick={handleImprimir} disabled={!formatoSeleccionado}>
-                  <Printer className="h-4 w-4 mr-2" />
-                  Imprimir
-                </Button>
-              </div>
-            </div>
+        {/* Botones de acción - Fixed footer */}
+        <div className="border-t bg-gray-50 p-4 shrink-0">
+          <div className="flex justify-end gap-3">
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button variant="outline" onClick={handleDescargar} disabled={!formatoSeleccionado}>
+              <Download className="h-4 w-4 mr-2" />
+              Descargar PDF
+            </Button>
+            <Button onClick={handleImprimir} disabled={!formatoSeleccionado}>
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimir
+            </Button>
           </div>
         </div>
       </DialogContent>
