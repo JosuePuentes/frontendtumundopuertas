@@ -245,8 +245,18 @@ const DashboardPedidos: React.FC = () => {
       
       const fetchPedidos = () => {
     fetch(`${apiUrl}/pedidos/produccion/ruta`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Error al cargar pedidos: ${res.status}`);
+        }
+        return res.json();
+      })
       .then(async (data) => {
+        if (!Array.isArray(data)) {
+          console.warn('Respuesta inesperada del servidor:', data);
+          return;
+        }
+        
         setPedidos(data);
         
         // Cargar progreso de todos los pedidos
@@ -257,7 +267,10 @@ const DashboardPedidos: React.FC = () => {
         }
         setProgresoPedidos(progresoData);
       })
-      .catch(console.error);
+      .catch((error) => {
+        console.error('Error al cargar pedidos:', error);
+        setPedidos([]);
+      });
   };
 
   useEffect(() => {
