@@ -276,53 +276,75 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         <title>Preliminar de Pago</title>
         <style>
           @page {
-            size: letter;
-            margin: 0.5in;
+            size: letter portrait;
+            margin: 0.3in;
+          }
+          * {
+            box-sizing: border-box;
           }
           body { 
             font-family: Arial, sans-serif; 
             margin: 0;
             padding: 0;
+            font-size: 10px;
           }
           .header { 
             text-align: center; 
-            margin-bottom: 20px; 
-            page-break-inside: avoid;
+            margin-bottom: 8px; 
+            padding-bottom: 5px;
+          }
+          .header h1 {
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+            font-weight: bold;
+          }
+          .header p {
+            margin: 2px 0;
+            padding: 0;
+            font-size: 9px;
           }
           .logo { 
-            max-height: 60px; 
-            margin-bottom: 10px;
+            max-height: 40px; 
+            margin-bottom: 3px;
           }
           .info-section { 
-            margin-bottom: 15px; 
-            page-break-inside: avoid;
+            margin: 8px 0; 
+            font-size: 9px;
+          }
+          .info-section p {
+            margin: 3px 0;
           }
           .document-title { 
-            font-size: 20px; 
+            font-size: 16px; 
             font-weight: bold; 
-            margin-bottom: 15px; 
+            margin: 8px 0; 
             text-align: center;
-            page-break-inside: avoid;
           }
           .client-info { 
             background: #f5f5f5; 
-            padding: 10px; 
-            border-radius: 5px; 
-            margin-bottom: 15px;
-            page-break-inside: avoid;
+            padding: 8px; 
+            margin: 8px 0; 
+            font-size: 9px;
+          }
+          .client-info h3 {
+            margin: 0 0 5px 0;
+            font-size: 11px;
+          }
+          .client-info p {
+            margin: 3px 0;
           }
           table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin: 15px 0; 
-            font-size: 11px;
-            page-break-inside: auto;
+            margin: 8px 0; 
+            font-size: 9px;
           }
-          tr { page-break-inside: avoid; }
           th, td { 
             border: 1px solid #ddd; 
-            padding: 6px; 
+            padding: 4px 6px; 
             text-align: left; 
+            font-size: 9px;
           }
           th { 
             background-color: #f2f2f2; 
@@ -330,40 +352,33 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
           }
           .totals { 
             text-align: right; 
-            margin-top: 15px; 
-            page-break-inside: avoid;
+            margin: 8px 0; 
           }
-          .total-line { 
-            display: flex; 
-            justify-content: space-between; 
-            margin: 4px 0; 
-            font-size: 12px;
+          .totals p {
+            margin: 2px 0;
+            font-size: 10px;
+            line-height: 1.2;
           }
           .total-final { 
             font-weight: bold; 
-            font-size: 16px; 
+            font-size: 12px; 
             border-top: 2px solid #333; 
-            padding-top: 8px; 
-            margin-top: 10px;
+            padding-top: 4px; 
+            margin-top: 6px;
           }
           .footer { 
             text-align: center; 
-            margin-top: 30px; 
-            padding-top: 15px; 
+            margin-top: 15px; 
+            padding-top: 8px; 
             border-top: 1px solid #ddd; 
-            font-size: 11px;
-            page-break-inside: avoid;
+            font-size: 9px;
           }
           @media print {
             body { 
               margin: 0; 
               padding: 0;
-            }
-            .header,
-            .info-section,
-            .client-info,
-            .document-title {
-              page-break-inside: avoid;
+              -webkit-print-color-adjust: exact;
+              print-color-adjust: exact;
             }
           }
         </style>
@@ -394,25 +409,25 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
     // Título del documento
     html += `<div class="document-title">${config.documento.titulo}</div>`;
     html += `<div class="info-section">`;
-    html += `<p><strong>Número:</strong> ${config.documento.numeroDocumento}</p>`;
-    html += `<p><strong>Fecha:</strong> ${config.documento.fecha}</p>`;
+    html += `<strong>Número:</strong> ${config.documento.numeroDocumento}<br>`;
+    html += `<strong>Fecha:</strong> ${config.documento.fecha}`;
     html += '</div>';
 
     // Información del cliente
     if (config.cliente.mostrar) {
       html += '<div class="client-info">';
-      html += '<h3>Información del Cliente</h3>';
+      html += '<h3>Cliente</h3>';
       if (config.cliente.incluirNombre) {
-        html += `<p><strong>Nombre:</strong> ${pedido.cliente_nombre || 'N/A'}</p>`;
+        html += `<strong>Nombre:</strong> ${pedido.cliente_nombre || 'N/A'}<br>`;
       }
       if (config.cliente.incluirCedula) {
-        html += `<p><strong>Cédula:</strong> ${pedido.cliente_cedula || 'N/A'}</p>`;
+        html += `<strong>Cédula:</strong> ${pedido.cliente_cedula || 'N/A'}<br>`;
       }
       if (config.cliente.incluirDireccion) {
-        html += `<p><strong>Dirección:</strong> ${pedido.cliente_direccion || 'N/A'}</p>`;
+        html += `<strong>Dirección:</strong> ${pedido.cliente_direccion || 'N/A'}<br>`;
       }
       if (config.cliente.incluirTelefono) {
-        html += `<p><strong>Teléfono:</strong> ${pedido.cliente_telefono || 'N/A'}</p>`;
+        html += `<strong>Teléfono:</strong> ${pedido.cliente_telefono || 'N/A'}<br>`;
       }
       html += '</div>';
     }
@@ -460,19 +475,19 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
     if (config.totales.mostrar) {
       html += '<div class="totals">';
       if (config.totales.incluirSubtotal) {
-        html += '<div class="total-line"><span>Subtotal:</span><span>Bs. ' + (pedido.subtotal || 0).toLocaleString() + '</span></div>';
+        html += '<p><strong>Subtotal:</strong> Bs. ' + (pedido.subtotal || 0).toLocaleString() + '</p>';
       }
       if (config.totales.incluirIva) {
-        html += '<div class="total-line"><span>IVA (16%):</span><span>Bs. ' + (pedido.iva || 0).toLocaleString() + '</span></div>';
+        html += '<p><strong>IVA (16%):</strong> Bs. ' + (pedido.iva || 0).toLocaleString() + '</p>';
       }
       if (config.totales.incluirTotal) {
-        html += '<div class="total-line total-final"><span>Total:</span><span>Bs. ' + (pedido.total || 0).toLocaleString() + '</span></div>';
+        html += '<p class="total-final"><strong>Total:</strong> Bs. ' + (pedido.total || 0).toLocaleString() + '</p>';
       }
       if (config.totales.incluirAbonado) {
-        html += '<div class="total-line"><span>Abonado:</span><span>Bs. ' + (pedido.abonado || 0).toLocaleString() + '</span></div>';
+        html += '<p><strong>Abonado:</strong> Bs. ' + (pedido.abonado || 0).toLocaleString() + '</p>';
       }
       if (config.totales.incluirRestante) {
-        html += '<div class="total-line"><span>Restante:</span><span>Bs. ' + ((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString() + '</span></div>';
+        html += '<p><strong>Restante:</strong> Bs. ' + ((pedido.total || 0) - (pedido.abonado || 0)).toLocaleString() + '</p>';
       }
       html += '</div>';
     }
