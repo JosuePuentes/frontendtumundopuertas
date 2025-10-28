@@ -2,13 +2,16 @@ import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { getApiUrl } from "@/lib/api";
-import { CheckCircle2, DollarSign, Receipt } from "lucide-react";
+import { CheckCircle2, DollarSign, Receipt, Printer } from "lucide-react";
 
 const FacturacionPage: React.FC = () => {
   const [facturacion, setFacturacion] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [selectedPedido, setSelectedPedido] = useState<any>(null);
 
   const fetchPedidosFacturacion = async () => {
     setLoading(true);
@@ -122,15 +125,119 @@ const FacturacionPage: React.FC = () => {
   }, []);
 
   const handleFacturar = async (pedido: any) => {
-    try {
-      alert(`Facturando pedido ${pedido._id}`);
-      // TODO: Implementar endpoint de facturación
-    } catch (err: any) {
-      alert(`Error al facturar: ${err.message}`);
-    }
+    setSelectedPedido(pedido);
+    setModalOpen(true);
+  };
+
+  const handlePrintNotaEntrega = () => {
+    if (!selectedPedido) return;
+    
+    const now = new Date().toLocaleDateString("es-VE", {
+      timeZone: "America/Caracas",
+    });
+    
+    const notaHtml = `
+      <html>
+        <head>
+          <title>Nota de Entrega</title>
+          <style>
+            @media print {
+              @page { size: letter; margin: 1in; }
+              body { margin: 0; }
+              .center-container { display: flex; justify-content: center; align-items: flex-start; }
+              .nota-carta { width: 100%; max-width: 100%; margin: 0 auto; box-sizing: border-box; min-height: unset; border-radius: 0; box-shadow: none; }
+            }
+            body { background: #f9f9f9; }
+            .center-container { display: flex; justify-content: center; align-items: flex-start; }
+            .nota-carta { background: #fff; border-radius: 0; box-shadow: none; padding: 2rem; width: 100%; max-width: 100%; margin: 2rem auto; font-family: 'Inter', sans-serif; min-height: unset; }
+            .nota-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+            .titulo { font-size: 2rem; color: #1e3a8a; font-weight: bold; margin-bottom: 0.5rem; text-align: left; }
+            .badge { background: #2563eb; color: #fff; border-radius: 999px; padding: 4px 16px; font-weight: bold; font-size: 1rem; }
+            .nota-info { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+            .nota-info div { font-size: 15px; }
+            .nota-label { font-weight: 600; color: #374151; margin-bottom: 2px; }
+            .nota-value { font-size: 18px; font-weight: bold; color: #2563eb; }
+            table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+            th, td { border: 1px solid #e5e7eb; padding: 8px; font-size: 14px; }
+            th { background: #f3f4f6; }
+            .totales-row { background: #f3f4f6; font-weight: bold; }
+            .nota-footer { margin-top: 2rem; color: #64748b; font-size: 13px; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="center-container">
+            <div class="nota-carta">
+              <div class="nota-header">
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                  <img src="/logo.jpeg" alt="Logo" style="height: 60px; width: auto; object-fit: contain; margin-right: 1rem;" />
+                  <div>
+                    <div class="titulo">NOTA DE ENTREGA</div>
+                  </div>
+                </div>
+              </div>
+              <div class="nota-info">
+                <div>
+                  <div class="nota-label">Cédula/RIF:</div>
+                  <div class="nota-value">${selectedPedido.cliente_id || selectedPedido.cliente_nombre || 'N/A'}</div>
+                  ${selectedPedido.cliente_nombre ? `<div class='nota-label'>Nombre o Razón Social: <span style='font-weight:600;'>${selectedPedido.cliente_nombre}</span></div>` : ''}
+                </div>
+                <div>
+                  <div class="nota-label">Fecha de Emisión:</div>
+                  <div style="color: #059669; font-size: 16px;">${now}</div>
+                </div>
+              </div>
+              <div style="margin-bottom: 1.5rem;">
+                <div style="font-weight:600;font-size:17px;margin-bottom:8px;">Artículos del Pedido</div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Descripción</th>
+                      <th>Cantidad</th>
+                      <th>Precio Unit.</th>
+                      <th>Precio Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${selectedPedido.items.map((item: any) => `
+                      <tr>
+                        <td>${item.nombre || item.descripcion || 'N/A'}</td>
+                        <td>${item.descripcion || item.detalleitem || ''}</td>
+                        <td style="text-align:center;">${item.cantidad || 1}</td>
+                        <td style="text-align:right;">$${(item.precio || 0).toFixed(2)}</td>
+                        <td style="text-align:right;">$${((item.precio || 0) * (item.cantidad || 1)).toFixed(2)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                  <tfoot>
+                    <tr class="totales-row">
+                      <td colspan="3" style="text-align:right;">Total:</td>
+                      <td style="text-align:center;">${selectedPedido.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
+                      <td style="text-align:right;">$${selectedPedido.montoTotal.toFixed(2)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <div class="nota-footer">
+                <p>J507172554 TU MUNDO PUERTAS, C.A.</p>
+                <p>DOMICILIO FISCAL AV 50 CASA NRO 158-79 BARRIO RAFAEL URDANETA SUR SAN</p>
+                <p>FRANCISCO ZULIA ZONA POSTAL 4004</p>
+              </div>
+            </div>
+          </div>
+          <script>window.onload = function() { window.print(); };</script>
+        </body>
+      </html>
+    `;
+    
+    const win = window.open("", "_blank", "width=900,height=1200");
+    if (!win) return;
+    win.document.write(notaHtml);
+    win.document.close();
   };
 
   return (
+    <>
     <Card className="max-w-5xl mx-auto mt-8">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -255,6 +362,86 @@ const FacturacionPage: React.FC = () => {
         )}
       </CardContent>
     </Card>
+    
+    {/* Modal de Confirmación y Nota de Entrega */}
+    <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Confirmar Facturación</DialogTitle>
+          <DialogDescription>
+            Revisa los detalles del pedido antes de facturar
+          </DialogDescription>
+        </DialogHeader>
+        
+        {selectedPedido && (
+          <div className="space-y-4">
+            {/* Información del Cliente */}
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h3 className="font-bold text-lg mb-3 text-blue-900">Información del Cliente</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-600">Cédula/RIF:</p>
+                  <p className="font-bold text-lg">{selectedPedido.cliente_id || selectedPedido.cliente_nombre || 'N/A'}</p>
+                </div>
+                {selectedPedido.cliente_nombre && (
+                  <div>
+                    <p className="text-sm text-gray-600">Nombre o Razón Social:</p>
+                    <p className="font-bold text-lg">{selectedPedido.cliente_nombre}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Items del Pedido */}
+            <div>
+              <h3 className="font-bold text-lg mb-3">Artículos del Pedido</h3>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-2 text-left">Nombre</th>
+                      <th className="p-2 text-left">Descripción</th>
+                      <th className="p-2 text-center">Cantidad</th>
+                      <th className="p-2 text-right">Precio Unit.</th>
+                      <th className="p-2 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedPedido.items.map((item: any, idx: number) => (
+                      <tr key={idx} className="border-t">
+                        <td className="p-2">{item.nombre || item.descripcion || 'N/A'}</td>
+                        <td className="p-2 text-sm text-gray-600">{item.descripcion || item.detalleitem || '-'}</td>
+                        <td className="p-2 text-center">{item.cantidad || 1}</td>
+                        <td className="p-2 text-right">${(item.precio || 0).toFixed(2)}</td>
+                        <td className="p-2 text-right font-bold">${((item.precio || 0) * (item.cantidad || 1)).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-gray-50 font-bold">
+                    <tr>
+                      <td colSpan={3} className="p-2 text-right">Total del Pedido:</td>
+                      <td className="p-2 text-center">{selectedPedido.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
+                      <td className="p-2 text-right text-lg text-green-700">${selectedPedido.montoTotal.toFixed(2)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <DialogFooter className="flex gap-2">
+          <Button variant="outline" onClick={() => setModalOpen(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handlePrintNotaEntrega} className="bg-blue-600 hover:bg-blue-700">
+            <Printer className="w-4 h-4 mr-2" />
+            Imprimir Nota de Entrega
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 
