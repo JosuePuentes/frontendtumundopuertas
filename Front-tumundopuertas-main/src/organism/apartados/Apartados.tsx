@@ -37,9 +37,23 @@ const Apartados: React.FC = () => {
       const res = await fetch(`${apiUrl}/pedidos/apartados/`);
       if (!res.ok) throw new Error("Error al obtener apartados");
       const data = await res.json();
-      setApartados(data);
+      
+      // Validar que la respuesta sea un array
+      if (Array.isArray(data)) {
+        setApartados(data);
+      } else if (data && Array.isArray(data.apartados)) {
+        setApartados(data.apartados);
+      } else if (data && Array.isArray(data.items)) {
+        setApartados(data.items);
+      } else {
+        console.error("Respuesta del API no es un array:", data);
+        setApartados([]);
+        setError("Formato de datos inválido del servidor");
+      }
     } catch (err: any) {
+      console.error("Error al obtener apartados:", err);
       setError(err.message || "Error desconocido al cargar apartados");
+      setApartados([]);
     } finally {
       setLoading(false);
     }
