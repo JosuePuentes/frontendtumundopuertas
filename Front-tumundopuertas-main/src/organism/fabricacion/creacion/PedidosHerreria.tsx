@@ -544,19 +544,27 @@ const PedidosHerreria: React.FC = () => {
         
         {/* Controles de Filtro Mejorados */}
         <div className="flex flex-col gap-4 mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-          {/* Buscador de cliente */}
-          <div className="w-full">
-            <Label htmlFor="buscar-cliente" className="text-sm font-medium text-gray-700 mb-2 block">
-              Buscar por Cliente:
+          {/* Buscador de cliente - Mejorado */}
+          <div className="w-full bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
+            <Label htmlFor="buscar-cliente" className="text-sm font-semibold text-gray-700 mb-2 block flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Buscar en Cliente, Item o Descripción
             </Label>
             <Input
               id="buscar-cliente"
               type="text"
-              placeholder="Escribe el nombre del cliente..."
+              placeholder="🔍 Escribe el nombre del cliente, item o descripción..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white border-gray-300"
+              className="w-full bg-white border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
             />
+            {searchTerm && (
+              <p className="text-xs text-gray-600 mt-1">
+                Búsqueda activa: "{searchTerm}"
+              </p>
+            )}
           </div>
           
           <div className="flex gap-4">
@@ -703,11 +711,17 @@ const PedidosHerreria: React.FC = () => {
                 return estadoValido;
               })
               .filter((item) => {
-                // Filtro por búsqueda de cliente
+                // Filtro por búsqueda (cliente, nombre de item, descripción)
                 if (searchTerm && searchTerm.trim() !== "") {
-                  const clienteNombre = item.cliente_nombre?.toLowerCase() || '';
                   const searchLower = searchTerm.toLowerCase();
-                  const match = clienteNombre.includes(searchLower);
+                  const clienteNombre = item.cliente_nombre?.toLowerCase() || '';
+                  const nombreItem = item.nombre?.toLowerCase() || '';
+                  const descripcion = item.descripcion?.toLowerCase() || '';
+                  
+                  // Buscar en cliente, nombre del item y descripción
+                  const match = clienteNombre.includes(searchLower) || 
+                                nombreItem.includes(searchLower) || 
+                                descripcion.includes(searchLower);
                   return match;
                 }
                 return true;
@@ -731,6 +745,28 @@ const PedidosHerreria: React.FC = () => {
               
               console.log('📊 Items después de filtros:', itemsFiltrados.length);
               console.log('🔍 Filtros aplicados:', filtrosAplicados);
+              
+              // Si no hay items filtrados, mostrar mensaje
+              if (itemsFiltrados.length === 0) {
+                return (
+                  <div className="text-center py-12 px-4">
+                    <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-8">
+                      <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <h3 className="mt-4 text-lg font-semibold text-gray-900">No se encontraron resultados</h3>
+                      {searchTerm && (
+                        <p className="mt-2 text-sm text-gray-600">
+                          No hay items que coincidan con "<span className="font-semibold text-gray-900">{searchTerm}</span>"
+                        </p>
+                      )}
+                      <p className="mt-2 text-sm text-gray-500">
+                        Intenta ajustar los filtros o el término de búsqueda
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
               
               return itemsFiltrados.map((item) => {
                 const progreso = progresoItems[item.id] || 0;
