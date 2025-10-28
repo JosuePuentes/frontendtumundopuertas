@@ -44,8 +44,6 @@ const MonitorPedidos: React.FC = () => {
     const fetchPedidos = async () => {
       setLoading(true);
       try {
-        console.log('🔄 Cargando pedidos usando endpoint optimizado /pedidos/all/...');
-        
         // NUEVO: Usar el endpoint optimizado para todos los pedidos
         let url = `${apiUrl}/pedidos/all/?`;
         if (fechaInicio && fechaFin) {
@@ -61,10 +59,8 @@ const MonitorPedidos: React.FC = () => {
               });
         const data = await res.json();
         
-        console.log('✅ Pedidos obtenidos del endpoint optimizado:', Array.isArray(data) ? data.length : 0);
         setPedidos(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error('❌ Error al cargar pedidos:', error);
         setPedidos([]);
       }
       setLoading(false);
@@ -76,13 +72,11 @@ const MonitorPedidos: React.FC = () => {
   // Escuchar eventos de cancelación para actualizar la lista
   useEffect(() => {
     const handlePedidoCancelado = () => {
-      console.log('🔄 Pedido cancelado detectado, recargando lista...');
       setShouldSearch(true);
     };
 
     const handleActualizarPedido = (event: CustomEvent) => {
       const { pedidoId, nuevoEstado } = event.detail;
-      console.log(`🔄 Actualizando pedido ${pedidoId} a estado: ${nuevoEstado}`);
       
       // Actualizar el estado local del pedido inmediatamente
       setPedidos(prevPedidos => 

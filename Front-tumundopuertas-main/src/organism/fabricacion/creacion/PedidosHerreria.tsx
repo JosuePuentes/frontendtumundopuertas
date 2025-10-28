@@ -239,11 +239,6 @@ const PedidosHerreria: React.FC = () => {
   };
 
 
-  // Memoizar la función de recargar datos para evitar recrearla en cada render
-  const recargarDatosMemo = useCallback(async () => {
-    await recargarDatos();
-  }, []);
-
   useEffect(() => {
     recargarDatos();
   }, []);
