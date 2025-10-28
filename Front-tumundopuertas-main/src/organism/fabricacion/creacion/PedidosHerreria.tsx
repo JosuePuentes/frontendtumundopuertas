@@ -234,7 +234,7 @@ const PedidosHerreria: React.FC = () => {
   useEffect(() => {
     const handleAsignacionRealizada = async (event: Event) => {
       const customEvent = event as CustomEvent;
-      const { pedidoId, asignaciones, resultados, timestamp } = customEvent.detail;
+      const { asignaciones, resultados } = customEvent.detail;
       
       // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE usando información completa del backend
       setItemsIndividuales(prevItems => {
@@ -274,7 +274,7 @@ const PedidosHerreria: React.FC = () => {
     // NUEVO: Escuchar terminación de asignaciones
     const handleAsignacionTerminada = async (event: Event) => {
       const customEvent = event as CustomEvent;
-      const { pedidoId, itemId, timestamp } = customEvent.detail;
+      const { itemId } = customEvent.detail;
       
       // Limpiar estado de asignación para permitir reasignación
       setItemsIndividuales(prevItems => {
