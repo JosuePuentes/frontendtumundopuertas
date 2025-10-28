@@ -596,45 +596,43 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         )}
 
         {/* Totales */}
-        {config.totales.mostrar && (
-          <div className="flex justify-end">
-            <div className="w-48 space-y-1 text-sm">
-              {/* Subtotal - siempre mostrarlo */}
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span>$ {(pedido.subtotal || 0).toLocaleString()}</span>
-              </div>
-              
-              {/* Total Factura - siempre mostrarlo */}
-              <div className="flex justify-between font-bold border-t pt-1">
-                <span>Total Factura:</span>
-                <span>$ {(pedido.total || 0).toLocaleString()}</span>
-              </div>
-              
-              {/* Mostrar abonos si existen */}
-              {(() => {
-                const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
-                const restante = (pedido.total || 0) - totalAbonado;
-                
-                if (totalAbonado > 0) {
-                  return (
-                    <>
-                      <div className="flex justify-between text-green-600 font-bold">
-                        <span>Total Abonado:</span>
-                        <span>$ {totalAbonado.toLocaleString()}</span>
-                      </div>
-                      <div className="flex justify-between text-red-600 font-bold">
-                        <span>Resta por Pagar:</span>
-                        <span>$ {restante.toLocaleString()}</span>
-                      </div>
-                    </>
-                  );
-                }
-                return null;
-              })()}
+        <div className="flex justify-end">
+          <div className="w-48 space-y-1 text-sm">
+            {/* Subtotal - siempre mostrarlo */}
+            <div className="flex justify-between">
+              <span>Subtotal:</span>
+              <span>$ {(pedido.subtotal || 0).toLocaleString()}</span>
             </div>
+            
+            {/* Total Factura - siempre mostrarlo */}
+            <div className="flex justify-between font-bold border-t pt-1 mt-2">
+              <span>Total Factura:</span>
+              <span>$ {(pedido.total || 0).toLocaleString()}</span>
+            </div>
+            
+            {/* Calcular abonos y mostrar si existen */}
+            {(() => {
+              const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
+              const restante = (pedido.total || 0) - totalAbonado;
+              
+              if (totalAbonado > 0) {
+                return (
+                  <>
+                    <div className="flex justify-between text-green-600 font-bold mt-2">
+                      <span>Total Abonado:</span>
+                      <span>$ {totalAbonado.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between text-red-600 font-bold">
+                      <span>Resta por Pagar:</span>
+                      <span>$ {restante.toLocaleString()}</span>
+                    </div>
+                  </>
+                );
+              }
+              return null;
+            })()}
           </div>
-        )}
+        </div>
 
         {/* Pie */}
         {config.pie.mostrar && (
