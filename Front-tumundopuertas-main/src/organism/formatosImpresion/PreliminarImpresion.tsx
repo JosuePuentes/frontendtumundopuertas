@@ -275,20 +275,97 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       <head>
         <title>Preliminar de Pago</title>
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .logo { max-height: 80px; }
-          .info-section { margin-bottom: 20px; }
-          .document-title { font-size: 24px; font-weight: bold; margin-bottom: 20px; }
-          .client-info { background: #f5f5f5; padding: 15px; border-radius: 5px; }
-          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
-          .totals { text-align: right; margin-top: 20px; }
-          .total-line { display: flex; justify-content: space-between; margin: 5px 0; }
-          .total-final { font-weight: bold; font-size: 18px; border-top: 2px solid #333; padding-top: 10px; }
-          .footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
-          @media print { body { margin: 0; } }
+          @page {
+            size: letter;
+            margin: 0.5in;
+          }
+          body { 
+            font-family: Arial, sans-serif; 
+            margin: 0;
+            padding: 0;
+          }
+          .header { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            page-break-inside: avoid;
+          }
+          .logo { 
+            max-height: 60px; 
+            margin-bottom: 10px;
+          }
+          .info-section { 
+            margin-bottom: 15px; 
+            page-break-inside: avoid;
+          }
+          .document-title { 
+            font-size: 20px; 
+            font-weight: bold; 
+            margin-bottom: 15px; 
+            text-align: center;
+            page-break-inside: avoid;
+          }
+          .client-info { 
+            background: #f5f5f5; 
+            padding: 10px; 
+            border-radius: 5px; 
+            margin-bottom: 15px;
+            page-break-inside: avoid;
+          }
+          table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 15px 0; 
+            font-size: 11px;
+            page-break-inside: auto;
+          }
+          tr { page-break-inside: avoid; }
+          th, td { 
+            border: 1px solid #ddd; 
+            padding: 6px; 
+            text-align: left; 
+          }
+          th { 
+            background-color: #f2f2f2; 
+            font-weight: bold;
+          }
+          .totals { 
+            text-align: right; 
+            margin-top: 15px; 
+            page-break-inside: avoid;
+          }
+          .total-line { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 4px 0; 
+            font-size: 12px;
+          }
+          .total-final { 
+            font-weight: bold; 
+            font-size: 16px; 
+            border-top: 2px solid #333; 
+            padding-top: 8px; 
+            margin-top: 10px;
+          }
+          .footer { 
+            text-align: center; 
+            margin-top: 30px; 
+            padding-top: 15px; 
+            border-top: 1px solid #ddd; 
+            font-size: 11px;
+            page-break-inside: avoid;
+          }
+          @media print {
+            body { 
+              margin: 0; 
+              padding: 0;
+            }
+            .header,
+            .info-section,
+            .client-info,
+            .document-title {
+              page-break-inside: avoid;
+            }
+          }
         </style>
       </head>
       <body>
