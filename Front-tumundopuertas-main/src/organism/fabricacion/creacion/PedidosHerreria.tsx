@@ -201,6 +201,7 @@ const PedidosHerreria: React.FC = () => {
           const fechaB = new Date(b.fecha_creacion || 0).getTime();
           return fechaB - fechaA; // Descendente
         });
+        
         setItemsIndividuales(itemsOrdenados);
         setUltimaActualizacion(new Date()); // Actualizar timestamp
         
@@ -249,6 +250,44 @@ const PedidosHerreria: React.FC = () => {
         console.error('❌ Error al cargar empleados:', err);
       });
   }, []);
+  
+  // NUEVO: Actualizar nombres de empleados cuando tanto itemsIndividuales como dataEmpleados estén disponibles
+  useEffect(() => {
+    if (itemsIndividuales.length > 0 && dataEmpleados && Array.isArray(dataEmpleados) && dataEmpleados.length > 0) {
+      const itemsActualizados = itemsIndividuales.map(item => {
+        // Si el item tiene empleado_asignado, buscar el nombre del empleado
+        if (item.empleado_asignado) {
+          const empleado = dataEmpleados.find(emp => 
+            emp.identificador === item.empleado_asignado || 
+            emp._id === item.empleado_asignado ||
+            emp.identificador?.toString() === item.empleado_asignado?.toString()
+          );
+          
+          // Si se encuentra el empleado, usar su nombre completo
+          if (empleado) {
+            const nombreCompleto = empleado.nombreCompleto || empleado.nombre || item.empleado_asignado;
+            // Solo actualizar si es diferente para evitar re-renders infinitos
+            if (nombreCompleto !== item.empleado_asignado) {
+              return {
+                ...item,
+                empleado_asignado: nombreCompleto
+              };
+            }
+          }
+        }
+        return item;
+      });
+      
+      // Solo actualizar si hay cambios
+      const hayCambios = itemsActualizados.some((item, index) => 
+        item.empleado_asignado !== itemsIndividuales[index]?.empleado_asignado
+      );
+      
+      if (hayCambios) {
+        setItemsIndividuales(itemsActualizados);
+      }
+    }
+  }, [dataEmpleados]);
 
   // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
   useEffect(() => {
@@ -499,6 +538,7 @@ const PedidosHerreria: React.FC = () => {
 
   // Memoizar items filtrados para evitar recalcular en cada render
   const itemsFiltrados = useMemo(() => {
+    console.log('🔍 FILTRO - Aplicando filtros con searchTerm:', searchTerm);
     const filtrados = itemsIndividuales
       .filter((item) => {
         // Mostrar items pendientes (0) y en proceso (1, 2, 3)
@@ -556,6 +596,8 @@ const PedidosHerreria: React.FC = () => {
             (item as any).cliente_nombre_completo?.toLowerCase() ||
             ''
           );
+          
+          console.log('🔍 FILTRO BUSQUEDA - item:', item.id, 'cliente:', clienteNombre, 'search:', searchLower, 'match:', clienteNombre.includes(searchLower));
           
           // Buscar SOLO en el nombre del cliente
           return clienteNombre.includes(searchLower);
