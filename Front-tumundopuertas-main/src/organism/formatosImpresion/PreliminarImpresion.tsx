@@ -189,6 +189,17 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
 
     // Totales
     if (config.totales.mostrar) {
+      // Calcular subtotal desde los items
+      const subtotal = pedido.items?.reduce((sum: number, item: any) => {
+        const cantidad = item.cantidad || 1;
+        const precio = item.precio || 0;
+        return sum + (precio * cantidad);
+      }, 0) || 0;
+      
+      const totalFactura = subtotal;
+      const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
+      const restante = totalFactura - totalAbonado;
+      
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('TOTALES:', 20, yPosition);
@@ -198,18 +209,14 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       doc.setFont('helvetica', 'normal');
       
       // Subtotal - siempre mostrarlo
-      doc.text(`Subtotal: $ ${(pedido.subtotal || 0).toLocaleString()}`, 20, yPosition);
+      doc.text(`Subtotal: $ ${subtotal.toLocaleString()}`, 20, yPosition);
       yPosition += 6;
       
       // Total Factura - siempre mostrarlo
       doc.setFont('helvetica', 'bold');
-      doc.text(`Total Factura: $ ${(pedido.total || 0).toLocaleString()}`, 20, yPosition);
+      doc.text(`Total Factura: $ ${totalFactura.toLocaleString()}`, 20, yPosition);
       yPosition += 6;
       doc.setFont('helvetica', 'normal');
-      
-      // Calcular abonos realizados
-      const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
-      const restante = (pedido.total || 0) - totalAbonado;
       
       // Mostrar abonos si existen
       if (totalAbonado > 0) {
@@ -463,16 +470,23 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
 
     // Totales
     if (config.totales.mostrar) {
+      // Calcular subtotal desde los items
+      const subtotal = pedido.items?.reduce((sum: number, item: any) => {
+        const cantidad = item.cantidad || 1;
+        const precio = item.precio || 0;
+        return sum + (precio * cantidad);
+      }, 0) || 0;
+      
+      const totalFactura = subtotal;
+      const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
+      const restante = totalFactura - totalAbonado;
+      
       html += '<div class="totals">';
       // Subtotal - siempre mostrarlo
-      html += '<p><strong>Subtotal:</strong> $ ' + (pedido.subtotal || 0).toLocaleString() + '</p>';
+      html += '<p><strong>Subtotal:</strong> $ ' + subtotal.toLocaleString() + '</p>';
       
       // Total Factura - siempre mostrarlo
-      html += '<p class="total-final"><strong>Total Factura:</strong> $ ' + (pedido.total || 0).toLocaleString() + '</p>';
-      
-      // Calcular abonos realizados
-      const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
-      const restante = (pedido.total || 0) - totalAbonado;
+      html += '<p class="total-final"><strong>Total Factura:</strong> $ ' + totalFactura.toLocaleString() + '</p>';
       
       // Mostrar abonos si existen
       if (totalAbonado > 0) {
@@ -598,38 +612,47 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         {/* Totales */}
         <div className="flex justify-end">
           <div className="w-48 space-y-1 text-sm">
-            {/* Subtotal - siempre mostrarlo */}
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span>$ {(pedido.subtotal || 0).toLocaleString()}</span>
-            </div>
-            
-            {/* Total Factura - siempre mostrarlo */}
-            <div className="flex justify-between font-bold border-t pt-1 mt-2">
-              <span>Total Factura:</span>
-              <span>$ {(pedido.total || 0).toLocaleString()}</span>
-            </div>
-            
-            {/* Calcular abonos y mostrar si existen */}
+            {/* Calcular subtotal desde los items */}
             {(() => {
-              const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
-              const restante = (pedido.total || 0) - totalAbonado;
+              const subtotal = pedido.items?.reduce((sum: number, item: any) => {
+                const cantidad = item.cantidad || 1;
+                const precio = item.precio || 0;
+                return sum + (precio * cantidad);
+              }, 0) || 0;
               
-              if (totalAbonado > 0) {
-                return (
-                  <>
-                    <div className="flex justify-between text-green-600 font-bold mt-2">
-                      <span>Total Abonado:</span>
-                      <span>$ {totalAbonado.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-red-600 font-bold">
-                      <span>Resta por Pagar:</span>
-                      <span>$ {restante.toLocaleString()}</span>
-                    </div>
-                  </>
-                );
-              }
-              return null;
+              const totalFactura = subtotal;
+              const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
+              const restante = totalFactura - totalAbonado;
+              
+              return (
+                <>
+                  {/* Subtotal - siempre mostrarlo */}
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>$ {subtotal.toLocaleString()}</span>
+                  </div>
+                  
+                  {/* Total Factura - siempre mostrarlo */}
+                  <div className="flex justify-between font-bold border-t pt-1 mt-2">
+                    <span>Total Factura:</span>
+                    <span>$ {totalFactura.toLocaleString()}</span>
+                  </div>
+                  
+                  {/* Mostrar abonos si existen */}
+                  {totalAbonado > 0 && (
+                    <>
+                      <div className="flex justify-between text-green-600 font-bold mt-2">
+                        <span>Total Abonado:</span>
+                        <span>$ {totalAbonado.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-red-600 font-bold">
+                        <span>Resta por Pagar:</span>
+                        <span>$ {restante.toLocaleString()}</span>
+                      </div>
+                    </>
+                  )}
+                </>
+              );
             })()}
           </div>
         </div>
