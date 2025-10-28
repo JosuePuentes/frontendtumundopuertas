@@ -56,7 +56,6 @@ const PedidosHerreria: React.FC = () => {
   const [filtroAsignacion, setFiltroAsignacion] = useState<string>("todos");
   const [filtroFecha, setFiltroFecha] = useState<string>("todos"); // NUEVO: Filtro por fecha
   const [searchTerm, setSearchTerm] = useState<string>(""); // NUEVO: Buscador por nombre de cliente
-  const [filtrosAplicados, setFiltrosAplicados] = useState<{estado: string, asignacion: string, fecha: string}>({estado: "todos", asignacion: "todos", fecha: "todos"});
   
   // Estado para barra de progreso por item
   const [progresoItems, setProgresoItems] = useState<Record<string, number>>({});
@@ -124,7 +123,7 @@ const PedidosHerreria: React.FC = () => {
     const params = new URLSearchParams();
     
     // Agregar parámetro de asignación si es necesario
-    if (filtrosAplicados.asignacion === "sin_asignar") {
+    if (filtroAsignacion === "sin_asignar") {
       params.append("sin_asignar", "true");
     }
     
@@ -135,15 +134,6 @@ const PedidosHerreria: React.FC = () => {
     params.append("limite", "100");
     
     return `/pedidos/herreria/?${params.toString()}`;
-  };
-
-  // Función para aplicar filtros con debounce
-  const aplicarFiltros = () => {
-    setFiltrosAplicados({
-      estado: filtroEstado,
-      asignacion: filtroAsignacion,
-      fecha: filtroFecha
-    });
   };
 
   // Función para recargar datos - NUEVA ESTRUCTURA: Items individuales
@@ -630,15 +620,6 @@ const PedidosHerreria: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
-          
-          <div className="flex items-end gap-2">
-            <Button 
-              onClick={aplicarFiltros}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
-            >
-              Aplicar Filtros
-            </Button>
-          </div>
           </div>
         </div>
       </CardHeader>
@@ -664,8 +645,8 @@ const PedidosHerreria: React.FC = () => {
                 // No mostrar items con estado_item = 4 (terminados completamente)
                 const estadoValido = item.estado_item >= 0 && item.estado_item < 4;
                 
-                // Filtro por fecha - CORREGIDO: Usar filtrosAplicados en lugar de filtroFecha
-                if (filtrosAplicados.fecha !== "todos") {
+                // Filtro por fecha - Usar filtroFecha directamente para tiempo real
+                if (filtroFecha !== "todos") {
                   // Usar fecha_creacion como campo principal (que es el que tiene datos)
                   const fechaItem = new Date(item.fecha_creacion || 0);
                   const hoy = new Date();
@@ -686,7 +667,7 @@ const PedidosHerreria: React.FC = () => {
                   //   });
                   // }
                   
-                  switch (filtrosAplicados.fecha) {
+                  switch (filtroFecha) {
                     case "hoy":
                       return estadoValido && fechaItem.toDateString() === hoy.toDateString();
                     case "ayer":
@@ -766,7 +747,7 @@ const PedidosHerreria: React.FC = () => {
               });
               
               console.log('📊 Items después de filtros:', itemsFiltrados.length);
-              console.log('🔍 Filtros aplicados:', filtrosAplicados);
+              console.log('🔍 Búsqueda activa:', searchTerm || 'Ninguna');
               
               // Si no hay items filtrados, mostrar mensaje
               if (itemsFiltrados.length === 0) {
