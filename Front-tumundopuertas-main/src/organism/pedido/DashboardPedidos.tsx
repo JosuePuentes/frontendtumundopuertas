@@ -59,7 +59,6 @@ const ESTADOS_SECCIONES = [
   { key: "pendiente", label: "Pendientes" },
   { key: "produccion", label: "En Producción" },
   { key: "orden4", label: "Facturación" },
-  { key: "entregado", label: "Envíos" },
 ];
 
 // --- COMPONENTES SECUNDARIOS ---
@@ -289,7 +288,6 @@ const DashboardPedidos: React.FC = () => {
       produccion: [],
       pendiente: [],
       orden4: [],
-      entregado: [],
     };
     pedidos.forEach((p) => {
       if (["orden1", "orden2", "orden3"].includes(p.estado_general)) {
@@ -298,9 +296,8 @@ const DashboardPedidos: React.FC = () => {
         grupos.orden4.push(p);
       } else if (p.estado_general === "pendiente") {
         grupos.pendiente.push(p);
-      } else if (p.estado_general === "orden5") {
-        grupos.entregado.push(p);
       }
+      // Los pedidos con estado "orden5" (Envíos) ya no se incluyen
     });
     
     // Ordenar cada grupo por fecha de creación descendente (más recientes primero)
