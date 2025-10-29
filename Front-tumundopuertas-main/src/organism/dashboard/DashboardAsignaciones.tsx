@@ -140,8 +140,8 @@ const DashboardAsignaciones: React.FC = () => {
                   });
                 }
                 
-                // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada
-                if (asignacion.estado === "en_proceso" && !estaTerminada) {
+                // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada Y tiene empleado asignado
+                if (asignacion.estado === "en_proceso" && !estaTerminada && asignacion.empleadoId) {
                   
                   // Buscar el nombre del empleado desde la lista de empleados
                   const empleado = empleados.find(emp => 
