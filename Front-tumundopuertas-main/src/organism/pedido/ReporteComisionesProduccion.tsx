@@ -105,18 +105,50 @@ const ReporteComisionesProduccion: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         return data.total_pendiente || 0;
+      } else {
+        // Si es 400, probablemente es un ID inválido, no lo registramos como error crítico
+        if (res.status !== 400) {
+          console.error(`Error ${res.status} cargando vales para empleado ${empleadoId}`);
+        }
       }
     } catch (error) {
-      console.error(`Error cargando vales para empleado ${empleadoId}:`, error);
+      // Solo registrar errores de red, no errores 400 que son esperados si el ID no es válido
+      console.error(`Error de red cargando vales para empleado ${empleadoId}:`, error);
     }
     return 0;
   };
 
-  const handleAgregarVales = async (empleadoId: string) => {
-    const valorInput = inputVales[empleadoId] || "0";
+  // Normalizar identificador (remover "v" o "V" si existe)
+  const normalizarIdentificador = (id: string | number | undefined): string => {
+    if (id === undefined || id === null) return "";
+    const idStr = String(id);
+    if (idStr.startsWith("v") || idStr.startsWith("V")) {
+      return idStr.slice(1);
+    }
+    return idStr;
+  };
+
+  // Obtener _id del empleado por identificador
+  const obtenerIdEmpleado = (identificador: string): string | null => {
+    const identificadorNormalizado = normalizarIdentificador(identificador);
+    const empleado = empleados.find((emp) => {
+      const empIdentificador = normalizarIdentificador(emp.identificador || emp._id);
+      return empIdentificador === identificadorNormalizado || String(emp._id) === identificadorNormalizado;
+    });
+    return empleado?._id || null;
+  };
+
+  const handleAgregarVales = async (identificador: string) => {
+    const valorInput = inputVales[identificador] || "0";
     const valor = parseFloat(valorInput);
     if (isNaN(valor) || valor <= 0) {
       alert("Por favor ingresa un valor válido mayor a 0");
+      return;
+    }
+    
+    const empleadoId = obtenerIdEmpleado(identificador);
+    if (!empleadoId) {
+      alert("Error: No se encontró el empleado");
       return;
     }
     
@@ -140,15 +172,15 @@ const ReporteComisionesProduccion: React.FC = () => {
       // Recargar los vales del empleado para obtener el total_pendiente actualizado
       const totalPendiente = await cargarValesEmpleado(empleadoId);
       
-      // Actualizar el estado con el total pendiente del backend
+      // Actualizar el estado con el total pendiente del backend (usando identificador como key)
       setValesPorEmpleado((prev) => ({
         ...prev,
-        [empleadoId]: totalPendiente,
+        [identificador]: totalPendiente,
       }));
       
       setInputVales((prev) => ({
         ...prev,
-        [empleadoId]: "",
+        [identificador]: "",
       }));
       
       alert("Vale agregado exitosamente");
@@ -158,17 +190,23 @@ const ReporteComisionesProduccion: React.FC = () => {
     }
   };
 
-  const handleAbonarVales = async (empleadoId: string) => {
-    const valorInput = inputVales[empleadoId] || "0";
+  const handleAbonarVales = async (identificador: string) => {
+    const valorInput = inputVales[identificador] || "0";
     const valor = parseFloat(valorInput);
     if (isNaN(valor) || valor <= 0) {
       alert("Por favor ingresa un valor válido mayor a 0");
       return;
     }
     
-    const valesActuales = valesPorEmpleado[empleadoId] || 0;
+    const valesActuales = valesPorEmpleado[identificador] || 0;
     if (valor > valesActuales) {
       alert("No puedes abonar más vales de los que tiene el empleado");
+      return;
+    }
+    
+    const empleadoId = obtenerIdEmpleado(identificador);
+    if (!empleadoId) {
+      alert("Error: No se encontró el empleado");
       return;
     }
     
@@ -192,15 +230,15 @@ const ReporteComisionesProduccion: React.FC = () => {
       // Recargar los vales del empleado para obtener el total_pendiente actualizado
       const totalPendiente = await cargarValesEmpleado(empleadoId);
       
-      // Actualizar el estado con el total pendiente del backend
+      // Actualizar el estado con el total pendiente del backend (usando identificador como key)
       setValesPorEmpleado((prev) => ({
         ...prev,
-        [empleadoId]: totalPendiente,
+        [identificador]: totalPendiente,
       }));
       
       setInputVales((prev) => ({
         ...prev,
-        [empleadoId]: "",
+        [identificador]: "",
       }));
       
       alert("Abono realizado exitosamente");
@@ -212,16 +250,31 @@ const ReporteComisionesProduccion: React.FC = () => {
 
   // Cargar vales de todos los empleados con asignaciones
   const cargarValesEmpleados = async (empleadosIds: string[]) => {
-    const valesPromises = empleadosIds.map(async (id) => ({
-      empleadoId: id,
-      totalPendiente: await cargarValesEmpleado(id),
-    }));
+    // Mapear identificadores normalizados a _id de empleados
+    const mapeoIds: Record<string, string> = {};
+    empleados.forEach((emp) => {
+      const identificadorNormalizado = normalizarIdentificador(emp.identificador || emp._id);
+      mapeoIds[identificadorNormalizado] = emp._id;
+    });
+    
+    const valesPromises = empleadosIds.map(async (identificador) => {
+      const identificadorNormalizado = normalizarIdentificador(identificador);
+      const empleadoId = mapeoIds[identificadorNormalizado];
+      
+      if (!empleadoId) {
+        // Si no encontramos el empleado, retornar 0 para ese identificador
+        return { identificador, totalPendiente: 0 };
+      }
+      
+      const totalPendiente = await cargarValesEmpleado(empleadoId);
+      return { identificador, totalPendiente };
+    });
     
     const resultados = await Promise.all(valesPromises);
     const nuevosVales: Record<string, number> = {};
     
-    resultados.forEach(({ empleadoId, totalPendiente }) => {
-      nuevosVales[empleadoId] = totalPendiente;
+    resultados.forEach(({ identificador, totalPendiente }) => {
+      nuevosVales[identificador] = totalPendiente;
     });
     
     setValesPorEmpleado((prev) => ({ ...prev, ...nuevosVales }));
@@ -495,28 +548,42 @@ const ReporteComisionesProduccion: React.FC = () => {
               );
               
               // Filtrar asignaciones por fecha (si hay fechas seleccionadas)
+              // Nota: El backend ya puede estar filtrando, pero aplicamos filtro adicional por seguridad
               const asignacionesFiltradas =
                 empleadoComision?.asignaciones?.filter((asig) => {
-                  // Si no hay filtros de fecha, mostrar todas las asignaciones
+                  // Si no hay filtros de fecha en el frontend, mostrar todas las asignaciones que devolvió el backend
                   if (!fechaInicio && !fechaFin) return true;
                   
-                  // Obtener la fecha de la asignación
+                  // Intentar obtener la fecha de la asignación (probar múltiples campos)
                   const fecha =
-                    asig.fecha_inicio_subestado || asig.fecha_inicio || "";
+                    asig.fecha_inicio_subestado || 
+                    asig.fecha_inicio || 
+                    asig.fecha_fin_subestado ||
+                    asig.fecha_fin ||
+                    "";
+                  
+                  // Si no tiene fecha y estamos filtrando, excluirla
                   if (!fecha) return false;
                   
-                  const fechaObj = new Date(fecha);
-                  const fechaInicioObj = fechaInicio ? new Date(fechaInicio) : null;
-                  const fechaFinObj = fechaFin ? new Date(fechaFin + "T23:59:59") : null;
-                  
-                  // Validar que la fecha esté en el rango
-                  if (fechaInicioObj && fechaObj < fechaInicioObj) return false;
-                  if (fechaFinObj && fechaObj > fechaFinObj) return false;
-                  
-                  return true;
+                  try {
+                    const fechaObj = new Date(fecha);
+                    if (isNaN(fechaObj.getTime())) return false; // Fecha inválida
+                    
+                    const fechaInicioObj = fechaInicio ? new Date(fechaInicio + "T00:00:00") : null;
+                    const fechaFinObj = fechaFin ? new Date(fechaFin + "T23:59:59") : null;
+                    
+                    // Validar que la fecha esté en el rango
+                    if (fechaInicioObj && fechaObj < fechaInicioObj) return false;
+                    if (fechaFinObj && fechaObj > fechaFinObj) return false;
+                    
+                    return true;
+                  } catch {
+                    return false; // Si hay error parseando la fecha, excluirla
+                  }
                 }) || [];
               
               // Calcular Total Generado SOLO con las asignaciones filtradas por fecha
+              // Si no hay asignaciones filtradas, el total será 0
               const total = empleado.permisos?.includes("ayudante")
                 ? 0
                 : asignacionesFiltradas.reduce((acc, asig) => {
