@@ -97,17 +97,12 @@ const ReporteComisionesProduccion: React.FC = () => {
       : "-";
 
   const handleBuscar = async () => {
-    if (!fechaInicio || !fechaFin) {
-      alert("Por favor selecciona fecha de inicio y fecha de fin");
-      return;
-    }
-    
     setBuscando(true);
     setLoadingData(true);
     try {
       const params = new URLSearchParams();
-      params.append("fecha_inicio", fechaInicio);
-      params.append("fecha_fin", fechaFin);
+      if (fechaInicio) params.append("fecha_inicio", fechaInicio);
+      if (fechaFin) params.append("fecha_fin", fechaFin);
       
       const res = await fetch(
         `${apiUrl}/pedidos/comisiones/produccion/terminadas/?${params.toString()}`
@@ -373,7 +368,7 @@ const ReporteComisionesProduccion: React.FC = () => {
                   const costoTotal = costoUnitario * cantidad;
                   return acc + costoTotal;
                 }, 0);
-                total
+
               // Calcular total de venta para facturación (precio_item * cantidad)
               const totalVenta = empleado.permisos?.includes("facturacion")
                 ? asignacionesFiltradas.reduce((acc, asig) => {
@@ -382,7 +377,6 @@ const ReporteComisionesProduccion: React.FC = () => {
                   return acc + precio * cantidad;
                 }, 0)
                 : 0;
-                totalVenta
               return (
                 <li key={empleado._id}>
                   <Card className="shadow-md">
@@ -449,7 +443,12 @@ const ReporteComisionesProduccion: React.FC = () => {
                                     <span className="text-gray-700 font-medium">
                                       Costo Producción:{" "}
                                       <span className="text-green-700 font-bold">
-                                        ${asig.costoproduccion}
+                                        ${(parseFloat(asig.costoproduccion) || 0).toFixed(2)}
+                                        {cantidad > 1 && (
+                                          <span className="text-green-600 ml-1">
+                                            ({cantidad} x ${(parseFloat(asig.costoproduccion) || 0).toFixed(2)} = ${((parseFloat(asig.costoproduccion) || 0) * cantidad).toFixed(2)})
+                                          </span>
+                                        )}
                                       </span>
                                     </span>
                                   </div>
