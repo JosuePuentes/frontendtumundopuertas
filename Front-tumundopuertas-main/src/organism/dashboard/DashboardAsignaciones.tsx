@@ -118,6 +118,12 @@ const DashboardAsignaciones: React.FC = () => {
                   asignacion.estado_subestado === "terminado" ||  // Estado subestado es "terminado" (backend lo establece)
                   item?.estado_item === 4;  // Item está completamente terminado (estado_item 4)
                 
+                // IMPORTANTE: Verificar que el estado_item del item coincida con el orden del módulo
+                // Si el item está en estado_item 3 (preparar) y la asignación es del orden 2 (masillar), NO mostrar
+                const ordenDelModulo = sub.orden;  // El orden del proceso actual (1=herreria, 2=masillar, 3=preparar)
+                const estadoItemActual = item?.estado_item || 1;  // El estado actual del item (1,2,3 o 4)
+                const moduloCoincide = ordenDelModulo === estadoItemActual;  // Solo mostrar si el orden coincide con el estado_item
+                
                 // Debug: Log para VERIFICAR TODAS las asignaciones
                 console.log('🔍 DEBUG Asignación:', {
                   itemId: asignacion.itemId,
@@ -128,7 +134,10 @@ const DashboardAsignaciones: React.FC = () => {
                   fecha_fin: asignacion.fecha_fin,
                   modulo: asignacion.modulo || sub.orden,
                   estaTerminada: estaTerminada,
-                  tieneFechaFin: !!asignacion.fecha_fin
+                  tieneFechaFin: !!asignacion.fecha_fin,
+                  moduloCoincide: moduloCoincide,
+                  ordenDelModulo: ordenDelModulo,
+                  estadoItemActual: estadoItemActual
                 });
                 
                 // Debug adicional cuando encontramos una asignación terminada
@@ -142,8 +151,8 @@ const DashboardAsignaciones: React.FC = () => {
                   });
                 }
                 
-                // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada Y tiene empleado asignado
-                if (asignacion.estado === "en_proceso" && !estaTerminada && asignacion.empleadoId) {
+                // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada, tiene empleado asignado Y el módulo coincide
+                if (asignacion.estado === "en_proceso" && !estaTerminada && asignacion.empleadoId && moduloCoincide) {
                   
                   // Buscar el nombre del empleado desde la lista de empleados
                   const empleado = empleados.find(emp => 
