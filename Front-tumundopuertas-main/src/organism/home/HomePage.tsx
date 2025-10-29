@@ -233,7 +233,7 @@ const HomePage: React.FC = () => {
             href: "/mispagos"
         },
         {
-            title: "Métodos de Pago",
+            title: "Bancos",
             description: "Administrar métodos de pago",
             icon: CreditCard,
             color: "from-cyan-400 to-blue-500",

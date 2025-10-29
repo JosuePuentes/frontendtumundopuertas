@@ -25,7 +25,7 @@ const defaultLinks = [
   { label: "Pagos", href: "/pagos" },
   { label: "Mis Pagos", href: "/mispagos" },
   { label: "Resumen Venta Diaria", href: "/resumen-venta-diaria" },
-  { label: "Metodos de Pago", href: "/metodos-pago" },
+  { label: "Bancos", href: "/metodos-pago" },
   { label: "Formatos de Impresión", href: "/formatos-impresion" },
   { label: "Administrar Home", href: "/admin-home" },
   { label: "Dashboard", href: "/dashboard" },

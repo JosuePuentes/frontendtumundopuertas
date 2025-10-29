@@ -70,7 +70,7 @@ const MetodosPago = () => {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Métodos de Pago</CardTitle>
+          <CardTitle>Bancos</CardTitle>
           <Button 
             variant="outline" 
             size="sm" 
