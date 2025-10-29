@@ -38,6 +38,7 @@ import ImageDisplay from "@/upfile/ImageDisplay";
 // Tipos locales para el payload
 interface PedidoItem {
   id: string;
+  _id?: string; // También incluir _id para compatibilidad con backend
   codigo: string;
   nombre: string;
   descripcion: string;
@@ -382,9 +383,22 @@ const CrearPedido: React.FC = () => {
       // Item con la cantidad disponible (esta se resta del inventario)
       // Si tiene cantidad disponible, estado_item = 4 (ya está listo, se resta del inventario)
       if (item.cantidad > 0) {
+        // Asegurar que tenemos el código y el _id correctos
+        const itemIdFinal = itemData._id ?? item.itemId;
+        const codigoFinal = itemData.codigo || itemIdFinal;
+        
+        console.log("DEBUG CREAR PEDIDO: Item con existencia -", {
+          nombre: itemData.nombre,
+          codigo: codigoFinal,
+          _id: itemIdFinal,
+          cantidad: item.cantidad,
+          estado_item: 4
+        });
+        
         itemsPedido.push({
-          id: itemData._id ?? String(item.itemId),
-          codigo: itemData.codigo ?? String(item.itemId),
+          id: itemIdFinal,
+          _id: itemIdFinal, // También enviar _id por si el backend lo necesita
+          codigo: codigoFinal,
           nombre: itemData.nombre ?? "",
           descripcion: itemData.descripcion ?? "",
           categoria: itemData.categoria ?? "",
@@ -395,7 +409,7 @@ const CrearPedido: React.FC = () => {
           activo: itemData.activo ?? true,
           detalleitem: item.detalleitem || "",
           imagenes: itemData.imagenes ?? [],
-          estado_item: todosTienenExistencia ? 4 : 4, // Siempre 4 porque esta parte está disponible en inventario
+          estado_item: 4, // Siempre 4 porque esta parte está disponible en inventario
         });
       }
 
@@ -403,9 +417,13 @@ const CrearPedido: React.FC = () => {
       const itemOriginal = selectedItems.find((it) => it.itemId === item.itemId);
       if (itemOriginal && itemOriginal.cantidad > item.cantidad) {
         const cantidadFaltante = itemOriginal.cantidad - item.cantidad;
+        const itemIdFinal = itemData._id ?? item.itemId;
+        const codigoFinal = itemData.codigo || itemIdFinal;
+        
         itemsPedido.push({
-          id: itemData._id ?? String(item.itemId),
-          codigo: itemData.codigo ?? String(item.itemId),
+          id: itemIdFinal,
+          _id: itemIdFinal, // También enviar _id por si el backend lo necesita
+          codigo: codigoFinal,
           nombre: itemData.nombre ?? "",
           descripcion: itemData.descripcion ?? "",
           categoria: itemData.categoria ?? "",
@@ -434,6 +452,22 @@ const CrearPedido: React.FC = () => {
       total_abonado: pagos.reduce((acc, p) => acc + p.monto, 0),
       todos_items_disponibles: todosTienenExistencia, // Flag para el backend
     };
+
+    // Debug: Log del payload completo
+    console.log("DEBUG CREAR PEDIDO: Payload completo -", {
+      total_items: itemsPedido.length,
+      items_con_estado_4: itemsPedido.filter(i => i.estado_item === 4).length,
+      items_con_estado_0: itemsPedido.filter(i => i.estado_item === 0).length,
+      items: itemsPedido.map(i => ({
+        nombre: i.nombre,
+        codigo: i.codigo,
+        id: i.id,
+        _id: i._id,
+        cantidad: i.cantidad,
+        estado_item: i.estado_item
+      })),
+      todos_items_disponibles: todosTienenExistencia
+    });
 
     try {
       const resultado = await fetchPedido(`/pedidos/`, {
