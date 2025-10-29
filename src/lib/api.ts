@@ -1,5 +1,8 @@
 export const getApiUrl = () => {
-  return 'https://crafteo.onrender.com';
+  // Usar la variable de entorno o la URL por defecto
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://crafteo.onrender.com';
+  // Asegurar que siempre use HTTPS
+  return apiUrl.includes('http') ? apiUrl : `https://${apiUrl}`;
 };
 
 /**
@@ -18,7 +21,9 @@ export async function getPresignedUrl(
   expiresIn?: number
 ): Promise<string> {
   const defaultExpiresIn = operation === "get_object" ? 3600 : 600; // 1h para GET, 10min para PUT
-  const res = await fetch(`${getApiUrl()}/files/presigned-url`, {
+  const apiUrl = getApiUrl();
+  const url = `${apiUrl}/files/presigned-url`;
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
