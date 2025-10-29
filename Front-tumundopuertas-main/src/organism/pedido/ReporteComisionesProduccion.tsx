@@ -338,8 +338,10 @@ const totalGeneral = empleadosFiltrados.reduce((acc, empleado) => {
               const total = empleado.permisos?.includes("ayudante")
                 ? 0
                 : asignacionesFiltradas.reduce((acc, asig) => {
-                  const val = parseFloat(asig.costoproduccion) || 0;
-                  return acc + val;
+                  const costoUnitario = parseFloat(asig.costoproduccion) || 0;
+                  const cantidad = (asig as any).cantidad ? Number((asig as any).cantidad) : 1;
+                  const costoTotal = costoUnitario * cantidad;
+                  return acc + costoTotal;
                 }, 0);
                 total
               // Calcular total de venta para facturación (precio_item * cantidad)
