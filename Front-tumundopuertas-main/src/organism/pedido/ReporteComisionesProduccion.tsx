@@ -368,15 +368,6 @@ const ReporteComisionesProduccion: React.FC = () => {
                   const costoTotal = costoUnitario * cantidad;
                   return acc + costoTotal;
                 }, 0);
-
-              // Calcular total de venta para facturación (precio_item * cantidad)
-              const totalVenta = empleado.permisos?.includes("facturacion")
-                ? asignacionesFiltradas.reduce((acc, asig) => {
-                  const precio = asig.precio_item || 0;
-                  const cantidad = (asig as any).cantidad ? Number((asig as any).cantidad) : 1;
-                  return acc + precio * cantidad;
-                }, 0)
-                : 0;
               return (
                 <li key={empleado._id}>
                   <Card className="shadow-md">
