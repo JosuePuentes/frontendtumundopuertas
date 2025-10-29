@@ -111,12 +111,24 @@ const DashboardAsignaciones: React.FC = () => {
                 const item = pedido.items?.find((item: any) => item.id === asignacion.itemId);
                 
                 // Verificar múltiples condiciones para determinar si está terminada
+                // SI tiene fecha_fin, está terminada (sin importar el estado o estado_item)
                 const estaTerminada = 
-                  asignacion.fecha_fin ||  // Tiene fecha_fin
+                  asignacion.fecha_fin ||  // Tiene fecha_fin - SIEMPRE significa que está terminada
                   asignacion.estado === "terminado" ||  // Estado es "terminado"
                   item?.estado_item === 4;  // Item está completamente terminado (estado_item 4)
                 
-                // Debug: Log cuando encontramos una asignación terminada
+                // Debug: Log para VERIFICAR TODAS las asignaciones
+                console.log('🔍 DEBUG Asignación:', {
+                  itemId: asignacion.itemId,
+                  estado: asignacion.estado,
+                  estado_item: item?.estado_item,
+                  fecha_fin: asignacion.fecha_fin,
+                  modulo: asignacion.modulo || sub.orden,
+                  estaTerminada: estaTerminada,
+                  tieneFechaFin: !!asignacion.fecha_fin
+                });
+                
+                // Debug adicional cuando encontramos una asignación terminada
                 if (estaTerminada) {
                   console.log('🚫 Asignación terminada filtrada:', {
                     itemId: asignacion.itemId,
