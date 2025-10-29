@@ -396,11 +396,10 @@ const CrearPedido: React.FC = () => {
         </CardHeader>
 
         <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Layout de dos columnas tipo punto de venta */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Columna izquierda - Info del cliente e items */}
-            <div className="lg:col-span-2 space-y-6">
+          <form onSubmit={handleSubmit}>
+          <div className="space-y-6">
+          {/* Layout principal: Cliente/Fecha arriba, Items y Resumen abajo */}
+          <div className="grid grid-cols-2 gap-4">
             {/* Cliente */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700">
@@ -530,6 +529,10 @@ const CrearPedido: React.FC = () => {
 
           <Separator />
 
+          {/* Items y Resumen en layout de columnas */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Items - Ocupa 3 columnas como hoja Excel */}
+            <div className="lg:col-span-3 space-y-4">
           {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -726,11 +729,11 @@ const CrearPedido: React.FC = () => {
                 </p>
               )}
             </div>
+            </div>
+            </div> {/* Cierre de items (col-span-3) */}
 
-            </div> {/* Cierre de columna izquierda */}
-
-            {/* Columna derecha - Resumen del pedido */}
-            <div className="lg:col-span-1 space-y-6">
+            {/* Resumen del pedido - Ocupa 1 columna */}
+            <div className="lg:col-span-1">
               <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg sticky top-4">
                 <CardHeader>
                   <CardTitle className="text-lg font-bold text-gray-800">Resumen del Pedido</CardTitle>
@@ -952,9 +955,9 @@ const CrearPedido: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div> {/* Cierre de columna derecha */}
-          </div> {/* Cierre del grid principal */}
-          
+            </div> {/* Cierre de resumen (col-span-1) */}
+          </div> {/* Cierre del grid de items y resumen */}
+          </div> {/* Cierre de space-y-6 del formulario */}
         </form>
       </CardContent>
       </Card>
