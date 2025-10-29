@@ -169,11 +169,21 @@ const CrearPedido: React.FC = () => {
       estado: 'confirmado'
     };
     
+    // Calcular el total abonado actual
+    const totalAbonadoActual = pagos.reduce((acc, p) => acc + p.monto, 0);
+    
+    // Verificar que no se exceda el total del pedido
+    if (totalAbonadoActual + abono > totalMonto) {
+      setMensaje(`El total abonado no puede exceder el total del pedido (${totalMonto.toFixed(2)}).`);
+      setMensajeTipo("error");
+      return;
+    }
+    
     // Agregar el pago al array
     setPagos([...pagos, newPago]);
     
     console.log("Abono procesado:", { monto: abono, metodo: selectedMetodoPago });
-    setMensaje("Abono agregado exitosamente.");
+    setMensaje(`✓ Pago de $${abono.toFixed(2)} agregado exitosamente. Total abonado: $${(totalAbonadoActual + abono).toFixed(2)}`);
     setMensajeTipo("success");
     setAbono(0);
     setSelectedMetodoPago("");
@@ -570,7 +580,7 @@ const CrearPedido: React.FC = () => {
                       </div>
                       {item.showSuggestions &&
                         item.search.trim().length > 0 && (
-                          <ScrollArea className="absolute left-0 right-0 z-30 mt-2 overflow-auto border rounded-xl bg-white max-h-44 shadow-lg">
+                          <ScrollArea className="absolute left-0 right-0 z-30 mt-2 overflow-auto border-2 border-gray-300 rounded-xl bg-white max-h-80 shadow-2xl">
                             {filtered.length > 0 ? (
                               filtered.map((f: any, fidx: number) => (
                                 <div
@@ -579,23 +589,34 @@ const CrearPedido: React.FC = () => {
                                     ev.preventDefault();
                                     handleSelectSuggestion(idx, f);
                                   }}
-                                  className="px-3 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100"
+                                  className="px-4 py-4 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-200 bg-white"
                                 >
-                                  <div className="flex flex-col">
-                                    <span className="font-semibold text-gray-800 text-base">{f.nombre}</span>
-                                    <span className="text-sm text-gray-600">{f.descripcion}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center mt-2">
-                                    <div className="flex flex-col gap-1">
-                                      <span className="text-xs text-gray-500">Código: {f.codigo}</span>
-                                      {f.modelo && <span className="text-xs text-gray-500">Modelo: {f.modelo}</span>}
-                                      {f.categoria && <span className="text-xs text-gray-500">Categoría: {f.categoria}</span>}
+                                  <div className="grid grid-cols-3 gap-3">
+                                    <div className="col-span-2">
+                                      <p className="font-bold text-gray-900 text-lg mb-1">{f.nombre}</p>
+                                      <p className="text-sm text-gray-600 mb-2">{f.descripcion}</p>
+                                      <div className="flex flex-wrap gap-2 text-xs">
+                                        <span className="bg-gray-100 px-2 py-1 rounded text-gray-700 font-medium">
+                                          Cód: {f.codigo}
+                                        </span>
+                                        {f.modelo && (
+                                          <span className="bg-gray-100 px-2 py-1 rounded text-gray-700 font-medium">
+                                            Modelo: {f.modelo}
+                                          </span>
+                                        )}
+                                        {f.categoria && (
+                                          <span className="bg-blue-100 px-2 py-1 rounded text-blue-700 font-medium">
+                                            {f.categoria}
+                                          </span>
+                                        )}
+                                      </div>
                                     </div>
-                                    <div className="flex flex-col items-end gap-1">
-                                      <span className={`text-sm font-bold ${f.cantidad > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                        Existencias: {f.cantidad || 0}
-                                      </span>
-                                      <span className="text-sm font-medium text-blue-600">Precio: ${f.precio}</span>
+                                    <div className="col-span-1 text-right">
+                                      <div className={`inline-block px-3 py-1 rounded-lg mb-2 ${f.cantidad > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        <p className="text-xs font-semibold">DISPONIBLE</p>
+                                        <p className="text-lg font-bold">{f.cantidad || 0}</p>
+                                      </div>
+                                      <p className="text-xl font-bold text-blue-600">${f.precio}</p>
                                     </div>
                                   </div>
                                 </div>
@@ -725,7 +746,7 @@ const CrearPedido: React.FC = () => {
                       </p>
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <p className="text-gray-600 text-sm font-medium mb-2">Total a Pagar</p>
+                      <p className="text-gray-600 text-sm font-medium mb-2">Total del Pedido</p>
                       <p className="text-3xl font-bold text-blue-700">
                         ${totalMonto.toLocaleString("es-AR", {
                           minimumFractionDigits: 2,
@@ -733,25 +754,54 @@ const CrearPedido: React.FC = () => {
                         })}
                       </p>
                     </div>
+                    {pagos.length > 0 && (
+                      <div className="bg-white rounded-lg p-4 shadow-sm border-2 border-green-200">
+                        <p className="text-gray-600 text-sm font-medium mb-2">Total Abonado</p>
+                        <p className="text-3xl font-bold text-green-700">
+                          ${pagos.reduce((acc, p) => acc + p.monto, 0).toLocaleString("es-AR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                        <div className="mt-2">
+                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-green-500 transition-all duration-300"
+                              style={{ width: `${Math.min((pagos.reduce((acc, p) => acc + p.monto, 0) / totalMonto) * 100, 100)}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {((pagos.reduce((acc, p) => acc + p.monto, 0) / totalMonto) * 100).toFixed(0)}% pagado
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     </>
                   )}
 
-                  {/* Método de pago */}
+                  {/* Sección de Pagos */}
                   <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-gray-700">
-                      Método de Pago
-                    </Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Agregar Pagos
+                      </Label>
+                      <Badge variant="outline" className="text-xs">
+                        Múltiples métodos
+                      </Badge>
+                    </div>
+
+                    {/* Método de Pago */}
                     <Select onValueChange={(value) => {
                       console.log("Método seleccionado:", value);
                       setSelectedMetodoPago(value);
                     }} value={selectedMetodoPago || ""}>
-                      <SelectTrigger className="w-full bg-white">
-                        <SelectValue placeholder="Seleccionar método" />
+                      <SelectTrigger className="w-full bg-white border-2">
+                        <SelectValue placeholder="Seleccionar método de pago" />
                       </SelectTrigger>
                       <SelectContent className="bg-white border-2 border-gray-200 shadow-lg max-h-60">
                         {metodosPago.length === 0 ? (
                           <SelectItem value="no-methods" disabled className="text-gray-500 bg-gray-50">
-                            No hay métodos de pago disponibles
+                            No hay métodos disponibles
                           </SelectItem>
                         ) : (
                           metodosPago.map((metodo: any, index: number) => {
@@ -769,61 +819,83 @@ const CrearPedido: React.FC = () => {
                         )}
                       </SelectContent>
                     </Select>
-                  </div>
 
-                  {/* Abono */}
-                  <div className="space-y-3">
-                    <Label htmlFor="montoAbonar" className="text-sm font-semibold text-gray-700">
-                      Monto a Abonar
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="montoAbonar"
-                        type="number"
-                        min={0}
-                        step="0.01"
-                        value={abono}
-                        onChange={(e) => setAbono(Number(e.target.value))}
-                        placeholder="0.00"
-                        className="w-full focus:ring-2 focus:ring-blue-400"
-                        disabled={!selectedMetodoPago}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setAbono(totalMonto);
-                        }}
-                        disabled={totalMonto === 0 || !selectedMetodoPago}
-                        className="whitespace-nowrap"
-                      >
-                        Total
-                      </Button>
+                    {/* Monto */}
+                    <div className="space-y-2">
+                      <Label htmlFor="montoAbonar" className="text-sm font-semibold text-gray-700">
+                        Monto
+                      </Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="montoAbonar"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={abono}
+                          onChange={(e) => setAbono(Number(e.target.value))}
+                          placeholder="0.00"
+                          className="flex-1 focus:ring-2 focus:ring-blue-400 border-2"
+                          disabled={!selectedMetodoPago}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setAbono(totalMonto);
+                          }}
+                          disabled={totalMonto === 0 || !selectedMetodoPago}
+                          className="whitespace-nowrap bg-blue-100 text-blue-700 hover:bg-blue-200"
+                        >
+                          Total
+                        </Button>
+                      </div>
                     </div>
+
+                    {/* Botón Agregar Pago */}
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
                       onClick={handleAddPago}
                       disabled={abono <= 0 || !selectedMetodoPago}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
                     >
                       <FaMoneyBillWave className="mr-2" />
-                      Agregar Pago
+                      Agregar este Pago
                     </Button>
                   </div>
 
                   {pagos.length > 0 && (
-                    <div className="space-y-2 mt-4">
-                      <Label className="text-sm font-semibold text-gray-700">
-                        Pagos Registrados
-                      </Label>
-                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                    <div className="space-y-2 mt-4 pt-4 border-t border-gray-200">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label className="text-sm font-semibold text-gray-700">
+                          Pagos Registrados ({pagos.length})
+                        </Label>
+                        <Badge variant="secondary" className="bg-green-100 text-green-700">
+                          ${pagos.reduce((acc, p) => acc + p.monto, 0).toFixed(2)}
+                        </Badge>
+                      </div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
                         {pagos.map((pago, idx) => (
-                          <div key={idx} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
-                            <p className="text-xs text-gray-600">${pago.monto.toFixed(2)}</p>
-                            <p className="text-xs text-gray-500">{metodosPago.find(m => (m._id || m.id) === pago.metodo)?.nombre}</p>
+                          <div key={idx} className="bg-white rounded-lg p-3 shadow-sm border-2 border-gray-200 hover:border-blue-300 transition">
+                            <div className="flex justify-between items-center">
+                              <div className="flex-1">
+                                <p className="text-sm font-bold text-blue-700">${pago.monto.toFixed(2)}</p>
+                                <p className="text-xs text-gray-600">{metodosPago.find(m => (m._id || m.id) === pago.metodo)?.nombre}</p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="bg-red-500 hover:bg-red-600 text-white"
+                                onClick={() => {
+                                  const newPagos = [...pagos];
+                                  newPagos.splice(idx, 1);
+                                  setPagos(newPagos);
+                                }}
+                              >
+                                ×
+                              </Button>
+                            </div>
                           </div>
                         ))}
                       </div>
