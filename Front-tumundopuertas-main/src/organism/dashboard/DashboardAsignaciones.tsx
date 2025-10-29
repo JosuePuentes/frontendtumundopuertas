@@ -25,6 +25,7 @@ interface Asignacion {
   cliente_nombre: string;
   costo_produccion: number;
   imagenes: string[];
+  cantidad: number;
 }
 
 const DashboardAsignaciones: React.FC = () => {
@@ -165,7 +166,8 @@ const DashboardAsignaciones: React.FC = () => {
                     detalleitem: item?.detalleitem || "",
                     cliente_nombre: pedido.cliente_nombre || "",
                     costo_produccion: asignacion.costoproduccion || item?.costoProduccion || 0,
-                    imagenes: item?.imagenes || []
+                    imagenes: item?.imagenes || [],
+                    cantidad: item?.cantidad || asignacion.cantidad || 1
                   };
                   
                   asignaciones.push(asignacionCompleta);
@@ -488,10 +490,15 @@ const DashboardAsignaciones: React.FC = () => {
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="text-lg">
-                      {asignacion.descripcionitem}
-                    </CardTitle>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-3 mb-2">
+                      <CardTitle className="text-lg">
+                        {asignacion.descripcionitem}
+                      </CardTitle>
+                      <Badge className="bg-blue-600 text-white font-bold text-base px-3 py-1">
+                        Cantidad: {asignacion.cantidad}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
                       <Badge className={obtenerColorModulo(asignacion.modulo)}>
                         {asignacion.modulo.toUpperCase()}
                       </Badge>
