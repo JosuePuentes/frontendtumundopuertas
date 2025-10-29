@@ -2,6 +2,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useMetodosPago } from "@/hooks/useMetodosPago";
 
 interface Asignacion {
   pedido_id: string;
@@ -42,6 +44,8 @@ const ReporteComisionesProduccion: React.FC = () => {
   const [busquedaEmpleado, setBusquedaEmpleado] = useState("");
   const [valesPorEmpleado, setValesPorEmpleado] = useState<Record<string, number>>({});
   const [inputVales, setInputVales] = useState<Record<string, string>>({});
+  const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<Record<string, string>>({});
+  const { metodos, loading: loadingMetodos, fetchMetodosPago } = useMetodosPago();
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:8002").replace('http://', 'https://');
 
   useEffect(() => {
@@ -146,6 +150,24 @@ const ReporteComisionesProduccion: React.FC = () => {
       return;
     }
     
+    const metodoPagoId = metodoPagoSeleccionado[identificador];
+    if (!metodoPagoId) {
+      alert("Por favor selecciona un método de pago");
+      return;
+    }
+    
+    // Verificar que el método de pago tenga saldo suficiente
+    const metodoPago = metodos.find(m => m.id === metodoPagoId);
+    if (!metodoPago) {
+      alert("Error: Método de pago no encontrado");
+      return;
+    }
+    
+    if (metodoPago.saldo < valor) {
+      alert(`Saldo insuficiente. Saldo disponible: ${metodoPago.moneda === "dolar" ? "$" : "Bs."}${metodoPago.saldo.toFixed(2)}`);
+      return;
+    }
+    
     const empleadoId = obtenerIdEmpleado(identificador);
     if (!empleadoId) {
       alert("Error: No se encontró el empleado");
@@ -153,6 +175,24 @@ const ReporteComisionesProduccion: React.FC = () => {
     }
     
     try {
+      // Primero, restar el saldo del método de pago usando el endpoint de transferencia
+      const metodoPagoRes = await fetch(`${apiUrl}/metodos-pago/${metodoPagoId}/transferir`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          monto: valor,
+          concepto: `Vale para empleado ${identificador} - ${valor}`,
+        }),
+      });
+      
+      if (!metodoPagoRes.ok) {
+        const errorData = await metodoPagoRes.json().catch(() => ({ detail: "Error al transferir saldo del método de pago" }));
+        throw new Error(errorData.detail || "Error al transferir saldo del método de pago");
+      }
+      
+      // Luego, agregar el vale al empleado
       const res = await fetch(`${apiUrl}/empleados/${empleadoId}/vales`, {
         method: "POST",
         headers: {
@@ -160,11 +200,24 @@ const ReporteComisionesProduccion: React.FC = () => {
         },
         body: JSON.stringify({
           monto: valor,
-          descripcion: "Vale agregado desde reporte de comisiones",
+          descripcion: `Vale agregado desde reporte de comisiones - Método de pago: ${metodoPago.nombre}`,
+          metodo_pago_id: metodoPagoId,
         }),
       });
       
       if (!res.ok) {
+        // Si falla agregar el vale, revertir el saldo del método de pago usando depósito
+        await fetch(`${apiUrl}/metodos-pago/${metodoPagoId}/deposito`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            monto: valor,
+            concepto: `Reversión de vale cancelado para empleado ${identificador}`,
+          }),
+        });
+        
         const errorData = await res.json().catch(() => ({ detail: "Error al agregar vale" }));
         throw new Error(errorData.detail || "Error al agregar vale");
       }
@@ -178,12 +231,22 @@ const ReporteComisionesProduccion: React.FC = () => {
         [identificador]: totalPendiente,
       }));
       
+      // Actualizar el saldo del método de pago en el estado local
+      fetchMetodosPago();
+      
+      // Limpiar inputs
       setInputVales((prev) => ({
         ...prev,
         [identificador]: "",
       }));
       
-      alert("Vale agregado exitosamente");
+      setMetodoPagoSeleccionado((prev) => {
+        const nuevo = { ...prev };
+        delete nuevo[identificador];
+        return nuevo;
+      });
+      
+      alert("Vale agregado exitosamente y saldo del método de pago actualizado");
     } catch (error: any) {
       console.error("Error agregando vale:", error);
       alert(error.message || "Error al agregar vale. Intenta nuevamente.");
@@ -632,36 +695,70 @@ const ReporteComisionesProduccion: React.FC = () => {
                                 ${(valesPorEmpleado[empleado.identificador] || 0).toFixed(2)}
                               </span>
                             </div>
-                            <div className="flex gap-2">
-                              <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="Monto"
-                                value={inputVales[empleado.identificador] || ""}
-                                onChange={(e) =>
-                                  setInputVales((prev) => ({
-                                    ...prev,
-                                    [empleado.identificador]: e.target.value,
-                                  }))
-                                }
-                                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
-                              />
-                              <Button
-                                type="button"
-                                onClick={() => handleAgregarVales(empleado.identificador)}
-                                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                              >
-                                Agregar Vales
-                              </Button>
-                              <Button
-                                type="button"
-                                onClick={() => handleAbonarVales(empleado.identificador)}
-                                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                                disabled={(valesPorEmpleado[empleado.identificador] || 0) <= 0}
-                              >
-                                Abonar Vales
-                              </Button>
+                            <div className="space-y-2">
+                              {/* Selector de Método de Pago */}
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                                  Método de Pago:
+                                </label>
+                                <Select
+                                  value={metodoPagoSeleccionado[empleado.identificador] || ""}
+                                  onValueChange={(value) =>
+                                    setMetodoPagoSeleccionado((prev) => ({
+                                      ...prev,
+                                      [empleado.identificador]: value,
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="w-full border border-gray-300 bg-white">
+                                    <SelectValue placeholder="Selecciona un método de pago" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {metodos.map((metodo) => (
+                                      <SelectItem key={metodo.id} value={metodo.id || ""}>
+                                        <div className="flex items-center justify-between w-full">
+                                          <span>{metodo.nombre} - {metodo.banco}</span>
+                                          <span className="ml-2 text-xs text-gray-500">
+                                            {metodo.moneda === "dolar" ? "$" : "Bs."}{metodo.saldo.toFixed(2)}
+                                          </span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex gap-2">
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="Monto"
+                                  value={inputVales[empleado.identificador] || ""}
+                                  onChange={(e) =>
+                                    setInputVales((prev) => ({
+                                      ...prev,
+                                      [empleado.identificador]: e.target.value,
+                                    }))
+                                  }
+                                  className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                                />
+                                <Button
+                                  type="button"
+                                  onClick={() => handleAgregarVales(empleado.identificador)}
+                                  className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                  disabled={!metodoPagoSeleccionado[empleado.identificador]}
+                                >
+                                  Agregar Vales
+                                </Button>
+                                <Button
+                                  type="button"
+                                  onClick={() => handleAbonarVales(empleado.identificador)}
+                                  className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                  disabled={(valesPorEmpleado[empleado.identificador] || 0) <= 0}
+                                >
+                                  Abonar Vales
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
