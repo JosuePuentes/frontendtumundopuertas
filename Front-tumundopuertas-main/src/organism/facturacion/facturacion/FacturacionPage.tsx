@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { getApiUrl } from "@/lib/api";
-import { CheckCircle2, DollarSign, Receipt, Printer, FileText } from "lucide-react";
+import { CheckCircle2, DollarSign, Receipt, Printer, FileText, RefreshCw } from "lucide-react";
 
 interface FacturaConfirmada {
   id: string;
@@ -33,47 +33,81 @@ const FacturacionPage: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      // Obtener todos los pedidos y filtrar los que están al 100%
-      const res = await fetch(`${getApiUrl()}/pedidos/all/`);
-      if (!res.ok) throw new Error("Error al obtener pedidos");
-      const pedidos = await res.json();
+      // Primero intentar buscar pedidos con estado_general = "orden4" (listos para facturación)
+      // Si no hay endpoint específico, obtener todos los pedidos
+      let pedidos: any[] = [];
       
-      // FILTRO: Solo pedidos de hoy en adelante
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0); // Inicio del día
+      try {
+        // Intentar obtener pedidos con estado_general = "orden4"
+        const resOrden4 = await fetch(`${getApiUrl()}/pedidos/estado/?estado_general=orden4`);
+        if (resOrden4.ok) {
+          pedidos = await resOrden4.json();
+          console.log(`✅ Pedidos con estado_general=orden4: ${pedidos.length}`);
+        }
+      } catch (e) {
+        console.warn('No se pudo obtener pedidos por estado, usando /all/');
+      }
       
-      const pedidosRecientes = pedidos.filter((pedido: any) => {
-        const fechaCreacion = new Date(pedido.fecha_creacion);
-        return fechaCreacion >= hoy;
-      });
+      // Si no hay pedidos con orden4, obtener todos los pedidos
+      if (pedidos.length === 0) {
+        const res = await fetch(`${getApiUrl()}/pedidos/all/`);
+        if (!res.ok) throw new Error("Error al obtener pedidos");
+        pedidos = await res.json();
+      }
       
-      console.log(`📅 Pedidos de hoy en adelante: ${pedidosRecientes.length} de ${pedidos.length}`);
-      
-      // OPTIMIZACIÓN: Ordenar pedidos por fecha (más recientes primero)
-      const pedidosOrdenados = [...pedidosRecientes].sort((a: any, b: any) => {
+      // Eliminar el filtro restrictivo de fecha - mostrar pedidos al 100% independientemente de la fecha
+      // Pero ordenar por fecha para mostrar los más recientes primero
+      const pedidosOrdenados = [...pedidos].sort((a: any, b: any) => {
         const fechaA = new Date(a.fecha_creacion || 0).getTime();
         const fechaB = new Date(b.fecha_creacion || 0).getTime();
         return fechaB - fechaA; // Más reciente primero
       });
       
-      // OPTIMIZACIÓN: Limitar cantidad de pedidos para evitar timeout
-      const pedidosLimitados = pedidosOrdenados.slice(0, 50); // Solo primeros 50 pedidos más recientes
+      // Aumentar el límite a 100 pedidos para asegurar que no se pierdan pedidos pendientes
+      const pedidosLimitados = pedidosOrdenados.slice(0, 100); // Primeros 100 pedidos más recientes
+      
+      console.log(`📅 Total pedidos para verificar: ${pedidosLimitados.length} de ${pedidos.length}`);
       
       // OPTIMIZACIÓN: Cargar todos los pedidos en paralelo con timeout
+      // Si un pedido ya tiene estado_general = "orden4", asumimos que está al 100%
       const pedidosConProgreso = await Promise.all(
         pedidosLimitados.map(async (pedido: any) => {
           try {
-            // Verificar progreso del pedido con timeout
-            const progresoRes = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`, {
-              signal: AbortSignal.timeout(5000) // 5 segundos timeout
-            });
-            if (!progresoRes.ok) return null;
+            // Si el pedido ya tiene estado_general = "orden4", asumimos que está listo
+            if (pedido.estado_general === "orden4") {
+              console.log(`✅ Pedido ${pedido._id.slice(-4)}: ya tiene estado_general=orden4, verificando progreso...`);
+            }
             
-            const progresoData = await progresoRes.json();
-            console.log(`📊 Pedido ${pedido._id.slice(-4)}: progreso=${progresoData.progreso_general}%`);
-            // Solo incluir pedidos al 100% - Backend ya calcula bien
-            if (progresoData.progreso_general !== 100) {
+            // Verificar progreso del pedido con timeout
+            let progresoData: any = null;
+            let progresoEs100 = false;
+            
+            try {
+              const progresoRes = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`, {
+                signal: AbortSignal.timeout(5000) // 5 segundos timeout
+              });
+              
+              if (progresoRes.ok) {
+                progresoData = await progresoRes.json();
+                progresoEs100 = progresoData.progreso_general === 100;
+                console.log(`📊 Pedido ${pedido._id.slice(-4)}: progreso=${progresoData.progreso_general}%`);
+              } else {
+                console.warn(`⚠️ No se pudo obtener progreso del pedido ${pedido._id.slice(-4)}`);
+              }
+            } catch (progresoErr: any) {
+              console.warn(`⚠️ Error al verificar progreso del pedido ${pedido._id.slice(-4)}:`, progresoErr.message);
+            }
+            
+            // Incluir el pedido si:
+            // 1. Tiene progreso al 100%, O
+            // 2. Tiene estado_general = "orden4" (listo para facturación)
+            if (!progresoEs100 && pedido.estado_general !== "orden4") {
               return null;
+            }
+            
+            // Si tiene estado_general = "orden4" pero no se pudo verificar progreso, incluirlo de todas formas
+            if (pedido.estado_general === "orden4" && !progresoData) {
+              console.log(`✅ Incluyendo pedido ${pedido._id.slice(-4)} con estado_general=orden4 aunque no se pudo verificar progreso`);
             }
             
             // Obtener información de pagos del pedido (NUEVO ENDPOINT) con timeout
@@ -112,9 +146,23 @@ const FacturacionPage: React.FC = () => {
               puedeFacturar: montoAbonado >= montoTotal
             };
           } catch (err: any) {
-            // Ignorar errores de timeout o red
+            // Si el pedido tiene estado_general = "orden4", incluirlo aunque haya errores
+            if (pedido.estado_general === "orden4") {
+              console.warn(`⚠️ Error al procesar pedido ${pedido._id.slice(-4)}, pero tiene estado_general=orden4, incluyéndolo con datos básicos:`, err.message);
+              // Retornar el pedido con datos básicos
+              let montoTotal = pedido.items?.reduce((acc: number, item: any) => acc + (item.precio || 0) * (item.cantidad || 0), 0) || 0;
+              return {
+                ...pedido,
+                montoTotal,
+                montoAbonado: pedido.total_abonado || 0,
+                fecha100Porciento: null,
+                historialPagos: pedido.historial_pagos || [],
+                puedeFacturar: (pedido.total_abonado || 0) >= montoTotal
+              };
+            }
+            // Para otros errores, ignorar silenciosamente solo si son timeout
             if (err.name !== 'AbortError' && err.name !== 'TimeoutError') {
-              // console.error(`Error al obtener progreso del pedido ${pedido._id}:`, err);
+              console.error(`❌ Error al obtener progreso del pedido ${pedido._id.slice(-4)}:`, err);
             }
             return null;
           }
@@ -441,10 +489,22 @@ const FacturacionPage: React.FC = () => {
       {/* Sección: Pendientes de Facturar */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="w-6 h-6" />
-            Pendientes de Facturar
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Receipt className="w-6 h-6" />
+              Pendientes de Facturar
+            </CardTitle>
+            <Button
+              onClick={() => fetchPedidosFacturacion()}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
         {loading ? (
