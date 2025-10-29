@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,8 @@ interface EmpleadoComision {
 
 const ReporteComisionesProduccion: React.FC = () => {
   const [data, setData] = useState<EmpleadoComision[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
+  const [loadingEmpleados, setLoadingEmpleados] = useState(true);
   const [fechaInicio, setFechaInicio] = useState<string>("");
   const [fechaFin, setFechaFin] = useState<string>("");
   const [buscando, setBuscando] = useState<boolean>(false);
@@ -43,9 +44,10 @@ const ReporteComisionesProduccion: React.FC = () => {
 
   useEffect(() => {
     const fetchEmpleados = async () => {
-      setLoading(true);
+      setLoadingEmpleados(true);
       try {
         const res = await fetch(`${apiUrl}/empleados/all/`);
+        if (!res.ok) throw new Error("Error al cargar empleados");
         const empleadosData = await res.json();
         empleadosData.forEach((empleado: any) => {
           if (
@@ -57,15 +59,21 @@ const ReporteComisionesProduccion: React.FC = () => {
           }
         });
         setEmpleados(empleadosData);
-      } catch (err) {}
-      setLoading(false);
+      } catch (err) {
+        console.error("Error cargando empleados:", err);
+      } finally {
+        setLoadingEmpleados(false);
+      }
     };
     fetchEmpleados();
   }, []);
 
-  const permisosUnicos: string[] = Array.from(
-    new Set(empleados.flatMap((empleado) => empleado.permisos || []))
-  );
+  const permisosUnicos = useMemo(() => {
+    return Array.from(
+      new Set(empleados.flatMap((empleado) => empleado.permisos || []))
+    );
+  }, [empleados]);
+  
   const [permisosSeleccionados, setPermisosSeleccionados] = useState<string[]>([]);
 
   const togglePermiso = (permiso: string) => {
@@ -88,80 +96,97 @@ const ReporteComisionesProduccion: React.FC = () => {
         })
       : "-";
 
-
-  if (loading) return <div className="text-center py-10">Cargando reporte...</div>;
-
   const handleBuscar = async () => {
+    if (!fechaInicio || !fechaFin) {
+      alert("Por favor selecciona fecha de inicio y fecha de fin");
+      return;
+    }
+    
     setBuscando(true);
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (fechaInicio) params.append("fecha_inicio", fechaInicio);
-    if (fechaFin) params.append("fecha_fin", fechaFin);
-    const res = await fetch(
-      `${apiUrl}/pedidos/comisiones/produccion/terminadas/?${params.toString()}`
-    );
-    const json = await res.json();
-    const jsonFormateado = json.map((empleado: EmpleadoComision) => ({
-      ...empleado,
-      empleado_id:
-        typeof empleado.empleado_id === "string" &&
-        (empleado.empleado_id.startsWith("v") ||
-          empleado.empleado_id.startsWith("V"))
-          ? empleado.empleado_id.slice(1)
-          : empleado.empleado_id,
-    }));
-    setData(jsonFormateado);
-    setLoading(false);
-    setBuscando(false);
+    setLoadingData(true);
+    try {
+      const params = new URLSearchParams();
+      params.append("fecha_inicio", fechaInicio);
+      params.append("fecha_fin", fechaFin);
+      
+      const res = await fetch(
+        `${apiUrl}/pedidos/comisiones/produccion/terminadas/?${params.toString()}`
+      );
+      
+      if (!res.ok) throw new Error("Error al obtener datos");
+      
+      const json = await res.json();
+      const jsonFormateado = json.map((empleado: EmpleadoComision) => ({
+        ...empleado,
+        empleado_id:
+          typeof empleado.empleado_id === "string" &&
+          (empleado.empleado_id.startsWith("v") ||
+            empleado.empleado_id.startsWith("V"))
+            ? empleado.empleado_id.slice(1)
+            : empleado.empleado_id,
+      }));
+      setData(jsonFormateado);
+    } catch (error) {
+      console.error("Error buscando comisiones:", error);
+      alert("Error al cargar las comisiones. Intenta nuevamente.");
+    } finally {
+      setLoadingData(false);
+      setBuscando(false);
+    }
   };
-// --- total general de precios (considerando cantidad y filtros) ---
-const empleadosFiltrados = empleados.filter((empleado) => {
-  if (
-    permisosSeleccionados.length > 0 &&
-    !(empleado.permisos || []).some((p:any) => permisosSeleccionados.includes(p))
-  ) {
-    return false;
-  }
-  const empleadoComision = data.find(
-    (e) => e.empleado_id === empleado.identificador
-  );
-  if (filtroAyudante === "sin-ayudante") {
-    return (
-      !empleado.permisos?.includes("ayudante") &&
-      empleadoComision &&
-      empleadoComision.asignaciones?.length > 0
-    );
-  }
-  if (filtroAyudante === "solo-ayudante") {
-    return (
-      empleado.permisos?.includes("ayudante") &&
-      empleadoComision &&
-      empleadoComision.asignaciones?.length > 0
-    );
-  }
-  return empleadoComision && empleadoComision.asignaciones?.length > 0;
-});
+  // Memoizar empleados filtrados para evitar recalcular en cada render
+  const empleadosFiltrados = useMemo(() => {
+    return empleados.filter((empleado) => {
+      if (
+        permisosSeleccionados.length > 0 &&
+        !(empleado.permisos || []).some((p:any) => permisosSeleccionados.includes(p))
+      ) {
+        return false;
+      }
+      const empleadoComision = data.find(
+        (e) => e.empleado_id === empleado.identificador
+      );
+      if (filtroAyudante === "sin-ayudante") {
+        return (
+          !empleado.permisos?.includes("ayudante") &&
+          empleadoComision &&
+          empleadoComision.asignaciones?.length > 0
+        );
+      }
+      if (filtroAyudante === "solo-ayudante") {
+        return (
+          empleado.permisos?.includes("ayudante") &&
+          empleadoComision &&
+          empleadoComision.asignaciones?.length > 0
+        );
+      }
+      return empleadoComision && empleadoComision.asignaciones?.length > 0;
+    });
+  }, [empleados, permisosSeleccionados, filtroAyudante, data]);
 
-const totalGeneral = empleadosFiltrados.reduce((acc, empleado) => {
-  const empleadoComision = data.find(
-    (e) => e.empleado_id === empleado.identificador
-  );
-  if (empleado.permisos?.includes("ayudante")) return acc;
-  const asignacionesFiltradas = empleadoComision?.asignaciones?.filter((asig) => {
-    if (!fechaInicio && !fechaFin) return true;
-    const fecha = asig.fecha_inicio_subestado || asig.fecha_inicio || "";
-    if (!fecha) return false;
-    const fechaObj = new Date(fecha);
-    if (fechaInicio && fechaObj < new Date(fechaInicio)) return false;
-    if (fechaFin && fechaObj > new Date(fechaFin + "T23:59:59")) return false;
-    return true;
-  }) || [];
-  const totalEmpleado = asignacionesFiltradas.reduce((acc2, asig) => {
-    const val = parseFloat(asig.costoproduccion) || 0;
-    return acc2 + val;
-  }, 0);
-  return acc + totalEmpleado;
-}, 0);
+  // Memoizar total general para evitar recalcular en cada render
+  const totalGeneral = useMemo(() => {
+    return empleadosFiltrados.reduce((acc, empleado) => {
+      const empleadoComision = data.find(
+        (e) => e.empleado_id === empleado.identificador
+      );
+      if (empleado.permisos?.includes("ayudante")) return acc;
+      const asignacionesFiltradas = empleadoComision?.asignaciones?.filter((asig) => {
+        if (!fechaInicio && !fechaFin) return true;
+        const fecha = asig.fecha_inicio_subestado || asig.fecha_inicio || "";
+        if (!fecha) return false;
+        const fechaObj = new Date(fecha);
+        if (fechaInicio && fechaObj < new Date(fechaInicio)) return false;
+        if (fechaFin && fechaObj > new Date(fechaFin + "T23:59:59")) return false;
+        return true;
+      }) || [];
+      const totalEmpleado = asignacionesFiltradas.reduce((acc2, asig) => {
+        const val = parseFloat(asig.costoproduccion) || 0;
+        return acc2 + val;
+      }, 0);
+      return acc + totalEmpleado;
+    }, 0);
+  }, [empleadosFiltrados, data, fechaInicio, fechaFin]);
 
 // Removido: totalGeneralPrecios ya no se usa
 // const totalGeneralPrecios = empleadosFiltrados.reduce((acc, empleado) => {
@@ -185,6 +210,26 @@ const totalGeneral = empleadosFiltrados.reduce((acc, empleado) => {
 //   }, 0);
 //   return acc + subtotal;
 // }, 0);
+
+  // Memoizar la lista de empleados para el render (con filtro de búsqueda)
+  const empleadosParaRender = useMemo(() => {
+    return empleadosFiltrados.filter((empleado) => {
+      if (!busquedaEmpleado) return true;
+      const nombre = (empleado.nombreCompleto || "").toLowerCase();
+      return nombre.includes(busquedaEmpleado.toLowerCase());
+    });
+  }, [empleadosFiltrados, busquedaEmpleado]);
+
+  if (loadingEmpleados) {
+    return (
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="text-center py-10">
+          <div className="text-lg text-gray-600">Cargando empleados...</div>
+          <div className="mt-4 inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8">
@@ -242,8 +287,19 @@ const totalGeneral = empleadosFiltrados.reduce((acc, empleado) => {
           </div>
 
           <div className="flex items-center gap-4">
-            <Button onClick={handleBuscar} disabled={loading || buscando}>
-              {buscando ? "Buscando..." : "Buscar"}
+            <Button 
+              onClick={handleBuscar} 
+              disabled={loadingData || buscando}
+              className="min-w-[120px]"
+            >
+              {buscando ? (
+                <span className="flex items-center gap-2">
+                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                  Buscando...
+                </span>
+              ) : (
+                "Buscar"
+              )}
             </Button>
             <input
               type="text"
@@ -279,46 +335,20 @@ const totalGeneral = empleadosFiltrados.reduce((acc, empleado) => {
       </Card>
 
       {/* LISTA DE EMPLEADOS */}
-      {empleados.length === 0 ? (
+      {loadingData && data.length === 0 ? (
         <div className="text-center text-gray-500 py-6">
-          No hay empleados para mostrar.
+          <div className="text-lg text-gray-600 mb-2">Cargando datos de comisiones...</div>
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      ) : empleadosParaRender.length === 0 ? (
+        <div className="text-center text-gray-500 py-6">
+          {data.length === 0 
+            ? "No hay datos para mostrar. Selecciona un rango de fechas y haz clic en 'Buscar'."
+            : "No hay empleados que coincidan con los filtros seleccionados."}
         </div>
       ) : (
         <ul className="space-y-6">
-          {empleados
-            .filter((empleado) => {
-              if (
-                permisosSeleccionados.length > 0 &&
-                !(empleado.permisos || []).some((p: string) =>
-                  permisosSeleccionados.includes(p)
-                )
-              ) {
-                return false;
-              }
-              const empleadoComision = data.find(
-                (e) => e.empleado_id === empleado.identificador
-              );
-              const nombre = (empleado.nombreCompleto || "").toLowerCase();
-              if (
-                busquedaEmpleado &&
-                !nombre.includes(busquedaEmpleado.toLowerCase())
-              )
-                return false;
-              if (filtroAyudante === "sin-ayudante") {
-                return (
-                  !empleado.permisos?.includes("ayudante") &&
-                  (empleadoComision?.asignaciones?.length ?? 0) > 0
-                );
-              }
-              if (filtroAyudante === "solo-ayudante") {
-                return (
-                  empleado.permisos?.includes("ayudante") &&
-                  (empleadoComision?.asignaciones?.length ?? 0) > 0
-                );
-              }
-              return empleadoComision?.asignaciones && empleadoComision.asignaciones.length > 0;
-            })
-            .map((empleado) => {
+          {empleadosParaRender.map((empleado) => {
               const empleadoComision = data.find(
                 (e) => e.empleado_id === empleado.identificador
               );
