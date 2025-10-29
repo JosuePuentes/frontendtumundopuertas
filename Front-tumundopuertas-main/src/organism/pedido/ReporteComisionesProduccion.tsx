@@ -45,7 +45,7 @@ const ReporteComisionesProduccion: React.FC = () => {
   const [valesPorEmpleado, setValesPorEmpleado] = useState<Record<string, number>>({});
   const [inputVales, setInputVales] = useState<Record<string, string>>({});
   const [metodoPagoSeleccionado, setMetodoPagoSeleccionado] = useState<Record<string, string>>({});
-  const { metodos, loading: loadingMetodos, fetchMetodosPago } = useMetodosPago();
+  const { metodos, fetchMetodosPago } = useMetodosPago();
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:8002").replace('http://', 'https://');
 
   useEffect(() => {
