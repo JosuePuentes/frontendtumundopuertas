@@ -274,9 +274,20 @@ const ReporteComisionesProduccion: React.FC = () => {
         <h2 className="text-3xl font-extrabold tracking-tight text-slate-800">
           Reporte de Comisiones de Producción
         </h2>
-        <span className="px-4 py-2 rounded-xl bg-green-100 text-green-800 text-lg font-bold shadow-sm">
-          Total General: ${totalGeneral.toFixed(2)}
-        </span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="px-4 py-2 rounded-xl bg-green-100 text-green-800 text-lg font-bold shadow-sm">
+            Total General: ${totalGeneral.toFixed(2)}
+          </span>
+          {(fechaInicio || fechaFin) && (
+            <span className="text-xs text-gray-500 italic">
+              {fechaInicio && fechaFin 
+                ? `Filtrado: ${fechaInicio} a ${fechaFin}`
+                : fechaInicio 
+                ? `Desde: ${fechaInicio}`
+                : `Hasta: ${fechaFin}`}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* FILTROS */}
@@ -388,19 +399,30 @@ const ReporteComisionesProduccion: React.FC = () => {
               const empleadoComision = data.find(
                 (e) => e.empleado_id === empleado.identificador
               );
+              
+              // Filtrar asignaciones por fecha (si hay fechas seleccionadas)
               const asignacionesFiltradas =
                 empleadoComision?.asignaciones?.filter((asig) => {
+                  // Si no hay filtros de fecha, mostrar todas las asignaciones
                   if (!fechaInicio && !fechaFin) return true;
+                  
+                  // Obtener la fecha de la asignación
                   const fecha =
                     asig.fecha_inicio_subestado || asig.fecha_inicio || "";
                   if (!fecha) return false;
+                  
                   const fechaObj = new Date(fecha);
-                  if (fechaInicio && fechaObj < new Date(fechaInicio))
-                    return false;
-                  if (fechaFin && fechaObj > new Date(fechaFin + "T23:59:59"))
-                    return false;
+                  const fechaInicioObj = fechaInicio ? new Date(fechaInicio) : null;
+                  const fechaFinObj = fechaFin ? new Date(fechaFin + "T23:59:59") : null;
+                  
+                  // Validar que la fecha esté en el rango
+                  if (fechaInicioObj && fechaObj < fechaInicioObj) return false;
+                  if (fechaFinObj && fechaObj > fechaFinObj) return false;
+                  
                   return true;
                 }) || [];
+              
+              // Calcular Total Generado SOLO con las asignaciones filtradas por fecha
               const total = empleado.permisos?.includes("ayudante")
                 ? 0
                 : asignacionesFiltradas.reduce((acc, asig) => {
@@ -431,8 +453,15 @@ const ReporteComisionesProduccion: React.FC = () => {
                           </div>
                           {/* Total Generado del empleado */}
                           <div className="mt-3">
-                            <span className="text-sm font-semibold text-gray-600">Total Generado: </span>
-                            <span className="text-lg font-bold text-green-700">${total.toFixed(2)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-gray-600">Total Generado: </span>
+                              <span className="text-lg font-bold text-green-700">${total.toFixed(2)}</span>
+                              {(fechaInicio || fechaFin) && (
+                                <span className="text-xs text-gray-500 italic">
+                                  {asignacionesFiltradas.length} asignación{asignacionesFiltradas.length !== 1 ? 'es' : ''} en rango
+                                </span>
+                              )}
+                            </div>
                           </div>
                           {/* Sección de Vales */}
                           <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
