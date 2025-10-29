@@ -469,6 +469,20 @@ const CrearPedido: React.FC = () => {
       todos_items_disponibles: todosTienenExistencia
     });
 
+    // Debug: Log del JSON serializado para ver exactamente qué se envía
+    const payloadSerializado = JSON.stringify(pedidoPayload, null, 2);
+    console.log("DEBUG CREAR PEDIDO: Payload serializado (JSON) -", payloadSerializado);
+    console.log("DEBUG CREAR PEDIDO: Items con estado_item = 4 (deben restarse del inventario):", 
+      itemsPedido.filter(i => i.estado_item === 4).map(i => ({
+        nombre: i.nombre,
+        codigo: i.codigo,
+        _id: i._id,
+        id: i.id,
+        cantidad: i.cantidad,
+        estado_item: i.estado_item
+      }))
+    );
+
     try {
       const resultado = await fetchPedido(`/pedidos/`, {
         method: "POST",
@@ -486,6 +500,8 @@ const CrearPedido: React.FC = () => {
         setPagos([]);
         setItemsFaltantes([]);
         setItemsAjustados([]);
+        // Refrescar la lista de items para mostrar las existencias actualizadas
+        fetchItems(`${apiUrl}/inventario/all`);
       } else {
         setMensaje(resultado?.error || "Ocurrió un error al crear el pedido.");
         setMensajeTipo("error");
@@ -692,9 +708,11 @@ const CrearPedido: React.FC = () => {
 
             <div className="space-y-4">
               {selectedItems.map((item, idx) => {
-                const filtered: any[] = (itemsData as any[])?.filter((it) =>
-                  it.nombre.toLowerCase().includes(item.search.toLowerCase())
-                );
+                const filtered: any[] = Array.isArray(itemsData) 
+                  ? (itemsData as any[]).filter((it) =>
+                      it?.nombre?.toLowerCase().includes(item.search?.toLowerCase() || '')
+                    )
+                  : [];
 
                 // Buscar el itemData para mostrar imágenes
                 const itemData = Array.isArray(itemsData)
