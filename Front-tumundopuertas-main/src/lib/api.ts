@@ -1,20 +1,8 @@
 
 export const getApiUrl = () => {
-  // En producción en Vercel, usar /api que es reescrito automáticamente
-  const isDev = import.meta.env.DEV;
-  const isProduction = import.meta.env.PROD;
-  
-  // En producción en Vercel, usar ruta relativa /api
-  if (isProduction) {
-    return ''; // Retorna cadena vacía para usar rutas relativas
-  }
-  
-  // En desarrollo, usar la variable de entorno
-  const apiUrlFromEnv = import.meta.env.VITE_API_URL || 'https://crafteo.onrender.com';
-  if (apiUrlFromEnv.includes('onrender.com')) {
-    return apiUrlFromEnv.replace('http://', 'https://');
-  }
-  return apiUrlFromEnv;
+  // Usar la variable de entorno o la URL por defecto
+  const apiUrl = import.meta.env.VITE_API_URL || 'https://crafteo.onrender.com';
+  return apiUrl;
 };
 
 const getToken = () => {
