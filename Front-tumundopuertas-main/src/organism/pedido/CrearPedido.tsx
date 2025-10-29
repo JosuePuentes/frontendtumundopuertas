@@ -342,16 +342,9 @@ const CrearPedido: React.FC = () => {
         };
       }),
       seguimiento,
-      pago: abono > 0 ? "abonado" : "sin pago",
-      historial_pagos: abono > 0 ? [
-        {
-          fecha: fechaISO,
-          monto: abono,
-          estado: "abonado",
-          metodo: selectedMetodoPago,
-        },
-      ] : [],
-      total_abonado: abono,
+      pago: pagos.length > 0 ? "abonado" : "sin pago",
+      historial_pagos: pagos.length > 0 ? pagos : [],
+      total_abonado: pagos.reduce((acc, p) => acc + p.monto, 0),
     };
 
     try {
@@ -367,7 +360,8 @@ const CrearPedido: React.FC = () => {
         setClienteSearch("");
         setSelectedItems([]);
         setFecha(new Date().toISOString().slice(0, 10));
-        setAbono(0); // Reset abono
+        setAbono(0);
+        setPagos([]);
       } else {
         setMensaje(resultado?.error || "Ocurrió un error al crear el pedido.");
         setMensajeTipo("error");
@@ -381,21 +375,22 @@ const CrearPedido: React.FC = () => {
   };
 
   return (
-    <Card className="w-full max-w-5xl mx-auto shadow-xl border border-gray-100 rounded-2xl overflow-hidden">
-      {/* Header */}
-      <CardHeader className="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-blue-100 border-b">
-        <FaClipboardList className="text-blue-600 text-2xl" />
-        <CardTitle className="text-2xl font-bold text-gray-800">
-          Crear Pedido
-        </CardTitle>
-      </CardHeader>
+    <div className="w-full max-w-7xl mx-auto p-4">
+      <Card className="shadow-xl border border-gray-100 rounded-2xl overflow-hidden">
+        {/* Header */}
+        <CardHeader className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+          <FaClipboardList className="text-2xl" />
+          <CardTitle className="text-2xl font-bold">
+            Sistema de Ventas
+          </CardTitle>
+        </CardHeader>
 
-      <Separator />
-
-      <CardContent className="p-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Cliente + Fecha */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Layout de dos columnas tipo punto de venta */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Columna izquierda - Info del cliente e items */}
+            <div className="lg:col-span-2 space-y-6">
             {/* Cliente */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700">
@@ -584,19 +579,24 @@ const CrearPedido: React.FC = () => {
                                     ev.preventDefault();
                                     handleSelectSuggestion(idx, f);
                                   }}
-                                  className="px-3 py-2 hover:bg-blue-50 cursor-pointer transition-colors"
+                                  className="px-3 py-3 hover:bg-blue-50 cursor-pointer transition-colors border-b border-gray-100"
                                 >
                                   <div className="flex flex-col">
                                     <span className="font-semibold text-gray-800 text-base">{f.nombre}</span>
                                     <span className="text-sm text-gray-600">{f.descripcion}</span>
                                   </div>
-                                  <div className="flex justify-between items-center mt-1">
-                                    <span className="text-xs text-gray-500">Código: {f.codigo}</span>
-                                    <span className="text-xs text-gray-500">Modelo: {f.modelo}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center mt-1">
-                                    <span className="text-sm font-medium text-blue-600">Precio: ${f.precio}</span>
-                                    <span className="text-sm text-gray-700">Cantidad: {f.cantidad}</span>
+                                  <div className="flex justify-between items-center mt-2">
+                                    <div className="flex flex-col gap-1">
+                                      <span className="text-xs text-gray-500">Código: {f.codigo}</span>
+                                      {f.modelo && <span className="text-xs text-gray-500">Modelo: {f.modelo}</span>}
+                                      {f.categoria && <span className="text-xs text-gray-500">Categoría: {f.categoria}</span>}
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1">
+                                      <span className={`text-sm font-bold ${f.cantidad > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        Existencias: {f.cantidad || 0}
+                                      </span>
+                                      <span className="text-sm font-medium text-blue-600">Precio: ${f.precio}</span>
+                                    </div>
                                   </div>
                                 </div>
                               ))
@@ -700,69 +700,62 @@ const CrearPedido: React.FC = () => {
               })}
 
               {selectedItems.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-6">
+                <p className="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-lg">
                   No hay items seleccionados.
                 </p>
               )}
             </div>
 
-            {/* Totales y Abono */}
-            {selectedItems.length > 0 && (
-              <div className="mt-6 flex flex-col md:flex-row justify-end items-end md:items-center gap-4">
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 rounded-xl shadow-md">
-                  <p className="text-gray-700 font-medium">
-                    Total items:{" "}
-                    <span className="font-bold text-gray-900">
-                      {totalItems}
-                    </span>
-                  </p>
-                  <p className="text-gray-700 font-medium">
-                    Total:{" "}
-                    <span className="text-xl font-bold text-blue-700">
-                      $
-                      {totalMonto.toLocaleString("es-AR", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </p>
-                </Card>
+            </div> {/* Cierre de columna izquierda */}
 
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="montoAbonar" className="text-sm font-semibold text-gray-700">Abonar:</Label>
-                  <Input
-                    id="montoAbonar"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={abono}
-                    onChange={(e) => setAbono(Number(e.target.value))}
-                    placeholder="0.00"
-                    className="w-32 focus:ring-2 focus:ring-blue-400"
-                    disabled={!selectedMetodoPago}
-                  />
-                  <Select onValueChange={(value) => {
-                    console.log("Método seleccionado:", value);
-                    console.log("Estado anterior selectedMetodoPago:", selectedMetodoPago);
-                    setSelectedMetodoPago(value);
-                    console.log("Nuevo estado después de setSelectedMetodoPago:", value);
-                  }} value={selectedMetodoPago || ""}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Método de pago" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border-2 border-gray-200 shadow-lg max-h-60">
-                      {(() => {
-                        console.log("Renderizando SelectContent, metodosPago:", metodosPago);
-                        console.log("Primer método estructura:", metodosPago[0]);
-                        return metodosPago.length === 0 ? (
+            {/* Columna derecha - Resumen del pedido */}
+            <div className="lg:col-span-1 space-y-6">
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg sticky top-4">
+                <CardHeader>
+                  <CardTitle className="text-lg font-bold text-gray-800">Resumen del Pedido</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {selectedItems.length > 0 && (
+                    <>
+                    {/* Totales */}
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                      <p className="text-gray-600 text-sm font-medium mb-2">Total de Artículos</p>
+                      <p className="text-3xl font-bold text-gray-900">
+                        {totalItems}
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                      <p className="text-gray-600 text-sm font-medium mb-2">Total a Pagar</p>
+                      <p className="text-3xl font-bold text-blue-700">
+                        ${totalMonto.toLocaleString("es-AR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                    </div>
+                    </>
+                  )}
+
+                  {/* Método de pago */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Método de Pago
+                    </Label>
+                    <Select onValueChange={(value) => {
+                      console.log("Método seleccionado:", value);
+                      setSelectedMetodoPago(value);
+                    }} value={selectedMetodoPago || ""}>
+                      <SelectTrigger className="w-full bg-white">
+                        <SelectValue placeholder="Seleccionar método" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white border-2 border-gray-200 shadow-lg max-h-60">
+                        {metodosPago.length === 0 ? (
                           <SelectItem value="no-methods" disabled className="text-gray-500 bg-gray-50">
                             No hay métodos de pago disponibles
                           </SelectItem>
                         ) : (
                           metodosPago.map((metodo: any, index: number) => {
-                            console.log("Mapeando método:", metodo);
                             const metodoId = metodo._id || metodo.id || metodo.nombre || `metodo-${index}`;
-                            console.log("ID del método:", metodoId);
                             return (
                               <SelectItem 
                                 key={metodoId} 
@@ -773,66 +766,142 @@ const CrearPedido: React.FC = () => {
                               </SelectItem>
                             );
                           })
-                        );
-                      })()}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      console.log("Botón Total clickeado");
-                      console.log("totalMonto:", totalMonto);
-                      console.log("selectedMetodoPago:", selectedMetodoPago);
-                      setAbono(totalMonto);
-                    }}
-                    disabled={totalMonto === 0 || !selectedMetodoPago}
-                  >
-                    <FaMoneyBillWave className="mr-2" /> Total
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-          {/* Estado */}
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">
-              Estado: <Badge variant="secondary">Pendiente</Badge>
-            </p>
-          </div>
+                  {/* Abono */}
+                  <div className="space-y-3">
+                    <Label htmlFor="montoAbonar" className="text-sm font-semibold text-gray-700">
+                      Monto a Abonar
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="montoAbonar"
+                        type="number"
+                        min={0}
+                        step="0.01"
+                        value={abono}
+                        onChange={(e) => setAbono(Number(e.target.value))}
+                        placeholder="0.00"
+                        className="w-full focus:ring-2 focus:ring-blue-400"
+                        disabled={!selectedMetodoPago}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setAbono(totalMonto);
+                        }}
+                        disabled={totalMonto === 0 || !selectedMetodoPago}
+                        className="whitespace-nowrap"
+                      >
+                        Total
+                      </Button>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddPago}
+                      disabled={abono <= 0 || !selectedMetodoPago}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <FaMoneyBillWave className="mr-2" />
+                      Agregar Pago
+                    </Button>
+                  </div>
 
-          {/* Submit */}
-          <Button
-            type="submit"
-            className="w-full mt-4 text-lg font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition"
-            disabled={itemsLoading || clientesLoading || enviando}
-          >
-            {enviando
-              ? "Enviando..."
-              : itemsLoading || clientesLoading
-              ? "Procesando..."
-              : "Crear Pedido"}
-          </Button>
+                  {pagos.length > 0 && (
+                    <div className="space-y-2 mt-4">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Pagos Registrados
+                      </Label>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {pagos.map((pago, idx) => (
+                          <div key={idx} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                            <p className="text-xs text-gray-600">${pago.monto.toFixed(2)}</p>
+                            <p className="text-xs text-gray-500">{metodosPago.find(m => (m._id || m.id) === pago.metodo)?.nombre}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lista de items agregados */}
+                  {selectedItems.filter(item => item.confirmed).length > 0 && (
+                    <div className="space-y-2 mt-4">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Items Agregados
+                      </Label>
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {selectedItems.filter(item => item.confirmed).map((item, idx) => {
+                          const itemData = Array.isArray(itemsData)
+                            ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
+                            : undefined;
+                          return (
+                            <div key={idx} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <p className="text-sm font-semibold text-gray-800">{itemData?.nombre || item.search}</p>
+                                  <p className="text-xs text-gray-600">Cód: {itemData?.codigo}</p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-bold text-blue-700">${((item.precio || 0) * item.cantidad).toFixed(2)}</p>
+                                  <p className="text-xs text-gray-500">x{item.cantidad}</p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Estado y Submit */}
+                  <div className="space-y-3 pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-600">Estado:</p>
+                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">Pendiente</Badge>
+                    </div>
+                    <Button
+                      type="submit"
+                      className="w-full mt-4 text-base font-bold py-3 rounded-xl shadow-md hover:shadow-lg transition bg-blue-600 hover:bg-blue-700"
+                      disabled={itemsLoading || clientesLoading || enviando || !clienteId || selectedItems.filter(i => i.confirmed).length === 0}
+                    >
+                      {enviando
+                        ? "Enviando..."
+                        : itemsLoading || clientesLoading
+                        ? "Procesando..."
+                        : "Crear Pedido"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div> {/* Cierre de columna derecha */}
+          </div> {/* Cierre del grid principal */}
+          
         </form>
-
-        {/* Alertas */}
-        {mensaje && (
-          <div className="mt-8">
-            <Alert
-              variant={mensajeTipo === "error" ? "destructive" : "default"}
-              className="rounded-xl"
-            >
-              <AlertTitle>
-                {mensajeTipo === "error" ? "Error" : "Éxito"}
-              </AlertTitle>
-              <AlertDescription>{mensaje}</AlertDescription>
-            </Alert>
-          </div>
-        )}
       </CardContent>
-    </Card>
+      </Card>
+
+      {/* Alertas */}
+      {mensaje && (
+        <div className="mt-6">
+          <Alert
+            variant={mensajeTipo === "error" ? "destructive" : "default"}
+            className="rounded-xl"
+          >
+            <AlertTitle>
+              {mensajeTipo === "error" ? "Error" : "Éxito"}
+            </AlertTitle>
+            <AlertDescription>{mensaje}</AlertDescription>
+          </Alert>
+        </div>
+      )}
+    </div>
   );
 };
 
