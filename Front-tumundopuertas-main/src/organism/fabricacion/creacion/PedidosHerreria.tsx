@@ -807,8 +807,13 @@ const PedidosHerreria: React.FC = () => {
                     <div className="space-y-4">
                       {/* Header del item */}
                       <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{item.nombre}</h3>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">{item.nombre}</h3>
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-blue-600 text-white">
+                              Cantidad: {item.cantidad}
+                            </span>
+                          </div>
                           <p className="text-sm text-gray-600">Pedido: {item.pedido_id.slice(-6)}</p>
                           <p className="text-sm text-gray-600">Cliente: {item.cliente_nombre || 'Sin cliente'}</p>
                           <p className="text-sm text-gray-600">
@@ -822,7 +827,6 @@ const PedidosHerreria: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-medium text-gray-900">Costo: ${item.costoProduccion?.toFixed(2) || '0.00'}</p>
-                          <p className="text-sm text-gray-600">Cantidad: {item.cantidad}</p>
                         </div>
                       </div>
                       
