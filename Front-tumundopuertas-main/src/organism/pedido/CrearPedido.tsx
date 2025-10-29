@@ -21,6 +21,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { usePedido } from "@/hooks/usePedido";
 import { useClientes } from "@/hooks/useClientes";
 import { useItems } from "@/hooks/useItems";
@@ -40,6 +48,8 @@ interface PedidoItem {
   cantidad: number;
   activo: boolean;
   detalleitem?: string;
+  estado_item?: number; // 0 = pendiente, 4 = terminado
+  imagenes?: string[]; // Imágenes del item
 }
 
 interface PedidoSeguimiento {
@@ -97,6 +107,9 @@ const CrearPedido: React.FC = () => {
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
   const [abono, setAbono] = useState<number>(0);
   const [pagos, setPagos] = useState<RegistroPago[]>([]);
+  const [modalFaltaExistenciaOpen, setModalFaltaExistenciaOpen] = useState(false);
+  const [itemsFaltantes, setItemsFaltantes] = useState<Array<{nombre: string, codigo: string, cantidadSolicitada: number, cantidadDisponible: number, cantidadFaltante: number}>>([]);
+  const [itemsAjustados, setItemsAjustados] = useState<SelectedItem[]>([]);
 
   const { fetchPedido } = usePedido();
   const {
@@ -281,23 +294,51 @@ const CrearPedido: React.FC = () => {
   };
 
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMensaje("");
-    setMensajeTipo("");
+  // Función para validar y ajustar existencias
+  const validarExistencias = () => {
+    const faltantes: Array<{nombre: string, codigo: string, cantidadSolicitada: number, cantidadDisponible: number, cantidadFaltante: number}> = [];
+    const itemsAjustadosTemp: SelectedItem[] = [];
+    let todosTienenExistencia = true;
 
-    if (!clienteId || selectedItems.length === 0) {
-      setMensaje("Seleccione un cliente y al menos un item.");
-      setMensajeTipo("error");
-      return;
-    }
+    selectedItems.forEach((item) => {
+      const itemData = Array.isArray(itemsData)
+        ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
+        : undefined;
+      
+      if (!itemData) return;
 
-    if (selectedItems.some((item) => !item.confirmed)) {
-      setMensaje("Hay artículos pendientes por seleccionar.");
-      setMensajeTipo("error");
-      return;
-    }
+      const cantidadSolicitada = item.cantidad || 0;
+      const cantidadDisponible = itemData.cantidad || 0;
 
+      if (cantidadSolicitada > cantidadDisponible) {
+        todosTienenExistencia = false;
+        const cantidadFaltante = cantidadSolicitada - cantidadDisponible;
+        faltantes.push({
+          nombre: itemData.nombre || itemData.descripcion || 'Sin nombre',
+          codigo: itemData.codigo || '',
+          cantidadSolicitada,
+          cantidadDisponible,
+          cantidadFaltante,
+        });
+        // Ajustar la cantidad al disponible
+        itemsAjustadosTemp.push({
+          ...item,
+          cantidad: cantidadDisponible,
+        });
+      } else {
+        itemsAjustadosTemp.push(item);
+      }
+    });
+
+    return { faltantes, itemsAjustados: itemsAjustadosTemp, todosTienenExistencia };
+  };
+
+  const handleConfirmarConFaltaExistencia = async () => {
+    setModalFaltaExistenciaOpen(false);
+    await crearPedido(itemsAjustados, false); // false = no todos tienen existencia completa
+  };
+
+  const crearPedido = async (itemsParaUsar: SelectedItem[], todosTienenExistencia: boolean) => {
     setEnviando(true);
 
     const now = new Date();
@@ -313,48 +354,85 @@ const CrearPedido: React.FC = () => {
       "sin definir 2",
     ];
 
+    // Si todos tienen existencia, marcar todos los estados como completados
     const seguimiento: PedidoSeguimiento[] = subestados.map((nombre, idx) => ({
       orden: idx + 1,
       nombre_subestado: nombre,
-      estado: "pendiente",
+      estado: todosTienenExistencia ? "completado" : "pendiente",
       asignado_a: null,
-      fecha_inicio: null,
-      fecha_fin: null,
+      fecha_inicio: todosTienenExistencia ? fechaISO : null,
+      fecha_fin: todosTienenExistencia ? fechaISO : null,
     }));
 
     const clienteObj = Array.isArray(clientesData)
       ? clientesData.find((c: any) => String(c.rif) === String(clienteId))
       : null;
 
-    const pedidoPayload: PedidoPayload = {
+    // Construir lista de items para el pedido
+    const itemsPedido: PedidoItem[] = [];
+
+    // Agregar los items al pedido
+    itemsParaUsar.forEach((item) => {
+      const itemData = Array.isArray(itemsData)
+        ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
+        : undefined;
+      
+      if (!itemData) return;
+
+      // Item con la cantidad disponible (esta se resta del inventario)
+      // Si tiene cantidad disponible, estado_item = 4 (ya está listo, se resta del inventario)
+      if (item.cantidad > 0) {
+        itemsPedido.push({
+          id: itemData._id ?? String(item.itemId),
+          codigo: itemData.codigo ?? String(item.itemId),
+          nombre: itemData.nombre ?? "",
+          descripcion: itemData.descripcion ?? "",
+          categoria: itemData.categoria ?? "",
+          precio: item.precio ?? itemData.precio ?? 0,
+          costo: itemData.costo ?? 0,
+          costoProduccion: itemData.costoProduccion ?? 0,
+          cantidad: item.cantidad, // Cantidad disponible que se resta del inventario
+          activo: itemData.activo ?? true,
+          detalleitem: item.detalleitem || "",
+          imagenes: itemData.imagenes ?? [],
+          estado_item: todosTienenExistencia ? 4 : 4, // Siempre 4 porque esta parte está disponible en inventario
+        });
+      }
+
+      // Si hay cantidad faltante, agregar un item adicional con la cantidad faltante para producción
+      const itemOriginal = selectedItems.find((it) => it.itemId === item.itemId);
+      if (itemOriginal && itemOriginal.cantidad > item.cantidad) {
+        const cantidadFaltante = itemOriginal.cantidad - item.cantidad;
+        itemsPedido.push({
+          id: itemData._id ?? String(item.itemId),
+          codigo: itemData.codigo ?? String(item.itemId),
+          nombre: itemData.nombre ?? "",
+          descripcion: itemData.descripcion ?? "",
+          categoria: itemData.categoria ?? "",
+          precio: item.precio ?? itemData.precio ?? 0,
+          costo: itemData.costo ?? 0,
+          costoProduccion: itemData.costoProduccion ?? 0,
+          cantidad: cantidadFaltante, // Cantidad faltante que va a producción
+          activo: itemData.activo ?? true,
+          detalleitem: item.detalleitem || "",
+          imagenes: itemData.imagenes ?? [],
+          estado_item: 0, // Siempre 0 (pendiente) para items que van a producción (pedidosherreria)
+        });
+      }
+    });
+
+    const pedidoPayload: PedidoPayload & { todos_items_disponibles?: boolean } = {
       cliente_id: String(clienteId),
       cliente_nombre: clienteObj?.nombre || "",
       fecha_creacion: fechaISO,
       fecha_actualizacion: fechaISO,
-      estado_general: "pendiente",
-      items: selectedItems.map((item) => {
-        const itemData = Array.isArray(itemsData)
-          ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
-          : undefined;
-        return {
-          id: itemData?._id ?? String(item.itemId),
-          codigo: itemData?.codigo ?? String(item.itemId),
-          nombre: itemData?.nombre ?? "",
-          descripcion: itemData?.descripcion ?? "",
-          categoria: itemData?.categoria ?? "",
-          precio: item.precio ?? itemData?.precio ?? 0,
-          costo: itemData?.costo ?? 0,
-          costoProduccion: itemData?.costoProduccion ?? 0,
-          cantidad: item.cantidad,
-          activo: itemData?.activo ?? true,
-          detalleitem: item.detalleitem || "",
-          imagenes: itemData?.imagenes ?? [],
-        };
-      }),
+      estado_general: todosTienenExistencia ? "orden4" : "pendiente", // orden4 = listo para facturación
+      items: itemsPedido,
       seguimiento,
       pago: pagos.length > 0 ? "abonado" : "sin pago",
       historial_pagos: pagos.length > 0 ? pagos : [],
       total_abonado: pagos.reduce((acc, p) => acc + p.monto, 0),
+      todos_items_disponibles: todosTienenExistencia, // Flag para el backend
     };
 
     try {
@@ -372,6 +450,8 @@ const CrearPedido: React.FC = () => {
         setFecha(new Date().toISOString().slice(0, 10));
         setAbono(0);
         setPagos([]);
+        setItemsFaltantes([]);
+        setItemsAjustados([]);
       } else {
         setMensaje(resultado?.error || "Ocurrió un error al crear el pedido.");
         setMensajeTipo("error");
@@ -382,6 +462,38 @@ const CrearPedido: React.FC = () => {
     } finally {
       setEnviando(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMensaje("");
+    setMensajeTipo("");
+
+    if (!clienteId || selectedItems.length === 0) {
+      setMensaje("Seleccione un cliente y al menos un item.");
+      setMensajeTipo("error");
+      return;
+    }
+
+    if (selectedItems.some((item) => !item.confirmed)) {
+      setMensaje("Hay artículos pendientes por seleccionar.");
+      setMensajeTipo("error");
+      return;
+    }
+
+    // Validar existencias
+    const validacion = validarExistencias();
+
+    // Si hay items faltantes, mostrar modal
+    if (validacion.faltantes.length > 0) {
+      setItemsFaltantes(validacion.faltantes);
+      setItemsAjustados(validacion.itemsAjustados);
+      setModalFaltaExistenciaOpen(true);
+      return;
+    }
+
+    // Si todos tienen existencia, crear pedido directamente al 100%
+    await crearPedido(selectedItems, validacion.todosTienenExistencia);
   };
 
   return (
@@ -976,6 +1088,87 @@ const CrearPedido: React.FC = () => {
           </Alert>
         </div>
       )}
+
+      {/* Modal de Falta de Existencia */}
+      <Dialog open={modalFaltaExistenciaOpen} onOpenChange={setModalFaltaExistenciaOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-orange-600">
+              ⚠️ Items sin Existencia Suficiente
+            </DialogTitle>
+            <DialogDescription>
+              Los siguientes items no tienen suficiente existencia disponible. El pedido se creará con las cantidades disponibles y los items faltantes irán a producción.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4">
+              <p className="font-semibold text-yellow-800 mb-3">
+                {itemsFaltantes.length} item{itemsFaltantes.length !== 1 ? 's' : ''} {itemsFaltantes.length === 1 ? 'irá' : 'irán'} a producción por no disponer existencia suficiente:
+              </p>
+              
+              <div className="space-y-3">
+                {itemsFaltantes.map((item, index) => (
+                  <div key={index} className="bg-white border border-yellow-300 rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <p className="font-bold text-lg text-gray-800">{item.nombre}</p>
+                        <p className="text-sm text-gray-600">Código: {item.codigo}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4 mt-3 text-sm">
+                      <div>
+                        <span className="font-semibold text-gray-700">Solicitado:</span>
+                        <p className="text-lg font-bold text-blue-600">{item.cantidadSolicitada}</p>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-700">Disponible:</span>
+                        <p className="text-lg font-bold text-green-600">{item.cantidadDisponible}</p>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-gray-700">Faltante:</span>
+                        <p className="text-lg font-bold text-red-600">{item.cantidadFaltante}</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-gray-200">
+                      <p className="text-xs text-gray-600">
+                        ✓ Se entregará {item.cantidadDisponible} unidad{item.cantidadDisponible !== 1 ? 'es' : ''} ahora
+                      </p>
+                      <p className="text-xs text-orange-600 font-semibold">
+                        → Se producirán {item.cantidadFaltante} unidad{item.cantidadFaltante !== 1 ? 'es' : ''} adicional{item.cantidadFaltante !== 1 ? 'es' : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setModalFaltaExistenciaOpen(false)}
+              disabled={enviando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleConfirmarConFaltaExistencia}
+              disabled={enviando}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {enviando ? (
+                <>
+                  <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></span>
+                  Creando pedido...
+                </>
+              ) : (
+                "Confirmar y Crear Pedido"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
