@@ -40,6 +40,8 @@ const ReporteComisionesProduccion: React.FC = () => {
     "sin-ayudante" | "solo-ayudante" | "todos"
   >("sin-ayudante");
   const [busquedaEmpleado, setBusquedaEmpleado] = useState("");
+  const [valesPorEmpleado, setValesPorEmpleado] = useState<Record<string, number>>({});
+  const [inputVales, setInputVales] = useState<Record<string, string>>({});
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:8002").replace('http://', 'https://');
 
   useEffect(() => {
@@ -95,6 +97,45 @@ const ReporteComisionesProduccion: React.FC = () => {
           second: "2-digit",
         })
       : "-";
+
+  const handleAgregarVales = (empleadoId: string) => {
+    const valorInput = inputVales[empleadoId] || "0";
+    const valor = parseFloat(valorInput);
+    if (isNaN(valor) || valor <= 0) {
+      alert("Por favor ingresa un valor válido mayor a 0");
+      return;
+    }
+    setValesPorEmpleado((prev) => ({
+      ...prev,
+      [empleadoId]: (prev[empleadoId] || 0) + valor,
+    }));
+    setInputVales((prev) => ({
+      ...prev,
+      [empleadoId]: "",
+    }));
+  };
+
+  const handleAbonarVales = (empleadoId: string) => {
+    const valorInput = inputVales[empleadoId] || "0";
+    const valor = parseFloat(valorInput);
+    if (isNaN(valor) || valor <= 0) {
+      alert("Por favor ingresa un valor válido mayor a 0");
+      return;
+    }
+    const valesActuales = valesPorEmpleado[empleadoId] || 0;
+    if (valor > valesActuales) {
+      alert("No puedes abonar más vales de los que tiene el empleado");
+      return;
+    }
+    setValesPorEmpleado((prev) => ({
+      ...prev,
+      [empleadoId]: (prev[empleadoId] || 0) - valor,
+    }));
+    setInputVales((prev) => ({
+      ...prev,
+      [empleadoId]: "",
+    }));
+  };
 
   const handleBuscar = async () => {
     setBuscando(true);
@@ -388,10 +429,50 @@ const ReporteComisionesProduccion: React.FC = () => {
                               </Badge>
                             ))}
                           </div>
-                          {/* Total de costo de producción del empleado */}
+                          {/* Total Generado del empleado */}
                           <div className="mt-3">
-                            <span className="text-sm font-semibold text-gray-600">Total Costo Producción: </span>
+                            <span className="text-sm font-semibold text-gray-600">Total Generado: </span>
                             <span className="text-lg font-bold text-green-700">${total.toFixed(2)}</span>
+                          </div>
+                          {/* Sección de Vales */}
+                          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-sm font-semibold text-gray-700">Vales:</span>
+                              <span className="text-lg font-bold text-yellow-700">
+                                ${(valesPorEmpleado[empleado.identificador] || 0).toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="Monto"
+                                value={inputVales[empleado.identificador] || ""}
+                                onChange={(e) =>
+                                  setInputVales((prev) => ({
+                                    ...prev,
+                                    [empleado.identificador]: e.target.value,
+                                  }))
+                                }
+                                className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                              />
+                              <Button
+                                type="button"
+                                onClick={() => handleAgregarVales(empleado.identificador)}
+                                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                              >
+                                Agregar Vales
+                              </Button>
+                              <Button
+                                type="button"
+                                onClick={() => handleAbonarVales(empleado.identificador)}
+                                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                                disabled={(valesPorEmpleado[empleado.identificador] || 0) <= 0}
+                              >
+                                Abonar Vales
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </CardTitle>
