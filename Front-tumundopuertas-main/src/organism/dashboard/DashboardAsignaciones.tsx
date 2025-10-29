@@ -107,15 +107,21 @@ const DashboardAsignaciones: React.FC = () => {
             for (const sub of seguimiento) {
             if (sub.asignaciones_articulos && Array.isArray(sub.asignaciones_articulos)) {
               for (const asignacion of sub.asignaciones_articulos) {
-                // Solo incluir asignaciones EN PROCESO y que NO estén terminadas
-                // Una asignación se considera terminada si tiene fecha_fin o estado "terminado"
-                const estaTerminada = asignacion.fecha_fin || asignacion.estado === "terminado";
+                // Buscar información del item para verificar su estado
+                const item = pedido.items?.find((item: any) => item.id === asignacion.itemId);
+                
+                // Verificar múltiples condiciones para determinar si está terminada
+                const estaTerminada = 
+                  asignacion.fecha_fin ||  // Tiene fecha_fin
+                  asignacion.estado === "terminado" ||  // Estado es "terminado"
+                  item?.estado_item === 4;  // Item está completamente terminado (estado_item 4)
                 
                 // Debug: Log cuando encontramos una asignación terminada
                 if (estaTerminada) {
                   console.log('🚫 Asignación terminada filtrada:', {
                     itemId: asignacion.itemId,
                     estado: asignacion.estado,
+                    estado_item: item?.estado_item,
                     fecha_fin: asignacion.fecha_fin,
                     modulo: asignacion.modulo || sub.orden
                   });
@@ -123,8 +129,6 @@ const DashboardAsignaciones: React.FC = () => {
                 
                 // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada
                 if (asignacion.estado === "en_proceso" && !estaTerminada) {
-                  // Buscar información del item
-                  const item = pedido.items?.find((item: any) => item.id === asignacion.itemId);
                   
                   // Buscar el nombre del empleado desde la lista de empleados
                   const empleado = empleados.find(emp => 
