@@ -106,16 +106,22 @@ const DashboardAsignaciones: React.FC = () => {
             for (const sub of seguimiento) {
             if (sub.asignaciones_articulos && Array.isArray(sub.asignaciones_articulos)) {
               for (const asignacion of sub.asignaciones_articulos) {
-                // Solo incluir asignaciones en proceso y que NO estén terminadas
+                // Solo incluir asignaciones EN PROCESO y que NO estén terminadas
+                // Una asignación se considera terminada si tiene fecha_fin o estado "terminado"
+                const estaTerminada = asignacion.fecha_fin || asignacion.estado === "terminado";
+                
                 // Debug: Log cuando encontramos una asignación terminada
-                if (asignacion.estado === "terminado" || asignacion.fecha_fin) {
+                if (estaTerminada) {
                   console.log('🚫 Asignación terminada filtrada:', {
                     itemId: asignacion.itemId,
                     estado: asignacion.estado,
-                    fecha_fin: asignacion.fecha_fin
+                    fecha_fin: asignacion.fecha_fin,
+                    modulo: asignacion.modulo || sub.orden
                   });
                 }
-                if (asignacion.estado === "en_proceso" && !asignacion.fecha_fin) {
+                
+                // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada
+                if (asignacion.estado === "en_proceso" && !estaTerminada) {
                   // Buscar información del item
                   const item = pedido.items?.find((item: any) => item.id === asignacion.itemId);
                   
