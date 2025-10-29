@@ -117,15 +117,6 @@ const DashboardAsignaciones: React.FC = () => {
                   asignacion.estado === "terminado" ||  // Estado es "terminado"
                   item?.estado_item === 4;  // Item está completamente terminado (estado_item 4)
                 
-                // IMPORTANTE: Solo mostrar asignaciones si el estado_item del item coincide con el orden del módulo
-                // Si el item está en estado_item 2 pero la asignación es del orden 1, NO mostrar (ya fue terminada)
-                const ordenDelModulo = sub.orden;  // El orden del proceso actual
-                const estadoItem = item?.estado_item || 1;
-                
-                // Solo mostrar si el orden del módulo coincide con el estado_item actual
-                // Esto evita mostrar asignaciones del módulo anterior
-                const ordenCoincide = ordenDelModulo === estadoItem;
-                
                 // Debug: Log para VERIFICAR TODAS las asignaciones
                 console.log('🔍 DEBUG Asignación:', {
                   itemId: asignacion.itemId,
@@ -135,8 +126,7 @@ const DashboardAsignaciones: React.FC = () => {
                   fecha_fin: asignacion.fecha_fin,
                   modulo: asignacion.modulo || sub.orden,
                   estaTerminada: estaTerminada,
-                  tieneFechaFin: !!asignacion.fecha_fin,
-                  ordenCoincide: ordenCoincide
+                  tieneFechaFin: !!asignacion.fecha_fin
                 });
                 
                 // Debug adicional cuando encontramos una asignación terminada
@@ -150,8 +140,8 @@ const DashboardAsignaciones: React.FC = () => {
                   });
                 }
                 
-                // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada Y el orden coincide
-                if (asignacion.estado === "en_proceso" && !estaTerminada && ordenCoincide) {
+                // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada
+                if (asignacion.estado === "en_proceso" && !estaTerminada) {
                   
                   // Buscar el nombre del empleado desde la lista de empleados
                   const empleado = empleados.find(emp => 
