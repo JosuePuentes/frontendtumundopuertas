@@ -98,43 +98,133 @@ const ReporteComisionesProduccion: React.FC = () => {
         })
       : "-";
 
-  const handleAgregarVales = (empleadoId: string) => {
-    const valorInput = inputVales[empleadoId] || "0";
-    const valor = parseFloat(valorInput);
-    if (isNaN(valor) || valor <= 0) {
-      alert("Por favor ingresa un valor válido mayor a 0");
-      return;
+  // Función para cargar vales de un empleado
+  const cargarValesEmpleado = async (empleadoId: string) => {
+    try {
+      const res = await fetch(`${apiUrl}/empleados/${empleadoId}/vales`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.total_pendiente || 0;
+      }
+    } catch (error) {
+      console.error(`Error cargando vales para empleado ${empleadoId}:`, error);
     }
-    setValesPorEmpleado((prev) => ({
-      ...prev,
-      [empleadoId]: (prev[empleadoId] || 0) + valor,
-    }));
-    setInputVales((prev) => ({
-      ...prev,
-      [empleadoId]: "",
-    }));
+    return 0;
   };
 
-  const handleAbonarVales = (empleadoId: string) => {
+  const handleAgregarVales = async (empleadoId: string) => {
     const valorInput = inputVales[empleadoId] || "0";
     const valor = parseFloat(valorInput);
     if (isNaN(valor) || valor <= 0) {
       alert("Por favor ingresa un valor válido mayor a 0");
       return;
     }
+    
+    try {
+      const res = await fetch(`${apiUrl}/empleados/${empleadoId}/vales`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          monto: valor,
+          descripcion: "Vale agregado desde reporte de comisiones",
+        }),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: "Error al agregar vale" }));
+        throw new Error(errorData.detail || "Error al agregar vale");
+      }
+      
+      // Recargar los vales del empleado para obtener el total_pendiente actualizado
+      const totalPendiente = await cargarValesEmpleado(empleadoId);
+      
+      // Actualizar el estado con el total pendiente del backend
+      setValesPorEmpleado((prev) => ({
+        ...prev,
+        [empleadoId]: totalPendiente,
+      }));
+      
+      setInputVales((prev) => ({
+        ...prev,
+        [empleadoId]: "",
+      }));
+      
+      alert("Vale agregado exitosamente");
+    } catch (error: any) {
+      console.error("Error agregando vale:", error);
+      alert(error.message || "Error al agregar vale. Intenta nuevamente.");
+    }
+  };
+
+  const handleAbonarVales = async (empleadoId: string) => {
+    const valorInput = inputVales[empleadoId] || "0";
+    const valor = parseFloat(valorInput);
+    if (isNaN(valor) || valor <= 0) {
+      alert("Por favor ingresa un valor válido mayor a 0");
+      return;
+    }
+    
     const valesActuales = valesPorEmpleado[empleadoId] || 0;
     if (valor > valesActuales) {
       alert("No puedes abonar más vales de los que tiene el empleado");
       return;
     }
-    setValesPorEmpleado((prev) => ({
-      ...prev,
-      [empleadoId]: (prev[empleadoId] || 0) - valor,
+    
+    try {
+      const res = await fetch(`${apiUrl}/empleados/${empleadoId}/vales/abonar`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          monto_abono: valor,
+          descripcion: "Abono desde reporte de comisiones",
+        }),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: "Error al abonar vale" }));
+        throw new Error(errorData.detail || "Error al abonar vale");
+      }
+      
+      // Recargar los vales del empleado para obtener el total_pendiente actualizado
+      const totalPendiente = await cargarValesEmpleado(empleadoId);
+      
+      // Actualizar el estado con el total pendiente del backend
+      setValesPorEmpleado((prev) => ({
+        ...prev,
+        [empleadoId]: totalPendiente,
+      }));
+      
+      setInputVales((prev) => ({
+        ...prev,
+        [empleadoId]: "",
+      }));
+      
+      alert("Abono realizado exitosamente");
+    } catch (error: any) {
+      console.error("Error abonando vale:", error);
+      alert(error.message || "Error al abonar vale. Intenta nuevamente.");
+    }
+  };
+
+  // Cargar vales de todos los empleados con asignaciones
+  const cargarValesEmpleados = async (empleadosIds: string[]) => {
+    const valesPromises = empleadosIds.map(async (id) => ({
+      empleadoId: id,
+      totalPendiente: await cargarValesEmpleado(id),
     }));
-    setInputVales((prev) => ({
-      ...prev,
-      [empleadoId]: "",
-    }));
+    
+    const resultados = await Promise.all(valesPromises);
+    const nuevosVales: Record<string, number> = {};
+    
+    resultados.forEach(({ empleadoId, totalPendiente }) => {
+      nuevosVales[empleadoId] = totalPendiente;
+    });
+    
+    setValesPorEmpleado((prev) => ({ ...prev, ...nuevosVales }));
   };
 
   const handleBuscar = async () => {
@@ -162,6 +252,10 @@ const ReporteComisionesProduccion: React.FC = () => {
             : empleado.empleado_id,
       }));
       setData(jsonFormateado);
+      
+      // Cargar vales de todos los empleados que tienen asignaciones
+      const empleadosIds = jsonFormateado.map((e: EmpleadoComision) => e.empleado_id);
+      await cargarValesEmpleados(empleadosIds);
     } catch (error) {
       console.error("Error buscando comisiones:", error);
       alert("Error al cargar las comisiones. Intenta nuevamente.");
