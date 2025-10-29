@@ -259,11 +259,8 @@ const FacturacionPage: React.FC = () => {
           <div class="center-container">
             <div class="nota-carta">
               <div class="nota-header">
-                <div style="display: flex; align-items: center; gap: 1.5rem;">
-                  <img src="/logo.jpeg" alt="Logo" style="height: 60px; width: auto; object-fit: contain; margin-right: 1rem;" />
-                  <div>
-                    <div class="titulo">FACTURA ${selectedFactura.numeroFactura}</div>
-                  </div>
+                <div>
+                  <div class="titulo">FACTURA ${selectedFactura.numeroFactura}</div>
                 </div>
               </div>
               <div class="nota-info">
@@ -363,11 +360,8 @@ const FacturacionPage: React.FC = () => {
           <div class="center-container">
             <div class="nota-carta">
               <div class="nota-header">
-                <div style="display: flex; align-items: center; gap: 1.5rem;">
-                  <img src="/logo.jpeg" alt="Logo" style="height: 60px; width: auto; object-fit: contain; margin-right: 1rem;" />
-                  <div>
-                    <div class="titulo">NOTA DE ENTREGA</div>
-                  </div>
+                <div>
+                  <div class="titulo">NOTA DE ENTREGA</div>
                 </div>
               </div>
               <div class="nota-info">
