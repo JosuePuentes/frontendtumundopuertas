@@ -124,11 +124,26 @@ const FacturacionPage: React.FC = () => {
       // Filtrar nulos (ya están ordenados por fecha)
       const pedidosParaFacturar = pedidosConProgreso.filter((p) => p !== null);
       
+      // Filtrar pedidos que ya fueron facturados (están en localStorage)
+      const storedFacturas = localStorage.getItem('facturas_confirmadas');
+      const facturasConfirmadasIds: string[] = [];
+      if (storedFacturas) {
+        try {
+          const facturas: FacturaConfirmada[] = JSON.parse(storedFacturas);
+          facturasConfirmadasIds.push(...facturas.map(f => f.pedidoId));
+        } catch (e) {
+          console.error('Error al leer facturas confirmadas:', e);
+        }
+      }
+      
+      const pedidosPendientes = pedidosParaFacturar.filter(p => !facturasConfirmadasIds.includes(p._id));
+      
       console.log('📊 Total pedidos obtenidos:', pedidos.length);
       console.log('📊 Pedidos limitados:', pedidosLimitados.length);
       console.log('📊 Pedidos al 100%:', pedidosParaFacturar.length);
+      console.log('📊 Pedidos pendientes (sin confirmar):', pedidosPendientes.length);
       
-      setFacturacion(pedidosParaFacturar);
+      setFacturacion(pedidosPendientes);
     } catch (err: any) {
       setError(err.message || "Error desconocido");
     } finally {
@@ -230,7 +245,7 @@ const FacturacionPage: React.FC = () => {
     const notaHtml = `
       <html>
         <head>
-          <title>Factura ${selectedFactura.numeroFactura}</title>
+          <title>Nota de Entrega ${selectedFactura.numeroFactura}</title>
           <style>
             @media print {
               @page { size: letter; margin: 1in; }
@@ -260,7 +275,7 @@ const FacturacionPage: React.FC = () => {
             <div class="nota-carta">
               <div class="nota-header">
                 <div>
-                  <div class="titulo">FACTURA ${selectedFactura.numeroFactura}</div>
+                  <div class="titulo">NOTA DE ENTREGA ${selectedFactura.numeroFactura}</div>
                 </div>
               </div>
               <div class="nota-info">
@@ -699,9 +714,9 @@ const FacturacionPage: React.FC = () => {
     <Dialog open={modalPreliminarOpen} onOpenChange={setModalPreliminarOpen}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Preliminar de Factura</DialogTitle>
+          <DialogTitle>Preliminar de Nota de Entrega</DialogTitle>
           <DialogDescription>
-            Revisa los detalles de la factura confirmada
+            Revisa los detalles de la nota de entrega confirmada
           </DialogDescription>
         </DialogHeader>
         
@@ -781,7 +796,7 @@ const FacturacionPage: React.FC = () => {
           </Button>
           <Button onClick={handlePrintFacturaConfirmada} className="bg-green-600 hover:bg-green-700">
             <Printer className="w-4 h-4 mr-2" />
-            Imprimir Factura
+            Imprimir Nota de Entrega
           </Button>
         </DialogFooter>
       </DialogContent>
