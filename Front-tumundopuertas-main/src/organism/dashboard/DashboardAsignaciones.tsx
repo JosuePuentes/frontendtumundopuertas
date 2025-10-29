@@ -115,12 +115,14 @@ const DashboardAsignaciones: React.FC = () => {
                 const estaTerminada = 
                   asignacion.fecha_fin ||  // Tiene fecha_fin - SIEMPRE significa que está terminada
                   asignacion.estado === "terminado" ||  // Estado es "terminado"
+                  asignacion.estado_subestado === "terminado" ||  // Estado subestado es "terminado" (backend lo establece)
                   item?.estado_item === 4;  // Item está completamente terminado (estado_item 4)
                 
                 // Debug: Log para VERIFICAR TODAS las asignaciones
                 console.log('🔍 DEBUG Asignación:', {
                   itemId: asignacion.itemId,
                   estado: asignacion.estado,
+                  estado_subestado: asignacion.estado_subestado,
                   estado_item: item?.estado_item,
                   ordenModulo: sub.orden,
                   fecha_fin: asignacion.fecha_fin,
