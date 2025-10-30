@@ -83,8 +83,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   // NUEVO: filas de asignación por item (empleado + cantidad)
   const [asignacionesPorItem, setAsignacionesPorItem] = useState<Record<string, Array<{ empleadoId: string; cantidad: number }>>>({});
 
-  // Estado para items ya asignados localmente
-  const [itemsAsignadosLocalmente, setItemsAsignadosLocalmente] = useState<Record<string, {empleado_nombre: string, fecha_asignacion: string}>>({});
 
   // Hook para obtener empleados por módulo
   const { loading: loadingEmpleados } = useEmpleadosPorModulo();
@@ -402,12 +400,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       <ul className="space-y-4">
         {items.map((item, idx) => {
           const key = `${item.id}-${idx}`;
-          const asignacion = asignaciones[key] || {};
           const asignadoPrevio = asignadosPrevios[key];
           const cambioActivo = showCambio[key];
-          
-          // VERIFICAR SI EL ITEM ESTÁ ASIGNADO LOCALMENTE
-          const itemAsignadoLocalmente = itemsAsignadosLocalmente[item.id];
           
           return (
             <li key={key} className="flex flex-col gap-2 border rounded p-3">
@@ -435,20 +429,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                   </div>
                 </div>
               )}
-              {/* MOSTRAR SI ESTÁ ASIGNADO LOCALMENTE */}
-              {itemAsignadoLocalmente ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 text-green-600 font-medium">
-                    <span>✅ Asignado a: {itemAsignadoLocalmente.empleado_nombre}</span>
-                    <span className="text-xs text-gray-500">
-                      ({new Date(itemAsignadoLocalmente.fecha_asignacion).toLocaleDateString()})
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-600 bg-green-50 p-2 rounded">
-                    🚫 Este item ya está asignado y no se puede reasignar
-                  </div>
-                </div>
-              ) : asignadoPrevio && !cambioActivo ? (
+              {asignadoPrevio && !cambioActivo ? (
                 <div className="flex flex-col gap-2">
                   <span className="text-blue-700 text-sm font-semibold">
                     Ya asignado a: {asignadoPrevio.nombreempleado}
