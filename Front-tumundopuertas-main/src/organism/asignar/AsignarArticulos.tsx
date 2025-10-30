@@ -229,20 +229,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
   }, [empleados.length]); // Solo cuando cambie la cantidad de empleados
 
-  // Copia asignaciones previas al estado local si no existen
-  React.useEffect(() => {
-    if (Object.keys(asignadosPrevios).length > 0) {
-      setAsignaciones((prev) => {
-        const nuevo = { ...prev };
-        Object.entries(asignadosPrevios).forEach(([key, asignacion]) => {
-          if (!nuevo[key]) {
-            nuevo[key] = { ...asignacion };
-          }
-        });
-        return nuevo;
-      });
-    }
-  }, [asignadosPrevios]);
+  // Copia de asignaciones previas: no requerido con el nuevo flujo basado en asignacionesPorItem
 
   // Eliminado: lógica antigua de selección única por empleado
 
