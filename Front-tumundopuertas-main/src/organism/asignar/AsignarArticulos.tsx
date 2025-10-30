@@ -76,6 +76,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const [asignacionesDisponibles, setAsignacionesDisponibles] = useState<AsignacionesDisponibles | null>(null);
   const [_empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
   const [asignacionesPendientes, setAsignacionesPendientes] = useState<Record<string, Array<{ unidad_index: number; empleadoId: string }>>>({});
+  const [endpointDisponible, setEndpointDisponible] = useState<boolean>(true);
 
   const { loading: _loadingEmpleados } = useEmpleadosPorModulo();
   const { cargarEstadosItems } = useEstadoItems(pedidoId, items);
@@ -88,6 +89,11 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   };
 
   const fetchAsignacionesDisponibles = async (): Promise<AsignacionesDisponibles | null> => {
+    // Si el endpoint no está disponible, no intentar llamarlo
+    if (!endpointDisponible) {
+      return null;
+    }
+
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       const token = localStorage.getItem("access_token");
@@ -99,23 +105,25 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       });
 
       if (!res.ok) {
-        // Silenciar errores 500/CORS - el endpoint puede no estar disponible aún
-        if (res.status !== 500) {
-          console.warn('⚠️ No se pudo obtener asignaciones disponibles:', res.status);
+        // Si es error 500, deshabilitar el endpoint temporalmente
+        if (res.status === 500) {
+          setEndpointDisponible(false);
         }
         return null;
       }
 
       const data = await res.json();
       console.log('📋 Asignaciones disponibles cargadas:', data);
+      // Si funciona, asegurar que el endpoint está disponible
+      setEndpointDisponible(true);
       return data;
     } catch (error: any) {
-      // Silenciar errores CORS/Network - el endpoint puede no estar disponible aún
-      if (error?.message?.includes('CORS') || error?.message?.includes('Failed to fetch')) {
-        // El endpoint no está disponible o tiene problemas de CORS - esto es esperado si el backend aún no lo tiene implementado
+      // Silenciar errores CORS/Network - deshabilitar el endpoint
+      const errorMessage = error?.message || error?.toString() || '';
+      if (errorMessage.includes('CORS') || errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('ERR_FAILED')) {
+        setEndpointDisponible(false);
         return null;
       }
-      console.error('❌ Error al cargar asignaciones disponibles:', error);
       return null;
     }
   };
