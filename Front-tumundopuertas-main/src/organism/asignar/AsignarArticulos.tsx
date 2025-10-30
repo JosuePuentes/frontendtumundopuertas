@@ -261,7 +261,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       <ul className="space-y-4">
         {items.map((item, idx) => {
           const itemConUnidades = getItemConUnidades(item.id);
-          const mostrarUnidades = itemConUnidades && itemConUnidades.cantidad_total > 1;
+          const mostrarUnidades = itemConUnidades && itemConUnidades.unidades && itemConUnidades.unidades.length > 0;
 
           return (
             <li key={`${item.id}-${idx}`} className="flex flex-col gap-2 border rounded p-3">
@@ -300,7 +300,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
 
               {mostrarUnidades ? (
                 <div className="space-y-2">
-                  <div className="text-sm font-semibold text-gray-700">Unidades individuales:</div>
+                  {itemConUnidades && itemConUnidades.cantidad_total > 1 && (
+                    <div className="text-sm font-semibold text-gray-700">Unidades individuales:</div>
+                  )}
                   {itemConUnidades?.unidades.map((unidad) => (
                     <div key={unidad.unidad_index} className="border rounded p-3 bg-gray-50">
                       <div className="flex items-center justify-between mb-2">
@@ -378,13 +380,15 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                     </div>
                   ))}
                 </div>
-              ) : (
+              ) : itemConUnidades && itemConUnidades.unidades_disponibles === 0 ? (
                 <div className="text-sm text-gray-600">
-                  {itemConUnidades?.unidades_disponibles === 0
-                    ? "🚫 Todas las unidades están asignadas o terminadas"
-                    : "Item con cantidad 1 - usar asignación estándar"}
+                  🚫 Todas las unidades están asignadas o terminadas
                 </div>
-              )}
+              ) : !itemConUnidades ? (
+                <div className="text-sm text-yellow-600">
+                  ⚠️ Cargando unidades disponibles...
+                </div>
+              ) : null}
             </li>
           );
         })}
