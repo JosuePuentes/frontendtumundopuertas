@@ -249,46 +249,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
   }, [asignadosPrevios]);
 
-  const handleEmpleadoChange = (
-    item: PedidoItem,
-    idx: number,
-    empleadoId: string,
-    nombreempleado: string
-  ) => {
-    // VALIDACIÓN: Verificar que item e idx sean válidos
-    if (!item || !item.id || idx === undefined || idx === null) {
-      console.error('❌ ERROR: handleEmpleadoChange recibió datos inválidos:', {
-        item: item,
-        idx: idx,
-        empleadoId: empleadoId,
-        nombreempleado: nombreempleado
-      });
-      return;
-    }
-    
-    const key = `${item.id}-${idx}`;
-    console.log('✅ handleEmpleadoChange - Creando asignación:', {
-      key: key,
-      itemId: item.id,
-      idx: idx,
-      empleadoId: empleadoId,
-      nombreempleado: nombreempleado
-    });
-    
-    setAsignaciones((prev) => ({
-      ...prev,
-      [key]: {
-        key: key,
-        empleadoId,
-        nombreempleado,
-        fecha_inicio: new Date().toISOString(),
-        estado: "en_proceso",
-        descripcionitem: item.descripcion,
-        costoproduccion: String(item.costoProduccion),
-      },
-    }));
-    setShowCambio((prev) => ({ ...prev, [key]: false }));
-  };
+  // Eliminado: lógica antigua de selección única por empleado
 
   const handleAsignarOriginal = async () => {
     console.log('🚀 INICIANDO ASIGNACIÓN...');
@@ -376,46 +337,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       }
 
       setMessage(`✅ Asignaciones enviadas correctamente`);
-      
-      // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE - SOLUCIÓN SIMPLE
-      const nuevosItemsAsignados: Record<string, {empleado_nombre: string, fecha_asignacion: string, item_info?: any}> = {};
-      
-      for (let i = 0; i < asignacionesParaEnviar.length; i++) {
-        const asignacion = asignacionesParaEnviar[i];
-        const resultado = resultados[i];
-        
-        // Usar información del resultado del backend si está disponible
-        const itemInfo = resultado?.item_info;
-        const empleadoNombre = itemInfo?.nombre_empleado || asignacion.empleado_nombre || "Empleado asignado";
-        
-        nuevosItemsAsignados[asignacion.item_id] = {
-          empleado_nombre: empleadoNombre,
-          fecha_asignacion: itemInfo?.fecha_asignacion || new Date().toISOString(),
-          item_info: itemInfo // Incluir información completa del item
-        };
-      }
-      
-      setItemsAsignadosLocalmente(prev => ({ ...prev, ...nuevosItemsAsignados }));
-      console.log('✅ Items marcados como asignados localmente:', nuevosItemsAsignados);
-      
-      // NUEVO: Disparar evento personalizado para notificar asignación exitosa
-      console.log('🎯 Disparando evento asignacionRealizada con datos:', {
-        pedidoId: pedidoId,
-        asignaciones: asignacionesParaEnviar,
-        resultados: resultados, // Incluir información completa del backend
-        timestamp: new Date().toISOString()
-      });
-      
-      window.dispatchEvent(new CustomEvent('asignacionRealizada', { 
-        detail: { 
-          pedidoId: pedidoId,
-          asignaciones: asignacionesParaEnviar,
-          resultados: resultados, // NUEVA: Información completa del backend
-          timestamp: new Date().toISOString()
-        } 
-      }));
-      
-      console.log('✅ Evento asignacionRealizada disparado exitosamente');
       
       // Recargar datos después de la asignación
       await cargarEstadosItems();
