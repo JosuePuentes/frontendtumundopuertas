@@ -366,16 +366,6 @@ const TerminarAsignacion: React.FC = () => {
         </Button>
       </div>
       
-      {/* Debug: Confirmar que el código actualizado se está ejecutando */}
-      <div className="mb-4 p-6 bg-green-100 text-green-800 rounded border-4 border-green-500 shadow-lg">
-        <strong className="text-2xl">🚀🚀🚀 VERSIÓN 6.0 CON PIN OBLIGATORIO DESPLEGADA 🚀🚀🚀</strong><br/>
-        <strong className="text-lg">🔧 CÓDIGO ACTUALIZADO:</strong> Si ves este mensaje VERDE, el código con PIN obligatorio se está ejecutando correctamente.<br/>
-        <strong className="text-lg">📅 TIMESTAMP:</strong> {new Date().toISOString()}<br/>
-        <strong className="text-lg">🚀 VERSIÓN:</strong> 6.0-PIN-OBLIGATORIO<br/>
-        <strong className="text-lg">🔐 PIN OBLIGATORIO:</strong> Ahora al terminar asignaciones se pedirá PIN obligatorio<br/>
-        <strong className="text-lg">📊 COMMIT:</strong> PIN-OBLIGATORIO
-      </div>
-      
       {mensaje && (
         <div className={`mb-4 p-4 rounded-lg border-2 shadow-lg ${
           mensaje.includes("Error") 

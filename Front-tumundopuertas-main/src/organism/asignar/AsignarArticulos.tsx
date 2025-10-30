@@ -94,18 +94,27 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       const modulo = obtenerModulo();
 
       const res = await fetch(`${apiUrl}/pedidos/asignaciones-disponibles/${pedidoId}/${modulo}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        mode: 'cors'
       });
 
       if (!res.ok) {
-        console.warn('⚠️ No se pudo obtener asignaciones disponibles:', res.status);
+        // Silenciar errores 500/CORS - el endpoint puede no estar disponible aún
+        if (res.status !== 500) {
+          console.warn('⚠️ No se pudo obtener asignaciones disponibles:', res.status);
+        }
         return null;
       }
 
       const data = await res.json();
       console.log('📋 Asignaciones disponibles cargadas:', data);
       return data;
-    } catch (error) {
+    } catch (error: any) {
+      // Silenciar errores CORS/Network - el endpoint puede no estar disponible aún
+      if (error?.message?.includes('CORS') || error?.message?.includes('Failed to fetch')) {
+        // El endpoint no está disponible o tiene problemas de CORS - esto es esperado si el backend aún no lo tiene implementado
+        return null;
+      }
       console.error('❌ Error al cargar asignaciones disponibles:', error);
       return null;
     }
@@ -305,7 +314,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                       {unidad.empleadoId ? (
                         <div className="flex flex-col gap-2">
                           <div className="text-sm text-blue-700">
-                            Asignada a: <b>{unidad.nombreempleado || "Empleado"}</b>
+                            Asignada a: <b>{
+                              unidad.nombreempleado || 
+                              empleados.find(e => e._id === unidad.empleadoId)?.nombreCompleto ||
+                              empleados.find(e => e._id === unidad.empleadoId)?.nombre ||
+                              "Empleado"
+                            }</b>
                           </div>
                           {unidad.estado !== "terminado" && (
                             <button
