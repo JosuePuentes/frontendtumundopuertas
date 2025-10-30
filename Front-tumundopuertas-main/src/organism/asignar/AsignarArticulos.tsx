@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
 import { useEstadoItems } from "@/hooks/useEstadoItems";
 import ImageDisplay from "@/upfile/ImageDisplay";
-import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
 import GestorEmpleadosAutomatico from "@/components/GestorEmpleadosAutomatico";
 
 interface PedidoItem {
@@ -79,7 +78,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const [asignacionesPendientes, setAsignacionesPendientes] = useState<Record<string, Array<{ unidad_index: number; empleadoId: string }>>>({});
 
   const { loading: _loadingEmpleados } = useEmpleadosPorModulo();
-  const { obtenerEstadoItem, cargarEstadosItems } = useEstadoItems(pedidoId, items);
+  const { cargarEstadosItems } = useEstadoItems(pedidoId, items);
 
   const obtenerModulo = (): string => {
     const ordenNum = parseInt(numeroOrden) || 1;
@@ -267,12 +266,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
             <li key={`${item.id}-${idx}`} className="flex flex-col gap-2 border rounded p-3">
               <span className="font-medium">{item.nombre}</span>
               
-              <BarraProgresoItem 
-                pedidoId={pedidoId}
-                itemId={item.id}
-                moduloActual={obtenerEstadoItem(item.id)}
-              />
-              
               {item.imagenes && item.imagenes.length > 0 && (
                 <div className="flex flex-col gap-2 items-center justify-center">
                   <span className="text-xs text-gray-600 mb-1">Imágenes:</span>
@@ -286,15 +279,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                       />
                     ))}
                   </div>
-                </div>
-              )}
-
-              {itemConUnidades && (
-                <div className="text-xs text-gray-600 mb-2 bg-blue-50 p-2 rounded">
-                  Total: <b>{itemConUnidades.cantidad_total}</b> · 
-                  Asignadas: <b>{itemConUnidades.unidades_asignadas}</b> · 
-                  Disponibles: <b className="text-green-600">{itemConUnidades.unidades_disponibles}</b> · 
-                  Terminadas: <b>{itemConUnidades.unidades_terminadas}</b>
                 </div>
               )}
 
