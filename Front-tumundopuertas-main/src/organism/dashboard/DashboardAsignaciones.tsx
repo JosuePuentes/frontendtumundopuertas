@@ -98,7 +98,7 @@ const DashboardAsignaciones: React.FC = () => {
         // console.log('📋 Pedidos obtenidos:', pedidos.length);
         
         // Extraer todas las asignaciones en proceso de todos los pedidos
-        const asignaciones: Asignacion[] = [];
+        const asignacionesRaw: any[] = [];
         
         for (const pedido of pedidos) {
           const pedido_id = pedido._id;
@@ -158,12 +158,6 @@ const DashboardAsignaciones: React.FC = () => {
                   const empleado = empleados.find(emp => 
                     emp._id === asignacion.empleadoId || emp.identificador === asignacion.empleadoId
                   );
-                  // console.log('🔍 DEBUG empleado:', {
-                  //   empleadoId: asignacion.empleadoId,
-                  //   empleadoEncontrado: empleado,
-                  //   nombreempleado: asignacion.nombreempleado,
-                  //   totalEmpleados: empleados.length
-                  // });
                   
                   // Usar múltiples fuentes para el nombre del empleado
                   let nombreEmpleado = "Sin asignar";
@@ -179,13 +173,12 @@ const DashboardAsignaciones: React.FC = () => {
                   // esto asegura que enviemos orden 3 cuando el item está en Preparar (estado_item 3)
                   const ordenActual = obtenerOrdenPorEstadoItem(item?.estado_item || 1);
                   
-                  const asignacionCompleta: Asignacion = {
-                    _id: `${pedido_id}_${asignacion.itemId}_${sub.orden}`,
-                    pedido_id: pedido_id,
-                    orden: ordenActual,  // ✅ Usar orden basado en estado_item actual
+                  asignacionesRaw.push({
+                    pedido_id,
                     item_id: asignacion.itemId,
-                    empleado_id: asignacion.empleadoId || "sin_asignar",
+                    empleado_id: asignacion.empleadoId,
                     empleado_nombre: nombreEmpleado,
+                    orden: ordenActual,
                     modulo: obtenerModuloPorEstadoItem(item?.estado_item || 1),
                     estado: asignacion.estado || "en_proceso",
                     fecha_asignacion: asignacion.fecha_inicio || new Date().toISOString(),
@@ -195,15 +188,54 @@ const DashboardAsignaciones: React.FC = () => {
                     cliente_nombre: pedido.cliente_nombre || "",
                     costo_produccion: asignacion.costoproduccion || item?.costoProduccion || 0,
                     imagenes: item?.imagenes || [],
-                    cantidad: item?.cantidad || asignacion.cantidad || 1
-                  };
-                  
-                  asignaciones.push(asignacionCompleta);
+                    unidad_index: asignacion.unidad_index,
+                    item: item
+                  });
                 }
               }
             }
           }
         }
+        
+        // Agrupar asignaciones por pedido_id + item_id + empleado_id + módulo para contar unidades
+        const asignacionesAgrupadas = new Map<string, any>();
+        
+        for (const asignacionRaw of asignacionesRaw) {
+          const key = `${asignacionRaw.pedido_id}_${asignacionRaw.item_id}_${asignacionRaw.empleado_id}_${asignacionRaw.modulo}`;
+          
+          if (asignacionesAgrupadas.has(key)) {
+            const existente = asignacionesAgrupadas.get(key);
+            // Incrementar la cantidad siempre (cada asignación cuenta como 1 unidad)
+            existente.cantidad = (existente.cantidad || 1) + 1;
+          } else {
+            // Primera asignación para esta combinación - cada asignación cuenta como 1
+            const cantidad = 1;
+            asignacionesAgrupadas.set(key, {
+              ...asignacionRaw,
+              cantidad: cantidad
+            });
+          }
+        }
+        
+        // Convertir el Map a array de Asignacion
+        const asignaciones: Asignacion[] = Array.from(asignacionesAgrupadas.values()).map(agrupada => ({
+          _id: `${agrupada.pedido_id}_${agrupada.item_id}_${agrupada.empleado_id}_${agrupada.modulo}`,
+          pedido_id: agrupada.pedido_id,
+          orden: agrupada.orden,
+          item_id: agrupada.item_id,
+          empleado_id: agrupada.empleado_id,
+          empleado_nombre: agrupada.empleado_nombre,
+          modulo: agrupada.modulo,
+          estado: agrupada.estado,
+          fecha_asignacion: agrupada.fecha_asignacion,
+          fecha_fin: agrupada.fecha_fin,
+          descripcionitem: agrupada.descripcionitem,
+          detalleitem: agrupada.detalleitem,
+          cliente_nombre: agrupada.cliente_nombre,
+          costo_produccion: agrupada.costo_produccion,
+          imagenes: agrupada.imagenes,
+          cantidad: agrupada.cantidad
+        }));
         
         // Ordenar por fecha de asignación (más recientes primero)
         asignaciones.sort((a, b) => {
