@@ -271,6 +271,32 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     return asignacionesDisponibles.items.find(it => it.item_id === itemId) || null;
   };
 
+  const obtenerNombreEmpleado = (empleadoId: string | null): string => {
+    if (!empleadoId) return "Sin asignar";
+    
+    // Buscar el empleado en la lista por cualquier campo posible
+    const empleado = empleados.find(e => {
+      if (!e) return false;
+      // Comparar como strings para asegurar coincidencia
+      const idMatch = e._id && String(e._id) === String(empleadoId);
+      const idAltMatch = e.id && String(e.id) === String(empleadoId);
+      const identificadorMatch = e.identificador && String(e.identificador) === String(empleadoId);
+      return idMatch || idAltMatch || identificadorMatch;
+    });
+    
+    if (empleado) {
+      const nombre = empleado.nombreCompleto || empleado.nombre;
+      if (nombre) {
+        return nombre;
+      }
+    }
+    
+    // Si no se encuentra el empleado, intentar cargarlo del backend si es necesario
+    // Por ahora, retornar el ID como fallback pero con un mensaje más claro
+    console.warn('⚠️ Empleado no encontrado en lista local:', empleadoId, 'Total empleados:', empleados.length);
+    return empleadoId; // Devolver el ID si no se encuentra
+  };
+
   return (
     <div className="mt-4">
       <h4 className="font-semibold mb-2">Asignar empleados por artículo:</h4>
@@ -324,9 +350,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                           <div className="text-sm text-blue-700">
                             Asignada a: <b>{
                               unidad.nombreempleado || 
-                              empleados.find(e => e._id === unidad.empleadoId)?.nombreCompleto ||
-                              empleados.find(e => e._id === unidad.empleadoId)?.nombre ||
-                              "Empleado"
+                              obtenerNombreEmpleado(unidad.empleadoId)
                             }</b>
                           </div>
                           {unidad.estado !== "terminado" && (
