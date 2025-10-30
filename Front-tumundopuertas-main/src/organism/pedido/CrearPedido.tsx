@@ -355,19 +355,22 @@ const CrearPedido: React.FC = () => {
       "sin definir 2",
     ];
 
-    // Si todos tienen existencia, marcar todos los estados como completados
-    const seguimiento: PedidoSeguimiento[] = subestados.map((nombre, idx) => ({
-      orden: idx + 1,
-      nombre_subestado: nombre,
-      estado: todosTienenExistencia ? "completado" : "pendiente",
-      asignado_a: null,
-      fecha_inicio: todosTienenExistencia ? fechaISO : null,
-      fecha_fin: todosTienenExistencia ? fechaISO : null,
-    }));
-
+    // Detectar cliente para forzar producción (RIF específico)
     const clienteObj = Array.isArray(clientesData)
       ? clientesData.find((c: any) => String(c.rif) === String(clienteId))
       : null;
+    const rifNormalizado = (clienteObj?.rif || String(clienteId) || "").toUpperCase().replace(/\s+/g, "");
+    const forzarProduccion = rifNormalizado === "J-507172554";
+
+    // Si todos tienen existencia y NO es cliente forzado a producción, marcar estados como completados
+    const seguimiento: PedidoSeguimiento[] = subestados.map((nombre, idx) => ({
+      orden: idx + 1,
+      nombre_subestado: nombre,
+      estado: todosTienenExistencia && !forzarProduccion ? "completado" : "pendiente",
+      asignado_a: null,
+      fecha_inicio: todosTienenExistencia && !forzarProduccion ? fechaISO : null,
+      fecha_fin: todosTienenExistencia && !forzarProduccion ? fechaISO : null,
+    }));
 
     // Construir lista de items para el pedido
     const itemsPedido: PedidoItem[] = [];
@@ -377,27 +380,16 @@ const CrearPedido: React.FC = () => {
       const itemData = Array.isArray(itemsData)
         ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
         : undefined;
-      
       if (!itemData) return;
 
-      // Item con la cantidad disponible (esta se resta del inventario)
-      // Si tiene cantidad disponible, estado_item = 4 (ya está listo, se resta del inventario)
-      if (item.cantidad > 0) {
-        // Asegurar que tenemos el código y el _id correctos
-        const itemIdFinal = itemData._id ?? item.itemId;
-        const codigoFinal = itemData.codigo || itemIdFinal;
-        
-        console.log("DEBUG CREAR PEDIDO: Item con existencia -", {
-          nombre: itemData.nombre,
-          codigo: codigoFinal,
-          _id: itemIdFinal,
-          cantidad: item.cantidad,
-          estado_item: 4
-        });
-        
+      const itemIdFinal = itemData._id ?? item.itemId;
+      const codigoFinal = itemData.codigo || itemIdFinal;
+
+      if (forzarProduccion) {
+        // Regla especial: todo va a producción (estado_item = 0) con la cantidad solicitada
         itemsPedido.push({
           id: itemIdFinal,
-          _id: itemIdFinal, // También enviar _id por si el backend lo necesita
+          _id: itemIdFinal,
           codigo: codigoFinal,
           nombre: itemData.nombre ?? "",
           descripcion: itemData.descripcion ?? "",
@@ -405,24 +397,41 @@ const CrearPedido: React.FC = () => {
           precio: item.precio ?? itemData.precio ?? 0,
           costo: itemData.costo ?? 0,
           costoProduccion: itemData.costoProduccion ?? 0,
-          cantidad: item.cantidad, // Cantidad disponible que se resta del inventario
+          cantidad: item.cantidad,
           activo: itemData.activo ?? true,
           detalleitem: item.detalleitem || "",
           imagenes: itemData.imagenes ?? [],
-          estado_item: 4, // Siempre 4 porque esta parte está disponible en inventario
+          estado_item: 0,
+        });
+        return;
+      }
+
+      // Comportamiento normal: dividir entre inventario disponible (estado 4) y faltante (estado 0)
+      if (item.cantidad > 0) {
+        itemsPedido.push({
+          id: itemIdFinal,
+          _id: itemIdFinal,
+          codigo: codigoFinal,
+          nombre: itemData.nombre ?? "",
+          descripcion: itemData.descripcion ?? "",
+          categoria: itemData.categoria ?? "",
+          precio: item.precio ?? itemData.precio ?? 0,
+          costo: itemData.costo ?? 0,
+          costoProduccion: itemData.costoProduccion ?? 0,
+          cantidad: item.cantidad,
+          activo: itemData.activo ?? true,
+          detalleitem: item.detalleitem || "",
+          imagenes: itemData.imagenes ?? [],
+          estado_item: 4,
         });
       }
 
-      // Si hay cantidad faltante, agregar un item adicional con la cantidad faltante para producción
       const itemOriginal = selectedItems.find((it) => it.itemId === item.itemId);
       if (itemOriginal && itemOriginal.cantidad > item.cantidad) {
         const cantidadFaltante = itemOriginal.cantidad - item.cantidad;
-        const itemIdFinal = itemData._id ?? item.itemId;
-        const codigoFinal = itemData.codigo || itemIdFinal;
-        
         itemsPedido.push({
           id: itemIdFinal,
-          _id: itemIdFinal, // También enviar _id por si el backend lo necesita
+          _id: itemIdFinal,
           codigo: codigoFinal,
           nombre: itemData.nombre ?? "",
           descripcion: itemData.descripcion ?? "",
@@ -430,11 +439,11 @@ const CrearPedido: React.FC = () => {
           precio: item.precio ?? itemData.precio ?? 0,
           costo: itemData.costo ?? 0,
           costoProduccion: itemData.costoProduccion ?? 0,
-          cantidad: cantidadFaltante, // Cantidad faltante que va a producción
+          cantidad: cantidadFaltante,
           activo: itemData.activo ?? true,
           detalleitem: item.detalleitem || "",
           imagenes: itemData.imagenes ?? [],
-          estado_item: 0, // Siempre 0 (pendiente) para items que van a producción (pedidosherreria)
+          estado_item: 0,
         });
       }
     });
@@ -444,13 +453,13 @@ const CrearPedido: React.FC = () => {
       cliente_nombre: clienteObj?.nombre || "",
       fecha_creacion: fechaISO,
       fecha_actualizacion: fechaISO,
-      estado_general: todosTienenExistencia ? "orden4" : "pendiente", // orden4 = listo para facturación
+      estado_general: todosTienenExistencia && !forzarProduccion ? "orden4" : "pendiente", // evitar marcar como listo si es cliente forzado
       items: itemsPedido,
       seguimiento,
       pago: pagos.length > 0 ? "abonado" : "sin pago",
       historial_pagos: pagos.length > 0 ? pagos : [],
       total_abonado: pagos.reduce((acc, p) => acc + p.monto, 0),
-      todos_items_disponibles: todosTienenExistencia, // Flag para el backend
+      todos_items_disponibles: todosTienenExistencia && !forzarProduccion, // Flag para el backend
     };
 
     // Debug: Log del payload completo
@@ -528,6 +537,18 @@ const CrearPedido: React.FC = () => {
     if (selectedItems.some((item) => !item.confirmed)) {
       setMensaje("Hay artículos pendientes por seleccionar.");
       setMensajeTipo("error");
+      return;
+    }
+
+    // Regla: Cliente RIF J-507172554 => todo va a producción, sin validar existencias
+    const clienteObj = Array.isArray(clientesData)
+      ? (clientesData as any[]).find((c: any) => String(c.rif) === String(clienteId))
+      : null;
+    const rifNormalizado = (clienteObj?.rif || String(clienteId) || "").toUpperCase().replace(/\s+/g, "");
+    const forzarProduccion = rifNormalizado === "J-507172554";
+
+    if (forzarProduccion) {
+      await crearPedido(selectedItems, false);
       return;
     }
 
