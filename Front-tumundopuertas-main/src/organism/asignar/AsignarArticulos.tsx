@@ -72,9 +72,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   estado_general: _estado_general, // Prefijo con _ para indicar que no se usa
   tipoEmpleado,
 }) => {
-  const [asignaciones, setAsignaciones] = useState<
-    Record<string, AsignacionArticulo>
-  >({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>("");
   const [asignadosPrevios, setAsignadosPrevios] = useState<Record<string, AsignacionArticulo>>({});
@@ -468,10 +465,10 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                           return (
                             <div key={`${item.id}-fila-${fidx}`} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center mb-2">
                               <div className="md:col-span-7">
-                                <select
+                  <select
                                   className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 bg-white"
                                   value={fila.empleadoId}
-                                  onChange={(e) => {
+                    onChange={(e) => {
                                     const value = e.target.value;
                                     setAsignacionesPorItem(prev => {
                                       const filas = [...(prev[item.id] || [])];
@@ -484,7 +481,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                   {empleadosValidos.map((emp) => (
                                     <option key={emp.identificador} value={emp.identificador}>
                                       {emp.nombreCompleto || emp.nombre || emp.identificador}
-                                    </option>
+                          </option>
                                   ))}
                                 </select>
                               </div>
@@ -526,7 +523,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                           Cantidad total del item: <b>{item.cantidad}</b>
                         </div>
                       </div>
-
+                      
                       <div className="text-xs">
                         {empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0 ? (
                           <span className="text-green-600 font-medium">✅ {empleadosPorItem[item.id].length} empleados filtrados por módulo</span>
