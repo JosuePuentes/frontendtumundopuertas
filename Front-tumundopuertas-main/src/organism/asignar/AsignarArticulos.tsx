@@ -448,7 +448,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                         </div>
                         {(asignacionesPorItem[item.id] || []).map((fila, fidx) => {
                           const listaEmpleadosDisponibles = (empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0) ? empleadosPorItem[item.id] : empleados;
-                          const empleadosValidos = listaEmpleadosDisponibles.filter(e => e && e.identificador && (e.nombre || e.nombreCompleto));
+                          // Enviar SIEMPRE el _id de Mongo al backend
+                          const empleadosValidos = listaEmpleadosDisponibles.filter(e => e && e._id && (e.nombre || e.nombreCompleto));
                           return (
                             <div key={`${item.id}-fila-${fidx}`} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center mb-2">
                               <div className="md:col-span-7">
@@ -466,8 +467,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                                 >
                                   <option value="">👤 Seleccionar empleado...</option>
                                   {empleadosValidos.map((emp) => (
-                                    <option key={emp.identificador} value={emp.identificador}>
-                                      {emp.nombreCompleto || emp.nombre || emp.identificador}
+                                    <option key={emp._id} value={emp._id}>
+                                      {emp.nombreCompleto || emp.nombre || emp._id}
                           </option>
                                   ))}
                                 </select>
