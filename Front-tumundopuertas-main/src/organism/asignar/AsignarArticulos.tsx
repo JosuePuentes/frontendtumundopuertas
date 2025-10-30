@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useEmpleadosPorModulo } from "@/hooks/useEmpleadosPorModulo";
-// import { useItemsDisponibles } from "@/hooks/useItemsDisponibles"; // TODO: Usar cuando backend esté listo
 import { useEstadoItems } from "@/hooks/useEstadoItems";
-import ImageDisplay from "@/upfile/ImageDisplay"; // Added this import
+import ImageDisplay from "@/upfile/ImageDisplay";
 import BarraProgresoItem from "@/components/ui/BarraProgresoItem";
 import GestorEmpleadosAutomatico from "@/components/GestorEmpleadosAutomatico";
-// import { getApiUrl } from "@/lib/api"; // Removido - no se usa
 
 interface PedidoItem {
   id: string;
@@ -18,11 +16,12 @@ interface PedidoItem {
   cantidad: number;
   activo: boolean;
   costoProduccion: number;
-  imagenes?: string[]; // Added this line
+  imagenes?: string[];
 }
 
 interface Empleado {
   id?: string;
+  _id?: string; // MongoDB _id
   identificador: string;
   nombre?: string;
   nombreCompleto?: string;
@@ -32,14 +31,28 @@ interface Empleado {
   activo?: boolean;
 }
 
-interface AsignacionArticulo {
-  key: string;
-  empleadoId: string;
-  nombreempleado: string;
-  fecha_inicio: string;
+interface UnidadAsignable {
+  unidad_index: number;
   estado: string;
-  descripcionitem: string;
-  costoproduccion: string;
+  empleadoId: string | null;
+  nombreempleado: string | null;
+  disponible: boolean;
+}
+
+interface ItemConUnidades {
+  item_id: string;
+  item_nombre: string;
+  cantidad_total: number;
+  unidades_asignadas: number;
+  unidades_disponibles: number;
+  unidades_terminadas: number;
+  unidades: UnidadAsignable[];
+}
+
+interface AsignacionesDisponibles {
+  pedido_id: string;
+  modulo: string;
+  items: ItemConUnidades[];
 }
 
 interface AsignarArticulosProps {
@@ -51,334 +64,155 @@ interface AsignarArticulosProps {
   tipoEmpleado: string[];
 }
 
-// Función debounce para evitar múltiples clicks
-const debounce = (func: Function, wait: number) => {
-  let timeout: NodeJS.Timeout;
-  return function executedFunction(...args: any[]) {
-    const later = () => {
-      clearTimeout(timeout);
-      func(...args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-};
-
 const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   items,
   empleados,
   pedidoId,
   numeroOrden,
-  estado_general: _estado_general, // Prefijo con _ para indicar que no se usa
-  tipoEmpleado,
+  estado_general: _estado_general,
+  tipoEmpleado: _tipoEmpleado,
 }) => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string>("");
-  const [asignadosPrevios, setAsignadosPrevios] = useState<Record<string, AsignacionArticulo>>({});
-  const [showCambio, setShowCambio] = useState<Record<string, boolean>>({});
-  const [empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
-  // NUEVO: filas de asignación por item (empleado + cantidad)
-  const [asignacionesPorItem, setAsignacionesPorItem] = useState<Record<string, Array<{ empleadoId: string; cantidad: number }>>>({});
-  // (removido) estado local de items asignados - el bloqueo ahora se basa en unidades asignadas
-  // NUEVO: llevar cuenta de unidades ya asignadas por item (según seguimiento)
-  const [unidadesAsignadasPorItem, setUnidadesAsignadasPorItem] = useState<Record<string, number>>({});
+  const [asignacionesDisponibles, setAsignacionesDisponibles] = useState<AsignacionesDisponibles | null>(null);
+  const [_empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
+  const [asignacionesPendientes, setAsignacionesPendientes] = useState<Record<string, Array<{ unidad_index: number; empleadoId: string }>>>({});
 
-
-  // Hook para obtener empleados por módulo
-  const { loading: loadingEmpleados } = useEmpleadosPorModulo();
-  // const { asignarItemSiguienteModulo } = useItemsDisponibles(); // TODO: Usar cuando backend esté listo
-  
-  // Hook para manejar estados individuales de items
+  const { loading: _loadingEmpleados } = useEmpleadosPorModulo();
   const { obtenerEstadoItem, cargarEstadosItems } = useEstadoItems(pedidoId, items);
-  
-  // Escuchar cambios de estado usando evento personalizado
-  useEffect(() => {
-    const handleCambioEstado = async (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const evento = customEvent.detail;
-      console.log(`🔄 AsignarArticulos: Cambio de estado detectado:`, evento);
-      
-      // Verificar si el cambio es relevante para los items actuales
-      const esRelevante = items.some(item => item.id === evento.itemId);
-      
-      if (esRelevante) {
-        console.log(`🎯 Cambio relevante detectado, recargando datos...`);
-        
-        // Recargar estados de items
-        await cargarEstadosItems();
-        
-        // Recargar empleados por item
-        await cargarEmpleadosPorItem();
-        
-        console.log(`✅ AsignarArticulos: Datos actualizados después del cambio de estado`);
-      }
-    };
 
-    // Suscribirse al evento personalizado
-    window.addEventListener('cambioEstadoItem', handleCambioEstado);
-
-    // Cleanup: remover el listener cuando el componente se desmonte
-    return () => {
-      window.removeEventListener('cambioEstadoItem', handleCambioEstado);
-    };
-  }, [items, cargarEstadosItems]);
-
-  // Cargar empleados filtrados para cada item
-  const cargarEmpleadosPorItem = async () => {
-    const empleadosPorItemData: Record<string, any[]> = {};
-    
-    for (const item of items) {
-      try {
-        console.log(`🔍 Cargando empleados para item ${item.id} del pedido ${pedidoId}...`);
-        
-        // TEMPORAL: El endpoint no existe en el backend, usar fallback
-        console.warn(`⚠️ Endpoint /pedidos/empleados-por-modulo/ no existe en el backend - usando empleados generales`);
-        
-        // Fallback: Usar empleados generales
-        empleadosPorItemData[item.id] = empleados;
-        console.log(`✅ ${empleados.length} empleados generales para item ${item.id}`);
-        
-      } catch (error) {
-        console.error(`❌ Error al cargar empleados para item ${item.id}:`, error);
-        // Fallback a empleados generales si hay error
-        empleadosPorItemData[item.id] = empleados;
-        console.log(`🔄 Usando empleados generales como fallback para item ${item.id}`);
-      }
-    }
-    
-    setEmpleadosPorItem(empleadosPorItemData);
-    console.log('📋 Empleados cargados por item:', empleadosPorItemData);
+  const obtenerModulo = (): string => {
+    const ordenNum = parseInt(numeroOrden) || 1;
+    if (ordenNum === 1) return "herreria";
+    if (ordenNum === 2) return "masillar";
+    return "preparar";
   };
 
-  // Función para obtener el tipo de empleado según el estado real del item (INDEPENDIENTE)
-  const obtenerTipoEmpleadoPorItem = (itemId: string): string[] => {
-    const estadoItem = obtenerEstadoItem(itemId); // Usar el estado real del item
-    
-    console.log(`🎯 Obteniendo tipo empleado para item ${itemId}, estado INDIVIDUAL: ${estadoItem}`);
-    
-    // NUEVA LÓGICA: Permitir saltar módulos según el estado del item
-    switch (estadoItem) {
-      case "1":
-      case "herreria":
-        // Si está en herrería, puede asignar herreros, masilladores, pintores, manilladores y ayudantes
-        return ["herreria", "masillar", "pintar", "manillar", "mantenimiento", "ayudante"];
-      case "2":
-      case "masillar":
-        // Si está en masillar, puede asignar masilladores, pintores, manilladores y ayudantes
-        return ["masillar", "pintar", "manillar", "mantenimiento", "ayudante"];
-      case "3":
-      case "preparar":
-        // Si está en preparar, puede asignar manilladores, mantenimiento y ayudantes
-        return ["manillar", "mantenimiento", "facturacion", "ayudante"];
-      case "4":
-      case "facturar":
-        // Si está en facturar, solo puede asignar facturación y ayudantes
-        return ["facturacion", "ayudante"];
-      default:
-        // Por defecto, mostrar todos los empleados disponibles
-        return ["herreria", "masillar", "pintar", "manillar", "mantenimiento", "facturacion", "ayudante"];
-    }
-  };
-
-  // Buscar asignaciones previas al montar
-  React.useEffect(() => {
-    const fetchPedido = async () => {
-      try {
-        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-        const res = await fetch(`${apiUrl}/pedidos/id/${pedidoId}/`);
-        if (!res.ok) return;
-        const pedido = await res.json();
-        
-        // SOLUCIÓN: Buscar asignaciones en TODOS los subestados, no solo uno específico
-        const prev: Record<string, AsignacionArticulo> = {};
-        const asignadasCount: Record<string, number> = {};
-        
-        if (Array.isArray(pedido.seguimiento)) {
-          pedido.seguimiento.forEach((s: any) => {
-            if (s.asignaciones_articulos && Array.isArray(s.asignaciones_articulos)) {
-              s.asignaciones_articulos.forEach((a: AsignacionArticulo) => {
-                // Solo incluir asignaciones en proceso
-                if (a.estado === "en_proceso") {
-                  prev[a.key] = a;
-                }
-                // Contar unidades asignadas por item: estados pendiente o en_proceso cuentan como ocupadas
-                const anyAssign: any = a as any;
-                const itemIdAsign = anyAssign.itemId;
-                const estadoAsign = anyAssign.estado;
-                if (itemIdAsign && (estadoAsign === 'pendiente' || estadoAsign === 'en_proceso')) {
-                  asignadasCount[itemIdAsign] = (asignadasCount[itemIdAsign] || 0) + (Number(anyAssign.cantidad) || 1);
-                }
-              });
-            }
-          });
-        }
-        
-        console.log('🔍 Asignaciones previas encontradas:', Object.keys(prev).length);
-        setAsignadosPrevios(prev);
-        setUnidadesAsignadasPorItem(asignadasCount);
-      } catch (error) {
-        console.error('❌ Error al cargar asignaciones previas:', error);
-      }
-    };
-    fetchPedido();
-  }, [pedidoId]); // Remover numeroOrden de las dependencias
-
-  // Cargar empleados filtrados cuando cambien los items (SOLO UNA VEZ)
-  useEffect(() => {
-    if (items.length > 0) {
-      cargarEmpleadosPorItem();
-    }
-  }, [items.length, pedidoId]); // Solo cuando cambie la cantidad de items o el pedidoId
-
-  // Debug: Log de empleados cuando cambien (SOLO UNA VEZ)
-  useEffect(() => {
-    if (empleados.length > 0) {
-      console.log('🔍 EMPLEADOS CARGADOS:', {
-        empleadosLength: empleados.length,
-        primerEmpleado: empleados[0]?.identificador,
-        tipoEmpleado: tipoEmpleado
-      });
-    }
-  }, [empleados.length]); // Solo cuando cambie la cantidad de empleados
-
-  // Copia de asignaciones previas: no requerido con el nuevo flujo basado en asignacionesPorItem
-
-  // Eliminado: lógica antigua de selección única por empleado
-
-  const handleAsignarOriginal = async () => {
-    console.log('🚀 INICIANDO ASIGNACIÓN...');
-    // Verificar que hay filas con empleado y cantidad > 0 en asignacionesPorItem
-    const hayFilasValidas = items.some((it) =>
-      (asignacionesPorItem[it.id] || []).some((f) => f.empleadoId && Number(f.cantidad) > 0)
-    );
-    if (!hayFilasValidas) {
-      setMessage("⚠️ Debes agregar al menos una fila con empleado y cantidad");
-      return;
-    }
-    
-    setLoading(true);
-    setMessage("");
-    
-    // NUEVO: enviar asignaciones por item (POST /pedidos/asignar)
+  const fetchAsignacionesDisponibles = async (): Promise<AsignacionesDisponibles | null> => {
     try {
-      const apiUrl = (import.meta.env.VITE_API_URL || "https://crafteo.onrender.com").replace('http://', 'https://');
-      const ordenNum = parseInt(numeroOrden) || 1;
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const token = localStorage.getItem("access_token");
+      const modulo = obtenerModulo();
 
-      // Validar cantidades por item
-      for (const item of items) {
-        const filas = asignacionesPorItem[item.id] || [];
-        if (filas.length === 0) continue;
-        const suma = filas.reduce((acc, f) => acc + (Number(f.cantidad) || 0), 0);
-        const yaAsignadas = unidadesAsignadasPorItem[item.id] || 0;
-        const restantes = Math.max((item.cantidad || 0) - yaAsignadas, 0);
-        if (suma <= 0) {
-          setMessage(`⚠️ Debes ingresar cantidades a asignar para ${item.nombre}`);
-          setLoading(false);
-          return;
-        }
-        if (suma > restantes) {
-          setMessage(`⚠️ La suma (${suma}) excede las unidades restantes (${restantes}) en ${item.nombre}`);
-          setLoading(false);
-          return;
-        }
+      const res = await fetch(`${apiUrl}/pedidos/asignaciones-disponibles/${pedidoId}/${modulo}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      if (!res.ok) {
+        console.warn('⚠️ No se pudo obtener asignaciones disponibles:', res.status);
+        return null;
       }
 
-      // Optimismo: incrementar al instante el conteo asignado para feedback inmediato
-      const incrementosOptimistas: Record<string, number> = {};
-      for (const item of items) {
-        const filas = (asignacionesPorItem[item.id] || []).filter(f => f.empleadoId && Number(f.cantidad) > 0);
-        if (filas.length === 0) continue;
-        incrementosOptimistas[item.id] = filas.reduce((acc, f) => acc + (Number(f.cantidad) || 0), 0);
+      const data = await res.json();
+      console.log('📋 Asignaciones disponibles cargadas:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ Error al cargar asignaciones disponibles:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const cargarDatos = async () => {
+      const data = await fetchAsignacionesDisponibles();
+      if (data) {
+        setAsignacionesDisponibles(data);
       }
-      if (Object.keys(incrementosOptimistas).length > 0) {
-        setUnidadesAsignadasPorItem(prev => {
-          const next = { ...prev } as Record<string, number>;
-          for (const k of Object.keys(incrementosOptimistas)) {
-            next[k] = (next[k] || 0) + incrementosOptimistas[k];
-          }
-          return next;
-        });
+      await cargarEmpleadosPorItem();
+    };
+    cargarDatos();
+  }, [pedidoId, numeroOrden]);
+
+  useEffect(() => {
+    const handleCambioEstado = async () => {
+      const data = await fetchAsignacionesDisponibles();
+      if (data) {
+        setAsignacionesDisponibles(data);
       }
-
-      // Enviar todas las asignaciones en paralelo para reducir latencia
-      const requests: Array<Promise<any>> = [];
-      for (const item of items) {
-        const filas = (asignacionesPorItem[item.id] || []).filter(f => f.empleadoId && Number(f.cantidad) > 0);
-        if (filas.length === 0) continue;
-
-        const payload = {
-          pedido_id: pedidoId,
-          item_id: item.id,
-          orden: ordenNum,
-          asignaciones: filas.map(f => ({ empleado_id: f.empleadoId, cantidad: Number(f.cantidad) })),
-          descripcionitem: item.descripcion,
-          costoproduccion: item.costoProduccion
-        };
-
-        console.log('📤 Enviando asignación múltiple:', payload);
-        const controller = new AbortController();
-        const signal: AbortSignal = ('timeout' in AbortSignal)
-          ? (AbortSignal as any).timeout(8000)
-          : controller.signal;
-
-        const req = fetch(`${apiUrl}/pedidos/asignar`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-          },
-          body: JSON.stringify(payload),
-          signal
-        }).then(async (res) => {
-          if (!res.ok) {
-            const t = await res.text();
-            throw new Error(`Error ${res.status}: ${t}`);
-          }
-          return res.json();
-        });
-        requests.push(req);
-
-        // Notificar a otros módulos (dashboard, etc.) de forma inmediata
-        window.dispatchEvent(new CustomEvent('asignacionRealizada', {
-          detail: {
-            pedidoId,
-            itemId: item.id,
-            orden: ordenNum,
-            asignaciones: filas,
-            timestamp: new Date().toISOString(),
-          }
-        }));
-      }
-
-      const settled = await Promise.allSettled(requests);
-      const fallidas = settled.filter(r => r.status === 'rejected');
-      if (fallidas.length > 0) {
-        console.warn(`⚠️ ${fallidas.length} asignaciones fallaron`);
-        setMessage(`⚠️ Algunas asignaciones fallaron (${fallidas.length}). Actualizando estado...`);
-      } else {
-        setMessage(`✅ Asignaciones enviadas correctamente`);
-      }
-
-      // Reconciliar estado tras la respuesta del backend
       await cargarEstadosItems();
       await cargarEmpleadosPorItem();
-      
+    };
+
+    window.addEventListener('cambioEstadoItem', handleCambioEstado);
+    return () => window.removeEventListener('cambioEstadoItem', handleCambioEstado);
+  }, [cargarEstadosItems]);
+
+  const cargarEmpleadosPorItem = async () => {
+    const empleadosPorItemData: Record<string, any[]> = {};
+    for (const item of items) {
+      empleadosPorItemData[item.id] = empleados;
+    }
+    setEmpleadosPorItem(empleadosPorItemData);
+  };
+
+  const handleAsignarUnidad = async (itemId: string, unidadIndex: number, empleadoId: string) => {
+    if (!empleadoId) {
+      setMessage("⚠️ Debes seleccionar un empleado");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const token = localStorage.getItem("access_token");
+      const modulo = obtenerModulo();
+      const empleado = empleados.find(e => e._id === empleadoId);
+      const empleadoNombre = empleado?.nombreCompleto || empleado?.nombre || "";
+
+      const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          pedido_id: pedidoId,
+          item_id: itemId,
+          empleado_id: empleadoId,
+          empleado_nombre: empleadoNombre,
+          modulo: modulo,
+          unidad_index: unidadIndex
+        })
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Error ${res.status}: ${errorText}`);
+      }
+
+      const resultado = await res.json();
+      console.log('✅ Unidad asignada:', resultado);
+
+      window.dispatchEvent(new CustomEvent('asignacionRealizada', {
+        detail: {
+          pedidoId,
+          itemId,
+          unidadIndex,
+          empleadoId,
+          timestamp: new Date().toISOString(),
+        }
+      }));
+
+      const data = await fetchAsignacionesDisponibles();
+      if (data) {
+        setAsignacionesDisponibles(data);
+      }
+      await cargarEstadosItems();
+      setMessage(`✅ Unidad ${unidadIndex} asignada correctamente`);
     } catch (err: any) {
-      console.error("❌ Error al enviar asignación:", err);
-      setMessage(`❌ Error al enviar la asignación: ${err.message}`);
+      console.error("❌ Error al asignar unidad:", err);
+      setMessage(`❌ Error al asignar unidad: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Función debounced para evitar múltiples clicks (reducido a 300ms)
-  const handleAsignar = debounce(handleAsignarOriginal, 300);
-
-  // Función para manejar la terminación de asignaciones
   const handleTerminarAsignacion = async (itemId: string, empleadoId: string) => {
     setLoading(true);
     setMessage("");
-    
+
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       const res = await fetch(`${apiUrl}/pedidos/asignacion/terminar`, {
@@ -393,22 +227,21 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
           fecha_fin: new Date().toISOString(),
         }),
       });
-      
+
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const result = await res.json();
       console.log("✅ Asignación terminada:", result);
-      
-      // Actualizar los estados de los items después de terminar la asignación
+
+      const data = await fetchAsignacionesDisponibles();
+      if (data) {
+        setAsignacionesDisponibles(data);
+      }
       await cargarEstadosItems();
-      
-      // Recargar empleados por item para reflejar el nuevo estado
       await cargarEmpleadosPorItem();
-      
       setMessage("Asignación terminada exitosamente. El artículo ha avanzado al siguiente módulo.");
-      
     } catch (err) {
       setMessage("Error al terminar la asignación");
       console.error("❌ Error al terminar asignación:", err);
@@ -417,21 +250,23 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
   };
 
+  const getItemConUnidades = (itemId: string): ItemConUnidades | null => {
+    if (!asignacionesDisponibles) return null;
+    return asignacionesDisponibles.items.find(it => it.item_id === itemId) || null;
+  };
+
   return (
     <div className="mt-4">
       <h4 className="font-semibold mb-2">Asignar empleados por artículo:</h4>
       <ul className="space-y-4">
         {items.map((item, idx) => {
-          const key = `${item.id}-${idx}`;
-          const asignadoPrevio = asignadosPrevios[key];
-          const cambioActivo = showCambio[key];
-          // bloqueo por unidades asignadas/restantes en lugar de banderas locales
-          
+          const itemConUnidades = getItemConUnidades(item.id);
+          const mostrarUnidades = itemConUnidades && itemConUnidades.cantidad_total > 1;
+
           return (
-            <li key={key} className="flex flex-col gap-2 border rounded p-3">
+            <li key={`${item.id}-${idx}`} className="flex flex-col gap-2 border rounded p-3">
               <span className="font-medium">{item.nombre}</span>
               
-              {/* Barra de progreso del item */}
               <BarraProgresoItem 
                 pedidoId={pedidoId}
                 itemId={item.id}
@@ -453,164 +288,121 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                   </div>
                 </div>
               )}
-              {((unidadesAsignadasPorItem[item.id] || 0) >= (item.cantidad || 0)) ? (
-                <div className="flex flex-col gap-2">
-                  <div className="text-sm text-gray-600 bg-green-50 p-2 rounded">
-                    🚫 Todas las unidades de este item están asignadas. Debe terminar alguna para reasignar.
-                  </div>
-                </div>
-              ) : asignadoPrevio && !cambioActivo ? (
-                <div className="flex flex-col gap-2">
-                  <span className="text-blue-700 text-sm font-semibold">
-                    Ya asignado a: {asignadoPrevio.nombreempleado}
-                  </span>
-                  <div className="flex flex-row gap-4 w-full justify-center p-4">
 
-                  <button
-                    type="button"
-                    className="bg-yellow-500 text-white px-2 py-1 rounded shadow hover:bg-yellow-600 w-fit"
-                    onClick={() => setShowCambio((prev) => ({ ...prev, [key]: true }))}
-                  >
-                    Cambiar asignación
-                  </button>
-                  
-                  {/* Botón para terminar asignación */}
-                  <button
-                    type="button"
-                    className="bg-green-600 text-white px-2 py-1 rounded shadow hover:bg-green-700 w-fit"
-                    onClick={() => handleTerminarAsignacion(item.id, asignadoPrevio.empleadoId)}
-                    disabled={loading}
-                  >
-                    {loading ? "Terminando..." : "Terminar asignación"}
-                  </button>
-                  </div>
+              {itemConUnidades && (
+                <div className="text-xs text-gray-600 mb-2 bg-blue-50 p-2 rounded">
+                  Total: <b>{itemConUnidades.cantidad_total}</b> · 
+                  Asignadas: <b>{itemConUnidades.unidades_asignadas}</b> · 
+                  Disponibles: <b className="text-green-600">{itemConUnidades.unidades_disponibles}</b> · 
+                  Terminadas: <b>{itemConUnidades.unidades_terminadas}</b>
                 </div>
-              ) : (
-                <div className="flex gap-4 items-start">
-                  {loadingEmpleados ? (
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      Cargando empleados...
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-3 w-full">
-                      <div className="border rounded-lg p-3 bg-white">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-semibold text-gray-700">Asignaciones parciales</span>
-                          <button
-                            type="button"
-                            className="text-sm px-2 py-1 bg-blue-600 text-white rounded"
-                            onClick={() => {
-                              setAsignacionesPorItem(prev => {
-                                const filas = prev[item.id] ? [...prev[item.id]] : [];
-                                filas.push({ empleadoId: "", cantidad: 1 });
-                                return { ...prev, [item.id]: filas };
-                              });
+              )}
+
+              {mostrarUnidades ? (
+                <div className="space-y-2">
+                  <div className="text-sm font-semibold text-gray-700">Unidades individuales:</div>
+                  {itemConUnidades?.unidades.map((unidad) => (
+                    <div key={unidad.unidad_index} className="border rounded p-3 bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium">Unidad {unidad.unidad_index}</span>
+                        <span className={`text-xs px-2 py-1 rounded ${
+                          unidad.estado === "terminado" ? "bg-green-100 text-green-700" :
+                          unidad.estado === "en_proceso" ? "bg-blue-100 text-blue-700" :
+                          "bg-gray-100 text-gray-700"
+                        }`}>
+                          {unidad.estado === "terminado" ? "✓ Terminada" :
+                           unidad.estado === "en_proceso" ? "⚙ En proceso" :
+                           "⏳ Pendiente"}
+                        </span>
+                      </div>
+
+                      {unidad.empleadoId ? (
+                        <div className="flex flex-col gap-2">
+                          <div className="text-sm text-blue-700">
+                            Asignada a: <b>{unidad.nombreempleado || "Empleado"}</b>
+                          </div>
+                          {unidad.estado !== "terminado" && (
+                            <button
+                              type="button"
+                              className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 w-fit"
+                              onClick={() => handleTerminarAsignacion(item.id, unidad.empleadoId!)}
+                              disabled={loading}
+                            >
+                              {loading ? "Terminando..." : "Terminar asignación"}
+                            </button>
+                          )}
+                        </div>
+                      ) : unidad.disponible ? (
+                        <div className="flex gap-2 items-center">
+                          <select
+                            className="flex-1 border-2 border-gray-300 rounded-lg px-3 py-2 bg-white"
+                            value={asignacionesPendientes[`${item.id}-${unidad.unidad_index}`]?.[0]?.empleadoId || ""}
+                            onChange={(e) => {
+                              const empleadoId = e.target.value;
+                              if (empleadoId) {
+                                setAsignacionesPendientes(prev => ({
+                                  ...prev,
+                                  [`${item.id}-${unidad.unidad_index}`]: [{ unidad_index: unidad.unidad_index, empleadoId }]
+                                }));
+                              }
                             }}
                           >
-                            + Agregar fila
+                            <option value="">👤 Seleccionar empleado...</option>
+                            {empleados
+                              .filter(e => e && e._id && (e.nombre || e.nombreCompleto))
+                              .map((emp) => (
+                                <option key={emp._id} value={emp._id}>
+                                  {emp.nombreCompleto || emp.nombre || emp._id}
+                                </option>
+                              ))}
+                          </select>
+                          <button
+                            type="button"
+                            className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
+                            onClick={() => {
+                              const pendiente = asignacionesPendientes[`${item.id}-${unidad.unidad_index}`]?.[0];
+                              if (pendiente?.empleadoId) {
+                                handleAsignarUnidad(item.id, unidad.unidad_index, pendiente.empleadoId);
+                              } else {
+                                setMessage("⚠️ Debes seleccionar un empleado");
+                              }
+                            }}
+                            disabled={loading}
+                          >
+                            Asignar
                           </button>
                         </div>
-                        {(asignacionesPorItem[item.id] || []).map((fila, fidx) => {
-                          const listaEmpleadosDisponibles = (empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0) ? empleadosPorItem[item.id] : empleados;
-                          // Enviar SIEMPRE el _id de Mongo al backend
-                          const empleadosValidos = listaEmpleadosDisponibles.filter(e => e && e._id && (e.nombre || e.nombreCompleto));
-                          return (
-                            <div key={`${item.id}-fila-${fidx}`} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center mb-2">
-                              <div className="md:col-span-7">
-                  <select
-                                  className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 bg-white"
-                                  value={fila.empleadoId}
-                    onChange={(e) => {
-                                    const value = e.target.value;
-                                    setAsignacionesPorItem(prev => {
-                                      const filas = [...(prev[item.id] || [])];
-                                      filas[fidx] = { ...filas[fidx], empleadoId: value };
-                                      return { ...prev, [item.id]: filas };
-                                    });
-                                  }}
-                                >
-                                  <option value="">👤 Seleccionar empleado...</option>
-                                  {empleadosValidos.map((emp) => (
-                                    <option key={emp._id} value={emp._id}>
-                                      {emp.nombreCompleto || emp.nombre || emp._id}
-                          </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div className="md:col-span-4">
-                                <input
-                                  type="number"
-                                  min={1}
-                                  className="w-full border-2 border-gray-300 rounded-lg px-3 py-2"
-                                  value={fila.cantidad}
-                                  onChange={(e) => {
-                                    const value = Number(e.target.value) || 0;
-                                    setAsignacionesPorItem(prev => {
-                                      const filas = [...(prev[item.id] || [])];
-                                      filas[fidx] = { ...filas[fidx], cantidad: value };
-                                      return { ...prev, [item.id]: filas };
-                                    });
-                                  }}
-                                />
-                              </div>
-                              <div className="md:col-span-1 flex justify-end">
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 text-sm bg-red-500 text-white rounded"
-                                  onClick={() => {
-                                    setAsignacionesPorItem(prev => {
-                                      const filas = [...(prev[item.id] || [])];
-                                      filas.splice(fidx, 1);
-                                      return { ...prev, [item.id]: filas };
-                                    });
-                                  }}
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                        <div className="text-xs text-gray-600 mt-2">
-                          Cantidad total del item: <b>{item.cantidad}</b> · Asignadas: <b>{unidadesAsignadasPorItem[item.id] || 0}</b> · Restantes: <b>{Math.max((item.cantidad || 0) - (unidadesAsignadasPorItem[item.id] || 0), 0)}</b>
-                        </div>
-                      </div>
-                      
-                      <div className="text-xs">
-                        {empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0 ? (
-                          <span className="text-green-600 font-medium">✅ {empleadosPorItem[item.id].length} empleados filtrados por módulo</span>
-                        ) : (
-                          <span className="text-orange-600 font-medium">⚠️ {empleados.length} empleados generales (filtrado no disponible)</span>
-                        )}
-                        <div className="mt-1 text-blue-600 font-medium">📍 Módulo actual: {obtenerEstadoItem(item.id).toUpperCase()}</div>
-                        <div className="mt-1 text-gray-600">🎯 Empleados disponibles: {obtenerTipoEmpleadoPorItem(item.id).join(", ")}</div>
-                      </div>
+                      ) : (
+                        <div className="text-sm text-gray-500">No disponible para asignación</div>
+                      )}
                     </div>
-                  )}
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-600">
+                  {itemConUnidades?.unidades_disponibles === 0
+                    ? "🚫 Todas las unidades están asignadas o terminadas"
+                    : "Item con cantidad 1 - usar asignación estándar"}
                 </div>
               )}
             </li>
           );
         })}
       </ul>
-      <button
-        type="button"
-        className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 mt-4"
-        onClick={handleAsignar}
-        disabled={loading}
-      >
-        Asignar empleados
-      </button>
+      
       {message && (
-        <div className="mt-2 text-green-600 font-semibold">{message}</div>
+        <div className={`mt-2 font-semibold ${
+          message.startsWith("✅") ? "text-green-600" : 
+          message.startsWith("⚠️") ? "text-yellow-600" : 
+          "text-red-600"
+        }`}>
+          {message}
+        </div>
       )}
       
-      {/* Gestor Automático de Empleados */}
       <GestorEmpleadosAutomatico 
         empleados={empleados}
         onEmpleadosChange={(nuevosEmpleados) => {
-          // Aquí se pueden aplicar cambios automáticamente
           console.log('🔄 Empleados actualizados automáticamente:', nuevosEmpleados);
         }}
       />
