@@ -24,6 +24,7 @@ const FacturacionPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [modalAccion, setModalAccion] = useState<'facturar' | 'cargar_inventario'>('facturar');
   const [modalPreliminarOpen, setModalPreliminarOpen] = useState<boolean>(false);
   const [selectedPedido, setSelectedPedido] = useState<any>(null);
   const [selectedFactura, setSelectedFactura] = useState<FacturaConfirmada | null>(null);
@@ -230,6 +231,18 @@ const FacturacionPage: React.FC = () => {
 
   const handleFacturar = async (pedido: any) => {
     setSelectedPedido(pedido);
+    setModalAccion('facturar');
+    setModalOpen(true);
+  };
+
+  const esClienteCargaInventario = (pedido: any) => {
+    const rif = String(pedido?.cliente_id || '').toUpperCase().replace(/\s+/g, '');
+    return rif === 'J-507172554';
+  };
+
+  const handleCargarInventario = async (pedido: any) => {
+    setSelectedPedido(pedido);
+    setModalAccion('cargar_inventario');
     setModalOpen(true);
   };
 
@@ -238,40 +251,40 @@ const FacturacionPage: React.FC = () => {
     
     setConfirming(true);
     try {
-      // Generar número de factura único
-      const numeroFactura = generarNumeroFactura();
-      
-      // Crear objeto de factura confirmada
-      const facturaConfirmada: FacturaConfirmada = {
-        id: selectedPedido._id + '-' + Date.now(),
-        numeroFactura: numeroFactura,
-        pedidoId: selectedPedido._id,
-        clienteNombre: selectedPedido.cliente_nombre || selectedPedido.cliente_id || 'N/A',
-        clienteId: selectedPedido.cliente_id || '',
-        montoTotal: selectedPedido.montoTotal,
-        fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
-        fechaFacturacion: new Date().toISOString(),
-        items: selectedPedido.items || []
-      };
-
-      // TODO: Aquí deberías hacer una llamada al backend para marcar el pedido como facturado
-      // await fetch(`${getApiUrl()}/pedidos/${selectedPedido._id}/facturar`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ numeroFactura })
-      // });
-
-      // Guardar factura confirmada en localStorage
-      guardarFacturaConfirmada(facturaConfirmada);
-      
-      // Actualizar la lista de pedidos removiendo el que se confirmó
-      setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
-      
-      setModalOpen(false);
-      alert(`✓ Pedido facturado exitosamente\nNúmero de Factura: ${numeroFactura}`);
+      if (modalAccion === 'cargar_inventario') {
+        // Cargar existencias al inventario (solo para el cliente especial)
+        const res = await fetch(`${getApiUrl()}/inventario/cargar-existencias-desde-pedido`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pedido_id: selectedPedido._id })
+        });
+        if (!res.ok) throw new Error('Error al cargar existencias al inventario');
+        setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
+        setModalOpen(false);
+        alert('✓ Existencias cargadas al inventario correctamente');
+      } else {
+        // Flujo normal de facturación
+        const numeroFactura = generarNumeroFactura();
+        const facturaConfirmada: FacturaConfirmada = {
+          id: selectedPedido._id + '-' + Date.now(),
+          numeroFactura: numeroFactura,
+          pedidoId: selectedPedido._id,
+          clienteNombre: selectedPedido.cliente_nombre || selectedPedido.cliente_id || 'N/A',
+          clienteId: selectedPedido.cliente_id || '',
+          montoTotal: selectedPedido.montoTotal,
+          fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
+          fechaFacturacion: new Date().toISOString(),
+          items: selectedPedido.items || []
+        };
+        // TODO backend: marcar pedido como facturado si aplica
+        guardarFacturaConfirmada(facturaConfirmada);
+        setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
+        setModalOpen(false);
+        alert(`✓ Pedido facturado exitosamente\nNúmero de Factura: ${numeroFactura}`);
+      }
     } catch (error) {
-      console.error('Error al confirmar facturación:', error);
-      alert('Error al confirmar la facturación');
+      console.error('Error al confirmar acción:', error);
+      alert(modalAccion === 'cargar_inventario' ? 'Error al cargar existencias' : 'Error al confirmar la facturación');
     } finally {
       setConfirming(false);
       setSelectedPedido(null);
@@ -596,26 +609,49 @@ const FacturacionPage: React.FC = () => {
                 )}
 
                 <div className="mt-4 pt-4 border-t-2 border-gray-200">
-                  <Button
-                    onClick={() => handleFacturar(pedido)}
-                    disabled={!pedido.puedeFacturar}
-                    className={`w-full py-6 text-lg font-bold ${
-                      pedido.puedeFacturar
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {pedido.puedeFacturar ? (
-                      <>
-                        <Receipt className="w-6 h-6 mr-2" />✓ LISTO PARA FACTURAR
-                      </>
-                    ) : (
-                      <>
-                        <DollarSign className="w-6 h-6 mr-2" />
-                        ⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})
-                      </>
-                    )}
-                  </Button>
+                  {esClienteCargaInventario(pedido) ? (
+                    <Button
+                      onClick={() => handleCargarInventario(pedido)}
+                      disabled={!pedido.puedeFacturar}
+                      className={`w-full py-6 text-lg font-bold ${
+                        pedido.puedeFacturar
+                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {pedido.puedeFacturar ? (
+                        <>
+                          <Receipt className="w-6 h-6 mr-2" />✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="w-6 h-6 mr-2" />
+                          ⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => handleFacturar(pedido)}
+                      disabled={!pedido.puedeFacturar}
+                      className={`w-full py-6 text-lg font-bold ${
+                        pedido.puedeFacturar
+                          ? 'bg-green-600 hover:bg-green-700 text-white'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {pedido.puedeFacturar ? (
+                        <>
+                          <Receipt className="w-6 h-6 mr-2" />✓ LISTO PARA FACTURAR
+                        </>
+                      ) : (
+                        <>
+                          <DollarSign className="w-6 h-6 mr-2" />
+                          ⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </li>
             ))}
