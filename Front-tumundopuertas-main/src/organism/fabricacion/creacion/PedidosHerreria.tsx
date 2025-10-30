@@ -799,10 +799,10 @@ const PedidosHerreria: React.FC = () => {
                 );
               }
               
-              return itemsFiltrados.map((item) => {
+              return itemsFiltrados.map((item, idxRender) => {
                 const progreso = progresoItems[item.id] || 0;
                 return (
-                  <li key={item.id} className="border rounded-xl bg-white shadow p-6 transition-all duration-300 hover:shadow-lg">
+                  <li key={`${item.id}-${(item as any).unidad_index ?? idxRender}`} className="border rounded-xl bg-white shadow p-6 transition-all duration-300 hover:shadow-lg">
                     {/* Información del item individual */}
                     <div className="space-y-4">
                       {/* Header del item */}
