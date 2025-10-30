@@ -80,6 +80,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const [asignadosPrevios, setAsignadosPrevios] = useState<Record<string, AsignacionArticulo>>({});
   const [showCambio, setShowCambio] = useState<Record<string, boolean>>({});
   const [empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
+  // NUEVO: filas de asignación por item (empleado + cantidad)
+  const [asignacionesPorItem, setAsignacionesPorItem] = useState<Record<string, Array<{ empleadoId: string; cantidad: number }>>>({});
 
   // Estado para items ya asignados localmente
   const [itemsAsignadosLocalmente, setItemsAsignadosLocalmente] = useState<Record<string, {empleado_nombre: string, fecha_asignacion: string}>>({});
@@ -321,180 +323,59 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     setLoading(true);
     setMessage("");
     
-    // CORREGIDO: Enviar cada asignación individualmente con el formato EXACTO requerido
-    const asignacionesParaEnviar = asignacionesValidas.map(([key, asignacion]) => {
-      const [itemId] = key.split('-');
-      
-      // Encontrar el item completo para obtener sus propiedades
-      const itemCompleto = items.find(item => item.id === itemId);
-      
-      console.log('🔍 DEBUG FRONTEND - Datos antes de enviar:');
-      console.log('itemId:', itemId);
-      console.log('itemCompleto:', itemCompleto);
-      console.log('asignacion:', asignacion);
-      
-      // Determinar el módulo basado en el estado del item
-      const estadoItem = obtenerEstadoItem(itemId);
-      let modulo = "herreria"; // Por defecto
-      
-      // Mapeo del módulo según el estado del item
-      const moduloMap: { [key: string]: string } = {
-        "0": "herreria",  // Pendiente -> Herrería
-        "1": "herreria",  // Herrería
-        "2": "masillar",  // Masillar
-        "3": "preparar",  // Preparar
-        "4": "facturar"   // Facturar
-      };
-      
-      modulo = moduloMap[estadoItem] || "herreria";
-      
-      console.log('Estado item:', estadoItem);
-      console.log('Módulo mapeado:', modulo);
-      
-      // Buscar el nombre del empleado desde empleadosPorItem (más confiable)
-      const empleadosDisponibles = empleadosPorItem[itemId] || empleados;
-      console.log('🔍 DEBUG empleados disponibles:', empleadosDisponibles.length);
-      console.log('🔍 DEBUG buscando empleado con ID:', asignacion.empleadoId);
-      console.log('🔍 DEBUG empleados:', empleadosDisponibles.map(emp => ({ 
-        _id: emp._id, 
-        identificador: emp.identificador, 
-        nombreCompleto: emp.nombreCompleto 
-      })));
-      
-      // Buscar por _id o identificador según lo que venga en asignacion.empleadoId
-      const empleado = empleadosDisponibles.find(emp => 
-        emp._id === asignacion.empleadoId || emp.identificador === asignacion.empleadoId
-      );
-      console.log('🔍 DEBUG empleado encontrado:', empleado);
-      
-      const nombreEmpleado = empleado?.nombreCompleto || "Empleado asignado";
-      console.log('🔍 DEBUG nombre empleado final:', nombreEmpleado);
-      
-      // FORMATO EXACTO requerido por el endpoint /pedidos/asignar-item/
-      const datosParaEnviar = {
-        pedido_id: pedidoId,                    // ✅ ID del pedido (string)
-        item_id: itemCompleto?.id || itemId,    // ✅ ID del item específico (string)
-        empleado_id: asignacion.empleadoId,     // ✅ ID del empleado (string)
-        empleado_nombre: nombreEmpleado,        // ✅ Nombre del empleado (string)
-        modulo: modulo                          // ✅ Módulo: "herreria", "masillar", "preparar"
-      };
-      
-      console.log('📤 Datos que se enviarán (formato exacto):', datosParaEnviar);
-      console.log('🚀 Deploy fix - Forzar actualización');
-      console.log('🔄 Vercel deploy test - Build logs fix');
-      
-      // Verificar que ningún campo sea null/undefined/vacío
-      if (!datosParaEnviar.pedido_id || !datosParaEnviar.item_id || 
-          !datosParaEnviar.empleado_id || !datosParaEnviar.modulo) {
-        console.error('❌ Faltan datos requeridos:', datosParaEnviar);
-        console.error('❌ Verificar:');
-        console.error('  - pedido_id:', datosParaEnviar.pedido_id);
-        console.error('  - item_id:', datosParaEnviar.item_id);
-        console.error('  - empleado_id:', datosParaEnviar.empleado_id);
-        console.error('  - modulo:', datosParaEnviar.modulo);
-        throw new Error(`Datos incompletos para asignación: ${JSON.stringify(datosParaEnviar)}`);
-      }
-      
-      return datosParaEnviar;
-    });
-    
-    console.log('📤 Datos a enviar (formato exacto requerido):', asignacionesParaEnviar);
-    
+    // NUEVO: enviar asignaciones por item (POST /pedidos/asignar)
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://crafteo.onrender.com").replace('http://', 'https://');
-      console.log('🔄 Enviando asignaciones individuales a:', `${apiUrl}/pedidos/asignar-item/`);
-      
-      // Función para asignar usando el NUEVO endpoint /pedidos/asignar-item/
-      const asignarItemConRetry = async (asignacion: any, maxRetries = 3) => {
-        for (let intento = 0; intento < maxRetries; intento++) {
-          try {
-            console.log(`📤 Intento ${intento + 1}/${maxRetries} - Enviando asignación:`, asignacion);
-            
-            // Usar el NUEVO endpoint /pedidos/asignar-item/ que devuelve información completa
-            const datosAsignacion = {
-              pedido_id: asignacion.pedido_id,
-              item_id: asignacion.item_id,
-              empleado_id: asignacion.empleado_id,
-              empleado_nombre: asignacion.empleado_nombre,
-              modulo: asignacion.modulo
-            };
-            
-            console.log('📤 Datos para asignación:', datosAsignacion);
-            
-            const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
-              method: "PUT",
-              headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem('access_token')}`
-              },
-              body: JSON.stringify(datosAsignacion),
-            });
-            
-            console.log('📡 Respuesta del servidor:', res.status, res.statusText);
-            
-            if (res.ok) {
-              const result = await res.json();
-              console.log('✅ Asignación exitosa:', result);
-              
-              // NUEVA: Usar la información completa que devuelve el backend
-              console.log('📋 Información básica:', {
-                message: result.message,
-                estado_item: result.estado_item,
-                modulo: result.modulo,
-                empleado: result.empleado
-              });
-              
-              console.log('📋 Información completa del item:', result.item_info);
-              console.log('📋 Información del pedido:', result.pedido_info);
-              
-              // Guardar información completa en localStorage para uso posterior
-              if (result.item_info) {
-                localStorage.setItem(`item_asignado_${asignacion.item_id}`, JSON.stringify(result.item_info));
-              }
-              if (result.pedido_info) {
-                localStorage.setItem(`pedido_info_${asignacion.pedido_id}`, JSON.stringify(result.pedido_info));
-              }
-              
-              return result;
-            }
+      const ordenNum = parseInt(numeroOrden) || 1;
 
-            // Manejar error 429 con retry
-            if (res.status === 429 && intento < maxRetries - 1) {
-              const delay = Math.pow(2, intento) * 1000; // 1s, 2s, 4s
-              console.log(`⚠️ Rate limited (429), esperando ${delay}ms antes del intento ${intento + 2}`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-              continue;
-            }
-
-            // Otros errores
-            const errorText = await res.text();
-            console.error('❌ Error del servidor:', errorText);
-            throw new Error(`Error ${res.status}: ${errorText}`);
-            
-          } catch (error: any) {
-            if (intento === maxRetries - 1) {
-              console.error(`❌ Todos los intentos fallaron para asignación:`, asignacion);
-              throw error;
-            }
-            console.log(`⚠️ Intento ${intento + 1} falló, reintentando...`, error.message);
-            
-            // Delay antes del siguiente intento
-            const delay = Math.pow(2, intento) * 1000;
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
+      // Validar cantidades por item
+      for (const item of items) {
+        const filas = asignacionesPorItem[item.id] || [];
+        if (filas.length === 0) continue;
+        const suma = filas.reduce((acc, f) => acc + (Number(f.cantidad) || 0), 0);
+        if (suma <= 0) {
+          setMessage(`⚠️ Debes ingresar cantidades a asignar para ${item.nombre}`);
+          setLoading(false);
+          return;
         }
-      };
-      
-      // CORREGIDO: Enviar cada asignación individualmente con retry
-      const resultados = [];
-      
-      for (const asignacion of asignacionesParaEnviar) {
-        const result = await asignarItemConRetry(asignacion);
-        resultados.push(result);
+        if (suma > (item.cantidad || 0)) {
+          setMessage(`⚠️ La suma (${suma}) excede la cantidad del item (${item.cantidad}) en ${item.nombre}`);
+          setLoading(false);
+          return;
+        }
       }
-      
-      // Todas las asignaciones fueron exitosas
-      setMessage(`✅ ${asignacionesParaEnviar.length} asignación(es) enviada(s) correctamente`);
+
+      const resultados: any[] = [];
+      for (const item of items) {
+        const filas = (asignacionesPorItem[item.id] || []).filter(f => f.empleadoId && Number(f.cantidad) > 0);
+        if (filas.length === 0) continue;
+
+        const payload = {
+          pedido_id: pedidoId,
+          item_id: item.id,
+          orden: ordenNum,
+          asignaciones: filas.map(f => ({ empleado_id: f.empleadoId, cantidad: Number(f.cantidad) })),
+          descripcionitem: item.descripcion,
+          costoproduccion: item.costoProduccion
+        };
+
+        console.log('📤 Enviando asignación múltiple:', payload);
+        const res = await fetch(`${apiUrl}/pedidos/asignar`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(`Error ${res.status}: ${t}`);
+        }
+        resultados.push(await res.json());
+      }
+
+      setMessage(`✅ Asignaciones enviadas correctamente`);
       
       // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE - SOLUCIÓN SIMPLE
       const nuevosItemsAsignados: Record<string, {empleado_nombre: string, fecha_asignacion: string, item_info?: any}> = {};
@@ -673,146 +554,105 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="flex gap-4 items-center">
+                <div className="flex gap-4 items-start">
                   {loadingEmpleados ? (
                     <div className="flex items-center gap-2 text-gray-500">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                       Cargando empleados...
                     </div>
                   ) : (
-                    <div className="flex flex-col gap-2 w-full">
-                      <div className="relative">
-                  <select
-                          className="w-full min-w-[200px] border-2 border-gray-300 rounded-lg px-4 py-3 bg-white text-gray-700 font-medium shadow-sm hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none transition-all duration-200 appearance-none cursor-pointer"
-                    value={asignacion.empleadoId || ""}
-                    onChange={(e) => {
-                      const empleadoId = e.target.value;
-                            const empleadosDisponibles = empleadosPorItem[item.id] || empleados;
-                            const empleado = empleadosDisponibles.find(
-                        (emp) => emp.identificador === empleadoId
-                      );
-                      handleEmpleadoChange(
-                        item,
-                        idx,
-                        empleadoId,
-                              empleado?.nombre || empleadoId
-                      );
-                    }}
-                  >
-                          <option value="" className="text-gray-500">
-                            👤 Seleccionar empleado...
-                          </option>
-                          {(() => {
-                            // Obtener la lista de empleados disponibles (con fallback)
-                            const listaEmpleadosDisponibles = (empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0) ? empleadosPorItem[item.id] : empleados;
-                            
-                            console.log('🔍 DEBUG - Empleados disponibles para item:', item.id, listaEmpleadosDisponibles.length);
-                            
-                            // Primero filtrar por datos válidos
-                            const empleadosValidos = listaEmpleadosDisponibles.filter(e => 
-                              e && e.identificador && (e.nombre || e.nombreCompleto)
-                            );
-                            
-                            console.log('🔍 DEBUG - Empleados válidos:', empleadosValidos.length);
-                            
-                            // Intentar filtrar por tipo si es necesario
-                            const tipoEmpleadoItem = obtenerTipoEmpleadoPorItem(item.id);
-                            console.log('🔍 DEBUG - Tipo empleado requerido:', tipoEmpleadoItem);
-                            
-                            let empleadosAFiltrar = empleadosValidos;
-                            
-                            // Si hay tipoEmpleado definido, intentar filtrar
-                            if (tipoEmpleadoItem && Array.isArray(tipoEmpleadoItem) && tipoEmpleadoItem.length > 0) {
-                              const empleadosFiltrados = empleadosValidos.filter((e) => {
-                                let cumpleFiltro = false;
-                                
-                                // Intentar filtrar por permisos primero
-                                if (Array.isArray(e.permisos) && e.permisos.length > 0) {
-                                  cumpleFiltro = tipoEmpleadoItem.some((tipo) => 
-                                    e.permisos.includes(tipo)
-                                  );
-                                }
-                                // Si no tiene permisos, intentar filtrar por cargo
-                                else if (e.cargo) {
-                                  const cargo = e.cargo.toLowerCase();
-                                  cumpleFiltro = tipoEmpleadoItem.some((tipo) => {
-                                    const tipoNormalizado = tipo.toLowerCase();
-                                    
-                                    // Mapear tipos a variaciones comunes
-                                    const variacionesTipo: Record<string, string[]> = {
-                                      'herreria': ['herrero', 'herreria'],
-                                      'masillar': ['masillador', 'masillar'],
-                                      'pintar': ['pintor', 'pintar'],
-                                      'mantenimiento': ['manillar', 'mantenimiento', 'preparador'],
-                                      'facturacion': ['facturador', 'facturacion', 'administrativo'],
-                                      'ayudante': ['ayudante']
-                                    };
-                                    
-                                    // Verificar coincidencia directa
-                                    if (cargo.includes(tipoNormalizado)) {
-                                      return true;
-                                    }
-                                    
-                                    // Verificar variaciones del tipo
-                                    const variaciones = variacionesTipo[tipoNormalizado] || [];
-                                    return variaciones.some(variacion => 
-                                      cargo.includes(variacion)
-                                    );
-                                  });
-                                }
-                                // Si no tiene ni permisos ni cargo que cumplan el filtro, NO incluir
-                                return cumpleFiltro;
+                    <div className="flex flex-col gap-3 w-full">
+                      <div className="border rounded-lg p-3 bg-white">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold text-gray-700">Asignaciones parciales</span>
+                          <button
+                            type="button"
+                            className="text-sm px-2 py-1 bg-blue-600 text-white rounded"
+                            onClick={() => {
+                              setAsignacionesPorItem(prev => {
+                                const filas = prev[item.id] ? [...prev[item.id]] : [];
+                                filas.push({ empleadoId: "", cantidad: 1 });
+                                return { ...prev, [item.id]: filas };
                               });
-                              
-                              console.log('🔍 DEBUG - Empleados después del filtro de tipo:', empleadosFiltrados.length);
-                              
-                              // FALLBACK: Si después del filtro no hay empleados, usar todos los válidos
-                              empleadosAFiltrar = empleadosFiltrados.length > 0 ? empleadosFiltrados : empleadosValidos;
-                              
-                              console.log('🔍 DEBUG - Empleados finales a mostrar:', empleadosAFiltrar.length);
-                            }
-                            
-                            return empleadosAFiltrar.map((empleado) => {
-                              return (
-                        <option
-                          key={empleado.identificador}
-                          value={empleado.identificador}
-                                  className="py-2"
-                        >
-                                  {empleado.nombreCompleto || empleado.nombre || empleado.identificador}
-                        </option>
-                              );
-                            });
-                          })()}
-                        </select>
-                        
-                        {/* Flecha del dropdown */}
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                          </svg>
+                            }}
+                          >
+                            + Agregar fila
+                          </button>
+                        </div>
+                        {(asignacionesPorItem[item.id] || []).map((fila, fidx) => {
+                          const listaEmpleadosDisponibles = (empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0) ? empleadosPorItem[item.id] : empleados;
+                          const empleadosValidos = listaEmpleadosDisponibles.filter(e => e && e.identificador && (e.nombre || e.nombreCompleto));
+                          return (
+                            <div key={`${item.id}-fila-${fidx}`} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center mb-2">
+                              <div className="md:col-span-7">
+                                <select
+                                  className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 bg-white"
+                                  value={fila.empleadoId}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    setAsignacionesPorItem(prev => {
+                                      const filas = [...(prev[item.id] || [])];
+                                      filas[fidx] = { ...filas[fidx], empleadoId: value };
+                                      return { ...prev, [item.id]: filas };
+                                    });
+                                  }}
+                                >
+                                  <option value="">👤 Seleccionar empleado...</option>
+                                  {empleadosValidos.map((emp) => (
+                                    <option key={emp.identificador} value={emp.identificador}>
+                                      {emp.nombreCompleto || emp.nombre || emp.identificador}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="md:col-span-4">
+                                <input
+                                  type="number"
+                                  min={1}
+                                  className="w-full border-2 border-gray-300 rounded-lg px-3 py-2"
+                                  value={fila.cantidad}
+                                  onChange={(e) => {
+                                    const value = Number(e.target.value) || 0;
+                                    setAsignacionesPorItem(prev => {
+                                      const filas = [...(prev[item.id] || [])];
+                                      filas[fidx] = { ...filas[fidx], cantidad: value };
+                                      return { ...prev, [item.id]: filas };
+                                    });
+                                  }}
+                                />
+                              </div>
+                              <div className="md:col-span-1 flex justify-end">
+                                <button
+                                  type="button"
+                                  className="px-2 py-1 text-sm bg-red-500 text-white rounded"
+                                  onClick={() => {
+                                    setAsignacionesPorItem(prev => {
+                                      const filas = [...(prev[item.id] || [])];
+                                      filas.splice(fidx, 1);
+                                      return { ...prev, [item.id]: filas };
+                                    });
+                                  }}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div className="text-xs text-gray-600 mt-2">
+                          Cantidad total del item: <b>{item.cantidad}</b>
                         </div>
                       </div>
-                      
-                      {/* Información de empleados disponibles */}
+
                       <div className="text-xs">
                         {empleadosPorItem[item.id] && empleadosPorItem[item.id].length > 0 ? (
-                          <span className="text-green-600 font-medium">
-                            ✅ {empleadosPorItem[item.id].length} empleados filtrados por módulo
-                          </span>
+                          <span className="text-green-600 font-medium">✅ {empleadosPorItem[item.id].length} empleados filtrados por módulo</span>
                         ) : (
-                          <span className="text-orange-600 font-medium">
-                            ⚠️ {empleados.length} empleados generales (filtrado no disponible)
-                          </span>
+                          <span className="text-orange-600 font-medium">⚠️ {empleados.length} empleados generales (filtrado no disponible)</span>
                         )}
-                        <div className="mt-1 text-blue-600 font-medium">
-                          📍 Módulo actual: {obtenerEstadoItem(item.id).toUpperCase()}
-                        </div>
-                        <div className="mt-1 text-gray-600">
-                          🎯 Empleados disponibles: {obtenerTipoEmpleadoPorItem(item.id).join(", ")}
-                        </div>
+                        <div className="mt-1 text-blue-600 font-medium">📍 Módulo actual: {obtenerEstadoItem(item.id).toUpperCase()}</div>
+                        <div className="mt-1 text-gray-600">🎯 Empleados disponibles: {obtenerTipoEmpleadoPorItem(item.id).join(", ")}</div>
                       </div>
-                      
                     </div>
                   )}
                 </div>
