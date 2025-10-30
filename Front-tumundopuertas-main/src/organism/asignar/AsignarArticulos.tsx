@@ -79,8 +79,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const [empleadosPorItem, setEmpleadosPorItem] = useState<Record<string, any[]>>({});
   // NUEVO: filas de asignación por item (empleado + cantidad)
   const [asignacionesPorItem, setAsignacionesPorItem] = useState<Record<string, Array<{ empleadoId: string; cantidad: number }>>>({});
-  // Restaurado: marcar items como asignados localmente para bloquear UI y mostrar aviso
-  const [itemsAsignadosLocalmente, setItemsAsignadosLocalmente] = useState<Record<string, { empleado_nombre: string; fecha_asignacion: string }>>({});
+  // (removido) estado local de items asignados - el bloqueo ahora se basa en unidades asignadas
+  // NUEVO: llevar cuenta de unidades ya asignadas por item (según seguimiento)
+  const [unidadesAsignadasPorItem, setUnidadesAsignadasPorItem] = useState<Record<string, number>>({});
 
 
   // Hook para obtener empleados por módulo
@@ -190,6 +191,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         
         // SOLUCIÓN: Buscar asignaciones en TODOS los subestados, no solo uno específico
         const prev: Record<string, AsignacionArticulo> = {};
+        const asignadasCount: Record<string, number> = {};
         
         if (Array.isArray(pedido.seguimiento)) {
           pedido.seguimiento.forEach((s: any) => {
@@ -199,6 +201,13 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                 if (a.estado === "en_proceso") {
                   prev[a.key] = a;
                 }
+                // Contar unidades asignadas por item: estados pendiente o en_proceso cuentan como ocupadas
+                const anyAssign: any = a as any;
+                const itemIdAsign = anyAssign.itemId;
+                const estadoAsign = anyAssign.estado;
+                if (itemIdAsign && (estadoAsign === 'pendiente' || estadoAsign === 'en_proceso')) {
+                  asignadasCount[itemIdAsign] = (asignadasCount[itemIdAsign] || 0) + (Number(anyAssign.cantidad) || 1);
+                }
               });
             }
           });
@@ -206,6 +215,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         
         console.log('🔍 Asignaciones previas encontradas:', Object.keys(prev).length);
         setAsignadosPrevios(prev);
+        setUnidadesAsignadasPorItem(asignadasCount);
       } catch (error) {
         console.error('❌ Error al cargar asignaciones previas:', error);
       }
@@ -259,19 +269,39 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         const filas = asignacionesPorItem[item.id] || [];
         if (filas.length === 0) continue;
         const suma = filas.reduce((acc, f) => acc + (Number(f.cantidad) || 0), 0);
+        const yaAsignadas = unidadesAsignadasPorItem[item.id] || 0;
+        const restantes = Math.max((item.cantidad || 0) - yaAsignadas, 0);
         if (suma <= 0) {
           setMessage(`⚠️ Debes ingresar cantidades a asignar para ${item.nombre}`);
           setLoading(false);
           return;
         }
-        if (suma > (item.cantidad || 0)) {
-          setMessage(`⚠️ La suma (${suma}) excede la cantidad del item (${item.cantidad}) en ${item.nombre}`);
+        if (suma > restantes) {
+          setMessage(`⚠️ La suma (${suma}) excede las unidades restantes (${restantes}) en ${item.nombre}`);
           setLoading(false);
           return;
         }
       }
 
-      const resultados: any[] = [];
+      // Optimismo: incrementar al instante el conteo asignado para feedback inmediato
+      const incrementosOptimistas: Record<string, number> = {};
+      for (const item of items) {
+        const filas = (asignacionesPorItem[item.id] || []).filter(f => f.empleadoId && Number(f.cantidad) > 0);
+        if (filas.length === 0) continue;
+        incrementosOptimistas[item.id] = filas.reduce((acc, f) => acc + (Number(f.cantidad) || 0), 0);
+      }
+      if (Object.keys(incrementosOptimistas).length > 0) {
+        setUnidadesAsignadasPorItem(prev => {
+          const next = { ...prev } as Record<string, number>;
+          for (const k of Object.keys(incrementosOptimistas)) {
+            next[k] = (next[k] || 0) + incrementosOptimistas[k];
+          }
+          return next;
+        });
+      }
+
+      // Enviar todas las asignaciones en paralelo para reducir latencia
+      const requests: Array<Promise<any>> = [];
       for (const item of items) {
         const filas = (asignacionesPorItem[item.id] || []).filter(f => f.empleadoId && Number(f.cantidad) > 0);
         if (filas.length === 0) continue;
@@ -286,31 +316,29 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         };
 
         console.log('📤 Enviando asignación múltiple:', payload);
-        const res = await fetch(`${apiUrl}/pedidos/asignar`, {
+        const controller = new AbortController();
+        const signal: AbortSignal = ('timeout' in AbortSignal)
+          ? (AbortSignal as any).timeout(8000)
+          : controller.signal;
+
+        const req = fetch(`${apiUrl}/pedidos/asignar`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`
           },
-          body: JSON.stringify(payload)
-        });
-        if (!res.ok) {
-          const t = await res.text();
-          throw new Error(`Error ${res.status}: ${t}`);
-        }
-        resultados.push(await res.json());
-        // Marcar el item como asignado localmente (bloquear UI)
-        const nombreEmpleado = (empleadosPorItem[item.id] || empleados)?.find((e:any)=> e?._id === filas[0].empleadoId)?.nombreCompleto
-          || (empleados.find((e:any)=> e?._id === filas[0].empleadoId)?.nombreCompleto) || 'Empleado asignado';
-        setItemsAsignadosLocalmente(prev => ({
-          ...prev,
-          [item.id]: {
-            empleado_nombre: filas.length === 1 ? nombreEmpleado : `${filas.length} empleados`,
-            fecha_asignacion: new Date().toISOString(),
+          body: JSON.stringify(payload),
+          signal
+        }).then(async (res) => {
+          if (!res.ok) {
+            const t = await res.text();
+            throw new Error(`Error ${res.status}: ${t}`);
           }
-        }));
+          return res.json();
+        });
+        requests.push(req);
 
-        // Notificar a otros módulos (dashboard, etc.)
+        // Notificar a otros módulos (dashboard, etc.) de forma inmediata
         window.dispatchEvent(new CustomEvent('asignacionRealizada', {
           detail: {
             pedidoId,
@@ -322,9 +350,16 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         }));
       }
 
-      setMessage(`✅ Asignaciones enviadas correctamente`);
-      
-      // Recargar datos después de la asignación
+      const settled = await Promise.allSettled(requests);
+      const fallidas = settled.filter(r => r.status === 'rejected');
+      if (fallidas.length > 0) {
+        console.warn(`⚠️ ${fallidas.length} asignaciones fallaron`);
+        setMessage(`⚠️ Algunas asignaciones fallaron (${fallidas.length}). Actualizando estado...`);
+      } else {
+        setMessage(`✅ Asignaciones enviadas correctamente`);
+      }
+
+      // Reconciliar estado tras la respuesta del backend
       await cargarEstadosItems();
       await cargarEmpleadosPorItem();
       
@@ -390,7 +425,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
           const key = `${item.id}-${idx}`;
           const asignadoPrevio = asignadosPrevios[key];
           const cambioActivo = showCambio[key];
-          const itemAsignadoLocalmente = itemsAsignadosLocalmente[item.id];
+          // bloqueo por unidades asignadas/restantes en lugar de banderas locales
           
           return (
             <li key={key} className="flex flex-col gap-2 border rounded p-3">
@@ -418,14 +453,10 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                   </div>
                 </div>
               )}
-              {itemAsignadoLocalmente ? (
+              {((unidadesAsignadasPorItem[item.id] || 0) >= (item.cantidad || 0)) ? (
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-2 text-green-600 font-medium">
-                    <span>✅ Asignado a: {itemAsignadoLocalmente.empleado_nombre}</span>
-                    <span className="text-xs text-gray-500">({new Date(itemAsignadoLocalmente.fecha_asignacion).toLocaleDateString()})</span>
-                  </div>
                   <div className="text-sm text-gray-600 bg-green-50 p-2 rounded">
-                    🚫 Este item ya está asignado y no se puede reasignar hasta terminar la asignación
+                    🚫 Todas las unidades de este item están asignadas. Debe terminar alguna para reasignar.
                   </div>
                 </div>
               ) : asignadoPrevio && !cambioActivo ? (
@@ -542,7 +573,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                           );
                         })}
                         <div className="text-xs text-gray-600 mt-2">
-                          Cantidad total del item: <b>{item.cantidad}</b>
+                          Cantidad total del item: <b>{item.cantidad}</b> · Asignadas: <b>{unidadesAsignadasPorItem[item.id] || 0}</b> · Restantes: <b>{Math.max((item.cantidad || 0) - (unidadesAsignadasPorItem[item.id] || 0), 0)}</b>
                         </div>
                       </div>
                       
