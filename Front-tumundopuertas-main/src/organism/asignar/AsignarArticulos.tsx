@@ -251,31 +251,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
 
   const handleAsignarOriginal = async () => {
     console.log('🚀 INICIANDO ASIGNACIÓN...');
-    console.log('📋 Items:', items.length);
-    console.log('📋 Asignaciones actuales:', Object.keys(asignaciones).length);
-    console.log('📋 Asignaciones previas:', Object.keys(asignadosPrevios).length);
-    console.log('📋 Estado de asignaciones:', asignaciones);
-    
-    // Verificar que hay asignaciones para enviar
-    const asignacionesValidas = Object.entries(asignaciones).filter(([key, asignacion]) => {
-      const isValid = asignacion.empleadoId && 
-                     asignacion.empleadoId.trim() !== "" && 
-                     key !== "undefined" && 
-                     !key.includes("undefined");
-      
-      if (!isValid) {
-        console.warn('⚠️ FILTRANDO asignación inválida:', { key, asignacion });
-      }
-      
-      return isValid;
-    });
-    
-    console.log('✅ Asignaciones válidas:', asignacionesValidas.length);
-    console.log('📋 Asignaciones válidas detalle:', asignacionesValidas);
-    
-    if (asignacionesValidas.length === 0) {
-      console.log('⚠️ NO HAY ASIGNACIONES VÁLIDAS - Mostrando mensaje de error');
-      setMessage("⚠️ Debes seleccionar al menos un empleado antes de asignar");
+    // Verificar que hay filas con empleado y cantidad > 0 en asignacionesPorItem
+    const hayFilasValidas = items.some((it) =>
+      (asignacionesPorItem[it.id] || []).some((f) => f.empleadoId && Number(f.cantidad) > 0)
+    );
+    if (!hayFilasValidas) {
+      setMessage("⚠️ Debes agregar al menos una fila con empleado y cantidad");
       return;
     }
     
