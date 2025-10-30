@@ -215,6 +215,14 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       if (data) {
         setAsignacionesDisponibles(data);
       }
+      
+      // Limpiar el estado de asignación pendiente para esta unidad específica
+      setAsignacionesPendientes(prev => {
+        const nuevo = { ...prev };
+        delete nuevo[`${itemId}-${unidadIndex}`];
+        return nuevo;
+      });
+      
       await cargarEstadosItems();
       setMessage(`✅ Unidad ${unidadIndex} asignada correctamente`);
     } catch (err: any) {
@@ -371,11 +379,21 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             value={asignacionesPendientes[`${item.id}-${unidad.unidad_index}`]?.[0]?.empleadoId || ""}
                             onChange={(e) => {
                               const empleadoId = e.target.value;
+                              const key = `${item.id}-${unidad.unidad_index}`;
+                              
                               if (empleadoId) {
+                                // Actualizar solo esta unidad específica
                                 setAsignacionesPendientes(prev => ({
                                   ...prev,
-                                  [`${item.id}-${unidad.unidad_index}`]: [{ unidad_index: unidad.unidad_index, empleadoId }]
+                                  [key]: [{ unidad_index: unidad.unidad_index, empleadoId }]
                                 }));
+                              } else {
+                                // Si se resetea a vacío, limpiar el estado para esta unidad
+                                setAsignacionesPendientes(prev => {
+                                  const nuevo = { ...prev };
+                                  delete nuevo[key];
+                                  return nuevo;
+                                });
                               }
                             }}
                           >
