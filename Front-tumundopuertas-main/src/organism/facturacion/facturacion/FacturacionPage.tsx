@@ -620,6 +620,10 @@ const FacturacionPage: React.FC = () => {
   };
 
   const handleFacturar = async (pedido: any) => {
+    // Asegurar que montoTotal siempre tenga un valor válido antes de establecerlo
+    if (!pedido.montoTotal && pedido.montoTotal !== 0) {
+      pedido.montoTotal = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+    }
     setSelectedPedido(pedido);
     setModalAccion('facturar');
     setModalOpen(true);
@@ -639,13 +643,18 @@ const FacturacionPage: React.FC = () => {
         const res = await fetch(`${getApiUrl()}/pedidos/id/${pedido.pedidoId}/`);
         if (res.ok) {
           pedidoFormateado = await res.json();
+          // Asegurar que montoTotal tenga un valor válido
+          if (!pedidoFormateado.montoTotal) {
+            pedidoFormateado.montoTotal = pedidoFormateado.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+          }
         } else {
           // Si no se encuentra, crear un objeto compatible con los datos disponibles
+          const montoTotalCalculado = pedido.montoTotal || (pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0);
           pedidoFormateado = {
             _id: pedido.pedidoId,
             cliente_id: pedido.clienteId,
             cliente_nombre: pedido.clienteNombre,
-            montoTotal: pedido.montoTotal,
+            montoTotal: montoTotalCalculado,
             items: pedido.items,
             fecha_creacion: pedido.fechaCreacion,
             puedeFacturar: true
@@ -654,16 +663,21 @@ const FacturacionPage: React.FC = () => {
       } catch (error) {
         console.error('Error al buscar pedido:', error);
         // Crear objeto compatible con los datos disponibles
+        const montoTotalCalculado = pedido.montoTotal || (pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0);
         pedidoFormateado = {
           _id: pedido.pedidoId,
           cliente_id: pedido.clienteId,
           cliente_nombre: pedido.clienteNombre,
-          montoTotal: pedido.montoTotal,
+          montoTotal: montoTotalCalculado,
           items: pedido.items,
           fecha_creacion: pedido.fechaCreacion,
           puedeFacturar: true
         };
       }
+    }
+    // Asegurar que montoTotal siempre tenga un valor válido antes de establecerlo
+    if (!pedidoFormateado.montoTotal && pedidoFormateado.montoTotal !== 0) {
+      pedidoFormateado.montoTotal = pedidoFormateado.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
     }
     setSelectedPedido(pedidoFormateado);
     setModalAccion('cargar_inventario');
@@ -693,12 +707,14 @@ const FacturacionPage: React.FC = () => {
         const itemsCreados = respuestaBackend.items_creados || 0;
         
         // Guardar el pedido cargado al inventario
+        const montoTotalCalculado = selectedPedido.montoTotal || 
+          (selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0);
         const pedidoCargado: PedidoCargadoInventario = {
           id: selectedPedido._id + '-' + Date.now(),
           pedidoId: selectedPedido._id,
           clienteNombre: selectedPedido.cliente_nombre || selectedPedido.cliente_id || 'N/A',
           clienteId: selectedPedido.cliente_id || '',
-          montoTotal: selectedPedido.montoTotal,
+          montoTotal: montoTotalCalculado,
           fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
           fechaCargaInventario: new Date().toISOString(),
           items: selectedPedido.items || []
@@ -720,13 +736,15 @@ const FacturacionPage: React.FC = () => {
       } else {
         // Flujo normal de facturación
         const numeroFactura = generarNumeroFactura();
+        const montoTotalCalculado = selectedPedido.montoTotal || 
+          (selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0);
       const facturaConfirmada: FacturaConfirmada = {
         id: selectedPedido._id + '-' + Date.now(),
         numeroFactura: numeroFactura,
         pedidoId: selectedPedido._id,
         clienteNombre: selectedPedido.cliente_nombre || selectedPedido.cliente_id || 'N/A',
         clienteId: selectedPedido.cliente_id || '',
-        montoTotal: selectedPedido.montoTotal,
+        montoTotal: montoTotalCalculado,
         fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
         fechaFacturacion: new Date().toISOString(),
         items: selectedPedido.items || []
@@ -834,7 +852,7 @@ const FacturacionPage: React.FC = () => {
                     <tr class="totales-row">
                       <td colspan="3" style="text-align:right;">Total:</td>
                       <td style="text-align:center;">${selectedFactura.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
-                      <td style="text-align:right;">$${selectedFactura.montoTotal.toFixed(2)}</td>
+                      <td style="text-align:right;">$${(selectedFactura.montoTotal || 0).toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -933,7 +951,7 @@ const FacturacionPage: React.FC = () => {
                     <tr class="totales-row">
                       <td colspan="3" style="text-align:right;">Total:</td>
                       <td style="text-align:center;">${selectedPedido.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
-                      <td style="text-align:right;">$${selectedPedido.montoTotal.toFixed(2)}</td>
+                      <td style="text-align:right;">$${(selectedPedido.montoTotal || 0).toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -1049,13 +1067,13 @@ const FacturacionPage: React.FC = () => {
                     <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
                       <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Total
                     </p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-800">${pedido.montoTotal.toFixed(2)}</p>
+                    <p className="text-lg sm:text-xl font-bold text-gray-800">${(pedido.montoTotal || 0).toFixed(2)}</p>
                   </div>
                   <div className="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
                     <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
                       <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Abonado
                     </p>
-                    <p className="text-lg sm:text-xl font-bold text-green-700">${pedido.montoAbonado.toFixed(2)}</p>
+                    <p className="text-lg sm:text-xl font-bold text-green-700">${(pedido.montoAbonado || 0).toFixed(2)}</p>
                   </div>
                 </div>
 
@@ -1097,7 +1115,7 @@ const FacturacionPage: React.FC = () => {
                       <div className="flex items-center justify-center gap-2">
                         <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                         <span className="text-center leading-tight">
-                          {pedido.puedeFacturar ? '✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO' : `⚠️ Pendiente pago ($${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})`}
+                          {pedido.puedeFacturar ? '✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO' : `⚠️ Pendiente pago ($${((pedido.montoTotal || 0) - (pedido.montoAbonado || 0)).toFixed(2)})`}
                         </span>
                       </div>
                     </Button>
@@ -1114,7 +1132,7 @@ const FacturacionPage: React.FC = () => {
                     <div className="flex items-center justify-center gap-2">
                       <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                       <span className="text-center leading-tight">
-                        {pedido.puedeFacturar ? '✓ LISTO PARA FACTURAR' : `⚠️ Pendiente pago ($${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})`}
+                        {pedido.puedeFacturar ? '✓ LISTO PARA FACTURAR' : `⚠️ Pendiente pago ($${((pedido.montoTotal || 0) - (pedido.montoAbonado || 0)).toFixed(2)})`}
                       </span>
                     </div>
                   </Button>
@@ -1179,7 +1197,7 @@ const FacturacionPage: React.FC = () => {
                     <p className="text-sm text-gray-600">ID Pedido: #{factura.pedidoId.slice(-6)}</p>
                   </div>
                   <div className="mb-3">
-                    <p className="text-2xl font-bold text-green-700">${factura.montoTotal.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-green-700">${(factura.montoTotal || 0).toFixed(2)}</p>
                   </div>
                   <Button 
                     onClick={() => handleVerPreliminar(factura)}
@@ -1276,7 +1294,7 @@ const FacturacionPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="mb-3">
-                    <p className="text-2xl font-bold text-indigo-700">${pedido.montoTotal.toFixed(2)}</p>
+                    <p className="text-2xl font-bold text-indigo-700">${(pedido.montoTotal || 0).toFixed(2)}</p>
                   </div>
                   <div className="mt-3 pt-3 border-t-2 border-gray-200">
                     <Button
@@ -1365,7 +1383,7 @@ const FacturacionPage: React.FC = () => {
                     <tr>
                       <td colSpan={3} className="p-2 text-right">Total del Pedido:</td>
                       <td className="p-2 text-center">{selectedPedido.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
-                      <td className="p-2 text-right text-lg text-green-700">${selectedPedido.montoTotal.toFixed(2)}</td>
+                      <td className="p-2 text-right text-lg text-green-700">${(selectedPedido.montoTotal || 0).toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -1478,7 +1496,7 @@ const FacturacionPage: React.FC = () => {
                     <tr>
                       <td colSpan={3} className="p-2 text-right">Total de la Factura:</td>
                       <td className="p-2 text-center">{selectedFactura.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
-                      <td className="p-2 text-right text-lg text-green-700">${selectedFactura.montoTotal.toFixed(2)}</td>
+                      <td className="p-2 text-right text-lg text-green-700">${(selectedFactura.montoTotal || 0).toFixed(2)}</td>
                     </tr>
                   </tfoot>
                 </table>
