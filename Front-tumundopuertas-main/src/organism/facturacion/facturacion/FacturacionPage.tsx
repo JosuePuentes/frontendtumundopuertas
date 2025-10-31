@@ -64,8 +64,8 @@ const FacturacionPage: React.FC = () => {
         return fechaB - fechaA; // Más reciente primero
       });
       
-      // Aumentar el límite a 100 pedidos para asegurar que no se pierdan pedidos pendientes
-      const pedidosLimitados = pedidosOrdenados.slice(0, 100); // Primeros 100 pedidos más recientes
+      // Aumentar el límite a 500 pedidos para asegurar que no se pierdan pedidos al 100%
+      const pedidosLimitados = pedidosOrdenados.slice(0, 500); // Primeros 500 pedidos más recientes
       
       console.log(`📅 Total pedidos para verificar: ${pedidosLimitados.length} de ${pedidos.length}`);
       
@@ -170,7 +170,7 @@ const FacturacionPage: React.FC = () => {
         })
       );
       
-      // Filtrar nulos (ya están ordenados por fecha)
+      // Filtrar nulos
       const pedidosParaFacturar = pedidosConProgreso.filter((p) => p !== null);
       
       // Filtrar pedidos que ya fueron facturados (están en localStorage)
@@ -187,12 +187,26 @@ const FacturacionPage: React.FC = () => {
       
       const pedidosPendientes = pedidosParaFacturar.filter(p => !facturasConfirmadasIds.includes(p._id));
       
+      // CRÍTICO: Ordenar por fecha (más reciente primero) después de filtrar
+      // Usar fecha100Porciento si está disponible, sino fecha_creacion
+      const pedidosOrdenadosPorFecha = pedidosPendientes.sort((a: any, b: any) => {
+        // Priorizar fecha100Porciento (cuándo alcanzó el 100%)
+        const fechaA = a.fecha100Porciento 
+          ? new Date(a.fecha100Porciento).getTime()
+          : new Date(a.fecha_creacion || 0).getTime();
+        const fechaB = b.fecha100Porciento 
+          ? new Date(b.fecha100Porciento).getTime()
+          : new Date(b.fecha_creacion || 0).getTime();
+        return fechaB - fechaA; // Más reciente primero
+      });
+      
       console.log('📊 Total pedidos obtenidos:', pedidos.length);
       console.log('📊 Pedidos limitados:', pedidosLimitados.length);
       console.log('📊 Pedidos al 100%:', pedidosParaFacturar.length);
       console.log('📊 Pedidos pendientes (sin confirmar):', pedidosPendientes.length);
+      console.log('📊 Pedidos ordenados por fecha (más reciente primero):', pedidosOrdenadosPorFecha.length);
       
-      setFacturacion(pedidosPendientes);
+      setFacturacion(pedidosOrdenadosPorFecha);
     } catch (err: any) {
       setError(err.message || "Error desconocido");
     } finally {
