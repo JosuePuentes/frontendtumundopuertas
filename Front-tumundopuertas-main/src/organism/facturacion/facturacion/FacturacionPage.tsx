@@ -631,7 +631,41 @@ const FacturacionPage: React.FC = () => {
   };
 
   const handleCargarInventario = async (pedido: any) => {
-    setSelectedPedido(pedido);
+    // Si el pedido viene en formato PedidoCargadoInventario, convertirlo al formato esperado
+    let pedidoFormateado = pedido;
+    if (pedido.pedidoId && !pedido._id) {
+      // Es un PedidoCargadoInventario, necesitamos buscar el pedido original del backend
+      try {
+        const res = await fetch(`${getApiUrl()}/pedidos/id/${pedido.pedidoId}/`);
+        if (res.ok) {
+          pedidoFormateado = await res.json();
+        } else {
+          // Si no se encuentra, crear un objeto compatible con los datos disponibles
+          pedidoFormateado = {
+            _id: pedido.pedidoId,
+            cliente_id: pedido.clienteId,
+            cliente_nombre: pedido.clienteNombre,
+            montoTotal: pedido.montoTotal,
+            items: pedido.items,
+            fecha_creacion: pedido.fechaCreacion,
+            puedeFacturar: true
+          };
+        }
+      } catch (error) {
+        console.error('Error al buscar pedido:', error);
+        // Crear objeto compatible con los datos disponibles
+        pedidoFormateado = {
+          _id: pedido.pedidoId,
+          cliente_id: pedido.clienteId,
+          cliente_nombre: pedido.clienteNombre,
+          montoTotal: pedido.montoTotal,
+          items: pedido.items,
+          fecha_creacion: pedido.fechaCreacion,
+          puedeFacturar: true
+        };
+      }
+    }
+    setSelectedPedido(pedidoFormateado);
     setModalAccion('cargar_inventario');
     setModalOpen(true);
   };
@@ -1247,7 +1281,17 @@ const FacturacionPage: React.FC = () => {
                   <div className="mb-3">
                     <p className="text-2xl font-bold text-indigo-700">${pedido.montoTotal.toFixed(2)}</p>
                   </div>
-                  <Badge className="w-full bg-indigo-500 text-white text-center py-2">
+                  <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                    <Button
+                      onClick={() => handleCargarInventario(pedido)}
+                      className="w-full py-4 sm:py-6 text-sm sm:text-base md:text-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                    >
+                      <Receipt className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
+                      <span className="hidden sm:inline">✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO</span>
+                      <span className="sm:hidden">CARGAR INVENTARIO</span>
+                    </Button>
+                  </div>
+                  <Badge className="w-full bg-indigo-500 text-white text-center py-2 mt-3">
                     TU MUNDO PUERTA
                   </Badge>
                 </li>
@@ -1262,9 +1306,15 @@ const FacturacionPage: React.FC = () => {
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Confirmar Facturación</DialogTitle>
+          <DialogTitle>
+            {modalAccion === 'cargar_inventario' 
+              ? 'Cargar Existencias al Inventario' 
+              : 'Confirmar Facturación'}
+          </DialogTitle>
           <DialogDescription>
-            Revisa los detalles del pedido antes de facturar
+            {modalAccion === 'cargar_inventario'
+              ? 'Revisa los detalles del pedido antes de cargar las cantidades al inventario'
+              : 'Revisa los detalles del pedido antes de facturar'}
           </DialogDescription>
         </DialogHeader>
         
