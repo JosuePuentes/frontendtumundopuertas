@@ -456,6 +456,20 @@ const PedidosHerreria: React.FC = () => {
       }
     };
 
+    // NUEVO: Escuchar creación de pedidos para recargar datos inmediatamente
+    const handlePedidoCreado = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { pedidoId } = customEvent.detail;
+      
+      console.log('🆕 Pedido creado detectado:', pedidoId);
+      
+      // Esperar un momento para que el backend procese el pedido completamente
+      setTimeout(async () => {
+        await recargarDatos();
+        console.log('✅ Datos recargados después de crear pedido');
+      }, 1500); // 1.5 segundos para dar tiempo al backend
+    };
+
     // NUEVO: Escuchar asignaciones realizadas
     const handleAsignacionRealizada = async (event: Event) => {
       const customEvent = event as CustomEvent;
@@ -521,6 +535,7 @@ const PedidosHerreria: React.FC = () => {
     window.addEventListener('cambioEstadoItem', handleCambioEstado);
     window.addEventListener('pedidoCancelado', handlePedidoCancelado);
     window.addEventListener('pedidoEliminado', handlePedidoEliminado);
+    window.addEventListener('pedidoCreado', handlePedidoCreado);
     window.addEventListener('asignacionRealizada', handleAsignacionRealizada);
 
     // Cleanup: remover los listeners cuando el componente se desmonte
@@ -528,6 +543,7 @@ const PedidosHerreria: React.FC = () => {
       window.removeEventListener('cambioEstadoItem', handleCambioEstado);
       window.removeEventListener('pedidoCancelado', handlePedidoCancelado);
       window.removeEventListener('pedidoEliminado', handlePedidoEliminado);
+      window.removeEventListener('pedidoCreado', handlePedidoCreado);
       window.removeEventListener('asignacionRealizada', handleAsignacionRealizada);
     };
   }, [itemsIndividuales]);

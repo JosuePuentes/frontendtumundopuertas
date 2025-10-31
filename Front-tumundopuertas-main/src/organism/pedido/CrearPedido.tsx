@@ -511,6 +511,17 @@ const CrearPedido: React.FC = () => {
         setItemsAjustados([]);
         // Refrescar la lista de items para mostrar las existencias actualizadas
         fetchItems(`${apiUrl}/inventario/all`);
+        
+        // Disparar evento personalizado para notificar que se creó un pedido
+        const pedidoData = resultado?.data || resultado;
+        const pedidoId = pedidoData?._id || pedidoData?.id || pedidoData?.pedido?._id || pedidoData?.pedido?.id;
+        
+        window.dispatchEvent(new CustomEvent('pedidoCreado', {
+          detail: {
+            pedidoId: pedidoId,
+            timestamp: new Date().toISOString(),
+          }
+        }));
       } else {
         setMensaje(resultado?.error || "Ocurrió un error al crear el pedido.");
         setMensajeTipo("error");
