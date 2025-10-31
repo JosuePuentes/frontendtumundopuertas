@@ -43,7 +43,6 @@ import {
 } from "@/lib/api";
 import { getMetodosPago } from "@/lib/api";
 import { useItems } from "@/hooks/useItems";
-import api from "@/lib/api";
 
 // Tipos
 interface Proveedor {
