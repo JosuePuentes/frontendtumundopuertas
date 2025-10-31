@@ -522,8 +522,21 @@ const FacturacionPage: React.FC = () => {
         try {
           const facturasLocal = JSON.parse(storedFacturas);
           if (Array.isArray(facturasLocal) && facturasLocal.length > 0) {
-            setFacturasConfirmadas(facturasLocal);
-            console.log('📦 Facturas confirmadas cargadas desde localStorage (inicial):', facturasLocal.length);
+            // Normalizar también las facturas del localStorage
+            const facturasLocalNormalizadas = facturasLocal.map((f: any) => ({
+              id: f.id || f._id || `factura-${Date.now()}-${Math.random()}`,
+              numeroFactura: f.numeroFactura || f.numero_factura || 'Sin número',
+              pedidoId: f.pedidoId || f.pedido_id || f._id || '',
+              clienteNombre: f.clienteNombre || f.cliente_nombre || 'Sin nombre',
+              clienteId: f.clienteId || f.cliente_id || '',
+              montoTotal: typeof f.montoTotal === 'number' ? f.montoTotal : 
+                         (typeof f.monto_total === 'number' ? f.monto_total : 0),
+              fechaCreacion: f.fechaCreacion || f.fecha_creacion || new Date().toISOString(),
+              fechaFacturacion: f.fechaFacturacion || f.fecha_facturacion || f.createdAt || new Date().toISOString(),
+              items: f.items || []
+            }));
+            setFacturasConfirmadas(facturasLocalNormalizadas);
+            console.log('📦 Facturas confirmadas cargadas desde localStorage (inicial):', facturasLocalNormalizadas.length);
           }
         } catch (e) {
           console.error('Error parseando facturas de localStorage:', e);
@@ -550,13 +563,31 @@ const FacturacionPage: React.FC = () => {
           // SIEMPRE usar datos del backend si están disponibles (aunque esté vacío)
           // Esto asegura que los datos en la UI coincidan con lo que está en la BD
           console.log('📥 Facturas recibidas del backend:', facturasBackend.length);
-          console.log('📥 Detalle de facturas:', facturasBackend.map((f: any) => ({
-            id: f.id || f._id,
+          
+          // Normalizar las facturas del backend para asegurar que tengan todos los campos necesarios
+          const facturasNormalizadas = facturasBackend.map((f: any) => ({
+            id: f.id || f._id || `factura-${Date.now()}-${Math.random()}`,
+            numeroFactura: f.numeroFactura || f.numero_factura || 'Sin número',
+            pedidoId: f.pedidoId || f.pedido_id || f._id || '',
+            clienteNombre: f.clienteNombre || f.cliente_nombre || 'Sin nombre',
+            clienteId: f.clienteId || f.cliente_id || f.clienteId || '',
+            montoTotal: typeof f.montoTotal === 'number' ? f.montoTotal : 
+                       (typeof f.monto_total === 'number' ? f.monto_total : 0),
+            fechaCreacion: f.fechaCreacion || f.fecha_creacion || new Date().toISOString(),
+            fechaFacturacion: f.fechaFacturacion || f.fecha_facturacion || f.createdAt || new Date().toISOString(),
+            items: f.items || []
+          }));
+          
+          console.log('📥 Detalle de facturas normalizadas:', facturasNormalizadas.map((f: any) => ({
+            id: f.id,
             pedidoId: f.pedidoId,
-            numeroFactura: f.numeroFactura
+            numeroFactura: f.numeroFactura,
+            fechaFacturacion: f.fechaFacturacion,
+            montoTotal: f.montoTotal
           })));
-          setFacturasConfirmadas(facturasBackend);
-          localStorage.setItem('facturas_confirmadas', JSON.stringify(facturasBackend));
+          
+          setFacturasConfirmadas(facturasNormalizadas);
+          localStorage.setItem('facturas_confirmadas', JSON.stringify(facturasNormalizadas));
           
           if (facturasBackend.length > 0) {
             console.log('✅ Facturas confirmadas sincronizadas desde BD:', facturasBackend.length);
@@ -1705,33 +1736,66 @@ const FacturacionPage: React.FC = () => {
             </div>
           ) : (
             <ul className="space-y-3">
-              {facturasFiltradas.map((factura) => (
-                <li key={factura.id} className="border-2 border-green-300 rounded-xl bg-gradient-to-br from-white to-green-50 shadow-lg p-3 sm:p-4 transition-all duration-300 hover:shadow-xl">
-                  <div className="flex items-center justify-between mb-3">
-                    <Badge className="bg-green-600 text-white px-3 py-1 text-sm font-bold">
-                      {factura.numeroFactura}
-                    </Badge>
-                    <span className="text-xs text-gray-500">
-                      {new Date(factura.fechaFacturacion).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="mb-3">
-                    <h3 className="font-bold text-lg text-gray-800">{factura.clienteNombre}</h3>
-                    <p className="text-sm text-gray-600">ID Pedido: #{factura.pedidoId.slice(-6)}</p>
-                  </div>
-                  <div className="mb-3">
-                    <p className="text-2xl font-bold text-green-700">${(factura.montoTotal || 0).toFixed(2)}</p>
-                  </div>
-                  <Button 
-                    onClick={() => handleVerPreliminar(factura)}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
-                    size="sm"
-                  >
-                    <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
-                    <span>Ver Preliminar</span>
-                  </Button>
-                </li>
-              ))}
+              {facturasFiltradas.map((factura) => {
+                // Validar y formatear fecha
+                let fechaFormateada = 'N/A';
+                if (factura.fechaFacturacion) {
+                  try {
+                    const fecha = new Date(factura.fechaFacturacion);
+                    if (!isNaN(fecha.getTime())) {
+                      fechaFormateada = fecha.toLocaleDateString('es-VE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                      });
+                    }
+                  } catch (e) {
+                    console.warn('Error al formatear fecha:', e);
+                  }
+                }
+
+                // Validar pedidoId
+                const pedidoIdDisplay = factura.pedidoId 
+                  ? `#${factura.pedidoId.length >= 6 ? factura.pedidoId.slice(-6) : factura.pedidoId}`
+                  : 'N/A';
+
+                // Validar clienteNombre
+                const clienteNombre = factura.clienteNombre || factura.clienteId || 'Sin nombre';
+
+                // Validar montoTotal
+                const montoTotal = factura.montoTotal || 0;
+
+                // Validar numeroFactura
+                const numeroFactura = factura.numeroFactura || 'Sin número';
+
+                return (
+                  <li key={factura.id || factura.pedidoId || Math.random()} className="border-2 border-green-300 rounded-xl bg-gradient-to-br from-white to-green-50 shadow-lg p-3 sm:p-4 transition-all duration-300 hover:shadow-xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <Badge className="bg-green-600 text-white px-3 py-1 text-sm font-bold">
+                        {numeroFactura}
+                      </Badge>
+                      <span className="text-xs text-gray-500">
+                        {fechaFormateada}
+                      </span>
+                    </div>
+                    <div className="mb-3">
+                      <h3 className="font-bold text-lg text-gray-800">{clienteNombre}</h3>
+                      <p className="text-sm text-gray-600">ID Pedido: {pedidoIdDisplay}</p>
+                    </div>
+                    <div className="mb-3">
+                      <p className="text-2xl font-bold text-green-700">${montoTotal.toFixed(2)}</p>
+                    </div>
+                    <Button 
+                      onClick={() => handleVerPreliminar(factura)}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
+                      size="sm"
+                    >
+                      <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span>Ver Preliminar</span>
+                    </Button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </CardContent>
