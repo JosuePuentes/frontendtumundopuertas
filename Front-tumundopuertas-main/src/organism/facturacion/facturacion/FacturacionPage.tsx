@@ -1403,6 +1403,7 @@ const FacturacionPage: React.FC = () => {
                 <table className="w-full">
                   <thead className="bg-gray-100">
                     <tr>
+                      <th className="p-2 text-left">Código</th>
                       <th className="p-2 text-left">Nombre</th>
                       <th className="p-2 text-left">Descripción</th>
                       <th className="p-2 text-center">Cantidad</th>
@@ -1413,6 +1414,9 @@ const FacturacionPage: React.FC = () => {
                   <tbody>
                     {selectedPedido.items.map((item: any, idx: number) => (
                       <tr key={idx} className="border-t">
+                        <td className="p-2 font-mono text-sm font-semibold text-blue-700">
+                          {item.codigo || <span className="text-red-600 italic">Sin código</span>}
+                        </td>
                         <td className="p-2">{item.nombre || item.descripcion || 'N/A'}</td>
                         <td className="p-2 text-sm text-gray-600">{item.descripcion || item.detalleitem || '-'}</td>
                         <td className="p-2 text-center">{item.cantidad || 1}</td>
@@ -1423,7 +1427,7 @@ const FacturacionPage: React.FC = () => {
                   </tbody>
                   <tfoot className="bg-gray-50 font-bold">
                     <tr>
-                      <td colSpan={3} className="p-2 text-right">Total del Pedido:</td>
+                      <td colSpan={4} className="p-2 text-right">Total del Pedido:</td>
                       <td className="p-2 text-center">{selectedPedido.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
                       <td className="p-2 text-right text-lg text-green-700">${(selectedPedido.montoTotal || 0).toFixed(2)}</td>
                     </tr>
@@ -1516,6 +1520,7 @@ const FacturacionPage: React.FC = () => {
                 <table className="w-full">
                   <thead className="bg-gray-100">
                     <tr>
+                      <th className="p-2 text-left">Código</th>
                       <th className="p-2 text-left">Nombre</th>
                       <th className="p-2 text-left">Descripción</th>
                       <th className="p-2 text-center">Cantidad</th>
@@ -1526,6 +1531,9 @@ const FacturacionPage: React.FC = () => {
                   <tbody>
                     {selectedFactura.items.map((item: any, idx: number) => (
                       <tr key={idx} className="border-t">
+                        <td className="p-2 font-mono text-sm font-semibold text-blue-700">
+                          {item.codigo || <span className="text-red-600 italic">Sin código</span>}
+                        </td>
                         <td className="p-2">{item.nombre || item.descripcion || 'N/A'}</td>
                         <td className="p-2 text-sm text-gray-600">{item.descripcion || item.detalleitem || '-'}</td>
                         <td className="p-2 text-center">{item.cantidad || 1}</td>
@@ -1536,7 +1544,7 @@ const FacturacionPage: React.FC = () => {
                   </tbody>
                   <tfoot className="bg-gray-50 font-bold">
                     <tr>
-                      <td colSpan={3} className="p-2 text-right">Total de la Factura:</td>
+                      <td colSpan={4} className="p-2 text-right">Total de la Factura:</td>
                       <td className="p-2 text-center">{selectedFactura.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
                       <td className="p-2 text-right text-lg text-green-700">${(selectedFactura.montoTotal || 0).toFixed(2)}</td>
                     </tr>
