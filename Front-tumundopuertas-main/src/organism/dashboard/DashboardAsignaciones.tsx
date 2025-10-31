@@ -367,16 +367,38 @@ const DashboardAsignaciones: React.FC = () => {
       };
       
       console.log('PAYLOAD COMPLETO:', JSON.stringify(payload, null, 2));
+      console.log('URL del endpoint:', `${getApiUrl()}/pedidos/asignacion/terminar`);
       
       // Usar el endpoint correcto para terminar asignaciones
       const response = await fetch(`${getApiUrl()}/pedidos/asignacion/terminar`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(payload)
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        if (response.status === 404) {
+          const errorDetail = `El endpoint /pedidos/asignacion/terminar no está disponible en el servidor.
+          
+Posibles causas:
+- El endpoint no está registrado en FastAPI
+- Hay un conflicto con otros endpoints similares
+- El router no está correctamente montado en main.py
+- El código del backend no está desplegado en producción
+
+Verifica en el backend:
+1. Que el endpoint @router.put("/asignacion/terminar") esté en pedidos.py
+2. Que el router esté montado en main.py: app.include_router(pedido_router, prefix="/pedidos")
+3. Que no haya rutas duplicadas o conflictos`;
+          console.error('❌ Error 404:', errorDetail);
+          throw new Error(errorDetail);
+        }
+        const errorText = await response.text();
+        console.error('❌ Error del servidor:', response.status, errorText);
+        throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
       }
 
       const result = await response.json();
