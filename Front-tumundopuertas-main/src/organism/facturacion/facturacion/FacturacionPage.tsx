@@ -687,6 +687,11 @@ const FacturacionPage: React.FC = () => {
           throw new Error(`Error al cargar existencias al inventario: ${errorText}`);
         }
         
+        // Leer respuesta del backend para mostrar detalles
+        const respuestaBackend = await res.json();
+        const itemsActualizados = respuestaBackend.items_actualizados || 0;
+        const itemsCreados = respuestaBackend.items_creados || 0;
+        
         // Guardar el pedido cargado al inventario
         const pedidoCargado: PedidoCargadoInventario = {
           id: selectedPedido._id + '-' + Date.now(),
@@ -705,7 +710,13 @@ const FacturacionPage: React.FC = () => {
         
         setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
         setModalOpen(false);
-        alert('✓ Existencias cargadas al inventario correctamente');
+        
+        // Mostrar mensaje detallado con información de la operación
+        const mensajeDetalle = `✓ Existencias cargadas al inventario correctamente\n\n` +
+          `Items actualizados: ${itemsActualizados}\n` +
+          `Items creados: ${itemsCreados}\n` +
+          `Total procesado: ${itemsActualizados + itemsCreados} items`;
+        alert(mensajeDetalle);
       } else {
         // Flujo normal de facturación
         const numeroFactura = generarNumeroFactura();
