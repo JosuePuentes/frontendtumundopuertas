@@ -419,8 +419,16 @@ const FacturacionPage: React.FC = () => {
       
       // NO filtrar los pedidos cargados al inventario - mantenerlos en la lista pero marcarlos
       // Solo filtrar los que ya fueron facturados
+      console.log('🔍 DEBUG FILTRADO: Facturas confirmadas IDs:', facturasConfirmadasIds);
+      console.log('🔍 DEBUG FILTRADO: Total pedidos antes de filtrar:', pedidosParaFacturar.length);
       const pedidosPendientes = pedidosParaFacturar
-        .filter(p => !facturasConfirmadasIds.includes(p._id))
+        .filter(p => {
+          const yaFacturado = facturasConfirmadasIds.includes(p._id);
+          if (yaFacturado) {
+            console.log(`🚫 DEBUG FILTRADO: Pedido ${p._id} ya fue facturado, se excluye de pendientes`);
+          }
+          return !yaFacturado;
+        })
         .map(p => {
           // Si el pedido fue cargado al inventario, agregar las propiedades
           const pedidoCargado = pedidosCargadosInventarioMap.get(p._id);
