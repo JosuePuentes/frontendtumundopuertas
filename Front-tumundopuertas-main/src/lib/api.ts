@@ -108,6 +108,66 @@ export const getHistorialCompleto = async () => {
   return api(`/metodos-pago/historial-completo`);
 };
 
+// Funciones para Cuentas por Pagar
+export const getCuentasPorPagar = async () => {
+  return api('/cuentas-por-pagar');
+};
+
+export const createCuentaPorPagar = async (data: any) => {
+  return api('/cuentas-por-pagar', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+};
+
+export const abonarCuentaPorPagar = async (id: string, monto: number, metodoPagoId: string) => {
+  return api(`/cuentas-por-pagar/${id}/abonar`, {
+    method: 'POST',
+    body: JSON.stringify({ monto, metodo_pago_id: metodoPagoId }),
+  });
+};
+
+export const getCuentaPorPagarById = async (id: string) => {
+  return api(`/cuentas-por-pagar/${id}`);
+};
+
+// Funciones para Facturas Confirmadas (persistencia en backend)
+export const guardarFacturaConfirmada = async (factura: any) => {
+  return api('/facturas-confirmadas', {
+    method: 'POST',
+    body: JSON.stringify(factura),
+  });
+};
+
+export const getFacturasConfirmadas = async () => {
+  return api('/facturas-confirmadas');
+};
+
+export const eliminarFacturaConfirmada = async (pedidoId: string) => {
+  return api(`/facturas-confirmadas/${pedidoId}`, {
+    method: 'DELETE',
+  });
+};
+
+// Funciones para Pedidos Cargados al Inventario (persistencia en backend)
+export const guardarPedidoCargadoInventario = async (pedido: any) => {
+  return api('/pedidos-cargados-inventario', {
+    method: 'POST',
+    body: JSON.stringify(pedido),
+  });
+};
+
+export const getPedidosCargadosInventario = async () => {
+  return api('/pedidos-cargados-inventario');
+};
+
+export const actualizarPedidoCargadoInventario = async (pedidoId: string, datos: any) => {
+  return api(`/pedidos-cargados-inventario/${pedidoId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(datos),
+  });
+};
+
 
 export default api;
 

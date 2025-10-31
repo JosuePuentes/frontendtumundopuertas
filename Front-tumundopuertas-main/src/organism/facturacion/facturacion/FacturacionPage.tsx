@@ -5,6 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { getApiUrl } from "@/lib/api";
+import { 
+  guardarFacturaConfirmada as apiGuardarFactura,
+  getFacturasConfirmadas as apiGetFacturas,
+  guardarPedidoCargadoInventario as apiGuardarPedidoInventario,
+  getPedidosCargadosInventario as apiGetPedidosInventario
+} from "@/lib/api";
 import { CheckCircle2, DollarSign, Receipt, Printer, FileText, RefreshCw, Search } from "lucide-react";
 
 interface FacturaConfirmada {
@@ -469,17 +475,63 @@ const FacturacionPage: React.FC = () => {
     }
   };
 
-  // Cargar facturas confirmadas y pedidos cargados al inventario desde localStorage
+  // Cargar facturas confirmadas y pedidos cargados al inventario (backend primero, localStorage como backup)
   useEffect(() => {
-    const storedFacturas = localStorage.getItem('facturas_confirmadas');
-    if (storedFacturas) {
-      setFacturasConfirmadas(JSON.parse(storedFacturas));
-    }
+    const cargarDatos = async () => {
+      // Cargar facturas confirmadas desde backend
+      try {
+        const facturasBackend = await apiGetFacturas();
+        if (facturasBackend && Array.isArray(facturasBackend) && facturasBackend.length > 0) {
+          setFacturasConfirmadas(facturasBackend);
+          // También guardar en localStorage como backup
+          localStorage.setItem('facturas_confirmadas', JSON.stringify(facturasBackend));
+          console.log('✅ Facturas confirmadas cargadas desde backend:', facturasBackend.length);
+        } else {
+          // Si el backend no tiene datos, usar localStorage
+          const storedFacturas = localStorage.getItem('facturas_confirmadas');
+          if (storedFacturas) {
+            const facturasLocal = JSON.parse(storedFacturas);
+            setFacturasConfirmadas(facturasLocal);
+            console.log('📦 Facturas confirmadas cargadas desde localStorage:', facturasLocal.length);
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ No se pudieron cargar facturas desde backend, usando localStorage:', error);
+        // Fallback a localStorage
+        const storedFacturas = localStorage.getItem('facturas_confirmadas');
+        if (storedFacturas) {
+          setFacturasConfirmadas(JSON.parse(storedFacturas));
+        }
+      }
+      
+      // Cargar pedidos cargados al inventario desde backend
+      try {
+        const pedidosBackend = await apiGetPedidosInventario();
+        if (pedidosBackend && Array.isArray(pedidosBackend) && pedidosBackend.length > 0) {
+          setPedidosCargadosInventario(pedidosBackend);
+          // También guardar en localStorage como backup
+          localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(pedidosBackend));
+          console.log('✅ Pedidos cargados al inventario cargados desde backend:', pedidosBackend.length);
+        } else {
+          // Si el backend no tiene datos, usar localStorage
+          const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
+          if (storedPedidosInventario) {
+            const pedidosLocal = JSON.parse(storedPedidosInventario);
+            setPedidosCargadosInventario(pedidosLocal);
+            console.log('📦 Pedidos cargados al inventario cargados desde localStorage:', pedidosLocal.length);
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ No se pudieron cargar pedidos desde backend, usando localStorage:', error);
+        // Fallback a localStorage
+        const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
+        if (storedPedidosInventario) {
+          setPedidosCargadosInventario(JSON.parse(storedPedidosInventario));
+        }
+      }
+    };
     
-    const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
-    if (storedPedidosInventario) {
-      setPedidosCargadosInventario(JSON.parse(storedPedidosInventario));
-    }
+    cargarDatos();
   }, []);
 
   // Función para obtener todos los pedidos de TU MUNDO PUERTA
@@ -691,15 +743,35 @@ const FacturacionPage: React.FC = () => {
     return `F-${year}${month}${day}-${timestamp}`;
   };
 
-  // Guardar factura confirmada en localStorage
-  const guardarFacturaConfirmada = (factura: FacturaConfirmada) => {
+  // Guardar factura confirmada (backend + localStorage como backup)
+  const guardarFacturaConfirmada = async (factura: FacturaConfirmada) => {
+    try {
+      // Intentar guardar en el backend primero
+      await apiGuardarFactura(factura);
+      console.log('✅ Factura guardada en backend:', factura.numeroFactura);
+    } catch (error) {
+      console.warn('⚠️ No se pudo guardar factura en backend, usando solo localStorage:', error);
+      // Continuar con localStorage como backup
+    }
+    
+    // Siempre guardar en localStorage como backup
     const nuevasFacturas = [...facturasConfirmadas, factura];
     setFacturasConfirmadas(nuevasFacturas);
     localStorage.setItem('facturas_confirmadas', JSON.stringify(nuevasFacturas));
   };
 
-  // Guardar pedido cargado al inventario en localStorage
-  const guardarPedidoCargadoInventario = (pedidoCargado: PedidoCargadoInventario) => {
+  // Guardar pedido cargado al inventario (backend + localStorage como backup)
+  const guardarPedidoCargadoInventario = async (pedidoCargado: PedidoCargadoInventario) => {
+    try {
+      // Intentar guardar en el backend primero
+      await apiGuardarPedidoInventario(pedidoCargado);
+      console.log('✅ Pedido cargado guardado en backend:', pedidoCargado.pedidoId);
+    } catch (error) {
+      console.warn('⚠️ No se pudo guardar pedido en backend, usando solo localStorage:', error);
+      // Continuar con localStorage como backup
+    }
+    
+    // Siempre guardar en localStorage como backup
     const nuevosPedidos = [...pedidosCargadosInventario, pedidoCargado];
     setPedidosCargadosInventario(nuevosPedidos);
     localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(nuevosPedidos));
@@ -886,9 +958,9 @@ const FacturacionPage: React.FC = () => {
           fechaCargaInventario: new Date().toISOString(),
           items: selectedPedido.items || []
         };
-        // Guardar el pedido cargado al inventario en localStorage
-        guardarPedidoCargadoInventario(pedidoCargado);
-        console.log('💾 DEBUG CARGAR EXISTENCIAS: Pedido guardado en localStorage:', pedidoCargado.pedidoId);
+        // Guardar el pedido cargado al inventario (backend + localStorage)
+        await guardarPedidoCargadoInventario(pedidoCargado);
+        console.log('💾 DEBUG CARGAR EXISTENCIAS: Pedido guardado:', pedidoCargado.pedidoId);
         
         // IMPORTANTE: Actualizar TODOS los estados ANTES de cerrar el modal
         // para que el componente se re-renderice inmediatamente con el botón actualizado
@@ -1009,8 +1081,8 @@ const FacturacionPage: React.FC = () => {
         // IMPORTANTE: Actualizar TODOS los estados ANTES de cerrar el modal
         // para que la factura aparezca inmediatamente en "Facturas Procesadas"
         
-        // 1. Guardar la factura confirmada (actualiza estado y localStorage)
-        guardarFacturaConfirmada(facturaConfirmada);
+        // 1. Guardar la factura confirmada (actualiza estado, backend y localStorage)
+        await guardarFacturaConfirmada(facturaConfirmada);
         console.log('💾 DEBUG FACTURACIÓN: Factura guardada:', facturaConfirmada.numeroFactura);
         
         // 2. Remover el pedido de la lista de pendientes inmediatamente

@@ -29,6 +29,7 @@ import MetodosPago from "@/organism/metodos-pago/MetodosPago";
 import FormatosImpresion from "@/organism/formatosImpresion/FormatosImpresion";
 import AdminHome from "@/organism/admin/AdminHome";
 import Apartados from "@/organism/apartados/Apartados";
+import CuentasPorPagar from "@/organism/cuentasPorPagar/CuentasPorPagar";
 
 function AppRouter() {
   // Función para verificar token y permisos
@@ -257,6 +258,14 @@ function AppRouter() {
           element={
             <ProtectedRoute permiso="metodos_pago">
               <MetodosPago />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="cuentas-por-pagar"
+          element={
+            <ProtectedRoute>
+              <CuentasPorPagar />
             </ProtectedRoute>
           }
         />
