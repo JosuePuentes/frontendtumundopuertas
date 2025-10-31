@@ -507,6 +507,7 @@ const PedidosHerreria: React.FC = () => {
                   };
                 }
               }
+            }
             return item;
           });
           return nuevosItems;
