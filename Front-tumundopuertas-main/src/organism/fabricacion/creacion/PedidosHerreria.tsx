@@ -480,52 +480,9 @@ const PedidosHerreria: React.FC = () => {
         return;
       }
       
-      // Verificar si hay items de este pedido en la lista actual
-      const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
-      
-      if (itemsDelPedido.length > 0) {
-        // Actualizar estado local inmediatamente para mostrar asignación (OPTIMISTA)
-        setItemsIndividuales(prevItems => {
-          const nuevosItems = prevItems.map(item => {
-            if (item.pedido_id === pedidoId && (item.id === itemId || asignaciones?.some((a: any) => a.item_id === item.id))) {
-              // Si tenemos itemId específico, actualizar solo ese item
-              if (item.id === itemId) {
-                // Buscar información del empleado
-                const empleadoInfo = dataEmpleados?.find((e: any) => e._id === empleadoId);
-                const empleadoNombre = empleadoInfo?.nombreCompleto || empleadoInfo?.nombre || "Empleado asignado";
-                
-                return {
-                  ...item,
-                  empleado_asignado: empleadoNombre,
-                  fecha_asignacion: new Date().toISOString()
-                };
-              }
-              
-              // Buscar si este item fue asignado en las asignaciones
-              if (asignaciones && Array.isArray(asignaciones)) {
-                const asignacion = asignaciones.find((a: any) => a && a.item_id === item.id);
-              
-                if (asignacion) {
-                  // Mostrar notificación de éxito
-                  setNotificacionAsignacion({
-                    mostrar: true,
-                    mensaje: `✅ Item asignado a: ${asignacion.empleado_nombre || "Empleado"}`,
-                    tipo: 'success'
-                  });
-                  
-                  return {
-                    ...item,
-                    empleado_asignado: asignacion.empleado_nombre || "Empleado asignado",
-                    fecha_asignacion: new Date().toISOString()
-                  };
-                }
-              }
-            }
-            return item;
-          });
-          return nuevosItems;
-        });
-      }
+      // NO actualizar empleado_asignado aquí porque ahora usamos asignación por unidades
+      // El componente AsignarArticulos maneja las unidades individuales
+      // Solo mostrar notificación si es necesario
       
       // NO recargar datos del backend - solo actualización optimista para mayor velocidad
       // La recarga se hará cuando el usuario refresque manualmente o después de un tiempo
@@ -869,48 +826,36 @@ const PedidosHerreria: React.FC = () => {
                 </div>
                 
                       
-                      {/* Información de asignación */}
+                      {/* Información de asignación (solo para mostrar, no bloquea la asignación) */}
                       {item.empleado_asignado && (
-                        <div className="bg-blue-50 p-3 rounded-lg">
-                          <p className="text-sm text-blue-800"><strong>Asignado a:</strong> {item.empleado_asignado}</p>
-                          <p className="text-sm text-blue-600">Fecha asignación: {item.fecha_asignacion ? new Date(item.fecha_asignacion).toLocaleDateString() : 'N/A'}</p>
+                        <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                          <p className="text-sm text-blue-800"><strong>Nota:</strong> Este item puede tener múltiples unidades asignadas a diferentes empleados. Ver detalles abajo.</p>
                         </div>
                       )}
                       
-                      {/* Componente de asignación - Solo mostrar si no hay empleado asignado */}
-                      {!item.empleado_asignado ? (
-                <div className="mt-4">
-                  <AsignarArticulos
-                            estado_general="independiente"
-                    numeroOrden="independiente"
-                            items={[item]} // Pasar solo este item individual
-                    empleados={(() => {
-                      console.log('🔍 DEBUG - dataEmpleados:', dataEmpleados);
-                      console.log('🔍 DEBUG - es array?', Array.isArray(dataEmpleados));
-                      console.log('🔍 DEBUG - cantidad:', dataEmpleados ? (Array.isArray(dataEmpleados) ? dataEmpleados.length : Object.keys(dataEmpleados).length) : 0);
-                      if (Array.isArray(dataEmpleados)) {
-                        return dataEmpleados;
-                      }
-                      // Si dataEmpleados es un objeto con una propiedad array (como {empleados: [...]})
-                      if (dataEmpleados && typeof dataEmpleados === 'object' && 'empleados' in dataEmpleados && Array.isArray((dataEmpleados as any).empleados)) {
-                        return (dataEmpleados as any).empleados;
-                      }
-                      return [];
-                    })()}
-                            pedidoId={item.pedido_id}
-                            tipoEmpleado={[]}
-                          />
-                        </div>
-                      ) : (
-                        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-sm text-green-800 font-medium">
-                            ✅ Item asignado - No se puede reasignar hasta que se termine la asignación
-                          </p>
-                          <p className="text-xs text-green-600 mt-1">
-                            Ve al Dashboard de Asignaciones para terminar esta asignación
-                          </p>
-                        </div>
-                      )}
+                      {/* Componente de asignación - SIEMPRE mostrar para permitir asignación por unidades */}
+                      <div className="mt-4">
+                        <AsignarArticulos
+                          estado_general="independiente"
+                          numeroOrden="independiente"
+                          items={[item]} // Pasar solo este item individual
+                          empleados={(() => {
+                            console.log('🔍 DEBUG - dataEmpleados:', dataEmpleados);
+                            console.log('🔍 DEBUG - es array?', Array.isArray(dataEmpleados));
+                            console.log('🔍 DEBUG - cantidad:', dataEmpleados ? (Array.isArray(dataEmpleados) ? dataEmpleados.length : Object.keys(dataEmpleados).length) : 0);
+                            if (Array.isArray(dataEmpleados)) {
+                              return dataEmpleados;
+                            }
+                            // Si dataEmpleados es un objeto con una propiedad array (como {empleados: [...]})
+                            if (dataEmpleados && typeof dataEmpleados === 'object' && 'empleados' in dataEmpleados && Array.isArray((dataEmpleados as any).empleados)) {
+                              return (dataEmpleados as any).empleados;
+                            }
+                            return [];
+                          })()}
+                          pedidoId={item.pedido_id}
+                          tipoEmpleado={[]}
+                        />
+                      </div>
                 </div>
               </li>
                 );
