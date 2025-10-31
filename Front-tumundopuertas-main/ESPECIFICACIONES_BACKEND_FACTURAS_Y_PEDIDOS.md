@@ -417,3 +417,5 @@ async def obtener_pedidos_cargados():
 - Ordenar por fecha descendente al listar
 - Todos los endpoints requieren autenticación con JWT
 
+
+

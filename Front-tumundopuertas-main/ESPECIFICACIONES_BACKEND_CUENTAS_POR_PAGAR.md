@@ -475,3 +475,5 @@ POST /cuentas-por-pagar/{id}/abonar
 
 **Integración con métodos de pago:** Al abonar, debes registrar la transacción en el historial del método de pago para que aparezca en `/metodos-pago/{id}/historial`
 
+
+

@@ -184,3 +184,5 @@ Cuando se registra un abono:
 
 4. **Sincronización:** Asegurar que las actualizaciones de saldo del método de pago y el registro en historial sean atómicas (transacción si es posible).
 
+
+

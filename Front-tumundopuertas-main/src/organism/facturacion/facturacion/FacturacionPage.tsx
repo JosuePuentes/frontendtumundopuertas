@@ -397,27 +397,63 @@ const FacturacionPage: React.FC = () => {
       // Filtrar nulos
       const pedidosParaFacturar = pedidosConProgreso.filter((p) => p !== null);
       
-      // Filtrar pedidos que ya fueron facturados o cargados al inventario (están en localStorage)
-      const storedFacturas = localStorage.getItem('facturas_confirmadas');
+      // Filtrar pedidos que ya fueron facturados usando el ESTADO actualizado (no solo localStorage)
+      // Combinar datos del estado con localStorage como fallback
       const facturasConfirmadasIds: string[] = [];
+      
+      // Función auxiliar para normalizar IDs (convertir a string y hacer trim)
+      const normalizarId = (id: any): string => {
+        if (!id) return '';
+        return String(id).trim();
+      };
+      
+      // Usar estado primero (más actualizado)
+      if (facturasConfirmadas.length > 0) {
+        facturasConfirmadasIds.push(...facturasConfirmadas.map(f => normalizarId(f.pedidoId)));
+        console.log('✅ DEBUG FILTRADO: Facturas confirmadas desde estado:', facturasConfirmadas.length);
+      }
+      
+      // SIEMPRE también revisar localStorage como respaldo
+      const storedFacturas = localStorage.getItem('facturas_confirmadas');
       if (storedFacturas) {
         try {
           const facturas: FacturaConfirmada[] = JSON.parse(storedFacturas);
-          facturasConfirmadasIds.push(...facturas.map(f => f.pedidoId));
+          facturas.forEach(f => {
+            const idNormalizado = normalizarId(f.pedidoId);
+            if (!facturasConfirmadasIds.includes(idNormalizado)) {
+              facturasConfirmadasIds.push(idNormalizado);
+            }
+          });
+          console.log('✅ DEBUG FILTRADO: Facturas confirmadas desde localStorage:', facturas.length);
         } catch (e) {
           console.error('Error al leer facturas confirmadas:', e);
         }
       }
       
-      const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
-      const pedidosInventarioIds: string[] = [];
+      // Crear mapa de pedidos cargados al inventario usando el ESTADO actualizado
       const pedidosCargadosInventarioMap = new Map<string, PedidoCargadoInventario>();
+      
+      // Usar estado primero (más actualizado)
+      if (pedidosCargadosInventario.length > 0) {
+        pedidosCargadosInventario.forEach(p => {
+          const idNormalizado = normalizarId(p.pedidoId);
+          pedidosCargadosInventarioMap.set(idNormalizado, p);
+        });
+        console.log('✅ DEBUG FILTRADO: Pedidos cargados al inventario desde estado:', pedidosCargadosInventario.length);
+      }
+      
+      // SIEMPRE también revisar localStorage como respaldo
+      const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
       if (storedPedidosInventario) {
         try {
           const pedidos: PedidoCargadoInventario[] = JSON.parse(storedPedidosInventario);
-          pedidosInventarioIds.push(...pedidos.map(p => p.pedidoId));
-          // Crear un mapa para acceso rápido
-          pedidos.forEach(p => pedidosCargadosInventarioMap.set(p.pedidoId, p));
+          pedidos.forEach(p => {
+            const idNormalizado = normalizarId(p.pedidoId);
+            if (!pedidosCargadosInventarioMap.has(idNormalizado)) {
+              pedidosCargadosInventarioMap.set(idNormalizado, p);
+            }
+          });
+          console.log('✅ DEBUG FILTRADO: Pedidos cargados al inventario desde localStorage:', pedidos.length);
         } catch (e) {
           console.error('Error al leer pedidos cargados al inventario:', e);
         }
@@ -425,19 +461,21 @@ const FacturacionPage: React.FC = () => {
       
       // NO filtrar los pedidos cargados al inventario - mantenerlos en la lista pero marcarlos
       // Solo filtrar los que ya fueron facturados
-      console.log('🔍 DEBUG FILTRADO: Facturas confirmadas IDs:', facturasConfirmadasIds);
+      console.log('🔍 DEBUG FILTRADO: Facturas confirmadas IDs normalizados:', facturasConfirmadasIds);
       console.log('🔍 DEBUG FILTRADO: Total pedidos antes de filtrar:', pedidosParaFacturar.length);
       const pedidosPendientes = pedidosParaFacturar
         .filter(p => {
-          const yaFacturado = facturasConfirmadasIds.includes(p._id);
+          const pedidoIdNormalizado = normalizarId(p._id);
+          const yaFacturado = facturasConfirmadasIds.includes(pedidoIdNormalizado);
           if (yaFacturado) {
-            console.log(`🚫 DEBUG FILTRADO: Pedido ${p._id} ya fue facturado, se excluye de pendientes`);
+            console.log(`🚫 DEBUG FILTRADO: Pedido ${pedidoIdNormalizado} ya fue facturado, se excluye de pendientes`);
           }
           return !yaFacturado;
         })
         .map(p => {
           // Si el pedido fue cargado al inventario, agregar las propiedades
-          const pedidoCargado = pedidosCargadosInventarioMap.get(p._id);
+          const pedidoIdNormalizado = normalizarId(p._id);
+          const pedidoCargado = pedidosCargadosInventarioMap.get(pedidoIdNormalizado);
           if (pedidoCargado) {
             return {
               ...p,
@@ -511,6 +549,12 @@ const FacturacionPage: React.FC = () => {
         if (facturasBackend && Array.isArray(facturasBackend)) {
           // SIEMPRE usar datos del backend si están disponibles (aunque esté vacío)
           // Esto asegura que los datos en la UI coincidan con lo que está en la BD
+          console.log('📥 Facturas recibidas del backend:', facturasBackend.length);
+          console.log('📥 Detalle de facturas:', facturasBackend.map((f: any) => ({
+            id: f.id || f._id,
+            pedidoId: f.pedidoId,
+            numeroFactura: f.numeroFactura
+          })));
           setFacturasConfirmadas(facturasBackend);
           localStorage.setItem('facturas_confirmadas', JSON.stringify(facturasBackend));
           
@@ -519,9 +563,12 @@ const FacturacionPage: React.FC = () => {
           } else {
             console.log('📭 BD está vacía para facturas (se sincronizó correctamente)');
           }
+        } else {
+          console.warn('⚠️ Respuesta del backend no es un array válido:', facturasBackend);
         }
       } catch (error) {
-        console.warn('⚠️ No se pudieron cargar facturas desde BD, usando localStorage:', error);
+        console.error('❌ Error al cargar facturas desde BD:', error);
+        console.warn('⚠️ Usando datos de localStorage como fallback');
         // Si falla el backend, mantener datos de localStorage
       }
       
@@ -530,6 +577,12 @@ const FacturacionPage: React.FC = () => {
         if (pedidosBackend && Array.isArray(pedidosBackend)) {
           // SIEMPRE usar datos del backend si están disponibles (aunque esté vacío)
           // Esto asegura que los datos en la UI coincidan con lo que está en la BD
+          console.log('📥 Pedidos recibidos del backend:', pedidosBackend.length);
+          console.log('📥 Detalle de pedidos:', pedidosBackend.map((p: any) => ({
+            id: p.id || p._id,
+            pedidoId: p.pedidoId,
+            fechaCargaInventario: p.fechaCargaInventario
+          })));
           setPedidosCargadosInventario(pedidosBackend);
           localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(pedidosBackend));
           
@@ -538,9 +591,12 @@ const FacturacionPage: React.FC = () => {
           } else {
             console.log('📭 BD está vacía para pedidos (se sincronizó correctamente)');
           }
+        } else {
+          console.warn('⚠️ Respuesta del backend no es un array válido:', pedidosBackend);
         }
       } catch (error) {
-        console.warn('⚠️ No se pudieron cargar pedidos desde BD, usando localStorage:', error);
+        console.error('❌ Error al cargar pedidos desde BD:', error);
+        console.warn('⚠️ Usando datos de localStorage como fallback');
         // Si falla el backend, mantener datos de localStorage
       }
     };
@@ -640,9 +696,11 @@ const FacturacionPage: React.FC = () => {
     fetchPedidosTuMundoPuerta();
   }, []);
 
+  // Refetch pedidos cuando cambien las facturas confirmadas o pedidos cargados
+  // para asegurar que el filtrado esté actualizado
   useEffect(() => {
     fetchPedidosFacturacion();
-  }, []);
+  }, [facturasConfirmadas, pedidosCargadosInventario]);
 
   // Filtrar pedidos por nombre de cliente en tiempo real y mantener orden por fecha más reciente
   const facturacionFiltrada = useMemo(() => {
@@ -1512,26 +1570,36 @@ const FacturacionPage: React.FC = () => {
                 <div className="mt-3 pt-3 border-t-2 border-gray-200">
                   {esClienteCargaInventario(pedido) ? (
                     (() => {
+                      // Función auxiliar para normalizar IDs (misma que en fetchPedidosFacturacion)
+                      const normalizarId = (id: any): string => {
+                        if (!id) return '';
+                        return String(id).trim();
+                      };
+                      
                       // Verificar si el pedido ya fue cargado al inventario
                       // Verificar en localStorage primero, luego en el estado del pedido
+                      const pedidoIdNormalizado = normalizarId(pedido._id);
                       const yaCargadoEnEstado = pedido.yaCargadoInventario || false;
-                      const yaCargadoEnStorage = pedidosCargadosInventario.some((p: PedidoCargadoInventario) => p.pedidoId === pedido._id);
+                      const yaCargadoEnStorage = pedidosCargadosInventario.some((p: PedidoCargadoInventario) => 
+                        normalizarId(p.pedidoId) === pedidoIdNormalizado
+                      );
                       const yaCargado = yaCargadoEnEstado || yaCargadoEnStorage;
                       
                       // Debug log para verificar el estado del botón
                       if (pedido._id === '690468cb6b45aa49d857a0e6' || pedido._id?.includes('690468cb6b45aa49d857a0e6')) {
                         console.log('🔍 DEBUG BOTÓN - Pedido:', pedido._id, {
+                          pedidoIdNormalizado,
                           yaCargadoEnEstado,
                           yaCargadoEnStorage,
                           yaCargado,
                           pedidosCargadosInventarioLength: pedidosCargadosInventario.length,
-                          pedidoEnLista: pedidosCargadosInventario.find(p => p.pedidoId === pedido._id)
+                          pedidoEnLista: pedidosCargadosInventario.find(p => normalizarId(p.pedidoId) === pedidoIdNormalizado)
                         });
                       }
                       
                       const fechaCarga = pedido.fechaCargaInventario 
                         || (yaCargadoEnStorage 
-                          ? pedidosCargadosInventario.find((p: PedidoCargadoInventario) => p.pedidoId === pedido._id)?.fechaCargaInventario 
+                          ? pedidosCargadosInventario.find((p: PedidoCargadoInventario) => normalizarId(p.pedidoId) === pedidoIdNormalizado)?.fechaCargaInventario 
                           : null);
                       
                       if (yaCargado) {
