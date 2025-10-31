@@ -475,59 +475,73 @@ const FacturacionPage: React.FC = () => {
     }
   };
 
-  // Cargar facturas confirmadas y pedidos cargados al inventario (backend primero, localStorage como backup)
+  // Cargar facturas confirmadas y pedidos cargados al inventario (localStorage primero para carga inmediata, luego backend)
   useEffect(() => {
     const cargarDatos = async () => {
-      // Cargar facturas confirmadas desde backend
-      try {
-        const facturasBackend = await apiGetFacturas();
-        if (facturasBackend && Array.isArray(facturasBackend) && facturasBackend.length > 0) {
-          setFacturasConfirmadas(facturasBackend);
-          // También guardar en localStorage como backup
-          localStorage.setItem('facturas_confirmadas', JSON.stringify(facturasBackend));
-          console.log('✅ Facturas confirmadas cargadas desde backend:', facturasBackend.length);
-        } else {
-          // Si el backend no tiene datos, usar localStorage
-          const storedFacturas = localStorage.getItem('facturas_confirmadas');
-          if (storedFacturas) {
-            const facturasLocal = JSON.parse(storedFacturas);
+      // 1. Cargar PRIMERO desde localStorage para mostrar datos inmediatamente
+      const storedFacturas = localStorage.getItem('facturas_confirmadas');
+      if (storedFacturas) {
+        try {
+          const facturasLocal = JSON.parse(storedFacturas);
+          if (Array.isArray(facturasLocal) && facturasLocal.length > 0) {
             setFacturasConfirmadas(facturasLocal);
-            console.log('📦 Facturas confirmadas cargadas desde localStorage:', facturasLocal.length);
+            console.log('📦 Facturas confirmadas cargadas desde localStorage (inicial):', facturasLocal.length);
           }
-        }
-      } catch (error) {
-        console.warn('⚠️ No se pudieron cargar facturas desde backend, usando localStorage:', error);
-        // Fallback a localStorage
-        const storedFacturas = localStorage.getItem('facturas_confirmadas');
-        if (storedFacturas) {
-          setFacturasConfirmadas(JSON.parse(storedFacturas));
+        } catch (e) {
+          console.error('Error parseando facturas de localStorage:', e);
         }
       }
       
-      // Cargar pedidos cargados al inventario desde backend
-      try {
-        const pedidosBackend = await apiGetPedidosInventario();
-        if (pedidosBackend && Array.isArray(pedidosBackend) && pedidosBackend.length > 0) {
-          setPedidosCargadosInventario(pedidosBackend);
-          // También guardar en localStorage como backup
-          localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(pedidosBackend));
-          console.log('✅ Pedidos cargados al inventario cargados desde backend:', pedidosBackend.length);
-        } else {
-          // Si el backend no tiene datos, usar localStorage
-          const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
-          if (storedPedidosInventario) {
-            const pedidosLocal = JSON.parse(storedPedidosInventario);
+      const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
+      if (storedPedidosInventario) {
+        try {
+          const pedidosLocal = JSON.parse(storedPedidosInventario);
+          if (Array.isArray(pedidosLocal) && pedidosLocal.length > 0) {
             setPedidosCargadosInventario(pedidosLocal);
-            console.log('📦 Pedidos cargados al inventario cargados desde localStorage:', pedidosLocal.length);
+            console.log('📦 Pedidos cargados al inventario cargados desde localStorage (inicial):', pedidosLocal.length);
+          }
+        } catch (e) {
+          console.error('Error parseando pedidos de localStorage:', e);
+        }
+      }
+      
+      // 2. Intentar actualizar desde backend (priorizar BD sobre localStorage)
+      try {
+        const facturasBackend = await apiGetFacturas();
+        if (facturasBackend && Array.isArray(facturasBackend)) {
+          // SIEMPRE usar datos del backend si están disponibles (aunque esté vacío)
+          // Esto asegura que los datos en la UI coincidan con lo que está en la BD
+          setFacturasConfirmadas(facturasBackend);
+          localStorage.setItem('facturas_confirmadas', JSON.stringify(facturasBackend));
+          
+          if (facturasBackend.length > 0) {
+            console.log('✅ Facturas confirmadas sincronizadas desde BD:', facturasBackend.length);
+          } else {
+            console.log('📭 BD está vacía para facturas (se sincronizó correctamente)');
           }
         }
       } catch (error) {
-        console.warn('⚠️ No se pudieron cargar pedidos desde backend, usando localStorage:', error);
-        // Fallback a localStorage
-        const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
-        if (storedPedidosInventario) {
-          setPedidosCargadosInventario(JSON.parse(storedPedidosInventario));
+        console.warn('⚠️ No se pudieron cargar facturas desde BD, usando localStorage:', error);
+        // Si falla el backend, mantener datos de localStorage
+      }
+      
+      try {
+        const pedidosBackend = await apiGetPedidosInventario();
+        if (pedidosBackend && Array.isArray(pedidosBackend)) {
+          // SIEMPRE usar datos del backend si están disponibles (aunque esté vacío)
+          // Esto asegura que los datos en la UI coincidan con lo que está en la BD
+          setPedidosCargadosInventario(pedidosBackend);
+          localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(pedidosBackend));
+          
+          if (pedidosBackend.length > 0) {
+            console.log('✅ Pedidos cargados al inventario sincronizados desde BD:', pedidosBackend.length);
+          } else {
+            console.log('📭 BD está vacía para pedidos (se sincronizó correctamente)');
+          }
         }
+      } catch (error) {
+        console.warn('⚠️ No se pudieron cargar pedidos desde BD, usando localStorage:', error);
+        // Si falla el backend, mantener datos de localStorage
       }
     };
     
@@ -743,36 +757,64 @@ const FacturacionPage: React.FC = () => {
     return `F-${year}${month}${day}-${timestamp}`;
   };
 
-  // Guardar factura confirmada (backend + localStorage como backup)
+  // Guardar factura confirmada (backend PRIMERO para persistencia, luego localStorage como backup)
   const guardarFacturaConfirmada = async (factura: FacturaConfirmada) => {
+    // IMPORTANTE: Intentar guardar en el backend PRIMERO para asegurar persistencia en BD
     try {
-      // Intentar guardar en el backend primero
       await apiGuardarFactura(factura);
-      console.log('✅ Factura guardada en backend:', factura.numeroFactura);
+      console.log('✅ Factura guardada en BD (backend):', factura.numeroFactura);
     } catch (error) {
-      console.warn('⚠️ No se pudo guardar factura en backend, usando solo localStorage:', error);
-      // Continuar con localStorage como backup
+      console.error('❌ Error al guardar factura en BD:', error);
+      // Continuar con localStorage como backup, pero alertar al usuario
+      alert('⚠️ No se pudo guardar la factura en la base de datos. Se guardó localmente. Por favor, verifica la conexión.');
     }
     
-    // Siempre guardar en localStorage como backup
-    const nuevasFacturas = [...facturasConfirmadas, factura];
+    // Actualizar estado y localStorage (siempre se hace, incluso si falla el backend)
+    const nuevasFacturas = [...facturasConfirmadas];
+    
+    // Verificar si ya existe para evitar duplicados
+    const existe = nuevasFacturas.some((f: FacturaConfirmada) => f.pedidoId === factura.pedidoId);
+    if (!existe) {
+      nuevasFacturas.push(factura);
+    } else {
+      // Si existe, actualizar en lugar de agregar
+      const index = nuevasFacturas.findIndex((f: FacturaConfirmada) => f.pedidoId === factura.pedidoId);
+      if (index !== -1) {
+        nuevasFacturas[index] = factura;
+      }
+    }
+    
     setFacturasConfirmadas(nuevasFacturas);
     localStorage.setItem('facturas_confirmadas', JSON.stringify(nuevasFacturas));
   };
 
-  // Guardar pedido cargado al inventario (backend + localStorage como backup)
+  // Guardar pedido cargado al inventario (backend PRIMERO para persistencia, luego localStorage como backup)
   const guardarPedidoCargadoInventario = async (pedidoCargado: PedidoCargadoInventario) => {
+    // IMPORTANTE: Intentar guardar en el backend PRIMERO para asegurar persistencia en BD
     try {
-      // Intentar guardar en el backend primero
       await apiGuardarPedidoInventario(pedidoCargado);
-      console.log('✅ Pedido cargado guardado en backend:', pedidoCargado.pedidoId);
+      console.log('✅ Pedido cargado guardado en BD (backend):', pedidoCargado.pedidoId);
     } catch (error) {
-      console.warn('⚠️ No se pudo guardar pedido en backend, usando solo localStorage:', error);
-      // Continuar con localStorage como backup
+      console.error('❌ Error al guardar pedido en BD:', error);
+      // Continuar con localStorage como backup, pero alertar al usuario
+      alert('⚠️ No se pudo guardar el pedido en la base de datos. Se guardó localmente. Por favor, verifica la conexión.');
     }
     
-    // Siempre guardar en localStorage como backup
-    const nuevosPedidos = [...pedidosCargadosInventario, pedidoCargado];
+    // Actualizar estado y localStorage (siempre se hace, incluso si falla el backend)
+    const nuevosPedidos = [...pedidosCargadosInventario];
+    
+    // Verificar si ya existe para evitar duplicados
+    const existe = nuevosPedidos.some((p: PedidoCargadoInventario) => p.pedidoId === pedidoCargado.pedidoId);
+    if (!existe) {
+      nuevosPedidos.push(pedidoCargado);
+    } else {
+      // Si existe, actualizar en lugar de agregar
+      const index = nuevosPedidos.findIndex((p: PedidoCargadoInventario) => p.pedidoId === pedidoCargado.pedidoId);
+      if (index !== -1) {
+        nuevosPedidos[index] = pedidoCargado;
+      }
+    }
+    
     setPedidosCargadosInventario(nuevosPedidos);
     localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(nuevosPedidos));
   };
