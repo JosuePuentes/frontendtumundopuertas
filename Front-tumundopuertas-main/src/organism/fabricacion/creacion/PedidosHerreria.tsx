@@ -826,10 +826,11 @@ const PedidosHerreria: React.FC = () => {
                       )}
                       
                       {/* Componente de asignación - SIEMPRE mostrar para permitir asignación por unidades */}
+                      {/* Pasar el estado_item actual como numeroOrden para determinar el módulo correcto */}
                       <div className="mt-4">
                         <AsignarArticulos
                           estado_general="independiente"
-                          numeroOrden="independiente"
+                          numeroOrden={item.estado_item.toString()} // Usar estado_item para determinar el módulo (1=herreria, 2=masillar, 3=preparar)
                           items={[item]} // Pasar solo este item individual
                           empleados={(() => {
                             console.log('🔍 DEBUG - dataEmpleados:', dataEmpleados);

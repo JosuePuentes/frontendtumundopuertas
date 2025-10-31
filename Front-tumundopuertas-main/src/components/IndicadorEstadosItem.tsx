@@ -57,7 +57,19 @@ const IndicadorEstadosItem: React.FC<IndicadorEstadosItemProps> = ({
       {/* Estado actual */}
       <div className="mt-2 text-xs text-gray-600">
         Estado actual: <span className="font-semibold">
-          {estados.find(e => e.numero === estadoItem)?.nombre || 'Desconocido'}
+          {(() => {
+            // Mostrar mensajes descriptivos según el estado
+            if (estadoItem === 2) {
+              return "Terminada Herrería"; // Pasó de herrería (1) a masillar (2)
+            } else if (estadoItem === 3) {
+              return "Terminada Masillar"; // Pasó de masillar (2) a preparar (3)
+            } else if (estadoItem === 4) {
+              return "Terminado"; // Completado todo el proceso
+            } else {
+              // Estados normales: Pendiente (0) o Herrería (1)
+              return estados.find(e => e.numero === estadoItem)?.nombre || 'Desconocido';
+            }
+          })()}
         </span>
       </div>
     </div>
