@@ -471,7 +471,7 @@ const PedidosHerreria: React.FC = () => {
     };
 
     // NUEVO: Escuchar asignaciones realizadas
-    const handleAsignacionRealizada = async (event: Event) => {
+    const handleAsignacionRealizada = async () => {
       // NO actualizar empleado_asignado aquí porque ahora usamos asignación por unidades
       // El componente AsignarArticulos maneja las unidades individuales
       // Solo mostrar notificación si es necesario
