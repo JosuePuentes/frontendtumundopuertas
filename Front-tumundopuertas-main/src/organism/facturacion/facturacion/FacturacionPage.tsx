@@ -713,16 +713,42 @@ const FacturacionPage: React.FC = () => {
         
         // Cargar existencias al inventario (solo para el cliente especial)
         console.log('🔄 Cargando existencias al inventario para pedido:', selectedPedido._id);
-        console.log('📦 Items del pedido:', selectedPedido.items.map((item: any) => ({
+        console.log('📦 Items del pedido con detalles completos:', selectedPedido.items.map((item: any) => ({
           codigo: item.codigo,
           nombre: item.nombre || item.descripcion,
-          cantidad: item.cantidad
+          cantidad: item.cantidad,
+          precio: item.precio
         })));
+        
+        // Validar que el pedido_id es un ObjectId válido (24 caracteres hexadecimales)
+        if (!selectedPedido._id || !/^[0-9a-fA-F]{24}$/.test(selectedPedido._id)) {
+          alert('⚠️ Error: El ID del pedido no es válido. Debe ser un ObjectId de MongoDB (24 caracteres hexadecimales).');
+          setConfirming(false);
+          return;
+        }
+        
+        // Obtener token de autorización
+        const token = localStorage.getItem('access_token');
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        };
+        
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+          console.log('✅ Token de autorización incluido en el request');
+        } else {
+          console.warn('⚠️ No se encontró token de autorización');
+        }
+        
+        const requestBody = { pedido_id: selectedPedido._id };
+        console.log('📤 Request body:', requestBody);
+        console.log('📤 URL:', `${getApiUrl()}/inventario/cargar-existencias-desde-pedido`);
+        console.log('📤 Headers:', headers);
         
         const res = await fetch(`${getApiUrl()}/inventario/cargar-existencias-desde-pedido`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pedido_id: selectedPedido._id })
+          headers: headers,
+          body: JSON.stringify(requestBody)
         });
         
         if (!res.ok) {
@@ -739,6 +765,12 @@ const FacturacionPage: React.FC = () => {
         const itemsCreados = respuestaBackend.items_creados || 0;
         const itemsConError = respuestaBackend.items_con_error || [];
         const totalProcesado = itemsActualizados + itemsCreados;
+        
+        // Log detallado de las cantidades que se están agregando
+        console.log('📊 Cantidades que se agregaron al inventario por item:');
+        selectedPedido.items.forEach((item: any) => {
+          console.log(`  - ${item.codigo || 'Sin código'}: ${item.cantidad || 0} unidades`);
+        });
         
         // Verificar si hubo algún procesamiento real
         if (totalProcesado === 0 && itemsConError.length === 0) {
@@ -781,7 +813,15 @@ const FacturacionPage: React.FC = () => {
         let mensajeDetalle = `✓ Existencias cargadas al inventario\n\n` +
           `Items actualizados: ${itemsActualizados}\n` +
           `Items creados: ${itemsCreados}\n` +
-          `Total procesado: ${totalProcesado} items`;
+          `Total procesado: ${totalProcesado} items\n\n` +
+          `📦 Cantidades agregadas:\n`;
+        
+        // Agregar detalles de cada item con su cantidad
+        selectedPedido.items.forEach((item: any) => {
+          const codigo = item.codigo || 'Sin código';
+          const cantidad = item.cantidad || 0;
+          mensajeDetalle += `• ${codigo}: +${cantidad} unidades\n`;
+        });
         
         if (itemsConError.length > 0) {
           const erroresTexto = itemsConError.map((err: any) => `• ${err.item}: ${err.error}`).join('\n');
