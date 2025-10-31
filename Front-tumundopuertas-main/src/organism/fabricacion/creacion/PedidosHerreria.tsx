@@ -459,7 +459,7 @@ const PedidosHerreria: React.FC = () => {
     // NUEVO: Escuchar asignaciones realizadas
     const handleAsignacionRealizada = async (event: Event) => {
       const customEvent = event as CustomEvent;
-      const { pedidoId, asignaciones, itemId, unidadIndex, empleadoId } = customEvent.detail;
+      const { pedidoId, asignaciones, itemId, empleadoId } = customEvent.detail;
       
       // Validar que asignaciones exista y sea un array, o usar itemId si viene
       if (!asignaciones && !itemId) {
@@ -479,7 +479,6 @@ const PedidosHerreria: React.FC = () => {
                 // Buscar información del empleado
                 const empleadoInfo = dataEmpleados?.find((e: any) => e._id === empleadoId);
                 const empleadoNombre = empleadoInfo?.nombreCompleto || empleadoInfo?.nombre || "Empleado asignado";
-                const empleadoCargo = empleadoInfo?.cargo || "";
                 
                 return {
                   ...item,
