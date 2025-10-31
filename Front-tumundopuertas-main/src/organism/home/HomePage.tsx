@@ -311,9 +311,9 @@ const HomePage: React.FC = () => {
                 </div>
                 
                 {/* Header with Logo and Company Name */}
-                <header className="relative z-10 p-6">
-                    <div className="max-w-7xl mx-auto flex items-center justify-between">
-                        <div className="flex items-center space-x-6">
+                <header className="relative z-10 p-4 sm:p-6">
+                    <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center space-x-3 sm:space-x-6 w-full sm:w-auto justify-center sm:justify-start">
                             {/* Dynamic Logo */}
                             {currentConfig.logo.enabled && (
                                 <div className="relative">
@@ -342,17 +342,17 @@ const HomePage: React.FC = () => {
                             )}
                             
                             <div className="flex flex-col">
-                                <span className="text-3xl font-bold text-gray-200 tracking-wide">
+                                <span className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-200 tracking-wide">
                                     {currentConfig.logo.text}
                                 </span>
-                                <div className="w-full h-px bg-gradient-to-r from-cyan-400 to-transparent mt-2"></div>
-                                <span className="text-sm text-gray-200 mt-2">
+                                <div className="w-full h-px bg-gradient-to-r from-cyan-400 to-transparent mt-1 sm:mt-2"></div>
+                                <span className="text-xs sm:text-sm text-gray-200 mt-1 sm:mt-2">
                                     {currentConfig.logo.slogan}
                                 </span>
                             </div>
                         </div>
                         
-                        <nav className="hidden md:flex space-x-8">
+                        <nav className="hidden lg:flex space-x-4 md:space-x-8">
                             <a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
                                 Inicio
                                 <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
@@ -377,21 +377,22 @@ const HomePage: React.FC = () => {
                         
                         <Button 
                             onClick={() => navigate('/login')}
-                            className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-bold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50"
+                            className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-bold px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50 text-sm sm:text-base w-full sm:w-auto"
                         >
-                            SOLICITAR PRESUPUESTO
+                            <span className="hidden sm:inline">SOLICITAR PRESUPUESTO</span>
+                            <span className="sm:hidden">PRESUPUESTO</span>
                         </Button>
                     </div>
                 </header>
 
                 {/* Dynamic Banner Section */}
                 {currentConfig.banner.enabled && (
-                    <section className="relative z-10 py-12 px-6">
+                    <section className="relative z-10 py-6 sm:py-8 md:py-12 px-4 sm:px-6">
                         <div className="max-w-7xl mx-auto">
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-12 backdrop-blur-sm">
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-4 sm:p-6 md:p-12 backdrop-blur-sm">
                                 <div className="text-center">
-                                    <h2 className="text-4xl font-bold text-gray-200 mb-6">{currentConfig.banner.title}</h2>
-                                    <p className="text-gray-200 mb-8 text-lg">{currentConfig.banner.subtitle}</p>
+                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-200 mb-4 sm:mb-6">{currentConfig.banner.title}</h2>
+                                    <p className="text-gray-200 mb-4 sm:mb-6 md:mb-8 text-base sm:text-lg">{currentConfig.banner.subtitle}</p>
                                     {currentConfig.banner.image && (
                                         <div className="w-full h-48 bg-gradient-to-r from-gray-600 to-gray-700 border-2 border-cyan-400 rounded-lg flex items-center justify-center">
                                             <img src={currentConfig.banner.image} alt="Banner" className="w-full h-full object-cover rounded-lg" />
@@ -417,8 +418,8 @@ const HomePage: React.FC = () => {
                                     {currentConfig.values.diseño.icon === 'Shield' && <Shield className="w-10 h-10 text-cyan-400" />}
                                     {currentConfig.values.diseño.icon === 'Zap' && <Zap className="w-10 h-10 text-cyan-400" />}
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-200 mb-3">{currentConfig.values.diseño.title}</h3>
-                                <p className="text-gray-200 text-lg">{currentConfig.values.diseño.description}</p>
+                                <h3 className="text-xl sm:text-2xl font-bold text-gray-200 mb-2 sm:mb-3">{currentConfig.values.diseño.title}</h3>
+                                <p className="text-gray-200 text-base sm:text-lg">{currentConfig.values.diseño.description}</p>
                             </div>
                             
                             <div className="text-center group">
@@ -427,8 +428,8 @@ const HomePage: React.FC = () => {
                                     {currentConfig.values.calidad.icon === 'Shield' && <Shield className="w-10 h-10 text-cyan-400" />}
                                     {currentConfig.values.calidad.icon === 'Zap' && <Zap className="w-10 h-10 text-cyan-400" />}
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-200 mb-3">{currentConfig.values.calidad.title}</h3>
-                                <p className="text-gray-200 text-lg">{currentConfig.values.calidad.description}</p>
+                                <h3 className="text-xl sm:text-2xl font-bold text-gray-200 mb-2 sm:mb-3">{currentConfig.values.calidad.title}</h3>
+                                <p className="text-gray-200 text-base sm:text-lg">{currentConfig.values.calidad.description}</p>
                             </div>
                             
                             <div className="text-center group">
@@ -437,19 +438,19 @@ const HomePage: React.FC = () => {
                                     {currentConfig.values.proteccion.icon === 'Shield' && <Shield className="w-10 h-10 text-cyan-400" />}
                                     {currentConfig.values.proteccion.icon === 'Zap' && <Zap className="w-10 h-10 text-cyan-400" />}
                                 </div>
-                                <h3 className="text-2xl font-bold text-gray-200 mb-3">{currentConfig.values.proteccion.title}</h3>
-                                <p className="text-gray-200 text-lg">{currentConfig.values.proteccion.description}</p>
+                                <h3 className="text-xl sm:text-2xl font-bold text-gray-200 mb-2 sm:mb-3">{currentConfig.values.proteccion.title}</h3>
+                                <p className="text-gray-200 text-base sm:text-lg">{currentConfig.values.proteccion.description}</p>
                             </div>
                         </div>
                     </div>
                 </section>
 
                 {/* Product Gallery Section */}
-                <section className="relative z-10 py-20 px-6">
+                <section className="relative z-10 py-10 sm:py-16 md:py-20 px-4 sm:px-6">
                     <div className="max-w-6xl mx-auto">
-                        <h2 className="text-4xl font-bold text-gray-200 text-center mb-12">{currentConfig.products.title}</h2>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-200 text-center mb-6 sm:mb-8 md:mb-12">{currentConfig.products.title}</h2>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                             {currentConfig.products.items.filter(item => item.enabled).map((product) => (
                                 <div key={product.id} className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
                                     <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
@@ -500,18 +501,18 @@ const HomePage: React.FC = () => {
             </div>
             
             {/* Header */}
-            <header className="relative z-10 p-6">
-                <div className="max-w-7xl mx-auto flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                        <img src="/puertalogo.PNG" alt="Logo Tu Mundo Puertas" className="w-12 h-12" />
-                        <span className="text-xl font-bold text-gray-200">
+            <header className="relative z-10 p-4 sm:p-6">
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="flex items-center space-x-2 sm:space-x-4">
+                        <img src="/puertalogo.PNG" alt="Logo Tu Mundo Puertas" className="w-10 h-10 sm:w-12 sm:h-12" />
+                        <span className="text-lg sm:text-xl font-bold text-gray-200">
                             TU MUNDO PUERTAS
                         </span>
                     </div>
                     
                     <Button 
                         onClick={() => navigate('/dashboard')}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25"
+                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25 text-sm sm:text-base w-full sm:w-auto"
                     >
                         Panel de Control
                     </Button>
@@ -519,16 +520,16 @@ const HomePage: React.FC = () => {
             </header>
 
             {/* Main Content */}
-            <main className="relative z-10 p-8">
+            <main className="relative z-10 p-4 sm:p-6 md:p-8">
                 <div className="max-w-7xl mx-auto">
-                    <div className="text-center mb-12">
-                        <h1 className="text-5xl font-bold mb-4 text-gray-200">
+                    <div className="text-center mb-6 sm:mb-8 md:mb-12">
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-4 text-gray-200">
                             Panel de Control
                         </h1>
-                        <p className="text-xl text-gray-200">Selecciona el módulo que deseas utilizar</p>
+                        <p className="text-base sm:text-lg md:text-xl text-gray-200">Selecciona el módulo que deseas utilizar</p>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                         {modules.map((module, index) => {
                             const IconComponent = module.icon;
                             return (
@@ -537,12 +538,12 @@ const HomePage: React.FC = () => {
                                         <div className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-r ${module.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg group-hover:shadow-cyan-500/25`}>
                                             <IconComponent className="w-10 h-10 text-white" />
                                         </div>
-                                        <CardTitle className="text-2xl font-bold text-gray-200 group-hover:text-cyan-400 transition-colors duration-300">
+                                        <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-gray-200 group-hover:text-cyan-400 transition-colors duration-300">
                                             {module.title}
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="text-center">
-                                        <p className="text-gray-200 mb-6 text-lg">{module.description}</p>
+                                        <p className="text-gray-200 mb-4 sm:mb-6 text-sm sm:text-base md:text-lg">{module.description}</p>
                                         <Button 
                                             onClick={() => navigate(module.href)}
                                             className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25"

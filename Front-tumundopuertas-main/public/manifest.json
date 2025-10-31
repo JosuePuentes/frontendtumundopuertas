@@ -1,0 +1,66 @@
+{
+  "name": "Tu Mundo Puertas - Sistema de Gestión",
+  "short_name": "TU MUNDO PUERTAS",
+  "description": "Sistema de gestión de pedidos, inventario y producción de Tu Mundo Puertas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/logop.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logop.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Crear Pedido",
+      "short_name": "Pedido",
+      "description": "Crear un nuevo pedido",
+      "url": "/crearpedido",
+      "icons": [
+        {
+          "src": "/logop.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Inventario",
+      "short_name": "Inventario",
+      "description": "Gestionar inventario",
+      "url": "/crearitem",
+      "icons": [
+        {
+          "src": "/logop.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Facturación",
+      "short_name": "Facturar",
+      "description": "Facturar pedidos",
+      "url": "/facturacion",
+      "icons": [
+        {
+          "src": "/logop.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
+

@@ -11,4 +11,19 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
+  // Configuración para PWA
+  publicDir: 'public',
+  build: {
+    rollupOptions: {
+      output: {
+        // Asegurar que el service worker se copie al build
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === 'sw.js') {
+            return 'sw.js';
+          }
+          return 'assets/[name].[ext]';
+        },
+      },
+    },
+  },
 })

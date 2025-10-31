@@ -111,13 +111,13 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
       className="bg-white sticky top-0 z-50 shadow"
       style={{ background: "#fff" }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Sección Izquierda: Logo */}
           <div className="flex-shrink-0">
             <NavLink
               to="/"
-              className="text-2xl font-bold text-slate-800 hover:text-blue-600 transition-colors"
+              className="text-xl sm:text-2xl font-bold text-slate-800 hover:text-blue-600 transition-colors"
             >
               Crafteo
             </NavLink>
@@ -139,15 +139,15 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
       </div>
 
       <div
-        className={`fixed z-50 bg-white transition-all duration-300 ease-in-out max-w-3xl ${
+        className={`fixed z-50 bg-white transition-all duration-300 ease-in-out w-full sm:max-w-md md:max-w-lg lg:max-w-3xl top-16 sm:top-14 ${
           isOpen
-            ? "overflow-auto max-h-2/3 ocultar-scrollbar right-0 sm:right-32"
+            ? "overflow-auto max-h-[calc(100vh-4rem)] ocultar-scrollbar right-0"
             : "max-h-0 hidden"
         }`}
         id="mobile-menu"
-        style={{ backgroundColor: "#fff", opacity: 1, backdropFilter: "none", WebkitBackdropFilter: "none" }}
+        style={{ backgroundColor: "#fff", opacity: 1, backdropFilter: "none", WebkitBackdropFilter: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
       >
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-slate-200">
+        <div className="px-3 pt-3 pb-3 space-y-1 sm:px-4 border-t border-slate-200">
           {filteredLinks.map((link) => (
             <NavLink
               key={link.href}

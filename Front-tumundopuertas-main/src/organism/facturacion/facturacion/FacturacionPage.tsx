@@ -908,24 +908,24 @@ const FacturacionPage: React.FC = () => {
 
   return (
     <>
-    <div className="max-w-7xl mx-auto mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="max-w-7xl mx-auto mt-4 md:mt-8 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
       {/* Sección: Pendientes de Facturar */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between mb-4">
-            <CardTitle className="flex items-center gap-2">
-              <Receipt className="w-6 h-6" />
-              Pendientes de Facturar
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <Receipt className="w-5 h-5 sm:w-6 sm:h-6" />
+              <span className="text-base sm:text-lg">Pendientes de Facturar</span>
             </CardTitle>
             <Button
               onClick={() => fetchPedidosFacturacion()}
               disabled={loading}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Actualizar
+              <span className="text-xs sm:text-sm">Actualizar</span>
             </Button>
           </div>
           {/* Buscador en tiempo real por nombre de cliente */}
@@ -1043,7 +1043,7 @@ const FacturacionPage: React.FC = () => {
                     <Button
                       onClick={() => handleCargarInventario(pedido)}
                       disabled={!pedido.puedeFacturar}
-                      className={`w-full py-6 text-lg font-bold ${
+                      className={`w-full py-4 sm:py-6 text-sm sm:text-base md:text-lg font-bold ${
                         pedido.puedeFacturar
                           ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -1051,12 +1051,15 @@ const FacturacionPage: React.FC = () => {
                     >
                       {pedido.puedeFacturar ? (
                         <>
-                          <Receipt className="w-6 h-6 mr-2" />✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO
+                          <Receipt className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
+                          <span className="hidden sm:inline">✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO</span>
+                          <span className="sm:hidden">CARGAR INVENTARIO</span>
                         </>
                       ) : (
                         <>
-                          <DollarSign className="w-6 h-6 mr-2" />
-                          ⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})
+                          <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
+                          <span className="hidden sm:inline">⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})</span>
+                          <span className="sm:hidden">Pendiente pago</span>
                         </>
                       )}
                     </Button>
@@ -1064,7 +1067,7 @@ const FacturacionPage: React.FC = () => {
                   <Button
                     onClick={() => handleFacturar(pedido)}
                     disabled={!pedido.puedeFacturar}
-                    className={`w-full py-6 text-lg font-bold ${
+                    className={`w-full py-4 sm:py-6 text-sm sm:text-base md:text-lg font-bold ${
                       pedido.puedeFacturar
                         ? 'bg-green-600 hover:bg-green-700 text-white'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -1072,12 +1075,15 @@ const FacturacionPage: React.FC = () => {
                   >
                     {pedido.puedeFacturar ? (
                       <>
-                        <Receipt className="w-6 h-6 mr-2" />✓ LISTO PARA FACTURAR
+                        <Receipt className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
+                        <span className="hidden sm:inline">✓ LISTO PARA FACTURAR</span>
+                        <span className="sm:hidden">FACTURAR</span>
                       </>
                     ) : (
                       <>
-                        <DollarSign className="w-6 h-6 mr-2" />
-                        ⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})
+                        <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
+                        <span className="hidden sm:inline">⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})</span>
+                        <span className="sm:hidden">Pendiente pago</span>
                       </>
                     )}
                   </Button>
@@ -1093,9 +1099,9 @@ const FacturacionPage: React.FC = () => {
       {/* Sección: Facturas Procesadas */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 mb-4">
-            <FileText className="w-6 h-6 text-green-600" />
-            Facturas Procesadas
+          <CardTitle className="flex items-center gap-2 mb-4 text-lg sm:text-xl">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+            <span className="text-base sm:text-lg">Facturas Procesadas</span>
           </CardTitle>
           {/* Buscador en tiempo real por nombre de cliente, factura o pedido */}
           <div className="relative">
@@ -1162,20 +1168,20 @@ const FacturacionPage: React.FC = () => {
       {/* Sección: Pedidos de TU MUNDO PUERTA */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between mb-4">
-            <CardTitle className="flex items-center gap-2">
-              <CheckCircle2 className="w-6 h-6 text-indigo-600" />
-              Pedidos TU MUNDO PUERTA
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
+              <span className="text-base sm:text-lg">Pedidos TU MUNDO PUERTA</span>
             </CardTitle>
             <Button
               onClick={() => fetchPedidosTuMundoPuerta()}
               disabled={loadingTuMundoPuerta}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
             >
               <RefreshCw className={`w-4 h-4 ${loadingTuMundoPuerta ? 'animate-spin' : ''}`} />
-              Actualizar
+              <span className="text-xs sm:text-sm">Actualizar</span>
             </Button>
           </div>
           {/* Buscador en tiempo real por pedido, cliente o items */}

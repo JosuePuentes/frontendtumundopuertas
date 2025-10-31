@@ -1,5 +1,67 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+
+/* Estilos PWA y móvil */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevenir zoom en inputs en iOS */
+  touch-action: manipulation;
+}
+
+/* Mejorar área de toque en móviles */
+button, a, [role="button"] {
+  min-height: 44px; /* Tamaño mínimo recomendado para toques */
+  min-width: 44px;
+}
+
+/* Prevenir selección de texto accidental en móviles */
+button, .no-select {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Estilos para cuando la app está en modo standalone (instalada) */
+@media all and (display-mode: standalone) {
+  body {
+    /* Ajustes específicos cuando está instalada como app */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Mejorar scroll en móviles */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Evitar highlight azul en iOS */
+input, textarea, select, button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ajustar inputs para móvil */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+textarea {
+  font-size: 16px; /* Previene zoom automático en iOS */
+}
+
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  textarea {
+    font-size: 16px !important; /* Asegurar que no se reduzca en móvil */
+  }
+}
 /* Oculta las flechas en navegadores como Chrome, Safari, Edge y Opera */
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {

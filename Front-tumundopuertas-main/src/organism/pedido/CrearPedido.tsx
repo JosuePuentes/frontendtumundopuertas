@@ -579,21 +579,21 @@ const CrearPedido: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4">
+    <div className="w-full max-w-7xl mx-auto p-2 sm:p-4">
       <Card className="shadow-xl border border-gray-100 rounded-2xl overflow-hidden">
         {/* Header */}
-        <CardHeader className="flex items-center gap-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
-          <FaClipboardList className="text-2xl" />
-          <CardTitle className="text-2xl font-bold">
+        <CardHeader className="flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 sm:p-6">
+          <FaClipboardList className="text-xl sm:text-2xl" />
+          <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold">
             Sistema de Ventas
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="p-6">
+        <CardContent className="p-3 sm:p-4 md:p-6">
           <form onSubmit={handleSubmit}>
           <div className="space-y-6">
           {/* Layout principal: Cliente/Fecha arriba, Items y Resumen abajo */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Cliente */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold text-gray-700">
