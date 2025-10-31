@@ -351,6 +351,21 @@ const DashboardAsignaciones: React.FC = () => {
       console.log('Marcando artículo como terminado:', asig.item_id);
       console.log('PIN ingresado:', pin);
       console.log('ORDEN recibido:', asig.orden, 'tipo:', typeof asig.orden);
+      console.log('Empleado ID original:', asig.empleado_id);
+      
+      // Buscar el empleado en la lista de empleados cargada para obtener su identificador
+      // El backend necesita el identificador, no el _id
+      const empleadoEncontrado = empleados.find(emp => 
+        emp._id === asig.empleado_id || 
+        emp.id === asig.empleado_id ||
+        emp.identificador === asig.empleado_id
+      );
+      
+      // Usar identificador si existe, si no usar _id como fallback
+      const empleadoIdParaBackend = empleadoEncontrado?.identificador || asig.empleado_id;
+      
+      console.log('Empleado encontrado:', empleadoEncontrado);
+      console.log('Empleado ID para backend (identificador):', empleadoIdParaBackend);
       
       // Convertir orden a número
       const ordenNumero = typeof asig.orden === 'string' ? parseInt(asig.orden) : asig.orden;
@@ -359,7 +374,7 @@ const DashboardAsignaciones: React.FC = () => {
       const payload = {
         pedido_id: asig.pedido_id,
         item_id: asig.item_id,
-        empleado_id: asig.empleado_id,
+        empleado_id: empleadoIdParaBackend, // Usar identificador en lugar de _id
         estado: "terminado",
         fecha_fin: new Date().toISOString(),
         orden: ordenNumero,
