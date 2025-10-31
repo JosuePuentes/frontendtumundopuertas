@@ -305,6 +305,11 @@ const PedidosHerreria: React.FC = () => {
       const customEvent = event as CustomEvent;
       const { asignaciones, resultados } = customEvent.detail;
       
+      // Validar que asignaciones exista y sea un array
+      if (!asignaciones || !Array.isArray(asignaciones)) {
+        return;
+      }
+      
       // ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE usando información completa del backend
       setItemsIndividuales(prevItems => {
         const nuevosItems = prevItems.map(item => {
@@ -454,71 +459,62 @@ const PedidosHerreria: React.FC = () => {
     // NUEVO: Escuchar asignaciones realizadas
     const handleAsignacionRealizada = async (event: Event) => {
       const customEvent = event as CustomEvent;
-      const { pedidoId, asignaciones } = customEvent.detail;
+      const { pedidoId, asignaciones, itemId, unidadIndex, empleadoId } = customEvent.detail;
       
-      // Mostrar notificación de que se recibió el evento
-      setNotificacionAsignacion({
-        mostrar: true,
-        mensaje: `🎯 Evento recibido: Pedido ${pedidoId.slice(-4)} con ${asignaciones.length} asignación(es)`,
-        tipo: 'info'
-      });
+      // Validar que asignaciones exista y sea un array, o usar itemId si viene
+      if (!asignaciones && !itemId) {
+        return;
+      }
       
       // Verificar si hay items de este pedido en la lista actual
       const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
       
       if (itemsDelPedido.length > 0) {
-        // Mostrar notificación de procesamiento
-        setNotificacionAsignacion({
-          mostrar: true,
-          mensaje: `🔄 Procesando ${itemsDelPedido.length} item(s) del pedido ${pedidoId.slice(-4)}...`,
-          tipo: 'info'
-        });
-        
-        // Actualizar estado local inmediatamente para mostrar asignación
+        // Actualizar estado local inmediatamente para mostrar asignación (OPTIMISTA)
         setItemsIndividuales(prevItems => {
           const nuevosItems = prevItems.map(item => {
-            if (item.pedido_id === pedidoId) {
-              // Buscar si este item fue asignado
-              const asignacion = asignaciones.find((a: any) => a.item_id === item.id);
-              
-              if (asignacion) {
-                // Mostrar notificación de éxito
-                setNotificacionAsignacion({
-                  mostrar: true,
-                  mensaje: `✅ Item asignado a: ${asignacion.empleado_nombre}`,
-                  tipo: 'success'
-                });
+            if (item.pedido_id === pedidoId && (item.id === itemId || asignaciones?.some((a: any) => a.item_id === item.id))) {
+              // Si tenemos itemId específico, actualizar solo ese item
+              if (item.id === itemId) {
+                // Buscar información del empleado
+                const empleadoInfo = dataEmpleados?.find((e: any) => e._id === empleadoId);
+                const empleadoNombre = empleadoInfo?.nombreCompleto || empleadoInfo?.nombre || "Empleado asignado";
+                const empleadoCargo = empleadoInfo?.cargo || "";
                 
                 return {
                   ...item,
-                  empleado_asignado: asignacion.empleado_nombre || "Empleado asignado",
+                  empleado_asignado: empleadoNombre,
                   fecha_asignacion: new Date().toISOString()
                 };
               }
-            }
+              
+              // Buscar si este item fue asignado en las asignaciones
+              if (asignaciones && Array.isArray(asignaciones)) {
+                const asignacion = asignaciones.find((a: any) => a && a.item_id === item.id);
+              
+                if (asignacion) {
+                  // Mostrar notificación de éxito
+                  setNotificacionAsignacion({
+                    mostrar: true,
+                    mensaje: `✅ Item asignado a: ${asignacion.empleado_nombre || "Empleado"}`,
+                    tipo: 'success'
+                  });
+                  
+                  return {
+                    ...item,
+                    empleado_asignado: asignacion.empleado_nombre || "Empleado asignado",
+                    fecha_asignacion: new Date().toISOString()
+                  };
+                }
+              }
             return item;
           });
           return nuevosItems;
         });
-        
-        // Ocultar notificación después de 3 segundos
-        setTimeout(() => {
-          setNotificacionAsignacion(prev => ({ ...prev, mostrar: false }));
-        }, 3000);
-        
-      } else {
-        // Mostrar notificación de error
-        setNotificacionAsignacion({
-          mostrar: true,
-          mensaje: `⚠️ No se encontraron items del pedido ${pedidoId.slice(-4)} en PedidosHerreria`,
-          tipo: 'error'
-        });
-        
-        // Ocultar notificación después de 5 segundos
-        setTimeout(() => {
-          setNotificacionAsignacion(prev => ({ ...prev, mostrar: false }));
-        }, 5000);
       }
+      
+      // NO recargar datos del backend - solo actualización optimista para mayor velocidad
+      // La recarga se hará cuando el usuario refresque manualmente o después de un tiempo
     };
 
     // Suscribirse a los eventos personalizados

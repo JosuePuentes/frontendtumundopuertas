@@ -35,6 +35,7 @@ interface UnidadAsignable {
   estado: string;
   empleadoId: string | null;
   nombreempleado: string | null;
+  fecha_asignacion?: string;
   disponible: boolean;
 }
 
@@ -167,6 +168,12 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       return;
     }
 
+    // Validar que empleados sea un array
+    if (!empleados || !Array.isArray(empleados)) {
+      setMessage("⚠️ Error: No se pudo cargar la lista de empleados");
+      return;
+    }
+
     setLoading(true);
     setMessage("");
 
@@ -174,8 +181,45 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       const token = localStorage.getItem("access_token");
       const modulo = obtenerModulo();
-      const empleado = empleados.find(e => e._id === empleadoId);
+      const empleado = empleados.find(e => e && (e._id === empleadoId || e.id === empleadoId || e.identificador === empleadoId));
       const empleadoNombre = empleado?.nombreCompleto || empleado?.nombre || "";
+      const fechaAsignacion = new Date().toISOString();
+
+      // ACTUALIZACIÓN OPTIMISTA: Actualizar UI inmediatamente antes de la respuesta del servidor
+      setAsignacionesDisponibles(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          items: prev.items.map(it => {
+            if (it.item_id === itemId) {
+              return {
+                ...it,
+                unidades: it.unidades.map(u => {
+                  if (u.unidad_index === unidadIndex && u.disponible) {
+                    return {
+                      ...u,
+                      empleadoId: empleadoId,
+                      nombreempleado: empleadoNombre,
+                      fecha_asignacion: fechaAsignacion,
+                      estado: "en_proceso",
+                      disponible: false
+                    };
+                  }
+                  return u;
+                })
+              };
+            }
+            return it;
+          })
+        };
+      });
+
+      // Limpiar el estado de asignación pendiente inmediatamente
+      setAsignacionesPendientes(prev => {
+        const nuevo = { ...prev };
+        delete nuevo[`${itemId}-${unidadIndex}`];
+        return nuevo;
+      });
 
       const res = await fetch(`${apiUrl}/pedidos/asignar-item/`, {
         method: "PUT",
@@ -194,6 +238,11 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       });
 
       if (!res.ok) {
+        // Si falla, revertir la actualización optimista
+        const data = await fetchAsignacionesDisponibles();
+        if (data) {
+          setAsignacionesDisponibles(data);
+        }
         const errorText = await res.text();
         throw new Error(`Error ${res.status}: ${errorText}`);
       }
@@ -201,33 +250,33 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       const resultado = await res.json();
       console.log('✅ Unidad asignada:', resultado);
 
+      // Sincronizar con el backend (pero sin recargar la página)
+      const data = await fetchAsignacionesDisponibles();
+      if (data) {
+        setAsignacionesDisponibles(data);
+      }
+
       window.dispatchEvent(new CustomEvent('asignacionRealizada', {
         detail: {
           pedidoId,
           itemId,
           unidadIndex,
           empleadoId,
-          timestamp: new Date().toISOString(),
+          timestamp: fechaAsignacion,
         }
       }));
 
+      // NO llamar a cargarEstadosItems() para evitar recargar toda la página
+      setMessage(`✅ Unidad ${unidadIndex} asignada a ${empleadoNombre}`);
+    } catch (err: any) {
+      console.error("❌ Error al asignar unidad:", err);
+      setMessage(`❌ Error al asignar unidad: ${err.message}`);
+      
+      // Revertir actualización optimista en caso de error
       const data = await fetchAsignacionesDisponibles();
       if (data) {
         setAsignacionesDisponibles(data);
       }
-      
-      // Limpiar el estado de asignación pendiente para esta unidad específica
-      setAsignacionesPendientes(prev => {
-        const nuevo = { ...prev };
-        delete nuevo[`${itemId}-${unidadIndex}`];
-        return nuevo;
-      });
-      
-      await cargarEstadosItems();
-      setMessage(`✅ Unidad ${unidadIndex} asignada correctamente`);
-    } catch (err: any) {
-      console.error("❌ Error al asignar unidad:", err);
-      setMessage(`❌ Error al asignar unidad: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -282,6 +331,11 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
   const obtenerNombreEmpleado = (empleadoId: string | null): string => {
     if (!empleadoId) return "Sin asignar";
     
+    // Validar que empleados sea un array
+    if (!empleados || !Array.isArray(empleados)) {
+      return empleadoId;
+    }
+    
     // Buscar el empleado en la lista por cualquier campo posible
     const empleado = empleados.find(e => {
       if (!e) return false;
@@ -301,8 +355,35 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     // Si no se encuentra el empleado, intentar cargarlo del backend si es necesario
     // Por ahora, retornar el ID como fallback pero con un mensaje más claro
-    console.warn('⚠️ Empleado no encontrado en lista local:', empleadoId, 'Total empleados:', empleados.length);
+    console.warn('⚠️ Empleado no encontrado en lista local:', empleadoId, 'Total empleados:', empleados?.length || 0);
     return empleadoId; // Devolver el ID si no se encuentra
+  };
+
+  const obtenerCargoEmpleado = (empleadoId: string | null): string => {
+    if (!empleadoId || !empleados || !Array.isArray(empleados)) return "";
+    
+    const empleado = empleados.find(e => {
+      if (!e) return false;
+      const idMatch = e._id && String(e._id) === String(empleadoId);
+      const idAltMatch = e.id && String(e.id) === String(empleadoId);
+      const identificadorMatch = e.identificador && String(e.identificador) === String(empleadoId);
+      return idMatch || idAltMatch || identificadorMatch;
+    });
+    
+    return empleado?.cargo || "";
+  };
+
+  const formatearFecha = (fecha: string | undefined): string => {
+    if (!fecha) return "";
+    try {
+      const date = new Date(fecha);
+      const dia = date.getDate().toString().padStart(2, '0');
+      const mes = (date.getMonth() + 1).toString().padStart(2, '0');
+      const año = date.getFullYear();
+      return `${dia}/${mes}/${año}`;
+    } catch {
+      return "";
+    }
   };
 
   return (
@@ -335,6 +416,57 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
 
               {mostrarUnidades ? (
                 <div className="space-y-2">
+                  {/* Resumen de empleados asignados a este item */}
+                  {itemConUnidades && itemConUnidades.unidades_asignadas > 0 && (
+                    <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
+                      <div className="text-sm font-semibold text-blue-800 mb-2">
+                        📋 Empleados asignados:
+                      </div>
+                      <div className="space-y-2">
+                        {Array.from(
+                          new Map(
+                            itemConUnidades.unidades
+                              .filter(u => u.empleadoId)
+                              .map(u => [
+                                u.empleadoId,
+                                {
+                                  empleadoId: u.empleadoId,
+                                  nombre: u.nombreempleado || obtenerNombreEmpleado(u.empleadoId),
+                                  cargo: obtenerCargoEmpleado(u.empleadoId),
+                                  fecha: u.fecha_asignacion,
+                                  cantidad: 1
+                                }
+                              ])
+                          ).values()
+                        ).map((info, idx) => {
+                          // Contar cuántas unidades están asignadas a este empleado
+                          const cantidadAsignada = itemConUnidades.unidades.filter(
+                            u => u.empleadoId === info.empleadoId
+                          ).length;
+                          
+                          return (
+                            <div key={`${info.empleadoId}-${idx}`} className="text-sm text-blue-700 border-l-4 border-blue-400 pl-2">
+                              <div>
+                                <span className="font-semibold">Asignado a:</span> <b>{info.nombre}</b>
+                                {info.cargo && (
+                                  <span className="text-gray-600"> ({info.cargo})</span>
+                                )}
+                                {cantidadAsignada > 1 && (
+                                  <span className="text-gray-600"> · {cantidadAsignada} unidad{cantidadAsignada > 1 ? 'es' : ''}</span>
+                                )}
+                              </div>
+                              {info.fecha && (
+                                <div className="text-xs text-gray-600">
+                                  <span className="font-semibold">Fecha asignación:</span> {formatearFecha(info.fecha)}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
                   {itemConUnidades && itemConUnidades.cantidad_total > 1 && (
                     <div className="text-sm font-semibold text-gray-700">Unidades individuales:</div>
                   )}
@@ -355,11 +487,21 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
 
                       {unidad.empleadoId ? (
                         <div className="flex flex-col gap-2">
-                          <div className="text-sm text-blue-700">
-                            Asignada a: <b>{
-                              unidad.nombreempleado || 
-                              obtenerNombreEmpleado(unidad.empleadoId)
-                            }</b>
+                          <div className="text-sm text-blue-700 space-y-1">
+                            <div>
+                              <span className="font-semibold">Asignado a:</span> <b>{
+                                unidad.nombreempleado || 
+                                obtenerNombreEmpleado(unidad.empleadoId)
+                              }</b>
+                              {obtenerCargoEmpleado(unidad.empleadoId) && (
+                                <span className="text-gray-600"> ({obtenerCargoEmpleado(unidad.empleadoId)})</span>
+                              )}
+                            </div>
+                            {unidad.fecha_asignacion && (
+                              <div className="text-xs text-gray-600">
+                                <span className="font-semibold">Fecha asignación:</span> {formatearFecha(unidad.fecha_asignacion)}
+                              </div>
+                            )}
                           </div>
                           {unidad.estado !== "terminado" && (
                             <button
