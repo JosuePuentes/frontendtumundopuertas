@@ -35,6 +35,7 @@ const FacturacionPage: React.FC = () => {
   const [facturasConfirmadas, setFacturasConfirmadas] = useState<FacturaConfirmada[]>([]);
   const [pedidosCargadosInventario, setPedidosCargadosInventario] = useState<PedidoCargadoInventario[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [loadingTuMundoPuerta, setLoadingTuMundoPuerta] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [modalAccion, setModalAccion] = useState<'facturar' | 'cargar_inventario'>('facturar');
@@ -43,6 +44,8 @@ const FacturacionPage: React.FC = () => {
   const [selectedFactura, setSelectedFactura] = useState<FacturaConfirmada | null>(null);
   const [confirming, setConfirming] = useState<boolean>(false);
   const [busquedaCliente, setBusquedaCliente] = useState<string>("");
+  const [busquedaFacturas, setBusquedaFacturas] = useState<string>("");
+  const [busquedaTuMundoPuerta, setBusquedaTuMundoPuerta] = useState<string>("");
 
   const fetchPedidosFacturacion = async () => {
     setLoading(true);
@@ -67,9 +70,22 @@ const FacturacionPage: React.FC = () => {
       
       // Si no hay pedidos con orden4, obtener todos los pedidos para buscar los que tengan items completados
       if (pedidos.length === 0) {
+        try {
         const res = await fetch(`${getApiUrl()}/pedidos/all/`);
         if (!res.ok) throw new Error("Error al obtener pedidos");
         pedidos = await res.json();
+          console.log(`📊 Pedidos obtenidos de /pedidos/all/: ${pedidos.length}`);
+          // IMPORTANTE: Verificar si el pedido específico está en esta lista
+          const pedidoEspecificoEnAll = pedidos.find((p: any) => p._id === '69042b91a9a8ebdaf861c3f0');
+          if (pedidoEspecificoEnAll) {
+            console.log(`✅ Pedido específico encontrado en /pedidos/all/`);
+          } else {
+            console.warn(`⚠️ Pedido específico NO encontrado en /pedidos/all/ (puede estar limitado a 100 pedidos)`);
+          }
+        } catch (err: any) {
+          console.error(`❌ Error al obtener todos los pedidos:`, err.message || err);
+          throw err;
+        }
       }
       
       // CRÍTICO: Buscar específicamente el pedido 69042b91a9a8ebdaf861c3f0 si no está en la lista
@@ -79,16 +95,23 @@ const FacturacionPage: React.FC = () => {
       if (!pedidoEspecificoYaEsta) {
         try {
           console.log(`🔍 Buscando pedido específico ${pedidoIdEspecifico} que no está en la lista inicial...`);
-          const resEspecifico = await fetch(`${getApiUrl()}/pedidos/${pedidoIdEspecifico}`);
+          // CRÍTICO: Usar el endpoint correcto del backend /pedidos/id/{pedido_id}/
+          const resEspecifico = await fetch(`${getApiUrl()}/pedidos/id/${pedidoIdEspecifico}/`);
           if (resEspecifico.ok) {
             const pedidoEspecifico = await resEspecifico.json();
             pedidos.push(pedidoEspecifico);
-            console.log(`✅ Pedido específico ${pedidoIdEspecifico} encontrado y agregado a la lista`);
+            console.log(`✅ Pedido específico ${pedidoIdEspecifico} encontrado y agregado a la lista`, {
+              _id: pedidoEspecifico._id,
+              cliente_id: pedidoEspecifico.cliente_id,
+              estado_general: pedidoEspecifico.estado_general,
+              fecha_creacion: pedidoEspecifico.fecha_creacion
+            });
           } else {
-            console.warn(`⚠️ No se pudo obtener el pedido específico ${pedidoIdEspecifico}: ${resEspecifico.status}`);
+            const errorText = await resEspecifico.text();
+            console.warn(`⚠️ No se pudo obtener el pedido específico ${pedidoIdEspecifico}: ${resEspecifico.status} - ${errorText}`);
           }
-        } catch (err) {
-          console.error(`❌ Error al buscar pedido específico ${pedidoIdEspecifico}:`, err);
+        } catch (err: any) {
+          console.error(`❌ Error al buscar pedido específico ${pedidoIdEspecifico}:`, err.message || err);
         }
       }
       
@@ -430,12 +453,77 @@ const FacturacionPage: React.FC = () => {
     }
   }, []);
 
-  // Cargar pedidos cargados al inventario desde localStorage
-  useEffect(() => {
-    const storedPedidos = localStorage.getItem('pedidos_cargados_inventario');
-    if (storedPedidos) {
-      setPedidosCargadosInventario(JSON.parse(storedPedidos));
+  // Función para obtener todos los pedidos de TU MUNDO PUERTA
+  const fetchPedidosTuMundoPuerta = async () => {
+    setLoadingTuMundoPuerta(true);
+    try {
+      // Obtener todos los pedidos del backend
+      const res = await fetch(`${getApiUrl()}/pedidos/all/`);
+      if (!res.ok) {
+        console.warn('No se pudieron obtener pedidos del backend para TU MUNDO PUERTA');
+        // Cargar desde localStorage como fallback
+        const storedPedidos = localStorage.getItem('pedidos_cargados_inventario');
+        if (storedPedidos) {
+          setPedidosCargadosInventario(JSON.parse(storedPedidos));
+        }
+        return;
+      }
+      
+      const todosPedidos = await res.json();
+      const rifClienteEspecial = 'J-507172554';
+      
+      // Filtrar solo los pedidos del cliente especial TU MUNDO PUERTA
+      const pedidosTuMundoPuerta = todosPedidos.filter((pedido: any) => {
+        const rifPedido = String(pedido?.cliente_id || '').toUpperCase().replace(/\s+/g, '');
+        return rifPedido === rifClienteEspecial;
+      });
+      
+      // Convertir a formato PedidoCargadoInventario y ordenar por fecha más reciente
+      const pedidosFormateados: PedidoCargadoInventario[] = pedidosTuMundoPuerta.map((pedido: any) => {
+        // Calcular monto total si no está disponible
+        let montoTotal = 0;
+        if (pedido.montoTotal !== undefined) {
+          montoTotal = pedido.montoTotal;
+        } else if (pedido.items && Array.isArray(pedido.items)) {
+          montoTotal = pedido.items.reduce((acc: number, item: any) => {
+            return acc + ((item.precio || 0) * (item.cantidad || 0));
+          }, 0);
+        }
+        
+        return {
+          id: pedido._id,
+          pedidoId: pedido._id,
+          clienteNombre: pedido.cliente_nombre || 'TU MUNDO PUERTA',
+          clienteId: pedido.cliente_id || rifClienteEspecial,
+          montoTotal: montoTotal,
+          fechaCreacion: pedido.fecha_creacion || new Date().toISOString(),
+          fechaCargaInventario: pedido.fecha_creacion || new Date().toISOString(), // Usar fecha_creacion como fecha de carga si no hay otra
+          items: pedido.items || []
+        };
+      }).sort((a: PedidoCargadoInventario, b: PedidoCargadoInventario) => {
+        // Ordenar por fecha más reciente primero
+        const fechaA = new Date(a.fechaCreacion).getTime();
+        const fechaB = new Date(b.fechaCreacion).getTime();
+        return fechaB - fechaA;
+      });
+      
+      setPedidosCargadosInventario(pedidosFormateados);
+      console.log(`✅ Pedidos de TU MUNDO PUERTA cargados: ${pedidosFormateados.length}`);
+    } catch (error) {
+      console.error('Error al obtener pedidos de TU MUNDO PUERTA:', error);
+      // Cargar desde localStorage como fallback
+      const storedPedidos = localStorage.getItem('pedidos_cargados_inventario');
+      if (storedPedidos) {
+        setPedidosCargadosInventario(JSON.parse(storedPedidos));
+      }
+    } finally {
+      setLoadingTuMundoPuerta(false);
     }
+  };
+
+  // Cargar pedidos de TU MUNDO PUERTA al iniciar
+  useEffect(() => {
+    fetchPedidosTuMundoPuerta();
   }, []);
 
   useEffect(() => {
@@ -467,6 +555,45 @@ const FacturacionPage: React.FC = () => {
       return fechaB - fechaA; // Más reciente primero
     });
   }, [facturacion, busquedaCliente]);
+
+  // Filtrar facturas procesadas por búsqueda
+  const facturasFiltradas = useMemo(() => {
+    if (!busquedaFacturas.trim()) {
+      return facturasConfirmadas;
+    }
+    const busquedaLower = busquedaFacturas.toLowerCase().trim();
+    return facturasConfirmadas.filter((factura) => {
+      const nombreCliente = (factura.clienteNombre || '').toLowerCase();
+      const clienteId = (factura.clienteId || '').toLowerCase();
+      const numeroFactura = (factura.numeroFactura || '').toLowerCase();
+      const pedidoId = (factura.pedidoId || '').toLowerCase();
+      return nombreCliente.includes(busquedaLower) || 
+             clienteId.includes(busquedaLower) || 
+             numeroFactura.includes(busquedaLower) ||
+             pedidoId.includes(busquedaLower);
+    });
+  }, [facturasConfirmadas, busquedaFacturas]);
+
+  // Filtrar pedidos de TU MUNDO PUERTA por búsqueda
+  const pedidosTuMundoPuertaFiltrados = useMemo(() => {
+    if (!busquedaTuMundoPuerta.trim()) {
+      return pedidosCargadosInventario;
+    }
+    const busquedaLower = busquedaTuMundoPuerta.toLowerCase().trim();
+    return pedidosCargadosInventario.filter((pedido) => {
+      const nombreCliente = (pedido.clienteNombre || '').toLowerCase();
+      const clienteId = (pedido.clienteId || '').toLowerCase();
+      const pedidoId = (pedido.pedidoId || '').toLowerCase();
+      // También buscar en los nombres de los items
+      const itemsTexto = pedido.items?.map((item: any) => 
+        (item.nombre || item.descripcion || '').toLowerCase()
+      ).join(' ') || '';
+      return nombreCliente.includes(busquedaLower) || 
+             clienteId.includes(busquedaLower) || 
+             pedidoId.includes(busquedaLower) ||
+             itemsTexto.includes(busquedaLower);
+    });
+  }, [pedidosCargadosInventario, busquedaTuMundoPuerta]);
 
   // Generar número de factura único
   const generarNumeroFactura = (): string => {
@@ -539,28 +666,31 @@ const FacturacionPage: React.FC = () => {
         };
         guardarPedidoCargadoInventario(pedidoCargado);
         
+        // Recargar pedidos de TU MUNDO PUERTA para mostrar el nuevo pedido cargado
+        await fetchPedidosTuMundoPuerta();
+        
         setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
         setModalOpen(false);
         alert('✓ Existencias cargadas al inventario correctamente');
       } else {
         // Flujo normal de facturación
         const numeroFactura = generarNumeroFactura();
-        const facturaConfirmada: FacturaConfirmada = {
-          id: selectedPedido._id + '-' + Date.now(),
-          numeroFactura: numeroFactura,
-          pedidoId: selectedPedido._id,
-          clienteNombre: selectedPedido.cliente_nombre || selectedPedido.cliente_id || 'N/A',
-          clienteId: selectedPedido.cliente_id || '',
-          montoTotal: selectedPedido.montoTotal,
-          fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
-          fechaFacturacion: new Date().toISOString(),
-          items: selectedPedido.items || []
-        };
+      const facturaConfirmada: FacturaConfirmada = {
+        id: selectedPedido._id + '-' + Date.now(),
+        numeroFactura: numeroFactura,
+        pedidoId: selectedPedido._id,
+        clienteNombre: selectedPedido.cliente_nombre || selectedPedido.cliente_id || 'N/A',
+        clienteId: selectedPedido.cliente_id || '',
+        montoTotal: selectedPedido.montoTotal,
+        fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
+        fechaFacturacion: new Date().toISOString(),
+        items: selectedPedido.items || []
+      };
         // TODO backend: marcar pedido como facturado si aplica
-        guardarFacturaConfirmada(facturaConfirmada);
-        setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
-        setModalOpen(false);
-        alert(`✓ Pedido facturado exitosamente\nNúmero de Factura: ${numeroFactura}`);
+      guardarFacturaConfirmada(facturaConfirmada);
+      setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
+      setModalOpen(false);
+      alert(`✓ Pedido facturado exitosamente\nNúmero de Factura: ${numeroFactura}`);
       }
     } catch (error) {
       console.error('Error al confirmar acción:', error);
@@ -778,7 +908,7 @@ const FacturacionPage: React.FC = () => {
 
   return (
     <>
-    <div className="max-w-7xl mx-auto mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="max-w-7xl mx-auto mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Sección: Pendientes de Facturar */}
       <Card>
         <CardHeader>
@@ -931,26 +1061,26 @@ const FacturacionPage: React.FC = () => {
                       )}
                     </Button>
                   ) : (
-                    <Button
-                      onClick={() => handleFacturar(pedido)}
-                      disabled={!pedido.puedeFacturar}
-                      className={`w-full py-6 text-lg font-bold ${
-                        pedido.puedeFacturar
-                          ? 'bg-green-600 hover:bg-green-700 text-white'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      {pedido.puedeFacturar ? (
-                        <>
-                          <Receipt className="w-6 h-6 mr-2" />✓ LISTO PARA FACTURAR
-                        </>
-                      ) : (
-                        <>
-                          <DollarSign className="w-6 h-6 mr-2" />
-                          ⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})
-                        </>
-                      )}
-                    </Button>
+                  <Button
+                    onClick={() => handleFacturar(pedido)}
+                    disabled={!pedido.puedeFacturar}
+                    className={`w-full py-6 text-lg font-bold ${
+                      pedido.puedeFacturar
+                        ? 'bg-green-600 hover:bg-green-700 text-white'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {pedido.puedeFacturar ? (
+                      <>
+                        <Receipt className="w-6 h-6 mr-2" />✓ LISTO PARA FACTURAR
+                      </>
+                    ) : (
+                      <>
+                        <DollarSign className="w-6 h-6 mr-2" />
+                        ⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})
+                      </>
+                    )}
+                  </Button>
                   )}
                 </div>
               </li>
@@ -963,21 +1093,41 @@ const FacturacionPage: React.FC = () => {
       {/* Sección: Facturas Procesadas */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 mb-4">
             <FileText className="w-6 h-6 text-green-600" />
             Facturas Procesadas
           </CardTitle>
+          {/* Buscador en tiempo real por nombre de cliente, factura o pedido */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder="Buscar por cliente, factura o pedido..."
+              value={busquedaFacturas}
+              onChange={(e) => setBusquedaFacturas(e.target.value)}
+              className="pl-10 w-full"
+            />
+            {busquedaFacturas && (
+              <div className="mt-2 text-sm text-gray-600">
+                Mostrando {facturasFiltradas.length} de {facturasConfirmadas.length} facturas
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          {facturasConfirmadas.length === 0 ? (
+          {facturasFiltradas.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg">
               <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 text-lg font-medium">No hay facturas procesadas</p>
-              <p className="text-gray-500 text-sm mt-2">Las facturas confirmadas aparecerán aquí</p>
+              <p className="text-gray-600 text-lg font-medium">
+                {busquedaFacturas ? 'No se encontraron facturas con esa búsqueda' : 'No hay facturas procesadas'}
+              </p>
+              <p className="text-gray-500 text-sm mt-2">
+                {busquedaFacturas ? 'Intenta con otro término o limpia la búsqueda' : 'Las facturas confirmadas aparecerán aquí'}
+              </p>
             </div>
           ) : (
             <ul className="space-y-4">
-              {facturasConfirmadas.map((factura) => (
+              {facturasFiltradas.map((factura) => (
                 <li key={factura.id} className="border-2 border-green-300 rounded-xl bg-gradient-to-br from-white to-green-50 shadow-lg p-4 transition-all duration-300 hover:shadow-xl">
                   <div className="flex items-center justify-between mb-3">
                     <Badge className="bg-green-600 text-white px-3 py-1 text-sm font-bold">
@@ -1009,23 +1159,56 @@ const FacturacionPage: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Sección: Pedidos Cargados al Inventario */}
+      {/* Sección: Pedidos de TU MUNDO PUERTA */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="w-6 h-6 text-indigo-600" />
-            Pedidos Cargados al Inventario
-          </CardTitle>
+          <div className="flex items-center justify-between mb-4">
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle2 className="w-6 h-6 text-indigo-600" />
+              Pedidos TU MUNDO PUERTA
+            </CardTitle>
+            <Button
+              onClick={() => fetchPedidosTuMundoPuerta()}
+              disabled={loadingTuMundoPuerta}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`w-4 h-4 ${loadingTuMundoPuerta ? 'animate-spin' : ''}`} />
+              Actualizar
+            </Button>
+          </div>
+          {/* Buscador en tiempo real por pedido, cliente o items */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder="Buscar por pedido, cliente o items..."
+              value={busquedaTuMundoPuerta}
+              onChange={(e) => setBusquedaTuMundoPuerta(e.target.value)}
+              className="pl-10 w-full"
+            />
+            {busquedaTuMundoPuerta && (
+              <div className="mt-2 text-sm text-gray-600">
+                Mostrando {pedidosTuMundoPuertaFiltrados.length} de {pedidosCargadosInventario.length} pedidos
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          {pedidosCargadosInventario.length === 0 ? (
+          {loadingTuMundoPuerta && pedidosCargadosInventario.length === 0 ? (
+            <div className="flex justify-center items-center py-8">
+              <span className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mr-2"></span>
+              <span className="text-indigo-600 font-semibold">Cargando pedidos...</span>
+            </div>
+          ) : pedidosCargadosInventario.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg">
               <CheckCircle2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 text-lg font-medium">No hay pedidos cargados al inventario</p>
-              <p className="text-gray-500 text-sm mt-2">Los pedidos de TU MUNDO PUERTA cargados al inventario aparecerán aquí</p>
+              <p className="text-gray-600 text-lg font-medium">No hay pedidos de TU MUNDO PUERTA</p>
+              <p className="text-gray-500 text-sm mt-2">Todos los pedidos de TU MUNDO PUERTA aparecerán aquí</p>
             </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="space-y-4 max-h-[600px] overflow-y-auto">
               {pedidosCargadosInventario.map((pedido) => (
                 <li key={pedido.id} className="border-2 border-indigo-300 rounded-xl bg-gradient-to-br from-white to-indigo-50 shadow-lg p-4 transition-all duration-300 hover:shadow-xl">
                   <div className="flex items-center justify-between mb-3">
@@ -1033,7 +1216,7 @@ const FacturacionPage: React.FC = () => {
                       #{pedido.pedidoId.slice(-6)}
                     </Badge>
                     <span className="text-xs text-gray-500">
-                      {new Date(pedido.fechaCargaInventario).toLocaleDateString()}
+                      {new Date(pedido.fechaCreacion).toLocaleDateString()}
                     </span>
                   </div>
                   <div className="mb-3">
@@ -1041,21 +1224,25 @@ const FacturacionPage: React.FC = () => {
                     <p className="text-sm text-gray-600">RIF: {pedido.clienteId}</p>
                   </div>
                   <div className="mb-3">
-                    <p className="text-xs text-gray-600 mb-1">Items cargados:</p>
-                    <div className="text-sm text-gray-700 space-y-1">
-                      {pedido.items.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between">
-                          <span>{item.nombre || item.descripcion || 'N/A'}</span>
-                          <span className="font-bold">x{item.cantidad || 1}</span>
-                        </div>
-                      ))}
+                    <p className="text-xs text-gray-600 mb-1">Items:</p>
+                    <div className="text-sm text-gray-700 space-y-1 max-h-20 overflow-y-auto">
+                      {pedido.items && pedido.items.length > 0 ? (
+                        pedido.items.map((item: any, idx: number) => (
+                          <div key={idx} className="flex justify-between">
+                            <span className="truncate">{item.nombre || item.descripcion || 'N/A'}</span>
+                            <span className="font-bold ml-2">x{item.cantidad || 1}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-gray-500 text-xs">Sin items</p>
+                      )}
                     </div>
                   </div>
                   <div className="mb-3">
                     <p className="text-2xl font-bold text-indigo-700">${pedido.montoTotal.toFixed(2)}</p>
                   </div>
                   <Badge className="w-full bg-indigo-500 text-white text-center py-2">
-                    ✓ Existencias cargadas
+                    TU MUNDO PUERTA
                   </Badge>
                 </li>
               ))}
