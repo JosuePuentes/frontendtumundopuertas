@@ -288,6 +288,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
 
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      // NOTA: No se envía PIN porque este componente se usa en PedidosHerreria donde no se requiere PIN
+      // El PIN solo se requiere en Dashboard de Asignaciones
       const res = await fetch(`${apiUrl}/pedidos/asignacion/terminar`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -298,11 +300,13 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
           empleado_id: empleadoId,
           estado: "terminado",
           fecha_fin: new Date().toISOString(),
+          // pin: No se envía - solo requerido en Dashboard de Asignaciones
         }),
       });
 
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        const errorText = await res.text();
+        throw new Error(`Error ${res.status}: ${errorText}`);
       }
 
       const result = await res.json();
@@ -314,9 +318,9 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       }
       await cargarEstadosItems();
       await cargarEmpleadosPorItem();
-      setMessage("Asignación terminada exitosamente. El artículo ha avanzado al siguiente módulo.");
-    } catch (err) {
-      setMessage("Error al terminar la asignación");
+      setMessage("✅ Asignación terminada exitosamente. El artículo ha avanzado al siguiente módulo.");
+    } catch (err: any) {
+      setMessage("❌ Error al terminar la asignación: " + (err.message || "Error desconocido"));
       console.error("❌ Error al terminar asignación:", err);
     } finally {
       setLoading(false);
