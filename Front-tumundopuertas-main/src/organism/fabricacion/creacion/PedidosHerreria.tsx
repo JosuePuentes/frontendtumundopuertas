@@ -472,14 +472,6 @@ const PedidosHerreria: React.FC = () => {
 
     // NUEVO: Escuchar asignaciones realizadas
     const handleAsignacionRealizada = async (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { pedidoId, asignaciones, itemId, empleadoId } = customEvent.detail;
-      
-      // Validar que asignaciones exista y sea un array, o usar itemId si viene
-      if (!asignaciones && !itemId) {
-        return;
-      }
-      
       // NO actualizar empleado_asignado aquí porque ahora usamos asignación por unidades
       // El componente AsignarArticulos maneja las unidades individuales
       // Solo mostrar notificación si es necesario
