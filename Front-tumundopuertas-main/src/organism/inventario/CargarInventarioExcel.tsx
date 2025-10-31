@@ -236,8 +236,9 @@ const CargarInventarioExcel: React.FC = () => {
       return;
     }
 
-    if (tipoOperacion === 'descargar' && cantidad > (itemSeleccionado.cantidad || 0)) {
-      setMensaje(`No puedes descargar más de lo disponible. Existencia actual: ${itemSeleccionado.cantidad || 0}`);
+    const existenciaActual = itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0);
+    if (tipoOperacion === 'descargar' && cantidad > existenciaActual) {
+      setMensaje(`No puedes descargar más de lo disponible. Existencia actual: ${existenciaActual}`);
       return;
     }
 
@@ -259,7 +260,8 @@ const CargarInventarioExcel: React.FC = () => {
       }
 
       const result = await response.json();
-      setMensaje(`✅ ${tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} realizada exitosamente. Nueva existencia: ${result.cantidad}`);
+      const nuevaExistencia = result.cantidad !== undefined ? result.cantidad : (result.existencia || 0);
+      setMensaje(`✅ ${tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} realizada exitosamente. Nueva existencia: ${nuevaExistencia}`);
       
       // Recargar inventario
       await fetchItems(`${apiUrl}/inventario/all`);
@@ -431,7 +433,7 @@ const CargarInventarioExcel: React.FC = () => {
                           <TableCell>{item.descripcion}</TableCell>
                           <TableCell>{item.modelo}</TableCell>
                           <TableCell>{item.costo}</TableCell>
-                          <TableCell>{item.cantidad}</TableCell>
+                          <TableCell>{item.cantidad !== undefined ? item.cantidad : (item.existencia || 0)}</TableCell>
                           <TableCell>{item.precio}</TableCell>
                         </TableRow>
                       ))}
@@ -488,7 +490,7 @@ const CargarInventarioExcel: React.FC = () => {
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-semibold text-gray-700">Existencia Actual:</p>
-                            <p className="text-xl font-bold text-blue-600">{item.cantidad || 0}</p>
+                            <p className="text-xl font-bold text-blue-600">{item.cantidad !== undefined ? item.cantidad : (item.existencia || 0)}</p>
                           </div>
                         </div>
                       </div>
@@ -534,20 +536,22 @@ const CargarInventarioExcel: React.FC = () => {
                   )}
                   <div>
                     <span className="font-semibold">Existencia Actual:</span>{' '}
-                    <span className="text-blue-600 font-bold text-lg">{itemSeleccionado.cantidad || 0}</span>
+                    <span className="text-blue-600 font-bold text-lg">
+                      {itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0)}
+                    </span>
                   </div>
                   {tipoOperacion === 'cargar' ? (
                     <div>
                       <span className="font-semibold">Nueva Existencia:</span>{' '}
                       <span className="text-green-600 font-bold text-lg">
-                        {(itemSeleccionado.cantidad || 0) + (parseFloat(cantidadOperacion) || 0)}
+                        {(itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0)) + (parseFloat(cantidadOperacion) || 0)}
                       </span>
                     </div>
                   ) : (
                     <div>
                       <span className="font-semibold">Nueva Existencia:</span>{' '}
                       <span className="text-red-600 font-bold text-lg">
-                        {(itemSeleccionado.cantidad || 0) - (parseFloat(cantidadOperacion) || 0)}
+                        {(itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0)) - (parseFloat(cantidadOperacion) || 0)}
                       </span>
                     </div>
                   )}
