@@ -942,24 +942,25 @@ const FacturacionPage: React.FC = () => {
 
   return (
     <>
-    <div className="max-w-7xl mx-auto mt-4 md:mt-8 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+    <div className="w-full max-w-[1800px] mx-auto mt-4 md:mt-8 px-4 sm:px-6 lg:px-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 lg:gap-6 items-start">
       {/* Sección: Pendientes de Facturar */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <Receipt className="w-5 h-5 sm:w-6 sm:h-6" />
-              <span className="text-base sm:text-lg">Pendientes de Facturar</span>
+      <Card className="flex flex-col h-full max-h-[90vh]">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
+              <Receipt className="w-5 h-5 sm:w-6 sm:h-6 flex-shrink-0" />
+              <span className="whitespace-nowrap">Pendientes de Facturar</span>
             </CardTitle>
             <Button
               onClick={() => fetchPedidosFacturacion()}
               disabled={loading}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2 w-full sm:w-auto"
+              className="flex items-center gap-2 w-full sm:w-auto shrink-0"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              <span className="text-xs sm:text-sm">Actualizar</span>
+              <span className="text-xs">Actualizar</span>
             </Button>
           </div>
           {/* Buscador en tiempo real por nombre de cliente */}
@@ -979,7 +980,7 @@ const FacturacionPage: React.FC = () => {
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-auto">
         {loading ? (
           <div className="flex justify-center items-center py-8">
             <span className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mr-2"></span>
@@ -998,128 +999,113 @@ const FacturacionPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <ul className="space-y-6">
+          <ul className="space-y-3">
             {facturacionFiltrada.map((pedido: any) => (
-              <li key={pedido._id} className="border-2 border-blue-300 rounded-xl bg-gradient-to-br from-white to-blue-50 shadow-lg p-6 transition-all duration-300 hover:shadow-xl">
-                <div className="flex flex-wrap items-center justify-between mb-4 pb-4 border-b-2 border-blue-200">
-                  <div className="flex items-center gap-3">
-                    <Badge className="bg-blue-600 text-white px-4 py-2 text-lg font-bold">
+              <li key={pedido._id} className="border-2 border-blue-300 rounded-xl bg-gradient-to-br from-white to-blue-50 shadow-lg p-3 sm:p-4 transition-all duration-300 hover:shadow-xl">
+                <div className="flex flex-wrap items-center justify-between mb-3 pb-3 border-b-2 border-blue-200">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Badge className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 text-sm sm:text-base font-bold">
                       #{pedido._id.slice(-6)}
                     </Badge>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-800">{pedido.cliente_nombre || pedido.cliente_id}</h3>
-                      <p className="text-sm text-gray-600">Cliente</p>
+                      <h3 className="text-base sm:text-lg font-bold text-gray-800 line-clamp-1">{pedido.cliente_nombre || pedido.cliente_id}</h3>
+                      <p className="text-xs text-gray-600">Cliente</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <CheckCircle2 className="w-10 h-10 mx-auto text-green-600 mb-1" />
-                    <Badge className="bg-green-500 text-white px-3 py-1 rounded-full">✓ 100% Completado</Badge>
+                    <CheckCircle2 className="w-6 h-6 sm:w-8 sm:h-8 mx-auto text-green-600 mb-1" />
+                    <Badge className="bg-green-500 text-white px-2 py-0.5 text-xs sm:text-sm rounded-full">✓ 100%</Badge>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <p className="text-xs text-gray-600 font-semibold">📅 Fecha de Creación</p>
-                    <p className="text-lg font-bold text-blue-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 mb-3">
+                  <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                    <p className="text-xs text-gray-600 font-semibold">📅 Fecha</p>
+                    <p className="text-sm sm:text-base font-bold text-blue-700">
                       {pedido.fecha_creacion ? new Date(pedido.fecha_creacion).toLocaleDateString() : 'N/A'}
                     </p>
                   </div>
-                  <div className="bg-green-50 p-3 rounded-lg border border-green-200">
-                    <p className="text-xs text-gray-600 font-semibold">✓ Completado al 100%</p>
-                    <p className="text-lg font-bold text-green-700">
+                  <div className="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
+                    <p className="text-xs text-gray-600 font-semibold">✓ Completado</p>
+                    <p className="text-sm sm:text-base font-bold text-green-700">
                       {pedido.fecha100Porciento ? new Date(pedido.fecha100Porciento).toLocaleDateString() : 'N/A'}
                     </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                  <div className="bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-200">
                     <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
-                      <DollarSign className="w-4 h-4" /> Monto Total del Pedido
+                      <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Total
                     </p>
-                    <p className="text-2xl font-bold text-gray-800">${pedido.montoTotal.toFixed(2)}</p>
+                    <p className="text-lg sm:text-xl font-bold text-gray-800">${pedido.montoTotal.toFixed(2)}</p>
                   </div>
-                  <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                  <div className="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
                     <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
-                      <DollarSign className="w-4 h-4" /> Monto Abonado
+                      <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Abonado
                     </p>
-                    <p className="text-2xl font-bold text-green-700">${pedido.montoAbonado.toFixed(2)}</p>
+                    <p className="text-lg sm:text-xl font-bold text-green-700">${pedido.montoAbonado.toFixed(2)}</p>
                   </div>
                 </div>
 
                 {pedido.items && pedido.items.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="font-bold text-lg text-gray-800 mb-3">📦 Items del Pedido</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="mb-3">
+                    <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-2">📦 Items</h4>
+                    <div className="grid grid-cols-1 gap-2">
                       {pedido.items.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-white border-2 border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex-1">
-                              <p className="font-bold text-gray-800">{item.nombre || item.descripcion}</p>
-                              <p className="text-sm text-gray-600">Cantidad: {item.cantidad}</p>
+                        <div key={idx} className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 hover:border-blue-400 transition-colors">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-bold text-sm sm:text-base text-gray-800 line-clamp-2">{item.nombre || item.descripcion}</p>
+                              <p className="text-xs text-gray-600">Cant: {item.cantidad}</p>
+                              {item.detalleitem && (
+                                <p className="text-xs text-gray-500 mt-1 line-clamp-1">{item.detalleitem}</p>
+                              )}
                             </div>
-                            <span className="text-lg font-bold text-green-700">
+                            <span className="text-base sm:text-lg font-bold text-green-700 whitespace-nowrap ml-2">
                               ${((item.precio || 0) * (item.cantidad || 0)).toFixed(2)}
                             </span>
                           </div>
-                          {/* Imágenes removidas por solicitud del usuario */}
-                          {item.detalleitem && (
-                            <p className="text-xs text-gray-600 mt-2">{item.detalleitem}</p>
-                          )}
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
 
-                <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                <div className="mt-3 pt-3 border-t-2 border-gray-200">
                   {esClienteCargaInventario(pedido) ? (
                     <Button
                       onClick={() => handleCargarInventario(pedido)}
                       disabled={!pedido.puedeFacturar}
-                      className={`w-full py-4 sm:py-6 text-sm sm:text-base md:text-lg font-bold ${
+                      className={`w-full py-3 text-xs sm:text-sm font-bold whitespace-normal break-words ${
                         pedido.puedeFacturar
                           ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                           : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                       }`}
                     >
-                      {pedido.puedeFacturar ? (
-                        <>
-                          <Receipt className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
-                          <span className="hidden sm:inline">✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO</span>
-                          <span className="sm:hidden">CARGAR INVENTARIO</span>
-                        </>
-                      ) : (
-                        <>
-                          <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
-                          <span className="hidden sm:inline">⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})</span>
-                          <span className="sm:hidden">Pendiente pago</span>
-                        </>
-                      )}
+                      <div className="flex items-center justify-center gap-2">
+                        <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                        <span className="text-center leading-tight">
+                          {pedido.puedeFacturar ? '✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO' : `⚠️ Pendiente pago ($${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})`}
+                        </span>
+                      </div>
                     </Button>
                   ) : (
                   <Button
                     onClick={() => handleFacturar(pedido)}
                     disabled={!pedido.puedeFacturar}
-                    className={`w-full py-4 sm:py-6 text-sm sm:text-base md:text-lg font-bold ${
+                    className={`w-full py-3 text-xs sm:text-sm font-bold whitespace-normal break-words ${
                       pedido.puedeFacturar
                         ? 'bg-green-600 hover:bg-green-700 text-white'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                   >
-                    {pedido.puedeFacturar ? (
-                      <>
-                        <Receipt className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
-                        <span className="hidden sm:inline">✓ LISTO PARA FACTURAR</span>
-                        <span className="sm:hidden">FACTURAR</span>
-                      </>
-                    ) : (
-                      <>
-                        <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
-                        <span className="hidden sm:inline">⚠️ Pendiente pago completo (${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})</span>
-                        <span className="sm:hidden">Pendiente pago</span>
-                      </>
-                    )}
+                    <div className="flex items-center justify-center gap-2">
+                      <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                      <span className="text-center leading-tight">
+                        {pedido.puedeFacturar ? '✓ LISTO PARA FACTURAR' : `⚠️ Pendiente pago ($${(pedido.montoTotal - pedido.montoAbonado).toFixed(2)})`}
+                      </span>
+                    </div>
                   </Button>
                   )}
                 </div>
@@ -1131,11 +1117,11 @@ const FacturacionPage: React.FC = () => {
     </Card>
 
       {/* Sección: Facturas Procesadas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 mb-4 text-lg sm:text-xl">
-            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-            <span className="text-base sm:text-lg">Facturas Procesadas</span>
+      <Card className="flex flex-col h-full max-h-[90vh]">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2 mb-3 text-base sm:text-lg lg:text-xl">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 flex-shrink-0" />
+            <span className="whitespace-nowrap">Facturas Procesadas</span>
           </CardTitle>
           {/* Buscador en tiempo real por nombre de cliente, factura o pedido */}
           <div className="relative">
@@ -1154,7 +1140,7 @@ const FacturacionPage: React.FC = () => {
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-auto">
           {facturasFiltradas.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg">
               <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
@@ -1166,9 +1152,9 @@ const FacturacionPage: React.FC = () => {
               </p>
             </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="space-y-3">
               {facturasFiltradas.map((factura) => (
-                <li key={factura.id} className="border-2 border-green-300 rounded-xl bg-gradient-to-br from-white to-green-50 shadow-lg p-4 transition-all duration-300 hover:shadow-xl">
+                <li key={factura.id} className="border-2 border-green-300 rounded-xl bg-gradient-to-br from-white to-green-50 shadow-lg p-3 sm:p-4 transition-all duration-300 hover:shadow-xl">
                   <div className="flex items-center justify-between mb-3">
                     <Badge className="bg-green-600 text-white px-3 py-1 text-sm font-bold">
                       {factura.numeroFactura}
@@ -1186,11 +1172,11 @@ const FacturacionPage: React.FC = () => {
                   </div>
                   <Button 
                     onClick={() => handleVerPreliminar(factura)}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
                     size="sm"
                   >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Ver Preliminar
+                    <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
+                    <span>Ver Preliminar</span>
                   </Button>
                 </li>
               ))}
@@ -1200,22 +1186,22 @@ const FacturacionPage: React.FC = () => {
       </Card>
 
       {/* Sección: Pedidos de TU MUNDO PUERTA */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
-            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-              <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600" />
-              <span className="text-base sm:text-lg">Pedidos TU MUNDO PUERTA</span>
+      <Card className="flex flex-col h-full max-h-[90vh]">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
+              <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 flex-shrink-0" />
+              <span className="whitespace-nowrap">Pedidos TU MUNDO PUERTA</span>
             </CardTitle>
             <Button
               onClick={() => fetchPedidosTuMundoPuerta()}
               disabled={loadingTuMundoPuerta}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2 w-full sm:w-auto"
+              className="flex items-center gap-2 w-full sm:w-auto shrink-0"
             >
               <RefreshCw className={`w-4 h-4 ${loadingTuMundoPuerta ? 'animate-spin' : ''}`} />
-              <span className="text-xs sm:text-sm">Actualizar</span>
+              <span className="text-xs">Actualizar</span>
             </Button>
           </div>
           {/* Buscador en tiempo real por pedido, cliente o items */}
@@ -1235,7 +1221,7 @@ const FacturacionPage: React.FC = () => {
             )}
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex-1 overflow-auto">
           {loadingTuMundoPuerta && pedidosCargadosInventario.length === 0 ? (
             <div className="flex justify-center items-center py-8">
               <span className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mr-2"></span>
@@ -1248,9 +1234,9 @@ const FacturacionPage: React.FC = () => {
               <p className="text-gray-500 text-sm mt-2">Todos los pedidos de TU MUNDO PUERTA aparecerán aquí</p>
             </div>
           ) : (
-            <ul className="space-y-4 max-h-[600px] overflow-y-auto">
+            <ul className="space-y-3">
               {pedidosCargadosInventario.map((pedido) => (
-                <li key={pedido.id} className="border-2 border-indigo-300 rounded-xl bg-gradient-to-br from-white to-indigo-50 shadow-lg p-4 transition-all duration-300 hover:shadow-xl">
+                <li key={pedido.id} className="border-2 border-indigo-300 rounded-xl bg-gradient-to-br from-white to-indigo-50 shadow-lg p-3 sm:p-4 transition-all duration-300 hover:shadow-xl">
                   <div className="flex items-center justify-between mb-3">
                     <Badge className="bg-indigo-600 text-white px-3 py-1 text-sm font-bold">
                       #{pedido.pedidoId.slice(-6)}
@@ -1281,17 +1267,18 @@ const FacturacionPage: React.FC = () => {
                   <div className="mb-3">
                     <p className="text-2xl font-bold text-indigo-700">${pedido.montoTotal.toFixed(2)}</p>
                   </div>
-                  <div className="mt-4 pt-4 border-t-2 border-gray-200">
+                  <div className="mt-3 pt-3 border-t-2 border-gray-200">
                     <Button
                       onClick={() => handleCargarInventario(pedido)}
-                      className="w-full py-4 sm:py-6 text-sm sm:text-base md:text-lg font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                      className="w-full py-3 text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white whitespace-normal break-words"
                     >
-                      <Receipt className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-2" />
-                      <span className="hidden sm:inline">✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO</span>
-                      <span className="sm:hidden">CARGAR INVENTARIO</span>
+                      <div className="flex items-center justify-center gap-2">
+                        <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                        <span className="text-center leading-tight">✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO</span>
+                      </div>
                     </Button>
                   </div>
-                  <Badge className="w-full bg-indigo-500 text-white text-center py-2 mt-3">
+                  <Badge className="w-full bg-indigo-500 text-white text-center py-2 mt-3 text-xs sm:text-sm">
                     TU MUNDO PUERTA
                   </Badge>
                 </li>
@@ -1300,6 +1287,7 @@ const FacturacionPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
     
     {/* Modal de Confirmación y Nota de Entrega */}

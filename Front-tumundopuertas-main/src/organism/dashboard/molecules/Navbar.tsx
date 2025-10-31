@@ -139,7 +139,7 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
       </div>
 
       <div
-        className={`fixed z-50 bg-white transition-all duration-300 ease-in-out w-full sm:max-w-md md:max-w-lg lg:max-w-3xl top-16 sm:top-14 ${
+        className={`fixed z-50 bg-white transition-all duration-300 ease-in-out w-full sm:w-auto sm:max-w-xs md:max-w-sm top-16 sm:top-14 ${
           isOpen
             ? "overflow-auto max-h-[calc(100vh-4rem)] ocultar-scrollbar right-0"
             : "max-h-0 hidden"
