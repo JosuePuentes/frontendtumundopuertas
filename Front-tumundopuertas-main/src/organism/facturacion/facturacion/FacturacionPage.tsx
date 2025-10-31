@@ -747,9 +747,11 @@ const FacturacionPage: React.FC = () => {
         }
         
         // Cargar existencias al inventario (solo para el cliente especial)
-        console.log('🔄 Cargando existencias al inventario para pedido:', selectedPedido._id);
-        console.log('📦 Items del pedido con detalles completos:', selectedPedido.items.map((item: any) => ({
+        console.log('🔄 DEBUG CARGAR EXISTENCIAS: Procesando pedido', selectedPedido._id);
+        console.log('📦 DEBUG CARGAR EXISTENCIAS: Items del pedido:', selectedPedido.items.map((item: any, index: number) => ({
+          index,
           codigo: item.codigo,
+          codigoNormalizado: item.codigo ? String(item.codigo).trim() : null,
           nombre: item.nombre || item.descripcion,
           cantidad: item.cantidad,
           precio: item.precio
@@ -770,15 +772,18 @@ const FacturacionPage: React.FC = () => {
         
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
-          console.log('✅ Token de autorización incluido en el request');
+          console.log('✅ DEBUG CARGAR EXISTENCIAS: Token de autorización incluido en el request');
         } else {
-          console.warn('⚠️ No se encontró token de autorización');
+          console.warn('⚠️ DEBUG CARGAR EXISTENCIAS: No se encontró token de autorización');
         }
         
         const requestBody = { pedido_id: selectedPedido._id };
-        console.log('📤 Request body:', requestBody);
-        console.log('📤 URL:', `${getApiUrl()}/inventario/cargar-existencias-desde-pedido`);
-        console.log('📤 Headers:', headers);
+        console.log('📤 DEBUG CARGAR EXISTENCIAS: Request body:', JSON.stringify(requestBody, null, 2));
+        console.log('📤 DEBUG CARGAR EXISTENCIAS: URL:', `${getApiUrl()}/inventario/cargar-existencias-desde-pedido`);
+        console.log('📤 DEBUG CARGAR EXISTENCIAS: Headers:', {
+          'Content-Type': headers['Content-Type'],
+          'Authorization': headers['Authorization'] ? 'Bearer [TOKEN_PRESENTE]' : '[NO_TOKEN]'
+        });
         
         const res = await fetch(`${getApiUrl()}/inventario/cargar-existencias-desde-pedido`, {
           method: 'POST',
@@ -786,15 +791,23 @@ const FacturacionPage: React.FC = () => {
           body: JSON.stringify(requestBody)
         });
         
+        console.log('📥 DEBUG CARGAR EXISTENCIAS: Status de respuesta:', res.status, res.statusText);
+        
         if (!res.ok) {
           const errorText = await res.text();
-          console.error('❌ Error del backend:', errorText);
-          throw new Error(`Error al cargar existencias al inventario: ${errorText}`);
+          console.error('❌ DEBUG CARGAR EXISTENCIAS: Error del backend:', errorText);
+          try {
+            const errorJson = JSON.parse(errorText);
+            console.error('❌ DEBUG CARGAR EXISTENCIAS: Error parseado:', errorJson);
+            throw new Error(`Error al cargar existencias al inventario: ${errorJson.detail || errorText}`);
+          } catch (e) {
+            throw new Error(`Error al cargar existencias al inventario: ${errorText}`);
+          }
         }
         
         // Leer respuesta del backend para mostrar detalles
         const respuestaBackend = await res.json();
-        console.log('✅ Respuesta del backend:', respuestaBackend);
+        console.log('✅ DEBUG CARGAR EXISTENCIAS: Respuesta del backend:', JSON.stringify(respuestaBackend, null, 2));
         
         const itemsActualizados = respuestaBackend.items_actualizados || 0;
         const itemsCreados = respuestaBackend.items_creados || 0;
