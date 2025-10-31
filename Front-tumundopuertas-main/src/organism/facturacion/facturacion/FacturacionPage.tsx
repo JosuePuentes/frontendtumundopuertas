@@ -841,27 +841,35 @@ const FacturacionPage: React.FC = () => {
           items: selectedPedido.items || []
         };
         guardarPedidoCargadoInventario(pedidoCargado);
+        console.log('💾 DEBUG CARGAR EXISTENCIAS: Pedido guardado en localStorage:', pedidoCargado.pedidoId);
         
         // Marcar el pedido como cargado agregándole una propiedad
-        setFacturacion(prev => prev.map(p => 
-          p._id === selectedPedido._id 
-            ? { ...p, yaCargadoInventario: true, fechaCargaInventario: new Date().toISOString() }
-            : p
-        ));
+        setFacturacion(prev => {
+          const actualizado = prev.map(p => 
+            p._id === selectedPedido._id 
+              ? { ...p, yaCargadoInventario: true, fechaCargaInventario: new Date().toISOString() }
+              : p
+          );
+          console.log('🔄 DEBUG CARGAR EXISTENCIAS: Estado facturacion actualizado. Pedido marcado como cargado:', 
+            actualizado.find(p => p._id === selectedPedido._id)?.yaCargadoInventario);
+          return actualizado;
+        });
         
         // Actualizar el estado de pedidosCargadosInventario para incluir el nuevo pedido
         setPedidosCargadosInventario(prev => {
           // Verificar si ya existe para evitar duplicados
           const existe = prev.some((p: PedidoCargadoInventario) => p.pedidoId === pedidoCargado.pedidoId);
-          if (existe) {
-            return prev.map((p: PedidoCargadoInventario) => 
-              p.pedidoId === pedidoCargado.pedidoId ? pedidoCargado : p
-            );
-          }
-          return [...prev, pedidoCargado];
+          const nuevoEstado = existe
+            ? prev.map((p: PedidoCargadoInventario) => 
+                p.pedidoId === pedidoCargado.pedidoId ? pedidoCargado : p
+              )
+            : [...prev, pedidoCargado];
+          console.log('📦 DEBUG CARGAR EXISTENCIAS: Estado pedidosCargadosInventario actualizado. Total:', nuevoEstado.length);
+          return nuevoEstado;
         });
         
         setModalOpen(false);
+        setConfirming(false);
         
         // Mostrar mensaje detallado con información de la operación
         let mensajeDetalle = `✓ Existencias cargadas al inventario\n\n` +
@@ -1259,6 +1267,17 @@ const FacturacionPage: React.FC = () => {
                       const yaCargadoEnEstado = pedido.yaCargadoInventario || false;
                       const yaCargadoEnStorage = pedidosCargadosInventario.some((p: PedidoCargadoInventario) => p.pedidoId === pedido._id);
                       const yaCargado = yaCargadoEnEstado || yaCargadoEnStorage;
+                      
+                      // Debug log para verificar el estado del botón
+                      if (pedido._id === '690468cb6b45aa49d857a0e6' || pedido._id?.includes('690468cb6b45aa49d857a0e6')) {
+                        console.log('🔍 DEBUG BOTÓN - Pedido:', pedido._id, {
+                          yaCargadoEnEstado,
+                          yaCargadoEnStorage,
+                          yaCargado,
+                          pedidosCargadosInventarioLength: pedidosCargadosInventario.length,
+                          pedidoEnLista: pedidosCargadosInventario.find(p => p.pedidoId === pedido._id)
+                        });
+                      }
                       
                       const fechaCarga = pedido.fechaCargaInventario 
                         || (yaCargadoEnStorage 
