@@ -690,21 +690,57 @@ const FacturacionPage: React.FC = () => {
     setConfirming(true);
     try {
       if (modalAccion === 'cargar_inventario') {
+        // Verificar que el pedido tiene items
+        if (!selectedPedido.items || selectedPedido.items.length === 0) {
+          alert('⚠️ El pedido no tiene items para cargar al inventario');
+          setConfirming(false);
+          return;
+        }
+        
+        // Validar que los items tengan código antes de enviar
+        const itemsSinCodigo = selectedPedido.items.filter((item: any) => !item.codigo || item.codigo.trim() === '');
+        if (itemsSinCodigo.length > 0) {
+          const nombresSinCodigo = itemsSinCodigo.map((item: any) => item.nombre || item.descripcion || 'Sin nombre').join(', ');
+          alert(`⚠️ Los siguientes items no tienen código y no se pueden cargar al inventario:\n${nombresSinCodigo}\n\nPor favor, asegúrate de que todos los items tengan un código válido.`);
+          setConfirming(false);
+          return;
+        }
+        
         // Cargar existencias al inventario (solo para el cliente especial)
+        console.log('🔄 Cargando existencias al inventario para pedido:', selectedPedido._id);
+        console.log('📦 Items del pedido:', selectedPedido.items.map((item: any) => ({
+          codigo: item.codigo,
+          nombre: item.nombre || item.descripcion,
+          cantidad: item.cantidad
+        })));
+        
         const res = await fetch(`${getApiUrl()}/inventario/cargar-existencias-desde-pedido`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pedido_id: selectedPedido._id })
         });
+        
         if (!res.ok) {
           const errorText = await res.text();
+          console.error('❌ Error del backend:', errorText);
           throw new Error(`Error al cargar existencias al inventario: ${errorText}`);
         }
         
         // Leer respuesta del backend para mostrar detalles
         const respuestaBackend = await res.json();
+        console.log('✅ Respuesta del backend:', respuestaBackend);
+        
         const itemsActualizados = respuestaBackend.items_actualizados || 0;
         const itemsCreados = respuestaBackend.items_creados || 0;
+        const itemsConError = respuestaBackend.items_con_error || [];
+        const totalProcesado = itemsActualizados + itemsCreados;
+        
+        // Verificar si hubo algún procesamiento real
+        if (totalProcesado === 0 && itemsConError.length === 0) {
+          alert('⚠️ No se procesó ningún item. Verifica que los items del pedido tengan código y cantidad válida.');
+          setConfirming(false);
+          return;
+        }
         
         // Guardar el pedido cargado al inventario
         const montoTotalCalculado = selectedPedido.montoTotal || 
@@ -728,10 +764,16 @@ const FacturacionPage: React.FC = () => {
         setModalOpen(false);
         
         // Mostrar mensaje detallado con información de la operación
-        const mensajeDetalle = `✓ Existencias cargadas al inventario correctamente\n\n` +
+        let mensajeDetalle = `✓ Existencias cargadas al inventario\n\n` +
           `Items actualizados: ${itemsActualizados}\n` +
           `Items creados: ${itemsCreados}\n` +
-          `Total procesado: ${itemsActualizados + itemsCreados} items`;
+          `Total procesado: ${totalProcesado} items`;
+        
+        if (itemsConError.length > 0) {
+          const erroresTexto = itemsConError.map((err: any) => `• ${err.item}: ${err.error}`).join('\n');
+          mensajeDetalle += `\n\n⚠️ Items con error (${itemsConError.length}):\n${erroresTexto}`;
+        }
+        
         alert(mensajeDetalle);
       } else {
         // Flujo normal de facturación
