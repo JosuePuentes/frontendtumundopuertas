@@ -82,6 +82,7 @@ const FacturacionPage: React.FC = () => {
             // Verificar progreso del pedido con timeout
             let progresoData: any = null;
             let progresoEs100 = false;
+            const pedidoIdShort = pedido._id.slice(-4);
             
             try {
               const progresoRes = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`, {
@@ -90,20 +91,52 @@ const FacturacionPage: React.FC = () => {
               
               if (progresoRes.ok) {
                 progresoData = await progresoRes.json();
-                progresoEs100 = progresoData.progreso_general === 100;
-                console.log(`📊 Pedido ${pedido._id.slice(-4)}: progreso=${progresoData.progreso_general}%`);
+                // Usar >= 99.5 para permitir pequeños errores de redondeo (99.5% se considera 100%)
+                progresoEs100 = (progresoData.progreso_general || 0) >= 99.5;
+                console.log(`📊 Pedido ${pedidoIdShort}: progreso=${progresoData.progreso_general}%, es100=${progresoEs100}`);
+                
+                // Log especial para pedidos específicos que buscamos
+                if (pedido._id.includes('61c3f0') || pedidoIdShort === '3f0') {
+                  console.log(`🔍 PEDIDO ESPECIAL ENCONTRADO ${pedidoIdShort}:`, {
+                    id: pedido._id,
+                    estado_general: pedido.estado_general,
+                    progreso_general: progresoData.progreso_general,
+                    progresoEs100,
+                    fecha_creacion: pedido.fecha_creacion
+                  });
+                }
               } else {
-                console.warn(`⚠️ No se pudo obtener progreso del pedido ${pedido._id.slice(-4)}`);
+                console.warn(`⚠️ No se pudo obtener progreso del pedido ${pedidoIdShort} (status: ${progresoRes.status})`);
               }
             } catch (progresoErr: any) {
-              console.warn(`⚠️ Error al verificar progreso del pedido ${pedido._id.slice(-4)}:`, progresoErr.message);
+              console.warn(`⚠️ Error al verificar progreso del pedido ${pedidoIdShort}:`, progresoErr.message);
             }
             
             // Incluir el pedido si:
-            // 1. Tiene progreso al 100%, O
-            // 2. Tiene estado_general = "orden4" (listo para facturación)
-            if (!progresoEs100 && pedido.estado_general !== "orden4") {
+            // 1. Tiene progreso >= 99.5% (considerado 100%), O
+            // 2. Tiene estado_general = "orden4" (listo para facturación), O
+            // 3. Todos los items tienen estado_item = 4 (completados)
+            const todosItemsCompletados = pedido.items?.every((item: any) => item.estado_item === 4 || item.estado_item >= 4) || false;
+            
+            if (!progresoEs100 && pedido.estado_general !== "orden4" && !todosItemsCompletados) {
+              if (pedido._id.includes('61c3f0') || pedidoIdShort === '3f0') {
+                console.log(`❌ PEDIDO ${pedidoIdShort} EXCLUIDO:`, {
+                  progresoEs100,
+                  estado_general: pedido.estado_general,
+                  todosItemsCompletados,
+                  items: pedido.items?.map((i: any) => ({ id: i.id?.slice(-4), estado_item: i.estado_item }))
+                });
+              }
               return null;
+            }
+            
+            // Log si se incluye el pedido especial
+            if (pedido._id.includes('61c3f0') || pedidoIdShort === '3f0') {
+              console.log(`✅ PEDIDO ${pedidoIdShort} INCLUIDO EN FACTURACIÓN:`, {
+                progresoEs100,
+                estado_general: pedido.estado_general,
+                todosItemsCompletados
+              });
             }
             
             // Si tiene estado_general = "orden4" pero no se pudo verificar progreso, incluirlo de todas formas
