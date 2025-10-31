@@ -26,6 +26,7 @@ interface Asignacion {
   costo_produccion: number;
   imagenes: string[];
   cantidad: number;
+  unidad_index?: number; // NUEVO: Para identificar unidades individuales
 }
 
 const DashboardAsignaciones: React.FC = () => {
@@ -197,11 +198,15 @@ const DashboardAsignaciones: React.FC = () => {
           }
         }
         
-        // Agrupar asignaciones por pedido_id + item_id + empleado_id + módulo para contar unidades
+          // Agrupar asignaciones por pedido_id + item_id + empleado_id + módulo + unidad_index para contar unidades
+        // Si unidad_index está disponible, usar una clave única por unidad
         const asignacionesAgrupadas = new Map<string, any>();
         
         for (const asignacionRaw of asignacionesRaw) {
-          const key = `${asignacionRaw.pedido_id}_${asignacionRaw.item_id}_${asignacionRaw.empleado_id}_${asignacionRaw.modulo}`;
+          // Si tiene unidad_index, usar una clave única por unidad para que no se agrupen
+          const key = asignacionRaw.unidad_index !== undefined
+            ? `${asignacionRaw.pedido_id}_${asignacionRaw.item_id}_${asignacionRaw.empleado_id}_${asignacionRaw.modulo}_${asignacionRaw.unidad_index}`
+            : `${asignacionRaw.pedido_id}_${asignacionRaw.item_id}_${asignacionRaw.empleado_id}_${asignacionRaw.modulo}`;
           
           if (asignacionesAgrupadas.has(key)) {
             const existente = asignacionesAgrupadas.get(key);
@@ -219,7 +224,9 @@ const DashboardAsignaciones: React.FC = () => {
         
         // Convertir el Map a array de Asignacion
         const asignaciones: Asignacion[] = Array.from(asignacionesAgrupadas.values()).map(agrupada => ({
-          _id: `${agrupada.pedido_id}_${agrupada.item_id}_${agrupada.empleado_id}_${agrupada.modulo}`,
+          _id: agrupada.unidad_index !== undefined
+            ? `${agrupada.pedido_id}_${agrupada.item_id}_${agrupada.empleado_id}_${agrupada.modulo}_${agrupada.unidad_index}`
+            : `${agrupada.pedido_id}_${agrupada.item_id}_${agrupada.empleado_id}_${agrupada.modulo}`,
           pedido_id: agrupada.pedido_id,
           orden: agrupada.orden,
           item_id: agrupada.item_id,
@@ -234,7 +241,8 @@ const DashboardAsignaciones: React.FC = () => {
           cliente_nombre: agrupada.cliente_nombre,
           costo_produccion: agrupada.costo_produccion,
           imagenes: agrupada.imagenes,
-          cantidad: agrupada.cantidad
+          cantidad: agrupada.cantidad,
+          unidad_index: agrupada.unidad_index // Incluir unidad_index si está disponible
         }));
         
         // Ordenar por fecha de asignación (más recientes primero)
@@ -371,7 +379,7 @@ const DashboardAsignaciones: React.FC = () => {
       const ordenNumero = typeof asig.orden === 'string' ? parseInt(asig.orden) : asig.orden;
       console.log('ORDEN convertido:', ordenNumero, 'tipo:', typeof ordenNumero);
       
-      const payload = {
+      const payload: any = {
         pedido_id: asig.pedido_id,
         item_id: asig.item_id,
         empleado_id: empleadoIdParaBackend, // Usar identificador en lugar de _id
@@ -380,6 +388,11 @@ const DashboardAsignaciones: React.FC = () => {
         orden: ordenNumero,
         pin: pin
       };
+      
+      // CRÍTICO: Enviar unidad_index si está disponible para terminar la unidad correcta
+      if (asig.unidad_index !== undefined) {
+        payload.unidad_index = asig.unidad_index;
+      }
       
       console.log('PAYLOAD COMPLETO:', JSON.stringify(payload, null, 2));
       console.log('URL del endpoint:', `${getApiUrl()}/pedidos/asignacion/terminar`);
@@ -419,11 +432,12 @@ Verifica en el backend:
       const result = await response.json();
       console.log('✅ Asignación terminada:', result);
       
-      // Disparar evento de asignación terminada para que PedidosHerreria limpie el estado
+      // Disparar evento de asignación terminada para que PedidosHerreria recargue datos
       window.dispatchEvent(new CustomEvent('asignacionTerminada', {
         detail: {
           pedidoId: asig.pedido_id,
           itemId: asig.item_id,
+          unidadIndex: asig.unidad_index, // Incluir unidad_index si está disponible
           timestamp: new Date().toISOString()
         }
       }));

@@ -348,26 +348,18 @@ const PedidosHerreria: React.FC = () => {
     // NUEVO: Escuchar terminación de asignaciones
     const handleAsignacionTerminada = async (event: Event) => {
       const customEvent = event as CustomEvent;
-      const { itemId } = customEvent.detail;
+      const { itemId, unidadIndex } = customEvent.detail;
       
-      // Limpiar estado de asignación para permitir reasignación
-      setItemsIndividuales(prevItems => {
-        return prevItems.map(item => {
-          if (item.id === itemId) {
-            return {
-              ...item,
-              empleado_asignado: undefined,
-              fecha_asignacion: undefined
-            };
-          }
-          return item;
-        });
-      });
+      console.log('🔄 Asignación terminada detectada:', { itemId, unidadIndex });
+      
+      // NO limpiar estado de asignación porque ahora usamos asignación por unidades
+      // El componente AsignarArticulos maneja las unidades individuales
       
       // Esperar un momento antes de recargar para que el backend procese la terminación
       setTimeout(async () => {
+        console.log('🔄 Recargando datos después de terminar asignación...');
         await recargarDatos();
-      }, 2000); // 2 segundos para dar tiempo al backend
+      }, 1500); // 1.5 segundos para dar tiempo al backend
     };
 
     window.addEventListener('asignacionRealizada', handleAsignacionRealizada);

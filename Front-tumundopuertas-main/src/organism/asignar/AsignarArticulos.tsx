@@ -282,7 +282,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     }
   };
 
-  const handleTerminarAsignacion = async (itemId: string, empleadoId: string) => {
+  const handleTerminarAsignacion = async (itemId: string, empleadoId: string, unidadIndex?: number) => {
     setLoading(true);
     setMessage("");
 
@@ -290,18 +290,25 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       // NOTA: No se envía PIN porque este componente se usa en PedidosHerreria donde no se requiere PIN
       // El PIN solo se requiere en Dashboard de Asignaciones
+      const payload: any = {
+        pedido_id: pedidoId,
+        orden: parseInt(numeroOrden),
+        item_id: itemId,
+        empleado_id: empleadoId,
+        estado: "terminado",
+        fecha_fin: new Date().toISOString(),
+        // pin: No se envía - solo requerido en Dashboard de Asignaciones
+      };
+      
+      // CRÍTICO: Enviar unidad_index si está disponible para terminar la unidad correcta
+      if (unidadIndex !== undefined) {
+        payload.unidad_index = unidadIndex;
+      }
+      
       const res = await fetch(`${apiUrl}/pedidos/asignacion/terminar`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pedido_id: pedidoId,
-          orden: parseInt(numeroOrden),
-          item_id: itemId,
-          empleado_id: empleadoId,
-          estado: "terminado",
-          fecha_fin: new Date().toISOString(),
-          // pin: No se envía - solo requerido en Dashboard de Asignaciones
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -312,6 +319,17 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       const result = await res.json();
       console.log("✅ Asignación terminada:", result);
 
+      // Disparar evento para que PedidosHerreria recargue datos
+      window.dispatchEvent(new CustomEvent('asignacionTerminada', {
+        detail: {
+          pedidoId,
+          itemId,
+          unidadIndex,
+          timestamp: new Date().toISOString()
+        }
+      }));
+
+      // Recargar datos de asignaciones disponibles
       const data = await fetchAsignacionesDisponibles();
       if (data) {
         setAsignacionesDisponibles(data);
@@ -511,7 +529,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
                             <button
                               type="button"
                               className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 w-fit"
-                              onClick={() => handleTerminarAsignacion(item.id, unidad.empleadoId!)}
+                              onClick={() => handleTerminarAsignacion(item.id, unidad.empleadoId!, unidad.unidad_index)}
                               disabled={loading}
                             >
                               {loading ? "Terminando..." : "Terminar asignación"}
