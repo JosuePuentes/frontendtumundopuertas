@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { getApiUrl } from "@/lib/api";
-import { CheckCircle2, DollarSign, Receipt, Printer, FileText, RefreshCw } from "lucide-react";
+import { CheckCircle2, DollarSign, Receipt, Printer, FileText, RefreshCw, Search } from "lucide-react";
 
 interface FacturaConfirmada {
   id: string;
@@ -29,32 +30,60 @@ const FacturacionPage: React.FC = () => {
   const [selectedPedido, setSelectedPedido] = useState<any>(null);
   const [selectedFactura, setSelectedFactura] = useState<FacturaConfirmada | null>(null);
   const [confirming, setConfirming] = useState<boolean>(false);
+  const [busquedaCliente, setBusquedaCliente] = useState<string>("");
 
   const fetchPedidosFacturacion = async () => {
     setLoading(true);
     setError("");
     try {
       // Primero intentar buscar pedidos con estado_general = "orden4" (listos para facturación)
-      // Si no hay endpoint específico, obtener todos los pedidos
+      // También buscar pedidos que tengan todos los items terminados (estado_item = 4)
       let pedidos: any[] = [];
+      let pedidosOrden4: any[] = [];
       
       try {
         // Intentar obtener pedidos con estado_general = "orden4"
         const resOrden4 = await fetch(`${getApiUrl()}/pedidos/estado/?estado_general=orden4`);
         if (resOrden4.ok) {
-          pedidos = await resOrden4.json();
-          console.log(`✅ Pedidos con estado_general=orden4: ${pedidos.length}`);
+          pedidosOrden4 = await resOrden4.json();
+          pedidos = [...pedidosOrden4];
+          console.log(`✅ Pedidos con estado_general=orden4: ${pedidosOrden4.length}`);
         }
       } catch (e) {
         console.warn('No se pudo obtener pedidos por estado, usando /all/');
       }
       
-      // Si no hay pedidos con orden4, obtener todos los pedidos
+      // Si no hay pedidos con orden4, obtener todos los pedidos para buscar los que tengan items completados
       if (pedidos.length === 0) {
         const res = await fetch(`${getApiUrl()}/pedidos/all/`);
         if (!res.ok) throw new Error("Error al obtener pedidos");
         pedidos = await res.json();
       }
+      
+      // IMPORTANTE: Buscar pedidos que tengan todos los items con estado_item = 4 (terminados)
+      // Estos pedidos deben aparecer en facturación aunque no tengan estado_general = "orden4"
+      const pedidosConItemsCompletados: any[] = [];
+      for (const pedido of pedidos) {
+        // Verificar si todos los items tienen estado_item = 4
+        const todosItemsTerminados = pedido.items?.every((item: any) => 
+          item.estado_item === 4 || item.estado_item >= 4
+        ) || false;
+        
+        if (todosItemsTerminados && !pedidosOrden4.find((p: any) => p._id === pedido._id)) {
+          pedidosConItemsCompletados.push(pedido);
+          console.log(`✅ Pedido ${pedido._id.slice(-4)}: todos los items terminados (estado_item = 4)`);
+        }
+      }
+      
+      // Combinar pedidos con orden4 y pedidos con items completados
+      const pedidosIdsExistentes = new Set(pedidos.map((p: any) => p._id));
+      for (const pedido of pedidosConItemsCompletados) {
+        if (!pedidosIdsExistentes.has(pedido._id)) {
+          pedidos.push(pedido);
+        }
+      }
+      
+      console.log(`📊 Pedidos con items completados encontrados: ${pedidosConItemsCompletados.length}`);
       
       // Eliminar el filtro restrictivo de fecha - mostrar pedidos al 100% independientemente de la fecha
       // Pero ordenar por fecha para mostrar los más recientes primero
@@ -64,10 +93,21 @@ const FacturacionPage: React.FC = () => {
         return fechaB - fechaA; // Más reciente primero
       });
       
-      // Aumentar el límite a 500 pedidos para asegurar que no se pierdan pedidos al 100%
-      const pedidosLimitados = pedidosOrdenados.slice(0, 500); // Primeros 500 pedidos más recientes
+      // Aumentar el límite a 1000 pedidos para asegurar que no se pierdan pedidos al 100%
+      // Pero priorizar pedidos con items completados o orden4
+      const pedidosPrioritarios = pedidosOrdenados.filter((p: any) => 
+        p.estado_general === "orden4" || 
+        pedidosConItemsCompletados.find((pc: any) => pc._id === p._id)
+      );
+      
+      const pedidosRestantes = pedidosOrdenados.filter((p: any) => 
+        !pedidosPrioritarios.find((pp: any) => pp._id === p._id)
+      ).slice(0, 500);
+      
+      const pedidosLimitados = [...pedidosPrioritarios, ...pedidosRestantes];
       
       console.log(`📅 Total pedidos para verificar: ${pedidosLimitados.length} de ${pedidos.length}`);
+      console.log(`📅 Pedidos prioritarios (orden4 o items completados): ${pedidosPrioritarios.length}`);
       
       // OPTIMIZACIÓN: Cargar todos los pedidos en paralelo con timeout
       // Si un pedido ya tiene estado_general = "orden4", asumimos que está al 100%
@@ -258,6 +298,32 @@ const FacturacionPage: React.FC = () => {
   useEffect(() => {
     fetchPedidosFacturacion();
   }, []);
+
+  // Filtrar pedidos por nombre de cliente en tiempo real y mantener orden por fecha más reciente
+  const facturacionFiltrada = useMemo(() => {
+    let pedidos = facturacion;
+    
+    // Filtrar por búsqueda si hay texto
+    if (busquedaCliente.trim()) {
+      const busquedaLower = busquedaCliente.toLowerCase().trim();
+      pedidos = facturacion.filter((pedido: any) => {
+        const nombreCliente = (pedido.cliente_nombre || pedido.cliente_id || '').toLowerCase();
+        const clienteId = (pedido.cliente_id || '').toLowerCase();
+        return nombreCliente.includes(busquedaLower) || clienteId.includes(busquedaLower);
+      });
+    }
+    
+    // Asegurar que siempre estén ordenados por fecha más reciente primero
+    return [...pedidos].sort((a: any, b: any) => {
+      const fechaA = a.fecha100Porciento 
+        ? new Date(a.fecha100Porciento).getTime()
+        : new Date(a.fecha_creacion || 0).getTime();
+      const fechaB = b.fecha100Porciento 
+        ? new Date(b.fecha100Porciento).getTime()
+        : new Date(b.fecha_creacion || 0).getTime();
+      return fechaB - fechaA; // Más reciente primero
+    });
+  }, [facturacion, busquedaCliente]);
 
   // Generar número de factura único
   const generarNumeroFactura = (): string => {
@@ -549,7 +615,7 @@ const FacturacionPage: React.FC = () => {
       {/* Sección: Pendientes de Facturar */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <CardTitle className="flex items-center gap-2">
               <Receipt className="w-6 h-6" />
               Pendientes de Facturar
@@ -565,6 +631,22 @@ const FacturacionPage: React.FC = () => {
               Actualizar
             </Button>
           </div>
+          {/* Buscador en tiempo real por nombre de cliente */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder="Buscar por nombre de cliente o RIF..."
+              value={busquedaCliente}
+              onChange={(e) => setBusquedaCliente(e.target.value)}
+              className="pl-10 w-full"
+            />
+            {busquedaCliente && (
+              <div className="mt-2 text-sm text-gray-600">
+                Mostrando {facturacionFiltrada.length} de {facturacion.length} pedidos
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
         {loading ? (
@@ -574,15 +656,19 @@ const FacturacionPage: React.FC = () => {
           </div>
         ) : error ? (
           <div className="text-red-600 font-semibold py-4">{error}</div>
-        ) : facturacion.length === 0 ? (
+        ) : facturacionFiltrada.length === 0 ? (
           <div className="text-center py-8 bg-gray-50 rounded-lg">
             <CheckCircle2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-600 text-lg font-medium">No hay pedidos listos para facturar</p>
-            <p className="text-gray-500 text-sm mt-2">Los pedidos aparecerán aquí cuando estén al 100%</p>
+            <p className="text-gray-600 text-lg font-medium">
+              {busquedaCliente ? 'No se encontraron pedidos con ese cliente' : 'No hay pedidos listos para facturar'}
+            </p>
+            <p className="text-gray-500 text-sm mt-2">
+              {busquedaCliente ? 'Intenta con otro nombre o limpia la búsqueda' : 'Los pedidos aparecerán aquí cuando estén al 100%'}
+            </p>
           </div>
         ) : (
           <ul className="space-y-6">
-            {facturacion.map((pedido: any) => (
+            {facturacionFiltrada.map((pedido: any) => (
               <li key={pedido._id} className="border-2 border-blue-300 rounded-xl bg-gradient-to-br from-white to-blue-50 shadow-lg p-6 transition-all duration-300 hover:shadow-xl">
                 <div className="flex flex-wrap items-center justify-between mb-4 pb-4 border-b-2 border-blue-200">
                   <div className="flex items-center gap-3">
