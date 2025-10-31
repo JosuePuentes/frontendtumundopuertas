@@ -405,18 +405,34 @@ const FacturacionPage: React.FC = () => {
       
       const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
       const pedidosInventarioIds: string[] = [];
+      const pedidosCargadosInventarioMap = new Map<string, PedidoCargadoInventario>();
       if (storedPedidosInventario) {
         try {
           const pedidos: PedidoCargadoInventario[] = JSON.parse(storedPedidosInventario);
           pedidosInventarioIds.push(...pedidos.map(p => p.pedidoId));
+          // Crear un mapa para acceso rápido
+          pedidos.forEach(p => pedidosCargadosInventarioMap.set(p.pedidoId, p));
         } catch (e) {
           console.error('Error al leer pedidos cargados al inventario:', e);
         }
       }
       
-      const pedidosPendientes = pedidosParaFacturar.filter(p => 
-        !facturasConfirmadasIds.includes(p._id) && !pedidosInventarioIds.includes(p._id)
-      );
+      // NO filtrar los pedidos cargados al inventario - mantenerlos en la lista pero marcarlos
+      // Solo filtrar los que ya fueron facturados
+      const pedidosPendientes = pedidosParaFacturar
+        .filter(p => !facturasConfirmadasIds.includes(p._id))
+        .map(p => {
+          // Si el pedido fue cargado al inventario, agregar las propiedades
+          const pedidoCargado = pedidosCargadosInventarioMap.get(p._id);
+          if (pedidoCargado) {
+            return {
+              ...p,
+              yaCargadoInventario: true,
+              fechaCargaInventario: pedidoCargado.fechaCargaInventario
+            };
+          }
+          return p;
+        });
       
       // CRÍTICO: Ordenar por fecha (más reciente primero) después de filtrar
       // Usar fecha100Porciento si está disponible, sino fecha_creacion
@@ -462,14 +478,17 @@ const FacturacionPage: React.FC = () => {
   const fetchPedidosTuMundoPuerta = async () => {
     setLoadingTuMundoPuerta(true);
     try {
+      // Cargar primero desde localStorage para preservar los pedidos ya cargados
+      const storedPedidos = localStorage.getItem('pedidos_cargados_inventario');
+      const pedidosDesdeStorage: PedidoCargadoInventario[] = storedPedidos ? JSON.parse(storedPedidos) : [];
+      
       // Obtener todos los pedidos del backend
       const res = await fetch(`${getApiUrl()}/pedidos/all/`);
       if (!res.ok) {
         console.warn('No se pudieron obtener pedidos del backend para TU MUNDO PUERTA');
-        // Cargar desde localStorage como fallback
-        const storedPedidos = localStorage.getItem('pedidos_cargados_inventario');
-        if (storedPedidos) {
-          setPedidosCargadosInventario(JSON.parse(storedPedidos));
+        // Cargar solo desde localStorage
+        if (pedidosDesdeStorage.length > 0) {
+          setPedidosCargadosInventario(pedidosDesdeStorage);
         }
         return;
       }
@@ -495,6 +514,9 @@ const FacturacionPage: React.FC = () => {
           }, 0);
         }
         
+        // Buscar si este pedido ya está en localStorage con información de carga
+        const pedidoEnStorage = pedidosDesdeStorage.find((p: PedidoCargadoInventario) => p.pedidoId === pedido._id);
+        
         return {
           id: pedido._id,
           pedidoId: pedido._id,
@@ -502,7 +524,8 @@ const FacturacionPage: React.FC = () => {
           clienteId: pedido.cliente_id || rifClienteEspecial,
           montoTotal: montoTotal,
           fechaCreacion: pedido.fecha_creacion || new Date().toISOString(),
-          fechaCargaInventario: pedido.fecha_creacion || new Date().toISOString(), // Usar fecha_creacion como fecha de carga si no hay otra
+          // Preservar fechaCargaInventario si existe en localStorage, sino usar fecha_creacion
+          fechaCargaInventario: pedidoEnStorage?.fechaCargaInventario || pedido.fecha_creacion || new Date().toISOString(),
           items: pedido.items || []
         };
       }).sort((a: PedidoCargadoInventario, b: PedidoCargadoInventario) => {
@@ -512,8 +535,20 @@ const FacturacionPage: React.FC = () => {
         return fechaB - fechaA;
       });
       
-      setPedidosCargadosInventario(pedidosFormateados);
-      console.log(`✅ Pedidos de TU MUNDO PUERTA cargados: ${pedidosFormateados.length}`);
+      // Combinar con los pedidos del localStorage que no están en el backend (por si acaso)
+      const pedidosIdsDelBackend = new Set(pedidosFormateados.map((p: PedidoCargadoInventario) => p.pedidoId));
+      const pedidosSoloEnStorage = pedidosDesdeStorage.filter(
+        (p: PedidoCargadoInventario) => !pedidosIdsDelBackend.has(p.pedidoId)
+      );
+      
+      const pedidosCombinados = [...pedidosFormateados, ...pedidosSoloEnStorage].sort((a: PedidoCargadoInventario, b: PedidoCargadoInventario) => {
+        const fechaA = new Date(a.fechaCreacion).getTime();
+        const fechaB = new Date(b.fechaCreacion).getTime();
+        return fechaB - fechaA;
+      });
+      
+      setPedidosCargadosInventario(pedidosCombinados);
+      console.log(`✅ Pedidos de TU MUNDO PUERTA cargados: ${pedidosCombinados.length}`);
     } catch (error) {
       console.error('Error al obtener pedidos de TU MUNDO PUERTA:', error);
       // Cargar desde localStorage como fallback
@@ -794,18 +829,24 @@ const FacturacionPage: React.FC = () => {
         };
         guardarPedidoCargadoInventario(pedidoCargado);
         
-        // Recargar pedidos de TU MUNDO PUERTA para mostrar el nuevo pedido cargado
-        await fetchPedidosTuMundoPuerta();
-        
-        // NO filtrar el pedido de la lista, mantenerlo para que muestre el botón "ya cargado"
-        // setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
-        
         // Marcar el pedido como cargado agregándole una propiedad
         setFacturacion(prev => prev.map(p => 
           p._id === selectedPedido._id 
             ? { ...p, yaCargadoInventario: true, fechaCargaInventario: new Date().toISOString() }
             : p
         ));
+        
+        // Actualizar el estado de pedidosCargadosInventario para incluir el nuevo pedido
+        setPedidosCargadosInventario(prev => {
+          // Verificar si ya existe para evitar duplicados
+          const existe = prev.some((p: PedidoCargadoInventario) => p.pedidoId === pedidoCargado.pedidoId);
+          if (existe) {
+            return prev.map((p: PedidoCargadoInventario) => 
+              p.pedidoId === pedidoCargado.pedidoId ? pedidoCargado : p
+            );
+          }
+          return [...prev, pedidoCargado];
+        });
         
         setModalOpen(false);
         
