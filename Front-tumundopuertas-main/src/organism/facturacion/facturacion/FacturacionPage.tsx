@@ -445,11 +445,16 @@ const FacturacionPage: React.FC = () => {
     }
   };
 
-  // Cargar facturas confirmadas desde localStorage
+  // Cargar facturas confirmadas y pedidos cargados al inventario desde localStorage
   useEffect(() => {
     const storedFacturas = localStorage.getItem('facturas_confirmadas');
     if (storedFacturas) {
       setFacturasConfirmadas(JSON.parse(storedFacturas));
+    }
+    
+    const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
+    if (storedPedidosInventario) {
+      setPedidosCargadosInventario(JSON.parse(storedPedidosInventario));
     }
   }, []);
 
@@ -760,7 +765,16 @@ const FacturacionPage: React.FC = () => {
         // Recargar pedidos de TU MUNDO PUERTA para mostrar el nuevo pedido cargado
         await fetchPedidosTuMundoPuerta();
         
-        setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
+        // NO filtrar el pedido de la lista, mantenerlo para que muestre el botón "ya cargado"
+        // setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
+        
+        // Marcar el pedido como cargado agregándole una propiedad
+        setFacturacion(prev => prev.map(p => 
+          p._id === selectedPedido._id 
+            ? { ...p, yaCargadoInventario: true, fechaCargaInventario: new Date().toISOString() }
+            : p
+        ));
+        
         setModalOpen(false);
         
         // Mostrar mensaje detallado con información de la operación
@@ -1145,22 +1159,58 @@ const FacturacionPage: React.FC = () => {
 
                 <div className="mt-3 pt-3 border-t-2 border-gray-200">
                   {esClienteCargaInventario(pedido) ? (
-                    <Button
-                      onClick={() => handleCargarInventario(pedido)}
-                      disabled={!pedido.puedeFacturar}
-                      className={`w-full py-3 text-xs sm:text-sm font-bold whitespace-normal break-words ${
-                        pedido.puedeFacturar
-                          ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-2">
-                        <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                        <span className="text-center leading-tight">
-                          {pedido.puedeFacturar ? '✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO' : `⚠️ Pendiente pago ($${((pedido.montoTotal || 0) - (pedido.montoAbonado || 0)).toFixed(2)})`}
-                        </span>
-                      </div>
-                    </Button>
+                    (() => {
+                      // Verificar si el pedido ya fue cargado al inventario
+                      // Verificar en localStorage primero, luego en el estado del pedido
+                      const yaCargadoEnEstado = pedido.yaCargadoInventario || false;
+                      const yaCargadoEnStorage = pedidosCargadosInventario.some((p: PedidoCargadoInventario) => p.pedidoId === pedido._id);
+                      const yaCargado = yaCargadoEnEstado || yaCargadoEnStorage;
+                      
+                      const fechaCarga = pedido.fechaCargaInventario 
+                        || (yaCargadoEnStorage 
+                          ? pedidosCargadosInventario.find((p: PedidoCargadoInventario) => p.pedidoId === pedido._id)?.fechaCargaInventario 
+                          : null);
+                      
+                      if (yaCargado) {
+                        return (
+                          <Button
+                            disabled={true}
+                            className="w-full py-3 text-xs sm:text-sm font-bold whitespace-normal break-words bg-green-500 text-white cursor-not-allowed"
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                              <span className="text-center leading-tight">
+                                ✓ EXISTENCIAS YA CARGADAS AL INVENTARIO
+                                {fechaCarga && (
+                                  <span className="block text-xs mt-1 opacity-90">
+                                    {new Date(fechaCarga).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                          </Button>
+                        );
+                      }
+                      
+                      return (
+                        <Button
+                          onClick={() => handleCargarInventario(pedido)}
+                          disabled={!pedido.puedeFacturar}
+                          className={`w-full py-3 text-xs sm:text-sm font-bold whitespace-normal break-words ${
+                            pedido.puedeFacturar
+                              ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          }`}
+                        >
+                          <div className="flex items-center justify-center gap-2">
+                            <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                            <span className="text-center leading-tight">
+                              {pedido.puedeFacturar ? '✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO' : `⚠️ Pendiente pago ($${((pedido.montoTotal || 0) - (pedido.montoAbonado || 0)).toFixed(2)})`}
+                            </span>
+                          </div>
+                        </Button>
+                      );
+                    })()
                   ) : (
                   <Button
                     onClick={() => handleFacturar(pedido)}
@@ -1325,9 +1375,22 @@ const FacturacionPage: React.FC = () => {
                     <div className="text-sm text-gray-700 space-y-1 max-h-20 overflow-y-auto">
                       {pedido.items && pedido.items.length > 0 ? (
                         pedido.items.map((item: any, idx: number) => (
-                          <div key={idx} className="flex justify-between">
-                            <span className="truncate">{item.nombre || item.descripcion || 'N/A'}</span>
-                            <span className="font-bold ml-2">x{item.cantidad || 1}</span>
+                          <div key={idx} className="flex justify-between items-center">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                {item.codigo ? (
+                                  <span className="font-mono text-xs font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                                    {item.codigo}
+                                  </span>
+                                ) : (
+                                  <span className="font-mono text-xs font-semibold text-red-600 bg-red-50 px-1.5 py-0.5 rounded italic">
+                                    Sin código
+                                  </span>
+                                )}
+                                <span className="truncate">{item.nombre || item.descripcion || 'N/A'}</span>
+                              </div>
+                            </div>
+                            <span className="font-bold ml-2 flex-shrink-0">x{item.cantidad || 1}</span>
                           </div>
                         ))
                       ) : (
