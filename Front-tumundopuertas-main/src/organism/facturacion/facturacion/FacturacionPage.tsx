@@ -840,22 +840,14 @@ const FacturacionPage: React.FC = () => {
           fechaCargaInventario: new Date().toISOString(),
           items: selectedPedido.items || []
         };
+        // Guardar el pedido cargado al inventario en localStorage
         guardarPedidoCargadoInventario(pedidoCargado);
         console.log('💾 DEBUG CARGAR EXISTENCIAS: Pedido guardado en localStorage:', pedidoCargado.pedidoId);
         
-        // Marcar el pedido como cargado agregándole una propiedad
-        setFacturacion(prev => {
-          const actualizado = prev.map(p => 
-            p._id === selectedPedido._id 
-              ? { ...p, yaCargadoInventario: true, fechaCargaInventario: new Date().toISOString() }
-              : p
-          );
-          console.log('🔄 DEBUG CARGAR EXISTENCIAS: Estado facturacion actualizado. Pedido marcado como cargado:', 
-            actualizado.find(p => p._id === selectedPedido._id)?.yaCargadoInventario);
-          return actualizado;
-        });
+        // IMPORTANTE: Actualizar TODOS los estados ANTES de cerrar el modal
+        // para que el componente se re-renderice inmediatamente con el botón actualizado
         
-        // Actualizar el estado de pedidosCargadosInventario para incluir el nuevo pedido
+        // 1. Actualizar el estado de pedidosCargadosInventario PRIMERO
         setPedidosCargadosInventario(prev => {
           // Verificar si ya existe para evitar duplicados
           const existe = prev.some((p: PedidoCargadoInventario) => p.pedidoId === pedidoCargado.pedidoId);
@@ -868,8 +860,26 @@ const FacturacionPage: React.FC = () => {
           return nuevoEstado;
         });
         
+        // 2. Marcar el pedido como cargado en el estado facturacion
+        const fechaCargaISO = new Date().toISOString();
+        setFacturacion(prev => {
+          const actualizado = prev.map(p => 
+            p._id === selectedPedido._id 
+              ? { ...p, yaCargadoInventario: true, fechaCargaInventario: fechaCargaISO }
+              : p
+          );
+          console.log('🔄 DEBUG CARGAR EXISTENCIAS: Estado facturacion actualizado. Pedido marcado como cargado:', 
+            actualizado.find(p => p._id === selectedPedido._id)?.yaCargadoInventario);
+          return actualizado;
+        });
+        
+        // 3. Cerrar el modal y resetear el estado DESPUÉS de actualizar los estados
         setModalOpen(false);
         setConfirming(false);
+        setSelectedPedido(null); // Limpiar el pedido seleccionado para forzar re-render
+        
+        // 4. Forzar un pequeño delay para asegurar que React procese los cambios de estado
+        await new Promise(resolve => setTimeout(resolve, 50));
         
         // Mostrar mensaje detallado con información de la operación
         let mensajeDetalle = `✓ Existencias cargadas al inventario\n\n` +
@@ -890,28 +900,69 @@ const FacturacionPage: React.FC = () => {
           mensajeDetalle += `\n\n⚠️ Items con error (${itemsConError.length}):\n${erroresTexto}`;
         }
         
+        // Agregar nota sobre verificación en inventario
+        mensajeDetalle += `\n\n💡 Verifica en /inventario/cargar-excel que la existencia se haya incrementado correctamente.`;
+        
         alert(mensajeDetalle);
+        
+        // Verificar que el estado se actualizó correctamente después de un breve delay
+        setTimeout(() => {
+          console.log('✅ DEBUG CARGAR EXISTENCIAS: Verificación final del estado (después de delay)');
+          // Leer desde localStorage para verificar
+          const storedPedidos = localStorage.getItem('pedidos_cargados_inventario');
+          if (storedPedidos) {
+            const pedidos: PedidoCargadoInventario[] = JSON.parse(storedPedidos);
+            const pedidoEnStorage = pedidos.find((p: PedidoCargadoInventario) => p.pedidoId === selectedPedido._id);
+            console.log('✅ DEBUG CARGAR EXISTENCIAS: Pedido en localStorage:', pedidoEnStorage ? 'ENCONTRADO' : 'NO ENCONTRADO');
+            if (pedidoEnStorage) {
+              console.log('✅ DEBUG CARGAR EXISTENCIAS: Detalles del pedido guardado:', {
+                pedidoId: pedidoEnStorage.pedidoId,
+                fechaCargaInventario: pedidoEnStorage.fechaCargaInventario
+              });
+            }
+          }
+        }, 500);
       } else {
         // Flujo normal de facturación
         const numeroFactura = generarNumeroFactura();
         const montoTotalCalculado = selectedPedido.montoTotal || 
           (selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0);
-      const facturaConfirmada: FacturaConfirmada = {
-        id: selectedPedido._id + '-' + Date.now(),
-        numeroFactura: numeroFactura,
-        pedidoId: selectedPedido._id,
-        clienteNombre: selectedPedido.cliente_nombre || selectedPedido.cliente_id || 'N/A',
-        clienteId: selectedPedido.cliente_id || '',
-        montoTotal: montoTotalCalculado,
-        fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
-        fechaFacturacion: new Date().toISOString(),
-        items: selectedPedido.items || []
-      };
-        // TODO backend: marcar pedido como facturado si aplica
-      guardarFacturaConfirmada(facturaConfirmada);
-      setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
-      setModalOpen(false);
-      alert(`✓ Pedido facturado exitosamente\nNúmero de Factura: ${numeroFactura}`);
+        const facturaConfirmada: FacturaConfirmada = {
+          id: selectedPedido._id + '-' + Date.now(),
+          numeroFactura: numeroFactura,
+          pedidoId: selectedPedido._id,
+          clienteNombre: selectedPedido.cliente_nombre || selectedPedido.cliente_id || 'N/A',
+          clienteId: selectedPedido.cliente_id || '',
+          montoTotal: montoTotalCalculado,
+          fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
+          fechaFacturacion: new Date().toISOString(),
+          items: selectedPedido.items || []
+        };
+        
+        // IMPORTANTE: Actualizar TODOS los estados ANTES de cerrar el modal
+        // para que la factura aparezca inmediatamente en "Facturas Procesadas"
+        
+        // 1. Guardar la factura confirmada (actualiza estado y localStorage)
+        guardarFacturaConfirmada(facturaConfirmada);
+        console.log('💾 DEBUG FACTURACIÓN: Factura guardada:', facturaConfirmada.numeroFactura);
+        
+        // 2. Remover el pedido de la lista de pendientes inmediatamente
+        setFacturacion(prev => {
+          const actualizado = prev.filter(p => p._id !== selectedPedido._id);
+          console.log('🔄 DEBUG FACTURACIÓN: Pedido removido de facturacion. Total restante:', actualizado.length);
+          return actualizado;
+        });
+        
+        // 3. Cerrar el modal y resetear el estado DESPUÉS de actualizar los estados
+        setModalOpen(false);
+        setConfirming(false);
+        setSelectedPedido(null); // Limpiar el pedido seleccionado para forzar re-render
+        
+        // 4. Forzar un pequeño delay para asegurar que React procese los cambios de estado
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // 5. Mostrar mensaje de éxito
+        alert(`✓ Pedido facturado exitosamente\nNúmero de Factura: ${numeroFactura}`);
       }
     } catch (error) {
       console.error('Error al confirmar acción:', error);
@@ -1292,14 +1343,14 @@ const FacturacionPage: React.FC = () => {
                           >
                             <div className="flex items-center justify-center gap-2">
                               <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                              <span className="text-center leading-tight">
-                                ✓ EXISTENCIAS YA CARGADAS AL INVENTARIO
-                                {fechaCarga && (
-                                  <span className="block text-xs mt-1 opacity-90">
-                                    {new Date(fechaCarga).toLocaleDateString()}
-                                  </span>
-                                )}
-                              </span>
+                            <span className="text-center leading-tight">
+                              ✓ CANTIDADES CARGADAS AL INVENTARIO
+                              {fechaCarga && (
+                                <span className="block text-xs mt-1 opacity-90">
+                                  {new Date(fechaCarga).toLocaleDateString()}
+                                </span>
+                              )}
+                            </span>
                             </div>
                           </Button>
                         );
