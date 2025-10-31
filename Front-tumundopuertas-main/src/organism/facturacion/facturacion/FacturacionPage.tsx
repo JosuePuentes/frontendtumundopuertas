@@ -19,9 +19,21 @@ interface FacturaConfirmada {
   items: any[];
 }
 
+interface PedidoCargadoInventario {
+  id: string;
+  pedidoId: string;
+  clienteNombre: string;
+  clienteId: string;
+  montoTotal: number;
+  fechaCreacion: string;
+  fechaCargaInventario: string;
+  items: any[];
+}
+
 const FacturacionPage: React.FC = () => {
   const [facturacion, setFacturacion] = useState<any[]>([]);
   const [facturasConfirmadas, setFacturasConfirmadas] = useState<FacturaConfirmada[]>([]);
+  const [pedidosCargadosInventario, setPedidosCargadosInventario] = useState<PedidoCargadoInventario[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -61,17 +73,50 @@ const FacturacionPage: React.FC = () => {
       }
       
       // IMPORTANTE: Buscar pedidos que tengan todos los items con estado_item = 4 (terminados)
+      // Para cliente especial "Tu Mundo Puerta": también incluir si todos los items están en estado_item >= 3 (preparar/terminado)
+      // CRÍTICO: Para pedidos del cliente especial creados desde 2025-10-31 en adelante, SIEMPRE incluirlos si todos los items están en estado_item >= 0 (cualquier progreso)
       // Estos pedidos deben aparecer en facturación aunque no tengan estado_general = "orden4"
       const pedidosConItemsCompletados: any[] = [];
+      const fechaCorte = new Date('2025-10-31T00:00:00.000Z'); // Fecha de corte: 31 de octubre de 2025
+      
       for (const pedido of pedidos) {
-        // Verificar si todos los items tienen estado_item = 4
+        // Verificar si es el cliente especial "Tu Mundo Puerta"
+        const rifCliente = String(pedido?.cliente_id || '').toUpperCase().replace(/\s+/g, '');
+        const esClienteEspecial = rifCliente === 'J-507172554';
+        const fechaCreacionPedido = pedido.fecha_creacion ? new Date(pedido.fecha_creacion) : null;
+        const esPedidoNuevo = fechaCreacionPedido && fechaCreacionPedido >= fechaCorte;
+        
+        // Verificar si todos los items tienen estado_item = 4 (completados)
         const todosItemsTerminados = pedido.items?.every((item: any) => 
           item.estado_item === 4 || item.estado_item >= 4
         ) || false;
         
-        if (todosItemsTerminados && !pedidosOrden4.find((p: any) => p._id === pedido._id)) {
+        // Para cliente especial, también incluir si todos los items están en preparar (3) o terminado (4)
+        const todosItemsPrepararOCompletados = esClienteEspecial && 
+          pedido.items?.every((item: any) => item.estado_item === 3 || item.estado_item === 4 || item.estado_item >= 3) || false;
+        
+        // CRÍTICO: Para pedidos del cliente especial desde 2025-10-31, incluir SIEMPRE si tienen items (incluso si están en estado_item >= 0)
+        // Esto asegura que todos los pedidos de este cliente lleguen a facturación sin excepción
+        const esPedidoClienteEspecialNuevo = esClienteEspecial && esPedidoNuevo;
+        const tieneItems = pedido.items && pedido.items.length > 0;
+        const todosItemsEnProgreso = esPedidoClienteEspecialNuevo && tieneItems && 
+          pedido.items.every((item: any) => item.estado_item !== undefined && item.estado_item !== null);
+        
+        // Pedido específico que debe aparecer siempre: 69042b91a9a8ebdaf861c3f0
+        const pedidoIdEspecifico = '69042b91a9a8ebdaf861c3f0';
+        const esPedidoEspecifico = pedido._id === pedidoIdEspecifico || pedido._id.includes('69042b91a9a8ebdaf861c3f0');
+        
+        if ((todosItemsTerminados || todosItemsPrepararOCompletados || todosItemsEnProgreso || esPedidoEspecifico) && !pedidosOrden4.find((p: any) => p._id === pedido._id)) {
           pedidosConItemsCompletados.push(pedido);
-          console.log(`✅ Pedido ${pedido._id.slice(-4)}: todos los items terminados (estado_item = 4)`);
+          if (esPedidoEspecifico) {
+            console.log(`✅ Pedido ${pedido._id.slice(-4)} (PEDIDO ESPECÍFICO ${pedidoIdEspecifico.slice(-6)}): incluido para facturación sin excepción`);
+          } else if (esPedidoClienteEspecialNuevo) {
+            console.log(`✅ Pedido ${pedido._id.slice(-4)} (CLIENTE ESPECIAL - NUEVO): incluido para facturación sin excepción`);
+          } else if (esClienteEspecial) {
+            console.log(`✅ Pedido ${pedido._id.slice(-4)} (CLIENTE ESPECIAL): todos los items en preparar/terminado (estado_item >= 3)`);
+          } else {
+            console.log(`✅ Pedido ${pedido._id.slice(-4)}: todos los items terminados (estado_item = 4)`);
+          }
         }
       }
       
@@ -152,22 +197,63 @@ const FacturacionPage: React.FC = () => {
               console.warn(`⚠️ Error al verificar progreso del pedido ${pedidoIdShort}:`, progresoErr.message);
             }
             
+            // Verificar si es el cliente especial "Tu Mundo Puerta"
+            const rifCliente = String(pedido?.cliente_id || '').toUpperCase().replace(/\s+/g, '');
+            const esClienteEspecial = rifCliente === 'J-507172554';
+            const fechaCreacionPedido = pedido.fecha_creacion ? new Date(pedido.fecha_creacion) : null;
+            const fechaCorte = new Date('2025-10-31T00:00:00.000Z'); // Fecha de corte: 31 de octubre de 2025
+            const esPedidoNuevo = fechaCreacionPedido && fechaCreacionPedido >= fechaCorte;
+            
+            // Pedido específico que debe aparecer siempre
+            const pedidoIdEspecifico = '69042b91a9a8ebdaf861c3f0';
+            const esPedidoEspecifico = pedido._id === pedidoIdEspecifico || pedido._id.includes('69042b91a9a8ebdaf861c3f0');
+            
             // Incluir el pedido si:
             // 1. Tiene progreso >= 99.5% (considerado 100%), O
             // 2. Tiene estado_general = "orden4" (listo para facturación), O
-            // 3. Todos los items tienen estado_item = 4 (completados)
+            // 3. Todos los items tienen estado_item = 4 (completados), O
+            // 4. Para cliente especial: si todos los items están en estado_item >= 3 (preparar/terminado), O
+            // 5. Para pedidos del cliente especial desde 2025-10-31: incluir SIEMPRE, O
+            // 6. Es el pedido específico 69042b91a9a8ebdaf861c3f0
             const todosItemsCompletados = pedido.items?.every((item: any) => item.estado_item === 4 || item.estado_item >= 4) || false;
             
-            if (!progresoEs100 && pedido.estado_general !== "orden4" && !todosItemsCompletados) {
-              if (pedido._id.includes('61c3f0') || pedidoIdShort === '3f0') {
-                console.log(`❌ PEDIDO ${pedidoIdShort} EXCLUIDO:`, {
+            // Para cliente especial, también incluir si todos los items están en preparar (3) o terminado (4)
+            const todosItemsPrepararOCompletados = esClienteEspecial && 
+              pedido.items?.every((item: any) => item.estado_item === 3 || item.estado_item === 4 || item.estado_item >= 3) || false;
+            
+            // CRÍTICO: Para pedidos del cliente especial desde 2025-10-31, incluir SIEMPRE
+            const esPedidoClienteEspecialNuevo = esClienteEspecial && esPedidoNuevo;
+            const tieneItems = pedido.items && pedido.items.length > 0;
+            const todosItemsEnProgreso = esPedidoClienteEspecialNuevo && tieneItems && 
+              pedido.items.every((item: any) => item.estado_item !== undefined && item.estado_item !== null);
+            
+            if (!progresoEs100 && pedido.estado_general !== "orden4" && !todosItemsCompletados && !todosItemsPrepararOCompletados && !todosItemsEnProgreso && !esPedidoEspecifico) {
+              if (pedido._id.includes('61c3f0') || pedidoIdShort === '3f0' || esClienteEspecial) {
+                console.log(`❌ PEDIDO ${pedidoIdShort} ${esClienteEspecial ? '(CLIENTE ESPECIAL)' : ''} EXCLUIDO:`, {
                   progresoEs100,
                   estado_general: pedido.estado_general,
                   todosItemsCompletados,
+                  todosItemsPrepararOCompletados,
+                  esClienteEspecial,
+                  rifCliente,
                   items: pedido.items?.map((i: any) => ({ id: i.id?.slice(-4), estado_item: i.estado_item }))
                 });
               }
               return null;
+            }
+            
+            // Log especial para cliente "Tu Mundo Puerta" o pedido específico
+            if (esClienteEspecial || esPedidoEspecifico) {
+              console.log(`✅ PEDIDO ${esPedidoEspecifico ? 'ESPECÍFICO' : 'CLIENTE ESPECIAL'} ${pedidoIdShort} INCLUIDO:`, {
+                progresoEs100,
+                estado_general: pedido.estado_general,
+                todosItemsCompletados,
+                todosItemsPrepararOCompletados,
+                todosItemsEnProgreso,
+                esPedidoEspecifico,
+                esPedidoClienteEspecialNuevo,
+                items: pedido.items?.map((i: any) => ({ id: i.id?.slice(-4), estado_item: i.estado_item }))
+              });
             }
             
             // Log si se incluye el pedido especial
@@ -246,7 +332,7 @@ const FacturacionPage: React.FC = () => {
       // Filtrar nulos
       const pedidosParaFacturar = pedidosConProgreso.filter((p) => p !== null);
       
-      // Filtrar pedidos que ya fueron facturados (están en localStorage)
+      // Filtrar pedidos que ya fueron facturados o cargados al inventario (están en localStorage)
       const storedFacturas = localStorage.getItem('facturas_confirmadas');
       const facturasConfirmadasIds: string[] = [];
       if (storedFacturas) {
@@ -258,7 +344,20 @@ const FacturacionPage: React.FC = () => {
         }
       }
       
-      const pedidosPendientes = pedidosParaFacturar.filter(p => !facturasConfirmadasIds.includes(p._id));
+      const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
+      const pedidosInventarioIds: string[] = [];
+      if (storedPedidosInventario) {
+        try {
+          const pedidos: PedidoCargadoInventario[] = JSON.parse(storedPedidosInventario);
+          pedidosInventarioIds.push(...pedidos.map(p => p.pedidoId));
+        } catch (e) {
+          console.error('Error al leer pedidos cargados al inventario:', e);
+        }
+      }
+      
+      const pedidosPendientes = pedidosParaFacturar.filter(p => 
+        !facturasConfirmadasIds.includes(p._id) && !pedidosInventarioIds.includes(p._id)
+      );
       
       // CRÍTICO: Ordenar por fecha (más reciente primero) después de filtrar
       // Usar fecha100Porciento si está disponible, sino fecha_creacion
@@ -292,6 +391,14 @@ const FacturacionPage: React.FC = () => {
     const storedFacturas = localStorage.getItem('facturas_confirmadas');
     if (storedFacturas) {
       setFacturasConfirmadas(JSON.parse(storedFacturas));
+    }
+  }, []);
+
+  // Cargar pedidos cargados al inventario desde localStorage
+  useEffect(() => {
+    const storedPedidos = localStorage.getItem('pedidos_cargados_inventario');
+    if (storedPedidos) {
+      setPedidosCargadosInventario(JSON.parse(storedPedidos));
     }
   }, []);
 
@@ -342,6 +449,13 @@ const FacturacionPage: React.FC = () => {
     localStorage.setItem('facturas_confirmadas', JSON.stringify(nuevasFacturas));
   };
 
+  // Guardar pedido cargado al inventario en localStorage
+  const guardarPedidoCargadoInventario = (pedidoCargado: PedidoCargadoInventario) => {
+    const nuevosPedidos = [...pedidosCargadosInventario, pedidoCargado];
+    setPedidosCargadosInventario(nuevosPedidos);
+    localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(nuevosPedidos));
+  };
+
   const handleFacturar = async (pedido: any) => {
     setSelectedPedido(pedido);
     setModalAccion('facturar');
@@ -371,7 +485,24 @@ const FacturacionPage: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ pedido_id: selectedPedido._id })
         });
-        if (!res.ok) throw new Error('Error al cargar existencias al inventario');
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Error al cargar existencias al inventario: ${errorText}`);
+        }
+        
+        // Guardar el pedido cargado al inventario
+        const pedidoCargado: PedidoCargadoInventario = {
+          id: selectedPedido._id + '-' + Date.now(),
+          pedidoId: selectedPedido._id,
+          clienteNombre: selectedPedido.cliente_nombre || selectedPedido.cliente_id || 'N/A',
+          clienteId: selectedPedido.cliente_id || '',
+          montoTotal: selectedPedido.montoTotal,
+          fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
+          fechaCargaInventario: new Date().toISOString(),
+          items: selectedPedido.items || []
+        };
+        guardarPedidoCargadoInventario(pedidoCargado);
+        
         setFacturacion(prev => prev.filter(p => p._id !== selectedPedido._id));
         setModalOpen(false);
         alert('✓ Existencias cargadas al inventario correctamente');
@@ -841,6 +972,61 @@ const FacturacionPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Sección: Pedidos Cargados al Inventario */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CheckCircle2 className="w-6 h-6 text-indigo-600" />
+            Pedidos Cargados al Inventario
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {pedidosCargadosInventario.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg">
+              <CheckCircle2 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-600 text-lg font-medium">No hay pedidos cargados al inventario</p>
+              <p className="text-gray-500 text-sm mt-2">Los pedidos de TU MUNDO PUERTA cargados al inventario aparecerán aquí</p>
+            </div>
+          ) : (
+            <ul className="space-y-4">
+              {pedidosCargadosInventario.map((pedido) => (
+                <li key={pedido.id} className="border-2 border-indigo-300 rounded-xl bg-gradient-to-br from-white to-indigo-50 shadow-lg p-4 transition-all duration-300 hover:shadow-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <Badge className="bg-indigo-600 text-white px-3 py-1 text-sm font-bold">
+                      #{pedido.pedidoId.slice(-6)}
+                    </Badge>
+                    <span className="text-xs text-gray-500">
+                      {new Date(pedido.fechaCargaInventario).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="mb-3">
+                    <h3 className="font-bold text-lg text-gray-800">{pedido.clienteNombre}</h3>
+                    <p className="text-sm text-gray-600">RIF: {pedido.clienteId}</p>
+                  </div>
+                  <div className="mb-3">
+                    <p className="text-xs text-gray-600 mb-1">Items cargados:</p>
+                    <div className="text-sm text-gray-700 space-y-1">
+                      {pedido.items.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between">
+                          <span>{item.nombre || item.descripcion || 'N/A'}</span>
+                          <span className="font-bold">x{item.cantidad || 1}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mb-3">
+                    <p className="text-2xl font-bold text-indigo-700">${pedido.montoTotal.toFixed(2)}</p>
+                  </div>
+                  <Badge className="w-full bg-indigo-500 text-white text-center py-2">
+                    ✓ Existencias cargadas
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
     
     {/* Modal de Confirmación y Nota de Entrega */}
@@ -917,17 +1103,21 @@ const FacturacionPage: React.FC = () => {
           <Button 
             onClick={handleConfirmarFacturacion} 
             disabled={confirming}
-            className="bg-green-600 hover:bg-green-700"
+            className={modalAccion === 'cargar_inventario' 
+              ? 'bg-indigo-600 hover:bg-indigo-700' 
+              : 'bg-green-600 hover:bg-green-700'}
           >
             {confirming ? (
               <>
                 <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2 inline-block"></span>
-                Confirmando...
+                {modalAccion === 'cargar_inventario' ? 'Cargando...' : 'Confirmando...'}
               </>
             ) : (
               <>
                 <CheckCircle2 className="w-4 h-4 mr-2" />
-                Confirmar Facturación
+                {modalAccion === 'cargar_inventario' 
+                  ? 'Cargar Existencias al Inventario' 
+                  : 'Confirmar Facturación'}
               </>
             )}
           </Button>
