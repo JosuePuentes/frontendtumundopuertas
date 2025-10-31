@@ -72,6 +72,26 @@ const FacturacionPage: React.FC = () => {
         pedidos = await res.json();
       }
       
+      // CRÍTICO: Buscar específicamente el pedido 69042b91a9a8ebdaf861c3f0 si no está en la lista
+      const pedidoIdEspecifico = '69042b91a9a8ebdaf861c3f0';
+      const pedidoEspecificoYaEsta = pedidos.find((p: any) => p._id === pedidoIdEspecifico);
+      
+      if (!pedidoEspecificoYaEsta) {
+        try {
+          console.log(`🔍 Buscando pedido específico ${pedidoIdEspecifico} que no está en la lista inicial...`);
+          const resEspecifico = await fetch(`${getApiUrl()}/pedidos/${pedidoIdEspecifico}`);
+          if (resEspecifico.ok) {
+            const pedidoEspecifico = await resEspecifico.json();
+            pedidos.push(pedidoEspecifico);
+            console.log(`✅ Pedido específico ${pedidoIdEspecifico} encontrado y agregado a la lista`);
+          } else {
+            console.warn(`⚠️ No se pudo obtener el pedido específico ${pedidoIdEspecifico}: ${resEspecifico.status}`);
+          }
+        } catch (err) {
+          console.error(`❌ Error al buscar pedido específico ${pedidoIdEspecifico}:`, err);
+        }
+      }
+      
       // IMPORTANTE: Buscar pedidos que tengan todos los items con estado_item = 4 (terminados)
       // Para cliente especial "Tu Mundo Puerta": también incluir si todos los items están en estado_item >= 3 (preparar/terminado)
       // CRÍTICO: Para pedidos del cliente especial creados desde 2025-10-31 en adelante, SIEMPRE incluirlos si todos los items están en estado_item >= 0 (cualquier progreso)
@@ -103,15 +123,30 @@ const FacturacionPage: React.FC = () => {
           pedido.items.every((item: any) => item.estado_item !== undefined && item.estado_item !== null);
         
         // Pedido específico que debe aparecer siempre: 69042b91a9a8ebdaf861c3f0
-        const pedidoIdEspecifico = '69042b91a9a8ebdaf861c3f0';
         const esPedidoEspecifico = pedido._id === pedidoIdEspecifico || pedido._id.includes('69042b91a9a8ebdaf861c3f0');
         
-        if ((todosItemsTerminados || todosItemsPrepararOCompletados || todosItemsEnProgreso || esPedidoEspecifico) && !pedidosOrden4.find((p: any) => p._id === pedido._id)) {
+        // CRÍTICO: Para el pedido específico o pedidos del cliente especial nuevos, incluirlos SIEMPRE
+        // sin importar su estado_item o estado_general
+        const debeIncluirse = todosItemsTerminados || todosItemsPrepararOCompletados || todosItemsEnProgreso || esPedidoEspecifico || esPedidoClienteEspecialNuevo;
+        
+        if (debeIncluirse && !pedidosOrden4.find((p: any) => p._id === pedido._id)) {
           pedidosConItemsCompletados.push(pedido);
           if (esPedidoEspecifico) {
-            console.log(`✅ Pedido ${pedido._id.slice(-4)} (PEDIDO ESPECÍFICO ${pedidoIdEspecifico.slice(-6)}): incluido para facturación sin excepción`);
+            console.log(`✅ Pedido ${pedido._id.slice(-4)} (PEDIDO ESPECÍFICO ${pedidoIdEspecifico.slice(-6)}): incluido para facturación sin excepción`, {
+              _id: pedido._id,
+              cliente_id: pedido.cliente_id,
+              estado_general: pedido.estado_general,
+              fecha_creacion: pedido.fecha_creacion,
+              items: pedido.items?.map((i: any) => ({ estado_item: i.estado_item }))
+            });
           } else if (esPedidoClienteEspecialNuevo) {
-            console.log(`✅ Pedido ${pedido._id.slice(-4)} (CLIENTE ESPECIAL - NUEVO): incluido para facturación sin excepción`);
+            console.log(`✅ Pedido ${pedido._id.slice(-4)} (CLIENTE ESPECIAL - NUEVO): incluido para facturación sin excepción`, {
+              _id: pedido._id,
+              cliente_id: pedido.cliente_id,
+              estado_general: pedido.estado_general,
+              fecha_creacion: pedido.fecha_creacion,
+              items: pedido.items?.map((i: any) => ({ estado_item: i.estado_item }))
+            });
           } else if (esClienteEspecial) {
             console.log(`✅ Pedido ${pedido._id.slice(-4)} (CLIENTE ESPECIAL): todos los items en preparar/terminado (estado_item >= 3)`);
           } else {
@@ -205,7 +240,6 @@ const FacturacionPage: React.FC = () => {
             const esPedidoNuevo = fechaCreacionPedido && fechaCreacionPedido >= fechaCorte;
             
             // Pedido específico que debe aparecer siempre
-            const pedidoIdEspecifico = '69042b91a9a8ebdaf861c3f0';
             const esPedidoEspecifico = pedido._id === pedidoIdEspecifico || pedido._id.includes('69042b91a9a8ebdaf861c3f0');
             
             // Incluir el pedido si:
@@ -214,7 +248,7 @@ const FacturacionPage: React.FC = () => {
             // 3. Todos los items tienen estado_item = 4 (completados), O
             // 4. Para cliente especial: si todos los items están en estado_item >= 3 (preparar/terminado), O
             // 5. Para pedidos del cliente especial desde 2025-10-31: incluir SIEMPRE, O
-            // 6. Es el pedido específico 69042b91a9a8ebdaf861c3f0
+            // 6. Es el pedido específico 69042b91a9a8ebdaf861c3f0 (incluir SIEMPRE sin importar estado)
             const todosItemsCompletados = pedido.items?.every((item: any) => item.estado_item === 4 || item.estado_item >= 4) || false;
             
             // Para cliente especial, también incluir si todos los items están en preparar (3) o terminado (4)
@@ -227,7 +261,9 @@ const FacturacionPage: React.FC = () => {
             const todosItemsEnProgreso = esPedidoClienteEspecialNuevo && tieneItems && 
               pedido.items.every((item: any) => item.estado_item !== undefined && item.estado_item !== null);
             
-            if (!progresoEs100 && pedido.estado_general !== "orden4" && !todosItemsCompletados && !todosItemsPrepararOCompletados && !todosItemsEnProgreso && !esPedidoEspecifico) {
+            // CRÍTICO: El pedido específico o pedidos del cliente especial nuevos deben incluirse SIEMPRE
+            // sin importar su progreso, estado_general o estado_item
+            if (!progresoEs100 && pedido.estado_general !== "orden4" && !todosItemsCompletados && !todosItemsPrepararOCompletados && !todosItemsEnProgreso && !esPedidoEspecifico && !esPedidoClienteEspecialNuevo) {
               if (pedido._id.includes('61c3f0') || pedidoIdShort === '3f0' || esClienteEspecial) {
                 console.log(`❌ PEDIDO ${pedidoIdShort} ${esClienteEspecial ? '(CLIENTE ESPECIAL)' : ''} EXCLUIDO:`, {
                   progresoEs100,
