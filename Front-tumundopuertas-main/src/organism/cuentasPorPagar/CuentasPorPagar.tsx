@@ -204,11 +204,31 @@ const CuentasPorPagar: React.FC = () => {
     setLoading(true);
     try {
       const data = await getCuentasPorPagar();
-      // Normalizar _id a id para consistencia
-      const cuentasNormalizadas = data.map((cuenta: any) => ({
-        ...cuenta,
-        _id: cuenta._id || cuenta.id
-      }));
+      // Normalizar _id a id para consistencia y asegurar que proveedor siempre existe
+      const cuentasNormalizadas = data.map((cuenta: any) => {
+        // Normalizar proveedor - puede venir en formato anidado o plano
+        let proveedor: Proveedor;
+        if (cuenta.proveedor) {
+          proveedor = {
+            nombre: cuenta.proveedor.nombre || cuenta.proveedor.proveedorNombre || "Sin nombre",
+            rif: cuenta.proveedor.rif || cuenta.proveedor.proveedorRif || "Sin RIF",
+            telefono: cuenta.proveedor.telefono || cuenta.proveedor.proveedorTelefono || ""
+          };
+        } else {
+          // Formato plano del backend
+          proveedor = {
+            nombre: cuenta.proveedorNombre || "Sin nombre",
+            rif: cuenta.proveedorRif || "Sin RIF",
+            telefono: cuenta.proveedorTelefono || ""
+          };
+        }
+
+        return {
+          ...cuenta,
+          _id: cuenta._id || cuenta.id,
+          proveedor: proveedor
+        };
+      });
       setCuentas(cuentasNormalizadas);
     } catch (error) {
       console.error("Error al cargar cuentas por pagar:", error);
@@ -232,22 +252,28 @@ const CuentasPorPagar: React.FC = () => {
     const filtradas = cuentas.filter(c => c.estado === "pendiente");
     if (!busqueda.trim()) return filtradas;
     const busquedaLower = busqueda.toLowerCase();
-    return filtradas.filter(c => 
-      c.proveedor.nombre.toLowerCase().includes(busquedaLower) ||
-      c.proveedor.rif.toLowerCase().includes(busquedaLower) ||
-      c._id.toLowerCase().includes(busquedaLower)
-    );
+    return filtradas.filter(c => {
+      const nombreProveedor = c.proveedor?.nombre?.toLowerCase() || "";
+      const rifProveedor = c.proveedor?.rif?.toLowerCase() || "";
+      const idCuenta = c._id?.toLowerCase() || "";
+      return nombreProveedor.includes(busquedaLower) ||
+             rifProveedor.includes(busquedaLower) ||
+             idCuenta.includes(busquedaLower);
+    });
   }, [cuentas, busqueda]);
 
   const cuentasPagadas = useMemo(() => {
     const filtradas = cuentas.filter(c => c.estado === "pagada");
     if (!busqueda.trim()) return filtradas;
     const busquedaLower = busqueda.toLowerCase();
-    return filtradas.filter(c => 
-      c.proveedor.nombre.toLowerCase().includes(busquedaLower) ||
-      c.proveedor.rif.toLowerCase().includes(busquedaLower) ||
-      c._id.toLowerCase().includes(busquedaLower)
-    );
+    return filtradas.filter(c => {
+      const nombreProveedor = c.proveedor?.nombre?.toLowerCase() || "";
+      const rifProveedor = c.proveedor?.rif?.toLowerCase() || "";
+      const idCuenta = c._id?.toLowerCase() || "";
+      return nombreProveedor.includes(busquedaLower) ||
+             rifProveedor.includes(busquedaLower) ||
+             idCuenta.includes(busquedaLower);
+    });
   }, [cuentas, busqueda]);
 
   // Manejo de items del inventario
@@ -781,9 +807,9 @@ const CuentasPorPagar: React.FC = () => {
                       </span>
                     </div>
                     <div className="mb-3">
-                      <h3 className="font-bold text-lg text-gray-800">{cuenta.proveedor.nombre}</h3>
-                      <p className="text-sm text-gray-600">RIF: {cuenta.proveedor.rif}</p>
-                      {cuenta.proveedor.telefono && (
+                      <h3 className="font-bold text-lg text-gray-800">{cuenta.proveedor?.nombre || "Sin nombre"}</h3>
+                      <p className="text-sm text-gray-600">RIF: {cuenta.proveedor?.rif || "Sin RIF"}</p>
+                      {cuenta.proveedor?.telefono && (
                         <p className="text-sm text-gray-600">Tel: {cuenta.proveedor.telefono}</p>
                       )}
                     </div>
@@ -840,8 +866,8 @@ const CuentasPorPagar: React.FC = () => {
                       </span>
                     </div>
                     <div className="mb-3">
-                      <h3 className="font-bold text-lg text-gray-800">{cuenta.proveedor.nombre}</h3>
-                      <p className="text-sm text-gray-600">RIF: {cuenta.proveedor.rif}</p>
+                      <h3 className="font-bold text-lg text-gray-800">{cuenta.proveedor?.nombre || "Sin nombre"}</h3>
+                      <p className="text-sm text-gray-600">RIF: {cuenta.proveedor?.rif || "Sin RIF"}</p>
                     </div>
                     <div className="mb-3">
                       <p className="text-2xl font-bold text-green-700">${cuenta.total.toFixed(2)}</p>
@@ -1199,7 +1225,7 @@ const CuentasPorPagar: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Abonar a Cuenta por Pagar</DialogTitle>
             <DialogDescription>
-              Cuenta: #{cuentaSeleccionada?._id.slice(-6)} - {cuentaSeleccionada?.proveedor.nombre}
+              Cuenta: #{cuentaSeleccionada?._id?.slice(-6)} - {cuentaSeleccionada?.proveedor?.nombre || "Sin nombre"}
             </DialogDescription>
           </DialogHeader>
 
@@ -1269,9 +1295,9 @@ const CuentasPorPagar: React.FC = () => {
               {/* Información del Proveedor */}
               <div className="border rounded-lg p-4">
                 <h3 className="font-bold text-lg mb-2">Proveedor</h3>
-                <p><strong>Nombre:</strong> {cuentaPreliminar.proveedor.nombre}</p>
-                <p><strong>RIF:</strong> {cuentaPreliminar.proveedor.rif}</p>
-                {cuentaPreliminar.proveedor.telefono && (
+                <p><strong>Nombre:</strong> {cuentaPreliminar.proveedor?.nombre || "Sin nombre"}</p>
+                <p><strong>RIF:</strong> {cuentaPreliminar.proveedor?.rif || "Sin RIF"}</p>
+                {cuentaPreliminar.proveedor?.telefono && (
                   <p><strong>Teléfono:</strong> {cuentaPreliminar.proveedor.telefono}</p>
                 )}
               </div>
