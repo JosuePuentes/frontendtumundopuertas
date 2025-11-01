@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { getHistorialMetodo } from "../../lib/api";
 import type { MetodoPago } from "../../hooks/useMetodosPago";
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 interface Transaccion {
@@ -89,7 +89,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
     ]);
     
     // Crear tabla
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [['Fecha', 'Tipo', 'Monto', 'Concepto']],
       body: tableData,
       startY: 55,
