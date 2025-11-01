@@ -13,7 +13,8 @@ import {
   Printer,
   Shield,
   Zap,
-  Star
+  Star,
+  Receipt
 } from "lucide-react";
 
 interface HomeConfig {
@@ -74,6 +75,16 @@ const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const isAuthenticated = !!localStorage.getItem("usuario");
     const [config, setConfig] = useState<HomeConfig | null>(null);
+    
+    // Función para obtener permisos del usuario
+    const getPermisos = (): string[] => {
+        try {
+            const raw = localStorage.getItem("permisos");
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
+        }
+    };
 
     // Cargar configuración desde localStorage
     useEffect(() => {
@@ -196,7 +207,14 @@ const HomePage: React.FC = () => {
     // Usar configuración guardada o por defecto
     const currentConfig = config || defaultConfig;
 
-    const modules = [
+    const modules: Array<{
+        title: string;
+        description: string;
+        icon: any;
+        color: string;
+        href: string;
+        permiso?: string;
+    }> = [
         {
             title: "Clientes",
             description: "Gestionar información de clientes",
@@ -238,6 +256,14 @@ const HomePage: React.FC = () => {
             icon: CreditCard,
             color: "from-cyan-400 to-blue-500",
             href: "/metodos-pago"
+        },
+        {
+            title: "Cuentas por Pagar",
+            description: "Gestionar cuentas por pagar a proveedores",
+            icon: Receipt,
+            color: "from-cyan-400 to-blue-500",
+            href: "/cuentas-por-pagar",
+            permiso: "cuentas_por_pagar"
         },
         {
             title: "Formatos de Impresión",
@@ -530,7 +556,14 @@ const HomePage: React.FC = () => {
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-                        {modules.map((module, index) => {
+                        {modules
+                            .filter(module => {
+                                // Si el módulo no tiene permiso requerido, se muestra a todos
+                                if (!module.permiso) return true;
+                                // Si tiene permiso, verificar que el usuario lo tenga
+                                return getPermisos().includes(module.permiso);
+                            })
+                            .map((module, index) => {
                             const IconComponent = module.icon;
                             return (
                                 <Card key={index} className="bg-gray-800/50 border-gray-700 hover:border-cyan-400/50 transition-all duration-300 cursor-pointer group backdrop-blur-sm">

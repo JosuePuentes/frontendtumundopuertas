@@ -264,7 +264,7 @@ function AppRouter() {
         <Route
           path="cuentas-por-pagar"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute permiso="cuentas_por_pagar">
               <CuentasPorPagar />
             </ProtectedRoute>
           }
