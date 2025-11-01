@@ -509,7 +509,6 @@ const CuentasPorPagar: React.FC = () => {
   // Generar HTML para impresión
   const generarHTMLImpresion = () => {
     const fecha = new Date().toLocaleDateString('es-ES');
-    const total = mostrarItems && itemsSeleccionados.length > 0 ? totalItems : monto;
 
     let itemsHTML = '';
     if (mostrarItems && itemsSeleccionados.length > 0) {
