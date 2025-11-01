@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Toast } from "@/components/ui/toast";
 import { 
   Search, 
   Eye, 
@@ -71,7 +70,7 @@ interface PedidoWeb {
   estado: string;
   fecha_creacion?: string;
   createdAt?: string;
-  factura?: Factura;
+  factura?: Factura | null;
 }
 
 const PedidosWeb: React.FC = () => {
@@ -157,7 +156,7 @@ const PedidosWeb: React.FC = () => {
                   saldo_pendiente: factura.saldo_pendiente || factura.saldoPendiente || (factura.monto_total || factura.montoTotal || 0) - (factura.monto_abonado || factura.montoAbonado || 0),
                   historial_abonos: factura.historial_abonos || factura.historialAbonos || [],
                   estado: factura.estado || "pendiente",
-                } : null,
+                } : undefined,
               };
             } catch (error) {
               console.error("Error al cargar factura para pedido:", error);
