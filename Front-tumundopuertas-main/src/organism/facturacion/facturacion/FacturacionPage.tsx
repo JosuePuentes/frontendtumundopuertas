@@ -1622,44 +1622,84 @@ const FacturacionPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                  <div className="bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-200">
-                    <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
-                      <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Total
-                    </p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-800">${(pedido.montoTotal || 0).toFixed(2)}</p>
-                  </div>
-                  <div className="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
-                    <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
-                      <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Abonado
-                    </p>
-                    <p className="text-lg sm:text-xl font-bold text-green-700">${(pedido.montoAbonado || 0).toFixed(2)}</p>
-                  </div>
-                </div>
+                {(() => {
+                  // Calcular total incluyendo adicionales
+                  const montoItems = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+                  const montoAdicionales = (pedido.adicionales || []).reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
+                  const totalConAdicionales = pedido.montoTotal || (montoItems + montoAdicionales);
+                  
+                  return (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <div className="bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-200">
+                          <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                            <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Total
+                          </p>
+                          <p className="text-lg sm:text-xl font-bold text-gray-800">${totalConAdicionales.toFixed(2)}</p>
+                        </div>
+                        <div className="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
+                          <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                            <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Abonado
+                          </p>
+                          <p className="text-lg sm:text-xl font-bold text-green-700">${(pedido.montoAbonado || 0).toFixed(2)}</p>
+                        </div>
+                      </div>
 
-                {pedido.items && pedido.items.length > 0 && (
-                  <div className="mb-3">
-                    <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-2">📦 Items</h4>
-                    <div className="grid grid-cols-1 gap-2">
-                      {pedido.items.map((item: any, idx: number) => (
-                        <div key={idx} className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 hover:border-blue-400 transition-colors">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-bold text-sm sm:text-base text-gray-800 line-clamp-2">{item.nombre || item.descripcion}</p>
-                              <p className="text-xs text-gray-600">Cant: {item.cantidad}</p>
-                              {item.detalleitem && (
-                                <p className="text-xs text-gray-500 mt-1 line-clamp-1">{item.detalleitem}</p>
-                              )}
-                            </div>
-                            <span className="text-base sm:text-lg font-bold text-green-700 whitespace-nowrap ml-2">
-                              ${((item.precio || 0) * (item.cantidad || 0)).toFixed(2)}
-                            </span>
+                      {pedido.items && pedido.items.length > 0 && (
+                        <div className="mb-3">
+                          <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-2">📦 Items</h4>
+                          <div className="grid grid-cols-1 gap-2">
+                            {pedido.items.map((item: any, idx: number) => (
+                              <div key={idx} className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 hover:border-blue-400 transition-colors">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-sm sm:text-base text-gray-800 line-clamp-2">{item.nombre || item.descripcion}</p>
+                                    <p className="text-xs text-gray-600">Cant: {item.cantidad}</p>
+                                    {item.detalleitem && (
+                                      <p className="text-xs text-gray-500 mt-1 line-clamp-1">{item.detalleitem}</p>
+                                    )}
+                                  </div>
+                                  <span className="text-base sm:text-lg font-bold text-green-700 whitespace-nowrap ml-2">
+                                    ${((item.precio || 0) * (item.cantidad || 0)).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      )}
+
+                      {/* Mostrar adicionales si existen */}
+                      {Array.isArray(pedido.adicionales) && pedido.adicionales.length > 0 && (
+                        <div className="mb-3">
+                          <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-2">💰 Adicionales</h4>
+                          <div className="grid grid-cols-1 gap-2">
+                            {pedido.adicionales.map((adicional: any, idx: number) => (
+                              <div key={idx} className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-2 sm:p-3 hover:border-yellow-300 transition-colors">
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-sm sm:text-base text-yellow-800">{adicional.descripcion}</p>
+                                  </div>
+                                  <span className="text-base sm:text-lg font-bold text-yellow-700 whitespace-nowrap ml-2">
+                                    +${(adicional.monto || 0).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-yellow-300 bg-yellow-50 rounded-lg p-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-yellow-800 font-semibold">Total Adicionales:</span>
+                              <span className="text-sm font-bold text-yellow-800">
+                                ${pedido.adicionales.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0).toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
 
                 <div className="mt-3 pt-3 border-t-2 border-gray-200">
                   {esClienteCargaInventario(pedido) ? (
