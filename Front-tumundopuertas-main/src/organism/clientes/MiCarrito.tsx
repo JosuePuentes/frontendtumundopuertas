@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Plus, Minus } from "lucide-react";
+import { Trash2, Plus, Minus, Package } from "lucide-react";
 import EnviarPedidoModal from "./EnviarPedidoModal";
 
 interface MiCarritoProps {
@@ -57,18 +57,30 @@ const MiCarrito: React.FC<MiCarritoProps> = ({ items, onUpdateItems }) => {
               className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg border border-gray-600"
             >
               <div className="flex items-center space-x-4 flex-1">
-                {carritoItem.item.imagenes && carritoItem.item.imagenes[0] && (
-                  <img
-                    src={carritoItem.item.imagenes[0]}
-                    alt={carritoItem.item.nombre}
-                    className="w-16 h-16 object-cover rounded"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/placeholder.png";
-                    }}
-                  />
-                )}
+                {/* Imagen del item - Siempre mostrar */}
+                <div className="w-20 h-20 flex-shrink-0">
+                  {carritoItem.item.imagenes && carritoItem.item.imagenes[0] && carritoItem.item.imagenes[0] !== "/placeholder.png" ? (
+                    <img
+                      src={carritoItem.item.imagenes[0]}
+                      alt={carritoItem.item.nombre}
+                      className="w-full h-full object-cover rounded-lg border border-gray-600"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/placeholder.png";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-700 rounded-lg border border-gray-600">
+                      <Package className="w-8 h-8 text-gray-500" />
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
-                  <h3 className="text-white font-semibold">{carritoItem.item.nombre}</h3>
+                  <h3 className="text-white font-semibold mb-1">{carritoItem.item.nombre}</h3>
+                  {carritoItem.item.codigo && (
+                    <p className="text-gray-400 text-sm mb-1">
+                      Código: <span className="font-medium text-cyan-300">{carritoItem.item.codigo}</span>
+                    </p>
+                  )}
                   <p className="text-cyan-400 font-bold">
                     ${(carritoItem.item.precio || 0).toFixed(2)} c/u
                   </p>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, Plus, Minus, ShoppingCart, Search, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Minus, ShoppingCart, Search, X, Package } from "lucide-react";
 
 interface Item {
   _id: string;
@@ -180,27 +180,41 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
                   key={item._id}
                   className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 overflow-hidden hover:border-cyan-400 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/20 flex flex-col h-full"
                 >
-                  {/* Imagen */}
+                  {/* Imagen - Siempre mostrar */}
                   <div
                     className="relative h-48 bg-gray-700 cursor-pointer group flex-shrink-0"
                     onClick={() => setImagenModal(imagenPrincipal)}
                   >
-                    <img
-                      src={imagenPrincipal}
-                      alt={item.nombre}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder.png";
-                      }}
-                    />
+                    {imagenPrincipal && imagenPrincipal !== "/placeholder.png" ? (
+                      <img
+                        src={imagenPrincipal}
+                        alt={item.nombre}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/placeholder.png";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-700">
+                        <Package className="w-16 h-16 text-gray-500" />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
-                      <p className="text-white opacity-0 group-hover:opacity-100 transition-opacity">Click para ampliar</p>
+                      <p className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm">Click para ampliar</p>
                     </div>
                   </div>
 
                   {/* Información */}
                   <div className="p-4 flex flex-col flex-grow">
                     <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 min-h-[3.5rem]">{item.nombre}</h3>
+                    {item.descripcion && (
+                      <p className="text-gray-400 text-sm mb-2 line-clamp-2">{item.descripcion}</p>
+                    )}
+                    {item.codigo && (
+                      <p className="text-cyan-300 text-xs font-medium mb-2">
+                        Código: <span className="font-semibold">{item.codigo}</span>
+                      </p>
+                    )}
                     <p className="text-cyan-400 text-xl font-bold mb-4">
                       ${item.precio.toFixed(2)}
                     </p>
