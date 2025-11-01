@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
+import { Button } from "@/components/ui/button";
 import { 
   Home, 
   Package, 
@@ -9,7 +10,8 @@ import {
   Receipt, 
   HelpCircle,
   Menu,
-  X
+  X,
+  LogOut
 } from "lucide-react";
 import Catalogo from "./Catalogo";
 import MisPedidos from "./MisPedidos";
@@ -30,6 +32,15 @@ const ClienteDashboard: React.FC = () => {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const prevItemsCountRef = useRef(0);
+  const clienteNombre = localStorage.getItem("cliente_nombre") || "Usuario";
+
+  const handleLogout = () => {
+    localStorage.removeItem("cliente_access_token");
+    localStorage.removeItem("cliente_usuario");
+    localStorage.removeItem("cliente_id");
+    localStorage.removeItem("cliente_nombre");
+    navigate("/usuarios");
+  };
 
   const menuItems = [
     { id: "inicio" as VistaActiva, label: "Inicio", icon: Home },
@@ -211,6 +222,39 @@ const ClienteDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
+      {/* Header/Navbar */}
+      <header className="bg-black/80 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setMenuAbierto(!menuAbierto)}
+                className="lg:hidden text-gray-300 hover:text-white"
+              >
+                {menuAbierto ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+              <img src="/puertalogo.PNG" alt="Logo" className="h-10 w-10" />
+              <h1 className="text-xl font-bold">TU MUNDO PUERTAS</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <div className="hidden sm:block">
+                <p className="text-sm text-gray-300">
+                  Bienvenido, <span className="font-semibold text-cyan-400">{clienteNombre}</span>
+                </p>
+              </div>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white flex items-center space-x-2"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Salir</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
       <div className="flex">
         {/* Sidebar */}
         <aside className={`
@@ -219,6 +263,7 @@ const ClienteDashboard: React.FC = () => {
           transform ${menuAbierto ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           transition-transform duration-300 ease-in-out
           lg:translate-x-0
+          pt-16 lg:pt-0
         `}>
           <nav className="p-4 space-y-2">
             {/* Botón de cerrar en móvil */}
@@ -277,14 +322,6 @@ const ClienteDashboard: React.FC = () => {
 
         {/* Main Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          {/* Botón para abrir menú en móvil */}
-          <button
-            onClick={() => setMenuAbierto(true)}
-            className="lg:hidden fixed top-4 left-4 z-50 bg-gray-800/80 text-white p-2 rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-          
           {menuAbierto && (
             <div
               className="fixed inset-0 bg-black/50 z-30 lg:hidden"
