@@ -41,12 +41,6 @@ const MiCarrito: React.FC<MiCarritoProps> = ({ items, onUpdateItems }) => {
     return (
       <div className="text-center py-12">
         <p className="text-gray-400 text-lg mb-4">Tu carrito está vacío</p>
-        <Button
-          onClick={() => window.location.href = "/clientes/catalogo"}
-          className="bg-gradient-to-r from-cyan-500 to-blue-600"
-        >
-          Ir al Catálogo
-        </Button>
       </div>
     );
   }

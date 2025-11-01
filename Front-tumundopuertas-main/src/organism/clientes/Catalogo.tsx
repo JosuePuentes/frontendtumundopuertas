@@ -178,11 +178,11 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
               return (
                 <div
                   key={item._id}
-                  className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 overflow-hidden hover:border-cyan-400 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/20"
+                  className="bg-gray-800/50 backdrop-blur-sm rounded-lg border border-gray-700 overflow-hidden hover:border-cyan-400 transition-all duration-300 hover:shadow-xl hover:shadow-cyan-500/20 flex flex-col h-full"
                 >
                   {/* Imagen */}
                   <div
-                    className="relative h-48 bg-gray-700 cursor-pointer group"
+                    className="relative h-48 bg-gray-700 cursor-pointer group flex-shrink-0"
                     onClick={() => setImagenModal(imagenPrincipal)}
                   >
                     <img
@@ -199,8 +199,8 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
                   </div>
 
                   {/* Información */}
-                  <div className="p-4">
-                    <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">{item.nombre}</h3>
+                  <div className="p-4 flex flex-col flex-grow">
+                    <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2 min-h-[3.5rem]">{item.nombre}</h3>
                     <p className="text-cyan-400 text-xl font-bold mb-4">
                       ${item.precio.toFixed(2)}
                     </p>
@@ -229,14 +229,14 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
                       </div>
                     </div>
 
-                    {/* Botón agregar al carrito */}
+                    {/* Botón agregar al carrito - siempre al final */}
                     <Button
                       onClick={() => agregarAlCarrito(item)}
                       disabled={cantidad === 0}
-                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed mt-auto h-10 flex items-center justify-center"
                     >
-                      <ShoppingCart className="w-4 h-4 mr-2" />
-                      Agregar al Carrito
+                      <ShoppingCart className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="truncate">Agregar al Carrito</span>
                     </Button>
                   </div>
                 </div>

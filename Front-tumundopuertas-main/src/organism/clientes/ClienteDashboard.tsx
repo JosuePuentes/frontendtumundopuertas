@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { 
@@ -19,6 +19,7 @@ import Perfil from "./Perfil";
 import Facturas from "./Facturas";
 import Soporte from "./Soporte";
 import MiCarrito from "./MiCarrito";
+import { Toast } from "@/components/ui/toast";
 
 type VistaActiva = "inicio" | "catalogo" | "mis-pedidos" | "reclamo" | "perfil" | "facturas" | "soporte" | "carrito";
 
@@ -27,6 +28,9 @@ const ClienteDashboard: React.FC = () => {
   const [vistaActiva, setVistaActiva] = useState<VistaActiva>("inicio");
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [itemsCarrito, setItemsCarrito] = useState<any[]>([]);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const prevItemsCountRef = useRef(0);
   const clienteNombre = localStorage.getItem("cliente_nombre") || "Usuario";
 
   // Verificar autenticación
@@ -36,6 +40,51 @@ const ClienteDashboard: React.FC = () => {
       navigate("/usuarios");
     }
   }, [navigate]);
+
+  // Detectar cuando se agregan items al carrito y mostrar notificación
+  useEffect(() => {
+    const itemsCount = itemsCarrito.reduce((total, item) => total + item.cantidad, 0);
+    if (itemsCount > prevItemsCountRef.current && prevItemsCountRef.current > 0) {
+      const cantidadAgregada = itemsCount - prevItemsCountRef.current;
+      // Buscar el último item agregado o el que incrementó su cantidad
+      let itemAgregado = itemsCarrito[itemsCarrito.length - 1];
+      
+      // Si no encontramos el último, buscar el que tiene más cantidad (probablemente el recién agregado)
+      if (!itemAgregado || !itemAgregado.item) {
+        itemAgregado = itemsCarrito.reduce((max, item) => 
+          item.cantidad > (max?.cantidad || 0) ? item : max
+        , null as any);
+      }
+      
+      if (itemAgregado && itemAgregado.item) {
+        const nombreProducto = itemAgregado.item.nombre || 'Producto';
+        setToastMessage(`✓ ${cantidadAgregada} ${cantidadAgregada === 1 ? 'producto agregado' : 'productos agregados'} al carrito: ${nombreProducto}`);
+        setToastVisible(true);
+      }
+    } else if (itemsCount > prevItemsCountRef.current && prevItemsCountRef.current === 0) {
+      // Primer item agregado al carrito vacío
+      const primerItem = itemsCarrito[0];
+      if (primerItem && primerItem.item) {
+        setToastMessage(`✓ ${primerItem.cantidad} ${primerItem.cantidad === 1 ? 'producto agregado' : 'productos agregados'} al carrito: ${primerItem.item.nombre}`);
+        setToastVisible(true);
+      }
+    }
+    prevItemsCountRef.current = itemsCount;
+  }, [itemsCarrito]);
+
+  const handleAddToCart = (item: any, cantidad: number) => {
+    setItemsCarrito(prev => {
+      const existe = prev.find(i => i.itemId === item._id);
+      if (existe) {
+        return prev.map(i => 
+          i.itemId === item._id 
+            ? { ...i, cantidad: i.cantidad + cantidad }
+            : i
+        );
+      }
+      return [...prev, { itemId: item._id, item: item, cantidad }];
+    });
+  };
 
   const menuItems = [
     { id: "inicio" as VistaActiva, label: "Inicio", icon: Home },
@@ -59,33 +108,9 @@ const ClienteDashboard: React.FC = () => {
   const renderVista = () => {
     switch (vistaActiva) {
       case "inicio":
-        return <Catalogo onAddToCart={(item, cantidad) => {
-          setItemsCarrito(prev => {
-            const existe = prev.find(i => i.itemId === item._id);
-            if (existe) {
-              return prev.map(i => 
-                i.itemId === item._id 
-                  ? { ...i, cantidad: i.cantidad + cantidad }
-                  : i
-              );
-            }
-            return [...prev, { itemId: item._id, item: item, cantidad }];
-          });
-        }} />;
+        return <Catalogo onAddToCart={handleAddToCart} />;
       case "catalogo":
-        return <Catalogo onAddToCart={(item, cantidad) => {
-          setItemsCarrito(prev => {
-            const existe = prev.find(i => i.itemId === item._id);
-            if (existe) {
-              return prev.map(i => 
-                i.itemId === item._id 
-                  ? { ...i, cantidad: i.cantidad + cantidad }
-                  : i
-              );
-            }
-            return [...prev, { itemId: item._id, item: item, cantidad }];
-          });
-        }} />;
+        return <Catalogo onAddToCart={handleAddToCart} />;
       case "mis-pedidos":
         return <MisPedidos />;
       case "reclamo":
@@ -99,21 +124,11 @@ const ClienteDashboard: React.FC = () => {
       case "carrito":
         return <MiCarrito items={itemsCarrito} onUpdateItems={setItemsCarrito} />;
       default:
-        return <Catalogo onAddToCart={(item, cantidad) => {
-          setItemsCarrito(prev => {
-            const existe = prev.find(i => i.itemId === item._id);
-            if (existe) {
-              return prev.map(i => 
-                i.itemId === item._id 
-                  ? { ...i, cantidad: i.cantidad + cantidad }
-                  : i
-              );
-            }
-            return [...prev, { itemId: item._id, item: item, cantidad }];
-          });
-        }} />;
+        return <Catalogo onAddToCart={handleAddToCart} />;
     }
   };
+
+  const totalItemsCarrito = itemsCarrito.reduce((total, item) => total + item.cantidad, 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
@@ -197,6 +212,30 @@ const ClienteDashboard: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Toast de notificación */}
+      <Toast
+        message={toastMessage}
+        isVisible={toastVisible}
+        onClose={() => setToastVisible(false)}
+        duration={3000}
+      />
+
+      {/* Carrito flotante */}
+      {totalItemsCarrito > 0 && (
+        <button
+          onClick={() => setVistaActiva("carrito")}
+          className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-full p-4 shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-cyan-500/50 flex items-center justify-center group"
+          title="Ver carrito"
+        >
+          <div className="relative">
+            <ShoppingCart className="w-6 h-6" />
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
+              {totalItemsCarrito > 99 ? '99+' : totalItemsCarrito}
+            </span>
+          </div>
+        </button>
+      )}
     </div>
   );
 };
