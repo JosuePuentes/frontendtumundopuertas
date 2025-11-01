@@ -44,6 +44,30 @@ const ClienteLoginModal: React.FC<ClienteLoginModalProps> = ({
       localStorage.setItem("cliente_usuario", data.usuario);
       localStorage.setItem("cliente_id", data.cliente_id || "");
       localStorage.setItem("cliente_nombre", data.nombre || "");
+      
+      // Cargar datos del dashboard después del login
+      const clienteId = data.cliente_id || "";
+      if (clienteId) {
+        try {
+          const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+          const resDashboard = await fetch(`${apiUrl}/clientes/${clienteId}/datos-dashboard`, {
+            headers: { "Authorization": `Bearer ${data.access_token}` },
+          });
+          
+          if (resDashboard.ok) {
+            const dashboardData = await resDashboard.json();
+            // Guardar carrito en localStorage si existe en BD
+            if (dashboardData.carrito && dashboardData.carrito.items && Array.isArray(dashboardData.carrito.items)) {
+              localStorage.setItem(`cliente_carrito_${clienteId}`, JSON.stringify(dashboardData.carrito.items));
+            }
+            // Las preferencias se cargarán automáticamente cuando se monte ClienteDashboard
+          }
+        } catch (error) {
+          console.error("Error al cargar datos del dashboard después del login:", error);
+          // No bloquear el login si falla la carga de datos
+        }
+      }
+      
       onLoginSuccess();
       onClose();
     } catch (err: any) {

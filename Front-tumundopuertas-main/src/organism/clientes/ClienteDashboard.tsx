@@ -85,62 +85,102 @@ const ClienteDashboard: React.FC = () => {
     }
 
     const clienteId = localStorage.getItem("cliente_id");
-    if (!clienteId) return;
+    if (!clienteId) {
+      navigate("/usuarios");
+      return;
+    }
 
-    // Cargar carrito desde BD
-    const cargarCarritoBD = async () => {
+    // Cargar todos los datos del dashboard desde el endpoint unificado
+    const cargarDatosDashboard = async () => {
       try {
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-        const res = await fetch(`${apiUrl}/clientes/${clienteId}/carrito`, {
+        const res = await fetch(`${apiUrl}/clientes/${clienteId}/datos-dashboard`, {
           headers: { "Authorization": `Bearer ${token}` },
         });
+        
         if (res.ok) {
           const data = await res.json();
-          if (data.items && Array.isArray(data.items) && data.items.length > 0) {
-            setItemsCarrito(data.items);
-            const itemsCount = data.items.reduce((total: number, item: any) => total + item.cantidad, 0);
+          
+          // Cargar carrito
+          if (data.carrito && data.carrito.items && Array.isArray(data.carrito.items) && data.carrito.items.length > 0) {
+            setItemsCarrito(data.carrito.items);
+            const itemsCount = data.carrito.items.reduce((total: number, item: any) => total + item.cantidad, 0);
+            prevItemsCountRef.current = itemsCount;
+          } else {
+            // Si no hay carrito en BD, intentar localStorage como fallback
+            const carritoLocal = localStorage.getItem(`cliente_carrito_${clienteId}`);
+            if (carritoLocal) {
+              try {
+                const carrito = JSON.parse(carritoLocal);
+                if (Array.isArray(carrito) && carrito.length > 0) {
+                  setItemsCarrito(carrito);
+                  const itemsCount = carrito.reduce((total: number, item: any) => total + item.cantidad, 0);
+                  prevItemsCountRef.current = itemsCount;
+                }
+              } catch (e) {
+                console.error("Error al cargar carrito desde localStorage:", e);
+              }
+            }
+          }
+
+          // Cargar preferencias (vista activa)
+          if (data.preferencias && data.preferencias.vista_activa) {
+            setVistaActiva(data.preferencias.vista_activa as VistaActiva);
+          }
+
+          // Cargar borradores si es necesario en el futuro
+          // if (data.borradores) { ... }
+          
+        } else {
+          console.error("Error al cargar datos del dashboard:", res.statusText);
+          // Fallback: intentar cargar desde endpoints individuales si el endpoint unificado falla
+          await cargarDatosIndividuales(clienteId, token);
+        }
+      } catch (error) {
+        console.error("Error al cargar datos del dashboard:", error);
+        // Fallback: intentar cargar desde endpoints individuales
+        const clienteId = localStorage.getItem("cliente_id");
+        const token = localStorage.getItem("cliente_access_token");
+        if (clienteId && token) {
+          await cargarDatosIndividuales(clienteId, token);
+        }
+      }
+    };
+
+    // Función de fallback para cargar desde endpoints individuales
+    const cargarDatosIndividuales = async (clienteId: string, token: string) => {
+      try {
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        
+        // Cargar carrito
+        const resCarrito = await fetch(`${apiUrl}/clientes/${clienteId}/carrito`, {
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (resCarrito.ok) {
+          const dataCarrito = await resCarrito.json();
+          if (dataCarrito.items && Array.isArray(dataCarrito.items) && dataCarrito.items.length > 0) {
+            setItemsCarrito(dataCarrito.items);
+            const itemsCount = dataCarrito.items.reduce((total: number, item: any) => total + item.cantidad, 0);
             prevItemsCountRef.current = itemsCount;
           }
         }
-      } catch (error) {
-        console.error("Error al cargar carrito desde BD:", error);
-        // Fallback a localStorage si hay error
-        const carritoLocal = localStorage.getItem(`cliente_carrito_${clienteId}`);
-        if (carritoLocal) {
-          try {
-            const carrito = JSON.parse(carritoLocal);
-            if (Array.isArray(carrito) && carrito.length > 0) {
-              setItemsCarrito(carrito);
-              const itemsCount = carrito.reduce((total: number, item: any) => total + item.cantidad, 0);
-              prevItemsCountRef.current = itemsCount;
-            }
-          } catch (e) {
-            console.error("Error al cargar carrito desde localStorage:", e);
-          }
-        }
-      }
-    };
 
-    // Cargar preferencias desde BD
-    const cargarPreferenciasBD = async () => {
-      try {
-        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-        const res = await fetch(`${apiUrl}/clientes/${clienteId}/preferencias`, {
+        // Cargar preferencias
+        const resPrefs = await fetch(`${apiUrl}/clientes/${clienteId}/preferencias`, {
           headers: { "Authorization": `Bearer ${token}` },
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.vista_activa) {
-            setVistaActiva(data.vista_activa as VistaActiva);
+        if (resPrefs.ok) {
+          const dataPrefs = await resPrefs.json();
+          if (dataPrefs.vista_activa) {
+            setVistaActiva(dataPrefs.vista_activa as VistaActiva);
           }
         }
       } catch (error) {
-        console.error("Error al cargar preferencias desde BD:", error);
+        console.error("Error al cargar datos individuales:", error);
       }
     };
 
-    cargarCarritoBD();
-    cargarPreferenciasBD();
+    cargarDatosDashboard();
   }, [navigate]);
 
   // Guardar carrito en BD cuando cambie (con debounce)
