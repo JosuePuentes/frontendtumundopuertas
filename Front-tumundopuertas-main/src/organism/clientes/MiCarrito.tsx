@@ -14,6 +14,37 @@ interface MiCarritoProps {
 
 const MiCarrito: React.FC<MiCarritoProps> = ({ items, onUpdateItems }) => {
   const [mostrarModalEnvio, setMostrarModalEnvio] = useState(false);
+  const [imagenesFallidas, setImagenesFallidas] = useState<Set<string>>(new Set());
+
+  // Función para validar si una imagen es válida
+  const obtenerImagenItem = (item: any): string | null => {
+    if (!item.imagenes || item.imagenes.length === 0) {
+      return null;
+    }
+    
+    const primeraImagen = item.imagenes[0];
+    
+    // Si ya sabemos que esta imagen falló, no intentar cargarla
+    if (imagenesFallidas.has(primeraImagen)) {
+      return null;
+    }
+    
+    // Validar que sea una URL válida
+    if (typeof primeraImagen === 'string' && primeraImagen.trim() !== '') {
+      // Si es una URL relativa que empieza con /, puede ser válida
+      if (primeraImagen.startsWith('/') || primeraImagen.startsWith('http')) {
+        return primeraImagen;
+      }
+      // Si no tiene formato válido, retornar null
+      return null;
+    }
+    
+    return null;
+  };
+
+  const manejarErrorImagen = (url: string) => {
+    setImagenesFallidas(prev => new Set(prev).add(url));
+  };
 
   const actualizarCantidad = (itemId: string, nuevaCantidad: number) => {
     if (nuevaCantidad <= 0) {
@@ -59,20 +90,26 @@ const MiCarrito: React.FC<MiCarritoProps> = ({ items, onUpdateItems }) => {
               <div className="flex items-center space-x-4 flex-1">
                 {/* Imagen del item - Siempre mostrar */}
                 <div className="w-20 h-20 flex-shrink-0">
-                  {carritoItem.item.imagenes && carritoItem.item.imagenes[0] && carritoItem.item.imagenes[0] !== "/placeholder.png" ? (
-                    <img
-                      src={carritoItem.item.imagenes[0]}
-                      alt={carritoItem.item.nombre}
-                      className="w-full h-full object-cover rounded-lg border border-gray-600"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder.png";
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gray-700 rounded-lg border border-gray-600">
-                      <Package className="w-8 h-8 text-gray-500" />
-                    </div>
-                  )}
+                  {(() => {
+                    const imagenUrl = obtenerImagenItem(carritoItem.item);
+                    const tieneImagenValida = imagenUrl !== null;
+                    
+                    return tieneImagenValida && imagenUrl ? (
+                      <img
+                        src={imagenUrl}
+                        alt={carritoItem.item.nombre}
+                        className="w-full h-full object-cover rounded-lg border border-gray-600"
+                        onError={() => {
+                          manejarErrorImagen(imagenUrl);
+                        }}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-700 rounded-lg border border-gray-600">
+                        <Package className="w-8 h-8 text-gray-500" />
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex-1">
                   <h3 className="text-white font-semibold mb-1">{carritoItem.item.nombre}</h3>

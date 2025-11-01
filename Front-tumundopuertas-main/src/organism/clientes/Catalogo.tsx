@@ -24,8 +24,39 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
   const [paginaActual, setPaginaActual] = useState(1);
   const [imagenModal, setImagenModal] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
+  const [imagenesFallidas, setImagenesFallidas] = useState<Set<string>>(new Set());
   const itemsPorPagina = 10;
   const [cantidades, setCantidades] = useState<Record<string, number>>({});
+
+  // Función para validar si una imagen es válida
+  const obtenerImagenItem = (item: Item): string | null => {
+    if (!item.imagenes || item.imagenes.length === 0) {
+      return null;
+    }
+    
+    const primeraImagen = item.imagenes[0];
+    
+    // Si ya sabemos que esta imagen falló, no intentar cargarla
+    if (imagenesFallidas.has(primeraImagen)) {
+      return null;
+    }
+    
+    // Validar que sea una URL válida
+    if (typeof primeraImagen === 'string' && primeraImagen.trim() !== '') {
+      // Si es una URL relativa que empieza con /, puede ser válida
+      if (primeraImagen.startsWith('/') || primeraImagen.startsWith('http')) {
+        return primeraImagen;
+      }
+      // Si no tiene formato válido, retornar null
+      return null;
+    }
+    
+    return null;
+  };
+
+  const manejarErrorImagen = (url: string) => {
+    setImagenesFallidas(prev => new Set(prev).add(url));
+  };
 
   useEffect(() => {
     cargarInventario();
@@ -44,7 +75,31 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
         const data = await res.json();
         // Filtrar solo items activos y con precio
         const itemsActivos = data.filter((item: any) => item.activo !== false && item.precio > 0);
-        setItems(itemsActivos);
+        
+        // Normalizar URLs de imágenes
+        const itemsNormalizados = itemsActivos.map((item: any) => {
+          if (item.imagenes && Array.isArray(item.imagenes)) {
+            // Normalizar cada URL de imagen
+            item.imagenes = item.imagenes.map((img: any) => {
+              if (!img || typeof img !== 'string') return null;
+              const imgUrl = img.trim();
+              // Si es una URL completa, mantenerla
+              if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+                return imgUrl;
+              }
+              // Si empieza con /, puede ser relativa al dominio
+              if (imgUrl.startsWith('/')) {
+                return imgUrl;
+              }
+              // Si no tiene formato válido, puede ser solo el nombre del archivo
+              // En este caso, retornar null para usar placeholder
+              return null;
+            }).filter((img: any) => img !== null);
+          }
+          return item;
+        });
+        
+        setItems(itemsNormalizados);
       }
     } catch (error) {
       console.error("Error al cargar inventario:", error);
@@ -171,9 +226,8 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {itemsPagina.map((item) => {
               const cantidad = cantidades[item._id] || 0;
-              const imagenPrincipal = item.imagenes && item.imagenes.length > 0 
-                ? item.imagenes[0] 
-                : "/placeholder.png";
+              const imagenUrl = obtenerImagenItem(item);
+              const tieneImagenValida = imagenUrl !== null;
 
               return (
                 <div
@@ -182,26 +236,29 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
                 >
                   {/* Imagen - Siempre mostrar */}
                   <div
-                    className="relative h-48 bg-gray-700 cursor-pointer group flex-shrink-0"
-                    onClick={() => setImagenModal(imagenPrincipal)}
+                    className="relative h-48 bg-gray-700 cursor-pointer group flex-shrink-0 overflow-hidden"
+                    onClick={() => tieneImagenValida && imagenUrl && setImagenModal(imagenUrl)}
                   >
-                    {imagenPrincipal && imagenPrincipal !== "/placeholder.png" ? (
+                    {tieneImagenValida && imagenUrl ? (
                       <img
-                        src={imagenPrincipal}
+                        src={imagenUrl}
                         alt={item.nombre}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/placeholder.png";
+                        onError={() => {
+                          manejarErrorImagen(imagenUrl);
                         }}
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-700">
                         <Package className="w-16 h-16 text-gray-500" />
                       </div>
                     )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
-                      <p className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm">Click para ampliar</p>
-                    </div>
+                    {tieneImagenValida && (
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+                        <p className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-sm">Click para ampliar</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Información */}
