@@ -204,41 +204,58 @@ const CuentasPorPagar: React.FC = () => {
     setLoading(true);
     try {
       const data = await getCuentasPorPagar();
+      console.log("📥 Datos recibidos del backend (raw):", data);
+      
       // Normalizar _id a id para consistencia y asegurar que proveedor siempre existe
       const cuentasNormalizadas = data.map((cuenta: any) => {
+        console.log("🔄 Normalizando cuenta:", cuenta._id || cuenta.id);
+        console.log("🔄 Datos de proveedor en cuenta raw:", cuenta.proveedor);
+        console.log("🔄 Datos completos de la cuenta:", JSON.stringify(cuenta, null, 2));
+        
         // Normalizar proveedor - puede venir en formato anidado o plano
         let proveedor: Proveedor;
-        if (cuenta.proveedor) {
+        if (cuenta.proveedor && typeof cuenta.proveedor === 'object') {
+          // Formato anidado
           proveedor = {
-            nombre: cuenta.proveedor.nombre || cuenta.proveedor.proveedorNombre || "Sin nombre",
-            rif: cuenta.proveedor.rif || cuenta.proveedor.proveedorRif || "Sin RIF",
+            nombre: cuenta.proveedor.nombre || cuenta.proveedor.proveedorNombre || "",
+            rif: cuenta.proveedor.rif || cuenta.proveedor.proveedorRif || "",
             telefono: cuenta.proveedor.telefono || cuenta.proveedor.proveedorTelefono || ""
           };
         } else {
-          // Formato plano del backend
+          // Formato plano del backend o proveedor es null/undefined
           proveedor = {
-            nombre: cuenta.proveedorNombre || "Sin nombre",
-            rif: cuenta.proveedorRif || "Sin RIF",
-            telefono: cuenta.proveedorTelefono || ""
+            nombre: cuenta.proveedorNombre || cuenta.proveedor?.nombre || "",
+            rif: cuenta.proveedorRif || cuenta.proveedor?.rif || "",
+            telefono: cuenta.proveedorTelefono || cuenta.proveedor?.telefono || ""
           };
         }
 
-        return {
+        // Si después de normalizar todavía no hay datos, usar valores por defecto
+        if (!proveedor.nombre && !proveedor.rif) {
+          console.warn("⚠️ Cuenta sin datos de proveedor:", cuenta._id || cuenta.id);
+        }
+
+        const cuentaNormalizada = {
           ...cuenta,
           _id: cuenta._id || cuenta.id,
           proveedor: proveedor,
           // Normalizar campos numéricos
-          total: typeof cuenta.total === 'number' ? cuenta.total : (typeof cuenta.montoTotal === 'number' ? cuenta.montoTotal : 0),
+          total: typeof cuenta.total === 'number' ? cuenta.total : (typeof cuenta.montoTotal === 'number' ? cuenta.montoTotal : (typeof cuenta.monto === 'number' ? cuenta.monto : 0)),
           montoAbonado: typeof cuenta.montoAbonado === 'number' ? cuenta.montoAbonado : 0,
-          saldoPendiente: typeof cuenta.saldoPendiente === 'number' ? cuenta.saldoPendiente : (typeof cuenta.total === 'number' ? cuenta.total : 0),
+          saldoPendiente: typeof cuenta.saldoPendiente === 'number' ? cuenta.saldoPendiente : (typeof cuenta.total === 'number' ? cuenta.total : (typeof cuenta.montoTotal === 'number' ? cuenta.montoTotal : (typeof cuenta.monto === 'number' ? cuenta.monto : 0))),
           monto: typeof cuenta.monto === 'number' ? cuenta.monto : undefined,
           estado: cuenta.estado || "pendiente",
-          fechaCreacion: cuenta.fechaCreacion || cuenta.fecha_creacion || new Date().toISOString()
+          fechaCreacion: cuenta.fechaCreacion || cuenta.fecha_creacion || cuenta.createdAt || new Date().toISOString()
         };
+        
+        console.log("✅ Cuenta normalizada:", cuentaNormalizada._id, "- Proveedor:", cuentaNormalizada.proveedor);
+        return cuentaNormalizada;
       });
+      
+      console.log("✅ Total de cuentas normalizadas:", cuentasNormalizadas.length);
       setCuentas(cuentasNormalizadas);
     } catch (error) {
-      console.error("Error al cargar cuentas por pagar:", error);
+      console.error("❌ Error al cargar cuentas por pagar:", error);
       alert("Error al cargar las cuentas por pagar");
     } finally {
       setLoading(false);
@@ -349,8 +366,22 @@ const CuentasPorPagar: React.FC = () => {
 
   // Crear cuenta por pagar
   const handleCrearCuenta = async () => {
-    if (!proveedor.nombre || !proveedor.rif || !proveedorSeleccionadoId) {
-      alert("Debe seleccionar o agregar un proveedor");
+    // Validación mejorada del proveedor
+    if (!proveedor || !proveedor.nombre || !proveedor.rif) {
+      alert("Debe seleccionar o agregar un proveedor con nombre y RIF");
+      console.error("❌ Proveedor inválido:", proveedor);
+      return;
+    }
+    
+    // Validar que el proveedor tiene los datos mínimos
+    const proveedorLimpio = {
+      nombre: proveedor.nombre.trim(),
+      rif: proveedor.rif.trim(),
+      telefono: proveedor.telefono?.trim() || ""
+    };
+    
+    if (!proveedorLimpio.nombre || !proveedorLimpio.rif) {
+      alert("El nombre y RIF del proveedor son obligatorios");
       return;
     }
 
@@ -366,8 +397,10 @@ const CuentasPorPagar: React.FC = () => {
 
     setLoading(true);
     try {
+      const totalCalculado = calcularTotal;
+      
       const nuevaCuenta = {
-        proveedor,
+        proveedor: proveedorLimpio,
         items: mostrarItems && itemsSeleccionados.length > 0 ? itemsSeleccionados.map(item => ({
           itemId: item.itemId,
           codigo: item.codigo,
@@ -377,18 +410,20 @@ const CuentasPorPagar: React.FC = () => {
         })) : undefined,
         descripcion: !mostrarItems ? descripcion : undefined,
         monto: !mostrarItems ? monto : undefined,
-        total: calcularTotal,
+        total: totalCalculado,
         montoAbonado: 0,
-        saldoPendiente: calcularTotal,
+        saldoPendiente: totalCalculado,
         estado: "pendiente"
       };
 
       console.log("📤 Enviando cuenta por pagar:", nuevaCuenta);
+      console.log("📤 Proveedor que se envía:", proveedor);
       console.log("📤 URL:", `${apiUrl}/cuentas-por-pagar`);
       console.log("📤 Datos enviados:", JSON.stringify(nuevaCuenta, null, 2));
 
       const respuesta = await createCuentaPorPagar(nuevaCuenta);
-      console.log("✅ Cuenta por pagar creada:", respuesta);
+      console.log("✅ Cuenta por pagar creada - Respuesta del backend:", respuesta);
+      console.log("✅ Respuesta completa:", JSON.stringify(respuesta, null, 2));
 
       // Si hay items, actualizar inventario SUMANDO las cantidades
       if (mostrarItems && itemsSeleccionados.length > 0) {
