@@ -226,7 +226,14 @@ const CuentasPorPagar: React.FC = () => {
         return {
           ...cuenta,
           _id: cuenta._id || cuenta.id,
-          proveedor: proveedor
+          proveedor: proveedor,
+          // Normalizar campos numéricos
+          total: typeof cuenta.total === 'number' ? cuenta.total : (typeof cuenta.montoTotal === 'number' ? cuenta.montoTotal : 0),
+          montoAbonado: typeof cuenta.montoAbonado === 'number' ? cuenta.montoAbonado : 0,
+          saldoPendiente: typeof cuenta.saldoPendiente === 'number' ? cuenta.saldoPendiente : (typeof cuenta.total === 'number' ? cuenta.total : 0),
+          monto: typeof cuenta.monto === 'number' ? cuenta.monto : undefined,
+          estado: cuenta.estado || "pendiente",
+          fechaCreacion: cuenta.fechaCreacion || cuenta.fecha_creacion || new Date().toISOString()
         };
       });
       setCuentas(cuentasNormalizadas);
@@ -814,10 +821,10 @@ const CuentasPorPagar: React.FC = () => {
                       )}
                     </div>
                     <div className="mb-3">
-                      <p className="text-2xl font-bold text-red-700">${cuenta.total.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-red-700">${(cuenta.total || 0).toFixed(2)}</p>
                       <p className="text-sm text-gray-600">
-                        Abonado: ${cuenta.montoAbonado.toFixed(2)} | 
-                        Saldo: ${cuenta.saldoPendiente.toFixed(2)}
+                        Abonado: ${(cuenta.montoAbonado || 0).toFixed(2)} | 
+                        Saldo: ${(cuenta.saldoPendiente || 0).toFixed(2)}
                       </p>
                     </div>
                     <Button
@@ -870,7 +877,7 @@ const CuentasPorPagar: React.FC = () => {
                       <p className="text-sm text-gray-600">RIF: {cuenta.proveedor?.rif || "Sin RIF"}</p>
                     </div>
                     <div className="mb-3">
-                      <p className="text-2xl font-bold text-green-700">${cuenta.total.toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-green-700">${(cuenta.total || 0).toFixed(2)}</p>
                     </div>
                     <Button
                       onClick={() => handleVerPreliminar(cuenta)}
@@ -1231,10 +1238,10 @@ const CuentasPorPagar: React.FC = () => {
 
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-gray-600">Total: ${cuentaSeleccionada?.total.toFixed(2)}</p>
-              <p className="text-sm text-gray-600">Abonado: ${cuentaSeleccionada?.montoAbonado.toFixed(2)}</p>
+              <p className="text-sm text-gray-600">Total: ${((cuentaSeleccionada?.total) || 0).toFixed(2)}</p>
+              <p className="text-sm text-gray-600">Abonado: ${((cuentaSeleccionada?.montoAbonado) || 0).toFixed(2)}</p>
               <p className="text-sm font-bold text-red-600">
-                Saldo Pendiente: ${cuentaSeleccionada?.saldoPendiente.toFixed(2)}
+                Saldo Pendiente: ${((cuentaSeleccionada?.saldoPendiente) || 0).toFixed(2)}
               </p>
             </div>
 
@@ -1321,9 +1328,9 @@ const CuentasPorPagar: React.FC = () => {
                         <TableRow key={index}>
                           <TableCell>{item.codigo}</TableCell>
                           <TableCell>{item.nombre}</TableCell>
-                          <TableCell>${item.costo.toFixed(2)}</TableCell>
-                          <TableCell>{item.cantidad}</TableCell>
-                          <TableCell>${item.subtotal.toFixed(2)}</TableCell>
+                          <TableCell>${(item.costo || 0).toFixed(2)}</TableCell>
+                          <TableCell>{item.cantidad || 0}</TableCell>
+                          <TableCell>${(item.subtotal || 0).toFixed(2)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -1340,7 +1347,7 @@ const CuentasPorPagar: React.FC = () => {
               <div className="border rounded-lg p-4">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-lg">Total:</span>
-                  <span className="font-bold text-xl">${cuentaPreliminar.total.toFixed(2)}</span>
+                  <span className="font-bold text-xl">${(cuentaPreliminar.total || 0).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1362,7 +1369,7 @@ const CuentasPorPagar: React.FC = () => {
                           <TableCell>
                             {new Date(abono.fecha).toLocaleDateString()}
                           </TableCell>
-                          <TableCell>${abono.monto.toFixed(2)}</TableCell>
+                          <TableCell>${(abono.monto || 0).toFixed(2)}</TableCell>
                           <TableCell>{abono.metodoPagoNombre || abono.metodoPago}</TableCell>
                         </TableRow>
                       ))}
@@ -1371,7 +1378,7 @@ const CuentasPorPagar: React.FC = () => {
                   <div className="mt-2 pt-2 border-t">
                     <div className="flex justify-between">
                       <span>Total Abonado:</span>
-                      <span className="font-bold">${cuentaPreliminar.montoAbonado.toFixed(2)}</span>
+                      <span className="font-bold">${(cuentaPreliminar.montoAbonado || 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
