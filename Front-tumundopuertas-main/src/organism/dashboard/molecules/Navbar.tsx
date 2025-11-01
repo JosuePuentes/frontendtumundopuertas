@@ -125,8 +125,8 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
   return (
     <nav
       ref={navRef}
-      className="bg-white sticky top-0 z-50 shadow"
-      style={{ background: "#fff" }}
+      className="bg-black sticky top-0 z-50 shadow"
+      style={{ background: "#000000" }}
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
@@ -134,9 +134,9 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
           <div className="flex-shrink-0">
             <NavLink
               to="/"
-              className="text-xl sm:text-2xl font-bold text-slate-800 hover:text-blue-600 transition-colors"
+              className="text-xl sm:text-2xl font-bold text-white hover:text-cyan-400 transition-colors"
             >
-              Crafteo
+              TU MUNDO PUERTAS
             </NavLink>
           </div>
 
@@ -144,7 +144,7 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
             <button
               onClick={() => setIsOpen(!isOpen)}
               type="button"
-              className="bg-slate-100 inline-flex items-center justify-center p-2 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
+              className="bg-gray-800 inline-flex items-center justify-center p-2 rounded-md text-white hover:text-cyan-400 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500"
               aria-controls="mobile-menu"
               aria-expanded="false"
             >
@@ -156,15 +156,15 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
       </div>
 
       <div
-        className={`fixed z-50 bg-white transition-all duration-300 ease-in-out w-full sm:w-auto sm:max-w-xs md:max-w-sm top-16 sm:top-14 ${
+        className={`fixed z-50 bg-black transition-all duration-300 ease-in-out w-full sm:w-auto sm:max-w-xs md:max-w-sm top-16 sm:top-14 ${
           isOpen
             ? "overflow-auto max-h-[calc(100vh-4rem)] ocultar-scrollbar right-0"
             : "max-h-0 hidden"
         }`}
         id="mobile-menu"
-        style={{ backgroundColor: "#fff", opacity: 1, backdropFilter: "none", WebkitBackdropFilter: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}
+        style={{ backgroundColor: "#000000", opacity: 1, backdropFilter: "none", WebkitBackdropFilter: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3)" }}
       >
-        <div className="px-3 pt-3 pb-3 space-y-1 sm:px-4 border-t border-slate-200">
+        <div className="px-3 pt-3 pb-3 space-y-1 sm:px-4 border-t border-gray-700">
           {filteredLinks.map((link) => (
             <NavLink
               key={link.href}
@@ -173,20 +173,20 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
               className={({ isActive }) =>
                 `block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
                   isActive
-                    ? "bg-blue-600 text-white shadow-sm"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    ? "bg-cyan-500 text-white shadow-sm"
+                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
                 }`
               }
             >
               {link.label}
             </NavLink>
           ))}
-          <div className="pt-4 mt-4 border-t border-slate-200">
+          <div className="pt-4 mt-4 border-t border-gray-700">
           </div>
         </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center px-4 py-2 rounded-md font-medium text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow"
+              className="w-full flex items-center justify-center px-4 py-2 rounded-md font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow"
             >
               <LogOutIcon />
               Cerrar Sesión
