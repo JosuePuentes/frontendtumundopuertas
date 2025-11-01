@@ -223,7 +223,7 @@ const ClienteDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
       {/* Header/Navbar */}
-      <header className="bg-black/80 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-50">
+      <header className="bg-blue-900/90 backdrop-blur-sm border-b border-blue-800 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
@@ -234,14 +234,9 @@ const ClienteDashboard: React.FC = () => {
                 {menuAbierto ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
               <img src="/puertalogo.PNG" alt="Logo" className="h-10 w-10" />
-              <h1 className="text-xl font-bold">TU MUNDO PUERTAS</h1>
+              <h1 className="text-xl font-bold text-white">TU MUNDO PUERTAS</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="hidden sm:block">
-                <p className="text-sm text-gray-300">
-                  Bienvenido, <span className="font-semibold text-cyan-400">{clienteNombre}</span>
-                </p>
-              </div>
               <Button
                 onClick={handleLogout}
                 variant="outline"
@@ -274,6 +269,19 @@ const ClienteDashboard: React.FC = () => {
               >
                 <X className="w-6 h-6" />
               </button>
+            </div>
+
+            {/* Sección de Bienvenida */}
+            <div className="mb-4 p-4 bg-gradient-to-br from-blue-900/80 to-blue-800/60 rounded-lg border border-blue-700/50 shadow-lg">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-10 h-10 rounded-full bg-cyan-400/20 flex items-center justify-center border border-cyan-400/30">
+                  <User className="w-5 h-5 text-cyan-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-400 mb-1">Bienvenido</p>
+                  <p className="text-sm font-semibold text-white truncate">{clienteNombre}</p>
+                </div>
+              </div>
             </div>
             
             {menuItems.map((item) => {
