@@ -14,6 +14,10 @@ interface Pedido {
     cantidad: number;
     costoProduccion?: string;
   }>;
+  adicionales?: Array<{
+    descripcion: string;
+    monto: number;
+  }>;
 }
 
 const MonitorPedidos: React.FC = () => {

@@ -23,6 +23,10 @@ interface FacturaConfirmada {
   fechaCreacion: string;
   fechaFacturacion: string;
   items: any[];
+  adicionales?: Array<{
+    descripcion: string;
+    monto: number;
+  }>;
 }
 
 interface PedidoCargadoInventario {
@@ -1228,8 +1232,9 @@ const FacturacionPage: React.FC = () => {
       } else {
         // Flujo normal de facturación
         const numeroFactura = generarNumeroFactura();
-        const montoTotalCalculado = selectedPedido.montoTotal || 
-          (selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0);
+        const montoItems = selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+        const montoAdicionales = (selectedPedido.adicionales || []).reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
+        const montoTotalCalculado = selectedPedido.montoTotal || (montoItems + montoAdicionales);
         const facturaConfirmada: FacturaConfirmada = {
           id: selectedPedido._id + '-' + Date.now(),
           numeroFactura: numeroFactura,
@@ -1239,7 +1244,8 @@ const FacturacionPage: React.FC = () => {
           montoTotal: montoTotalCalculado,
           fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
           fechaFacturacion: new Date().toISOString(),
-          items: selectedPedido.items || []
+          items: selectedPedido.items || [],
+          adicionales: selectedPedido.adicionales || undefined
         };
         
         // IMPORTANTE: Actualizar TODOS los estados ANTES de cerrar el modal
@@ -1379,6 +1385,18 @@ const FacturacionPage: React.FC = () => {
                     `).join('')}
                   </tbody>
                   <tfoot>
+                    ${Array.isArray(selectedFactura.adicionales) && selectedFactura.adicionales.length > 0 ? `
+                      <tr style="background: #fef3c7;">
+                        <td colspan="4" style="text-align:right; font-weight: bold;">Subtotal Items:</td>
+                        <td style="text-align:right;">$${(selectedFactura.items.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0)).toFixed(2)}</td>
+                      </tr>
+                      ${selectedFactura.adicionales.map((ad: any) => `
+                        <tr style="background: #fef3c7;">
+                          <td colspan="4" style="text-align:right;">+ ${ad.descripcion}:</td>
+                          <td style="text-align:right;">$${(ad.monto || 0).toFixed(2)}</td>
+                        </tr>
+                      `).join('')}
+                    ` : ''}
                     <tr class="totales-row">
                       <td colspan="3" style="text-align:right;">Total:</td>
                       <td style="text-align:center;">${selectedFactura.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
@@ -1478,6 +1496,18 @@ const FacturacionPage: React.FC = () => {
                     `).join('')}
                   </tbody>
                   <tfoot>
+                    ${Array.isArray(selectedPedido.adicionales) && selectedPedido.adicionales.length > 0 ? `
+                      <tr style="background: #fef3c7;">
+                        <td colspan="4" style="text-align:right; font-weight: bold;">Subtotal Items:</td>
+                        <td style="text-align:right;">$${(selectedPedido.items.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0)).toFixed(2)}</td>
+                      </tr>
+                      ${selectedPedido.adicionales.map((ad: any) => `
+                        <tr style="background: #fef3c7;">
+                          <td colspan="4" style="text-align:right;">+ ${ad.descripcion}:</td>
+                          <td style="text-align:right;">$${(ad.monto || 0).toFixed(2)}</td>
+                        </tr>
+                      `).join('')}
+                    ` : ''}
                     <tr class="totales-row">
                       <td colspan="3" style="text-align:right;">Total:</td>
                       <td style="text-align:center;">${selectedPedido.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
@@ -2125,6 +2155,22 @@ const FacturacionPage: React.FC = () => {
                     ))}
                   </tbody>
                   <tfoot className="bg-gray-50 font-bold">
+                    {(selectedPedido.adicionales && Array.isArray(selectedPedido.adicionales) && selectedPedido.adicionales.length > 0) && (
+                      <>
+                        <tr className="bg-yellow-50">
+                          <td colSpan={5} className="p-2 text-right">Subtotal Items:</td>
+                          <td className="p-2 text-right text-yellow-700">
+                            ${(selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0).toFixed(2)}
+                          </td>
+                        </tr>
+                        {selectedPedido.adicionales.map((adicional: any, idx: number) => (
+                          <tr key={idx} className="bg-yellow-50">
+                            <td colSpan={5} className="p-2 text-right">+ {adicional.descripcion}:</td>
+                            <td className="p-2 text-right text-yellow-700">${(adicional.monto || 0).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </>
+                    )}
                     <tr>
                       <td colSpan={4} className="p-2 text-right">Total del Pedido:</td>
                       <td className="p-2 text-center">{selectedPedido.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
@@ -2242,6 +2288,22 @@ const FacturacionPage: React.FC = () => {
                     ))}
                   </tbody>
                   <tfoot className="bg-gray-50 font-bold">
+                    {(selectedFactura.adicionales && Array.isArray(selectedFactura.adicionales) && selectedFactura.adicionales.length > 0) && (
+                      <>
+                        <tr className="bg-yellow-50">
+                          <td colSpan={5} className="p-2 text-right">Subtotal Items:</td>
+                          <td className="p-2 text-right text-yellow-700">
+                            ${(selectedFactura.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0).toFixed(2)}
+                          </td>
+                        </tr>
+                        {selectedFactura.adicionales.map((adicional: any, idx: number) => (
+                          <tr key={idx} className="bg-yellow-50">
+                            <td colSpan={5} className="p-2 text-right">+ {adicional.descripcion}:</td>
+                            <td className="p-2 text-right text-yellow-700">${(adicional.monto || 0).toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </>
+                    )}
                     <tr>
                       <td colSpan={4} className="p-2 text-right">Total de la Factura:</td>
                       <td className="p-2 text-center">{selectedFactura.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>

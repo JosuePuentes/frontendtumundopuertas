@@ -24,6 +24,10 @@ interface Pedido {
     cantidad: number;
     costoProduccion?: string;
   }>;
+  adicionales?: Array<{
+    descripcion: string;
+    monto: number;
+  }>;
 }
 
 interface PedidoConProgresoProps {
@@ -326,6 +330,27 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
             </div>
           )}
 
+          {/* Mostrar adicionales si existen */}
+          {Array.isArray(pedido.adicionales) && pedido.adicionales.length > 0 && (
+            <div className="mt-3 pr-32 p-3 bg-yellow-50 rounded-lg border-2 border-yellow-200">
+              <div className="font-semibold mb-2 text-yellow-800">💰 Adicionales:</div>
+              <ul className="list-disc ml-6">
+                {pedido.adicionales.map((adicional, idx) => (
+                  <li key={idx} className="mb-1 flex items-center justify-between">
+                    <span className="text-gray-700">{adicional.descripcion}</span>
+                    <span className="text-yellow-700 font-bold">+${adicional.monto.toFixed(2)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-2 pt-2 border-t border-yellow-300 flex justify-between items-center">
+                <span className="font-semibold text-yellow-800">Total Adicionales:</span>
+                <span className="text-yellow-800 font-bold text-lg">
+                  ${pedido.adicionales.reduce((acc, ad) => acc + ad.monto, 0).toFixed(2)}
+                </span>
+              </div>
+            </div>
+          )}
+
           {Array.isArray(pedido.items) && pedido.items.length > 0 && (
             <div className="mt-2 pr-32">
               <div className="font-semibold mb-1">Items:</div>
@@ -466,6 +491,27 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* Mostrar adicionales del pedido */}
+              {Array.isArray(pedido.adicionales) && pedido.adicionales.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-red-200">
+                  <h4 className="font-semibold text-gray-800 mb-2">💰 Adicionales:</h4>
+                  <ul className="space-y-1">
+                    {pedido.adicionales.map((adicional, idx) => (
+                      <li key={idx} className="text-sm text-gray-700 flex items-center justify-between bg-yellow-50 p-2 rounded">
+                        <span className="font-medium">{adicional.descripcion}</span>
+                        <span className="text-yellow-700 font-semibold">+${adicional.monto.toFixed(2)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-2 pt-2 border-t border-yellow-300 flex justify-between items-center">
+                    <span className="font-semibold text-yellow-800">Total Adicionales:</span>
+                    <span className="text-yellow-800 font-bold">
+                      ${pedido.adicionales.reduce((acc, ad) => acc + ad.monto, 0).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
