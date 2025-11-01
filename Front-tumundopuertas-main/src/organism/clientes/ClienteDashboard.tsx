@@ -5,7 +5,6 @@ import {
   Home, 
   Package, 
   ShoppingCart, 
-  FileText, 
   MessageSquare, 
   User, 
   Receipt, 
