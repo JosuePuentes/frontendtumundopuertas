@@ -41,6 +41,8 @@ interface PedidoConPagos {
   historial_pagos?: Pago[];
   items: any[]; // Assuming items are part of the pedido
   total_abonado: number; // Assuming this field exists
+  fecha_creacion?: string; // Fecha de creación del pedido
+  createdAt?: string; // Alternativa de fecha
 }
 
 const MisPagos: React.FC = () => {
@@ -70,7 +72,61 @@ const MisPagos: React.FC = () => {
       if (!res.ok) throw new Error("Error al obtener pagos");
 
       const data = await res.json();
-      setPagos(data);
+      
+      // Ordenar inmediatamente después de obtener los datos
+      const datosOrdenados = [...data].sort((a: PedidoConPagos, b: PedidoConPagos) => {
+        // Obtener fecha más reciente: primero del historial_pagos, sino de fecha_creacion
+        const getFechaMasReciente = (pedido: PedidoConPagos): number => {
+          // Si hay historial de pagos, usar la fecha más reciente del historial
+          if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+            const fechas = pedido.historial_pagos
+              .map(pago => {
+                try {
+                  const fecha = new Date(pago.fecha);
+                  return isNaN(fecha.getTime()) ? 0 : fecha.getTime();
+                } catch {
+                  return 0;
+                }
+              })
+              .filter(f => f > 0)
+              .sort((a, b) => b - a);
+            if (fechas.length > 0) {
+              return fechas[0];
+            }
+          }
+          
+          // Si no hay historial de pagos, usar fecha_creacion o createdAt
+          const fechaCreacion = pedido.fecha_creacion || (pedido as any).createdAt || (pedido as any).fechaCreacion;
+          if (fechaCreacion) {
+            try {
+              const fecha = new Date(fechaCreacion);
+              return isNaN(fecha.getTime()) ? 0 : fecha.getTime();
+            } catch {
+              return 0;
+            }
+          }
+          
+          return 0; // Sin fecha, aparecerán al final
+        };
+        
+        const fechaA = getFechaMasReciente(a);
+        const fechaB = getFechaMasReciente(b);
+        
+        // Ordenar descendente (fechas más recientes primero)
+        if (fechaA === 0 && fechaB === 0) return 0;
+        if (fechaA === 0) return 1; // a sin fecha va al final
+        if (fechaB === 0) return -1; // b sin fecha va al final
+        
+        return fechaB - fechaA; // Más reciente primero
+      });
+      
+      console.log("📅 Pagos ordenados por fecha (más reciente primero):", datosOrdenados.map(p => ({
+        id: p._id,
+        cliente: p.cliente_nombre,
+        fecha: p.historial_pagos?.[0]?.fecha || p.fecha_creacion || "N/A"
+      })));
+      
+      setPagos(datosOrdenados);
     } catch (err: any) {
       setError(err.message || "Error desconocido");
     } finally {
@@ -191,23 +247,46 @@ const MisPagos: React.FC = () => {
                       : (pedido.cliente_nombre || "").toLowerCase().includes(clienteFiltro.trim().toLowerCase())
                   )
                   .sort((a, b) => {
-                    // Obtener fecha más reciente de todo el historial_pagos (ordenar fechas y tomar la más reciente)
+                    // Función auxiliar para obtener fecha más reciente
                     const getFechaMasReciente = (pedido: PedidoConPagos): number => {
-                      if (!pedido.historial_pagos || pedido.historial_pagos.length === 0) {
-                        return 0;
+                      if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                        const fechas = pedido.historial_pagos
+                          .map(pago => {
+                            try {
+                              const fecha = new Date(pago.fecha);
+                              return isNaN(fecha.getTime()) ? 0 : fecha.getTime();
+                            } catch {
+                              return 0;
+                            }
+                          })
+                          .filter(f => f > 0)
+                          .sort((a, b) => b - a);
+                        if (fechas.length > 0) {
+                          return fechas[0];
+                        }
                       }
-                      // Ordenar fechas descendente y tomar la primera (más reciente)
-                      const fechas = pedido.historial_pagos
-                        .map(pago => new Date(pago.fecha).getTime())
-                        .sort((a, b) => b - a);
-                      return fechas[0] || 0;
+                      
+                      const fechaCreacion = pedido.fecha_creacion || (pedido as any).createdAt || (pedido as any).fechaCreacion;
+                      if (fechaCreacion) {
+                        try {
+                          const fecha = new Date(fechaCreacion);
+                          return isNaN(fecha.getTime()) ? 0 : fecha.getTime();
+                        } catch {
+                          return 0;
+                        }
+                      }
+                      
+                      return 0;
                     };
                     
                     const fechaA = getFechaMasReciente(a);
                     const fechaB = getFechaMasReciente(b);
                     
-                    // Ordenar descendente (fechas más recientes primero)
-                    return fechaB - fechaA;
+                    if (fechaA === 0 && fechaB === 0) return 0;
+                    if (fechaA === 0) return 1;
+                    if (fechaB === 0) return -1;
+                    
+                    return fechaB - fechaA; // Más reciente primero
                   })
                   .map((pedido) => {
                   const totalPedido = calculateTotalPedido(pedido);
