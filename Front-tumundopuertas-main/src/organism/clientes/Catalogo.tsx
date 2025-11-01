@@ -28,6 +28,42 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
   const itemsPorPagina = 10;
   const [cantidades, setCantidades] = useState<Record<string, number>>({});
 
+  // Función para construir URL de imagen válida
+  const construirUrlImagen = (imagenRaw: string): string | null => {
+    if (!imagenRaw || typeof imagenRaw !== 'string') return null;
+    
+    const imagen = imagenRaw.trim();
+    if (!imagen) return null;
+    
+    // Si ya es una URL completa (http/https), retornarla directamente
+    if (imagen.startsWith('http://') || imagen.startsWith('https://')) {
+      return imagen;
+    }
+    
+    // Si empieza con /, es relativa al dominio actual
+    if (imagen.startsWith('/')) {
+      return imagen;
+    }
+    
+    // Si es un nombre de archivo sin ruta, intentar construir URL
+    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+    
+    // Si tiene extensión de imagen, probablemente es un nombre de archivo
+    if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imagen)) {
+      // Puede ser un nombre de archivo en el almacenamiento
+      return `${apiUrl}/files/${imagen}`;
+    }
+    
+    // Si contiene barras, puede ser una ruta relativa
+    if (imagen.includes('/') || imagen.includes('\\')) {
+      const rutaNormalizada = imagen.replace(/\\/g, '/');
+      return rutaNormalizada.startsWith('/') ? rutaNormalizada : `/${rutaNormalizada}`;
+    }
+    
+    // Último intento: asumir que es un nombre de archivo y construir URL
+    return `${apiUrl}/files/${imagen}`;
+  };
+
   // Función para validar si una imagen es válida
   const obtenerImagenItem = (item: Item): string | null => {
     if (!item.imagenes || item.imagenes.length === 0) {
@@ -41,17 +77,9 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
       return null;
     }
     
-    // Validar que sea una URL válida
-    if (typeof primeraImagen === 'string' && primeraImagen.trim() !== '') {
-      // Si es una URL relativa que empieza con /, puede ser válida
-      if (primeraImagen.startsWith('/') || primeraImagen.startsWith('http')) {
-        return primeraImagen;
-      }
-      // Si no tiene formato válido, retornar null
-      return null;
-    }
-    
-    return null;
+    // Construir URL válida usando la función auxiliar
+    const urlImagen = construirUrlImagen(primeraImagen);
+    return urlImagen;
   };
 
   const manejarErrorImagen = (url: string) => {
@@ -76,26 +104,69 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
         // Filtrar solo items activos y con precio
         const itemsActivos = data.filter((item: any) => item.activo !== false && item.precio > 0);
         
-        // Normalizar URLs de imágenes
+        // Normalizar URLs de imágenes y agregar logs para debugging
         const itemsNormalizados = itemsActivos.map((item: any) => {
-          if (item.imagenes && Array.isArray(item.imagenes)) {
-            // Normalizar cada URL de imagen
-            item.imagenes = item.imagenes.map((img: any) => {
-              if (!img || typeof img !== 'string') return null;
+          // Intentar múltiples campos para encontrar imágenes
+          let imagenesRaw = item.imagenes || item.imagen || item.imagenes_item || [];
+          
+          // Si no es array, convertirlo
+          if (!Array.isArray(imagenesRaw)) {
+            imagenesRaw = imagenesRaw ? [imagenesRaw] : [];
+          }
+          
+          // Normalizar cada URL de imagen
+          const imagenesNormalizadas = imagenesRaw
+            .filter((img: any) => img != null && img !== '')
+            .map((img: any) => {
+              if (typeof img !== 'string') return null;
               const imgUrl = img.trim();
+              
               // Si es una URL completa, mantenerla
               if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
                 return imgUrl;
               }
-              // Si empieza con /, puede ser relativa al dominio
+              
+              // Si empieza con /, es relativa al dominio
               if (imgUrl.startsWith('/')) {
                 return imgUrl;
               }
-              // Si no tiene formato válido, puede ser solo el nombre del archivo
-              // En este caso, retornar null para usar placeholder
-              return null;
-            }).filter((img: any) => img !== null);
+              
+              // Si parece ser un nombre de archivo o ruta, intentar construir URL
+              const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+              
+              // Si tiene extensión de imagen, probablemente es un nombre de archivo
+              if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imgUrl)) {
+                // Puede ser un nombre de archivo en el almacenamiento
+                return `${apiUrl}/files/${imgUrl}`;
+              }
+              
+              // Si contiene barras, puede ser una ruta relativa
+              if (imgUrl.includes('/') || imgUrl.includes('\\')) {
+                const rutaNormalizada = imgUrl.replace(/\\/g, '/');
+                return rutaNormalizada.startsWith('/') ? rutaNormalizada : `/${rutaNormalizada}`;
+              }
+              
+              // Último intento: asumir que es un nombre de archivo
+              return `${apiUrl}/files/${imgUrl}`;
+            })
+            .filter((img: any) => img !== null);
+          
+          // Si hay imágenes normalizadas, usarlas
+          if (imagenesNormalizadas.length > 0) {
+            item.imagenes = imagenesNormalizadas;
+          } else {
+            // Si no hay imágenes, dejar array vacío
+            item.imagenes = [];
           }
+          
+          // Log para debugging (solo para primeros items)
+          if (itemsActivos.indexOf(item) < 3) {
+            console.log(`Item ${item.nombre}:`, {
+              imagenesRaw: imagenesRaw,
+              imagenesNormalizadas: item.imagenes,
+            });
+          }
+          
           return item;
         });
         
