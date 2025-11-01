@@ -150,6 +150,53 @@ Considerar agregar parámetros de query para filtrar por:
 - `cliente_id`: Filtrar pedidos de un cliente específico
 - `fecha_inicio` / `fecha_fin`: Filtrar por rango de fechas
 
+### GET `/facturas/pedido/{pedido_id}`
+
+**Descripción:** Obtiene la factura asociada a un pedido específico.
+
+**Autenticación:** Requiere token de administrador (`Bearer token`).
+
+**Parámetros:**
+- `pedido_id` (path): ID del pedido
+
+**Respuesta Exitosa (200):**
+```json
+{
+  "_id": "507f1f77bcf86cd799439014",
+  "numero_factura": "F-20250115-000001",
+  "pedido_id": "507f1f77bcf86cd799439011",
+  "cliente_id": "507f1f77bcf86cd799439012",
+  "cliente_nombre": "Juan Pérez",
+  "cliente_cedula": "V-12345678",
+  "cliente_direccion": "Av. Principal, Caracas",
+  "cliente_telefono": "04141234567",
+  "monto_total": 300.00,
+  "monto_abonado": 150.00,
+  "saldo_pendiente": 150.00,
+  "historial_abonos": [
+    {
+      "fecha": "2025-01-16T14:30:00Z",
+      "cantidad": 150.00,
+      "metodo_pago": "transferencia",
+      "numero_referencia": "REF789012",
+      "comprobante_url": "https://storage.example.com/comprobantes/def456.png",
+      "estado": "pendiente"
+    }
+  ],
+  "estado": "parcial",
+  "fecha_facturacion": "2025-01-15T10:30:00Z"
+}
+```
+
+**Respuesta si no existe factura (404):**
+```json
+{
+  "detail": "Factura no encontrada para este pedido"
+}
+```
+
+**Nota:** Este endpoint es usado por el módulo "Pedidos Web" para obtener la factura y historial de abonos de cada pedido. Busca en la colección `facturas_cliente` por el campo `pedido_id`. Retorna un objeto si existe, o 404 si no existe.
+
 ## Ejemplo de Implementación Backend (Python/FastAPI)
 
 ```python
@@ -160,6 +207,7 @@ from models.pedidos_cliente import PedidoCliente
 from services.auth import verify_admin_token
 
 router = APIRouter(prefix="/pedidos/cliente", tags=["Pedidos Web"])
+router_facturas = APIRouter(prefix="/facturas", tags=["Facturas Web"])
 
 @router.get("", response_model=List[PedidoCliente])
 async def obtener_pedidos_cliente(
@@ -189,6 +237,34 @@ async def obtener_pedidos_cliente(
                     }
         
         return pedidos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router_facturas.get("/pedido/{pedido_id}")
+async def obtener_factura_por_pedido(
+    pedido_id: str,
+    current_user: dict = Depends(verify_admin_token)
+):
+    """
+    Obtiene la factura asociada a un pedido específico.
+    Requiere autenticación de administrador.
+    """
+    try:
+        factura = await db.facturas_cliente.find_one(
+            {"pedido_id": ObjectId(pedido_id)}
+        )
+        
+        if not factura:
+            raise HTTPException(status_code=404, detail="Factura no encontrada para este pedido")
+        
+        # Convertir ObjectId a string
+        factura["_id"] = str(factura["_id"])
+        factura["pedido_id"] = str(factura.get("pedido_id", ""))
+        factura["cliente_id"] = str(factura.get("cliente_id", ""))
+        
+        return factura
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -245,6 +321,12 @@ db.pedidos_cliente.createIndex({ "fecha_creacion": -1 });
 db.pedidos_cliente.createIndex({ "cliente_id": 1 });
 db.pedidos_cliente.createIndex({ "estado": 1 });
 db.pedidos_cliente.createIndex({ "cliente_nombre": 1 }); // Para búsquedas
+
+// Índices para facturas_cliente
+db.facturas_cliente.createIndex({ "pedido_id": 1 }); // CRÍTICO para GET /facturas/pedido/{pedido_id}
+db.facturas_cliente.createIndex({ "numero_factura": 1 }, { unique: true });
+db.facturas_cliente.createIndex({ "cliente_id": 1 });
+db.facturas_cliente.createIndex({ "fecha_facturacion": -1 });
 ```
 
 ## Validaciones
