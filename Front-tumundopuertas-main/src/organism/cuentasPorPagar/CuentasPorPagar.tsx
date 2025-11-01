@@ -806,7 +806,7 @@ const CuentasPorPagar: React.FC = () => {
 
       {/* Modal Crear Cuenta */}
       <Dialog open={modalCrearOpen} onOpenChange={setModalCrearOpen}>
-        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0 m-0">
+        <DialogContent className="max-w-[95vh] w-[95vh] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0 m-0" style={{ width: '95vh', maxWidth: '95vh' }}>
           <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
             <div className="flex items-center justify-between">
               <div>
