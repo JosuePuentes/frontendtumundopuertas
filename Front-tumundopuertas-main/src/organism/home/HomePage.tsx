@@ -413,11 +413,11 @@ const HomePage: React.FC = () => {
                         </nav>
                         
                         <Button 
-                            onClick={() => navigate('/login')}
-                            className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-bold px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50 text-sm sm:text-base w-full sm:w-auto"
+                            onClick={() => setLoginModalOpen(true)}
+                            className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-purple-500/30 hover:shadow-purple-400/50 text-sm sm:text-base w-full sm:w-auto"
                         >
-                            <span className="hidden sm:inline">SOLICITAR PRESUPUESTO</span>
-                            <span className="sm:hidden">PRESUPUESTO</span>
+                            <span className="hidden sm:inline">INICIAR SESIÓN</span>
+                            <span className="sm:hidden">SESION</span>
                         </Button>
                     </div>
                 </header>
@@ -517,6 +517,32 @@ const HomePage: React.FC = () => {
                         </div>
                     </section>
                 )}
+
+                {/* Modales de Cliente */}
+                <ClienteLoginModal
+                    open={loginModalOpen}
+                    onClose={() => setLoginModalOpen(false)}
+                    onSwitchToRegister={() => {
+                        setLoginModalOpen(false);
+                        setRegisterModalOpen(true);
+                    }}
+                    onLoginSuccess={() => {
+                        navigate('/clientes');
+                    }}
+                />
+
+                <ClienteRegisterModal
+                    open={registerModalOpen}
+                    onClose={() => setRegisterModalOpen(false)}
+                    onSwitchToLogin={() => {
+                        setRegisterModalOpen(false);
+                        setLoginModalOpen(true);
+                    }}
+                    onRegisterSuccess={() => {
+                        setRegisterModalOpen(false);
+                        setLoginModalOpen(true);
+                    }}
+                />
             </div>
         );
     }
