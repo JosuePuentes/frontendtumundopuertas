@@ -392,7 +392,12 @@ const HomePage: React.FC = () => {
                         </div>
                         
                         <nav className="hidden lg:flex space-x-4 md:space-x-8">
-                            <a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
+                            <a 
+                                href="https://www.tumundopuerta.com/" 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                            >
                                 Inicio
                                 <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
                             </a>
