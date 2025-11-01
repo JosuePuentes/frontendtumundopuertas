@@ -351,6 +351,8 @@ const CuentasPorPagar: React.FC = () => {
       };
 
       console.log("📤 Enviando cuenta por pagar:", nuevaCuenta);
+      console.log("📤 URL:", `${apiUrl}/cuentas-por-pagar`);
+      console.log("📤 Datos enviados:", JSON.stringify(nuevaCuenta, null, 2));
 
       const respuesta = await createCuentaPorPagar(nuevaCuenta);
       console.log("✅ Cuenta por pagar creada:", respuesta);
@@ -411,21 +413,37 @@ const CuentasPorPagar: React.FC = () => {
       fetchItems(`${apiUrl}/inventario/all`);
     } catch (error: any) {
       console.error("❌ Error al crear cuenta:", error);
-      let mensajeError = "Error desconocido";
+      console.error("❌ Error completo:", {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+        errorData: error.errorData,
+        stack: error.stack
+      });
       
-      // Intentar obtener el mensaje de error del backend
-      if (error.message) {
-        mensajeError = error.message;
-      } else if (error.response) {
-        const errorData = await error.response.json().catch(() => null);
-        if (errorData?.detail) {
-          mensajeError = Array.isArray(errorData.detail) 
-            ? errorData.detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(', ')
-            : errorData.detail;
+      let mensajeError = error.message || "Error desconocido";
+      
+      // Si hay errorData, mostrar más detalles
+      if (error.errorData) {
+        console.error("❌ Datos del error del backend:", error.errorData);
+        if (error.errorData.detail && typeof error.errorData.detail === 'string') {
+          mensajeError = error.errorData.detail;
+        } else if (Array.isArray(error.errorData.detail)) {
+          mensajeError = error.errorData.detail.map((e: any) => {
+            if (typeof e === 'string') return e;
+            const loc = e.loc ? e.loc.join('.') : '';
+            const msg = e.msg || e.message || JSON.stringify(e);
+            return loc ? `${loc}: ${msg}` : msg;
+          }).join('\n');
         }
       }
       
-      alert(`❌ Error al crear la cuenta por pagar:\n${mensajeError}\n\nPor favor verifica los datos e intenta nuevamente.`);
+      // Si el mensaje está vacío o genérico, mostrar más información
+      if (!mensajeError || mensajeError === "Error desconocido" || mensajeError === "Something went wrong") {
+        mensajeError = `Error ${error.status || 422}: ${error.statusText || "Unprocessable Content"}\n\nRevisa la consola (F12) para ver los detalles del error.`;
+      }
+      
+      alert(`❌ Error al crear la cuenta por pagar:\n\n${mensajeError}\n\nPor favor:\n1. Revisa la consola del navegador (F12) para ver los detalles\n2. Verifica que todos los campos requeridos estén completos\n3. Verifica el formato de los datos (RIF, teléfono, etc.)\n4. Intenta nuevamente`);
     } finally {
       setLoading(false);
     }

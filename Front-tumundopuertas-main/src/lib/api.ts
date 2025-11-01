@@ -27,22 +27,40 @@ const api = async (url: string, options: RequestInit = {}) => {
 
   if (!response.ok) {
     let errorMessage = 'Something went wrong';
+    let errorData: any = null;
+    
     try {
-      const error = await response.json();
+      errorData = await response.json();
+      console.error(`❌ Error ${response.status} desde ${url}:`, errorData);
+      
       // Manejar diferentes formatos de error
-      if (error.detail) {
-        errorMessage = Array.isArray(error.detail) 
-          ? error.detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(', ')
-          : error.detail;
-      } else if (error.message) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
+      if (errorData.detail) {
+        if (Array.isArray(errorData.detail)) {
+          errorMessage = errorData.detail.map((e: any) => {
+            if (typeof e === 'string') return e;
+            const loc = e.loc ? e.loc.join('.') : '';
+            const msg = e.msg || e.message || JSON.stringify(e);
+            return loc ? `${loc}: ${msg}` : msg;
+          }).join(', ');
+        } else {
+          errorMessage = errorData.detail;
+        }
+      } else if (errorData.message) {
+        errorMessage = errorData.message;
+      } else if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      } else {
+        errorMessage = JSON.stringify(errorData);
       }
-    } catch {
+    } catch (parseError) {
+      console.error("❌ No se pudo parsear el error:", parseError);
       errorMessage = `Error ${response.status}: ${response.statusText}`;
     }
+    
     const error = new Error(errorMessage);
+    (error as any).status = response.status;
+    (error as any).statusText = response.statusText;
+    (error as any).errorData = errorData;
     (error as any).response = response;
     throw error;
   }
