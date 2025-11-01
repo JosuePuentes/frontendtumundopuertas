@@ -157,10 +157,13 @@ const ModificarUsuario: React.FC = () => {
 
       // Actualizar localStorage si el usuario modificado es el actual
       const currentUser = localStorage.getItem("usuario");
-      if (currentUser === updated.usuario) {
+      if (currentUser === updated.usuario && updated.permisos) {
         localStorage.setItem("permisos", JSON.stringify(updated.permisos));
-        // Forzar recarga para que el menú se actualice
-        window.location.reload();
+        console.log("✅ Permisos actualizados en localStorage:", updated.permisos);
+        // Disparar evento personalizado para que otros componentes se actualicen
+        window.dispatchEvent(new CustomEvent('permisosActualizados', { 
+          detail: { permisos: updated.permisos } 
+        }));
       }
 
       navigate(`/modificarusuario`);

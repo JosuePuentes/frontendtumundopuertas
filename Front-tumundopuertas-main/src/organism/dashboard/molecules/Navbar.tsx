@@ -26,6 +26,7 @@ const defaultLinks = [
   { label: "Mis Pagos", href: "/mispagos" },
   { label: "Resumen Venta Diaria", href: "/resumen-venta-diaria" },
   { label: "Bancos", href: "/metodos-pago" },
+  { label: "Cuentas por Pagar", href: "/cuentas-por-pagar" },
   { label: "Formatos de Impresión", href: "/formatos-impresion" },
   { label: "Administrar Home", href: "/admin-home" },
   { label: "Dashboard", href: "/dashboard" },
@@ -57,6 +58,7 @@ const permisosRuta: Record<string, string | null> = {
   "/mispagos": "pagos",
   "/resumen-venta-diaria": "resumenVentaDiaria",
   "/metodos-pago": "metodos_pago",
+  "/cuentas-por-pagar": "cuentas_por_pagar",
   "/formatos-impresion": "admin",
   "/admin-home": "admin",
   "/home": null,
@@ -68,7 +70,7 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
   const [isOpen, setIsOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
-  // Lógica para obtener permisos (sin cambios)
+  // Lógica para obtener permisos
   const getPermisos = () => {
     try {
       const raw = localStorage.getItem("permisos");
@@ -77,8 +79,23 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
       return [];
     }
   };
-  const permisos = getPermisos();
+  const [permisos, setPermisos] = useState<string[]>(getPermisos());
   console.log("Permisos en Navbar:", permisos);
+
+  // Escuchar eventos de actualización de permisos
+  useEffect(() => {
+    const handlePermisosActualizados = (event: CustomEvent) => {
+      const nuevosPermisos = event.detail?.permisos || getPermisos();
+      setPermisos(nuevosPermisos);
+      console.log("🔄 Permisos actualizados en Navbar:", nuevosPermisos);
+    };
+
+    window.addEventListener('permisosActualizados', handlePermisosActualizados as EventListener);
+    
+    return () => {
+      window.removeEventListener('permisosActualizados', handlePermisosActualizados as EventListener);
+    };
+  }, []);
 
   // Lógica de filtrado de enlaces (sin cambios)
   const filteredLinks = links.filter((link) => {
