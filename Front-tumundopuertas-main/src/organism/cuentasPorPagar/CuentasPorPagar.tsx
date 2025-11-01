@@ -616,7 +616,7 @@ const CuentasPorPagar: React.FC = () => {
 
       {/* Modal Crear Cuenta */}
       <Dialog open={modalCrearOpen} onOpenChange={setModalCrearOpen}>
-        <DialogContent className="max-w-[1400px] w-[1400px] max-h-[700px] h-[700px] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-[800px] w-[800px] max-h-[700px] h-[700px] overflow-hidden flex flex-col">
           <DialogHeader className="flex-shrink-0">
             <DialogTitle className="text-2xl">Agregar Cuenta por Pagar</DialogTitle>
             <DialogDescription>
