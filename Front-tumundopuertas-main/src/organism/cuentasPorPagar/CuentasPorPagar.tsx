@@ -33,8 +33,12 @@ import {
   Search,
   RefreshCw,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Printer,
+  Download
 } from "lucide-react";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { 
   getCuentasPorPagar, 
   createCuentaPorPagar, 
@@ -408,6 +412,193 @@ const CuentasPorPagar: React.FC = () => {
     setMostrarFormularioNuevoProveedor(false);
   };
 
+  // Imprimir cuenta por pagar
+  const handleImprimirCuenta = () => {
+    if (!proveedor.nombre || !proveedorSeleccionadoId) {
+      alert("Debe seleccionar un proveedor primero");
+      return;
+    }
+
+    const contenidoHTML = generarHTMLImpresion();
+    const ventanaImpresion = window.open('', '_blank');
+    if (ventanaImpresion) {
+      ventanaImpresion.document.write(contenidoHTML);
+      ventanaImpresion.document.close();
+      ventanaImpresion.focus();
+      setTimeout(() => {
+        ventanaImpresion.print();
+      }, 250);
+    }
+  };
+
+  // Exportar a PDF
+  const handleExportarPDF = () => {
+    if (!proveedor.nombre || !proveedorSeleccionadoId) {
+      alert("Debe seleccionar un proveedor primero");
+      return;
+    }
+
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(18);
+    doc.text('Cuenta por Pagar', 14, 22);
+    
+    // Información del proveedor
+    doc.setFontSize(12);
+    doc.text(`Proveedor: ${proveedor.nombre}`, 14, 32);
+    doc.text(`RIF: ${proveedor.rif}`, 14, 38);
+    if (proveedor.telefono) {
+      doc.text(`Teléfono: ${proveedor.telefono}`, 14, 44);
+    }
+    
+    // Fecha
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, 14, 50);
+    
+    let startY = 60;
+
+    if (mostrarItems && itemsSeleccionados.length > 0) {
+      // Tabla de items
+      const itemsData = itemsSeleccionados.map(item => [
+        item.codigo || "Sin código",
+        item.nombre,
+        `$${item.costo.toFixed(2)}`,
+        item.cantidad.toString(),
+        `$${item.subtotal.toFixed(2)}`
+      ]);
+
+      (doc as any).autoTable({
+        startY: startY,
+        head: [['Código', 'Nombre', 'Costo', 'Cantidad', 'Subtotal']],
+        body: itemsData,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 139, 202] },
+        styles: { fontSize: 9 },
+      });
+
+      startY = (doc as any).lastAutoTable.finalY + 10;
+      
+      // Total
+      doc.setFontSize(14);
+      doc.text(`Total: $${totalItems.toFixed(2)}`, 150, startY, { align: 'right' });
+    } else if (descripcion) {
+      // Descripción
+      doc.setFontSize(12);
+      doc.text('Descripción:', 14, startY);
+      startY += 8;
+      
+      const descripcionLines = doc.splitTextToSize(descripcion, 180);
+      doc.setFontSize(10);
+      descripcionLines.forEach((line: string) => {
+        doc.text(line, 14, startY);
+        startY += 6;
+      });
+      
+      startY += 5;
+      
+      // Monto
+      doc.setFontSize(14);
+      doc.text(`Monto: $${monto.toFixed(2)}`, 150, startY, { align: 'right' });
+    }
+
+    // Guardar PDF
+    const nombreArchivo = `cuenta-por-pagar-${proveedor.rif}-${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(nombreArchivo);
+  };
+
+  // Generar HTML para impresión
+  const generarHTMLImpresion = () => {
+    const fecha = new Date().toLocaleDateString('es-ES');
+    const total = mostrarItems && itemsSeleccionados.length > 0 ? totalItems : monto;
+
+    let itemsHTML = '';
+    if (mostrarItems && itemsSeleccionados.length > 0) {
+      itemsHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Código</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Nombre</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Costo</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Cantidad</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsSeleccionados.map(item => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">${item.codigo || "Sin código"}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${item.nombre}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">$${item.costo.toFixed(2)}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.cantidad}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">$${item.subtotal.toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">Total:</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">$${totalItems.toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+    }
+
+    const descripcionHTML = !mostrarItems && descripcion ? `
+      <div style="margin: 20px 0;">
+        <h3 style="margin-bottom: 10px;">Descripción:</h3>
+        <p style="white-space: pre-wrap;">${descripcion}</p>
+        <p style="text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold;">Monto: $${monto.toFixed(2)}</p>
+      </div>
+    ` : '';
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Cuenta por Pagar - ${proveedor.nombre}</title>
+        <style>
+          @media print {
+            @page { margin: 20mm; }
+            body { margin: 0; }
+          }
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+          .info-section { margin: 20px 0; }
+          .info-row { margin: 5px 0; }
+          .label { font-weight: bold; display: inline-block; width: 120px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background-color: #f2f2f2; }
+          .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 class="title">CUENTA POR PAGAR</h1>
+          <p>Fecha: ${fecha}</p>
+        </div>
+        
+        <div class="info-section">
+          <h2 style="border-bottom: 2px solid #333; padding-bottom: 5px;">Información del Proveedor</h2>
+          <div class="info-row"><span class="label">Nombre:</span> ${proveedor.nombre}</div>
+          <div class="info-row"><span class="label">RIF:</span> ${proveedor.rif}</div>
+          ${proveedor.telefono ? `<div class="info-row"><span class="label">Teléfono:</span> ${proveedor.telefono}</div>` : ''}
+        </div>
+
+        ${itemsHTML}
+        ${descripcionHTML}
+
+        <div class="footer">
+          <p>Documento generado el ${new Date().toLocaleString('es-ES')}</p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
   // Abonar cuenta
   const handleAbrirModalAbonar = (cuenta: CuentaPorPagar) => {
     setCuentaSeleccionada(cuenta);
@@ -616,15 +807,41 @@ const CuentasPorPagar: React.FC = () => {
 
       {/* Modal Crear Cuenta */}
       <Dialog open={modalCrearOpen} onOpenChange={setModalCrearOpen}>
-        <DialogContent className="max-w-[800px] w-[800px] max-h-[700px] h-[700px] overflow-hidden flex flex-col">
-          <DialogHeader className="flex-shrink-0">
-            <DialogTitle className="text-2xl">Agregar Cuenta por Pagar</DialogTitle>
-            <DialogDescription>
-              Complete la información del proveedor y los items o descripción
-            </DialogDescription>
+        <DialogContent className="max-w-[80vw] w-[80vw] max-h-[80vh] h-[80vh] overflow-hidden flex flex-col p-0">
+          <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-2xl">Agregar Cuenta por Pagar</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Complete la información del proveedor y los items o descripción
+                </DialogDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleImprimirCuenta}
+                  disabled={!proveedorSeleccionadoId || (!mostrarItems && !descripcion) || (mostrarItems && itemsSeleccionados.length === 0)}
+                  className="gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  Imprimir
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportarPDF}
+                  disabled={!proveedorSeleccionadoId || (!mostrarItems && !descripcion) || (mostrarItems && itemsSeleccionados.length === 0)}
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Exportar PDF
+                </Button>
+              </div>
+            </div>
           </DialogHeader>
 
-          <div className="space-y-4 overflow-y-auto flex-1 pr-2">
+          <div className="space-y-4 overflow-y-auto flex-1 px-6 py-4">
             {/* Selector de Proveedor */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -901,7 +1118,7 @@ const CuentasPorPagar: React.FC = () => {
 
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 mt-4">
+          <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 px-6 pb-6 bg-gray-50">
             <Button variant="outline" onClick={() => {
               setModalCrearOpen(false);
               resetearFormulario();
