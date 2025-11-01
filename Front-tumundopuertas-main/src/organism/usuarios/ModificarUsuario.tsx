@@ -37,7 +37,8 @@ interface Usuario {
     "pagos",
     "resumenVentaDiaria",
     "metodos_pago",
-    "cuentas_por_pagar"
+    "cuentas_por_pagar",
+    "pedidos_web"
   ];
 
 const ModificarUsuario: React.FC = () => {

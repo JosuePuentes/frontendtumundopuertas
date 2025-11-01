@@ -272,6 +272,14 @@ const HomePage: React.FC = () => {
             permiso: "cuentas_por_pagar"
         },
         {
+            title: "Pedidos Web",
+            description: "Gestionar pedidos desde el catálogo de clientes",
+            icon: ShoppingCart,
+            color: "from-cyan-400 to-blue-500",
+            href: "/pedidos-web",
+            permiso: "pedidos_web"
+        },
+        {
             title: "Formatos de Impresión",
             description: "Personalizar formatos de documentos",
             icon: Printer,

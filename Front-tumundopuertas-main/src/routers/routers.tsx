@@ -32,6 +32,7 @@ import Apartados from "@/organism/apartados/Apartados";
 import CuentasPorPagar from "@/organism/cuentasPorPagar/CuentasPorPagar";
 import UsuariosPage from "@/organism/clientes/UsuariosPage";
 import ClienteDashboard from "@/organism/clientes/ClienteDashboard";
+import PedidosWeb from "@/organism/pedidosWeb/PedidosWeb";
 
 function AppRouter() {
   // Función para verificar token y permisos
@@ -298,6 +299,14 @@ function AppRouter() {
         <Route path="login" element={<Login />} />
         <Route path="usuarios" element={<UsuariosPage />} />
         <Route path="clientes" element={<ClienteDashboard />} />
+        <Route
+          path="pedidos-web"
+          element={
+            <ProtectedRoute permiso="pedidos_web">
+              <PedidosWeb />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<div>Página no encontrada</div>} />
       </Route>
     </Routes>
