@@ -583,12 +583,6 @@ const HomePage: React.FC = () => {
                     
                     <div className="flex items-center gap-3">
                         <Button 
-                            onClick={() => setLoginModalOpen(true)}
-                            className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25 text-sm sm:text-base"
-                        >
-                            Iniciar Sesión
-                        </Button>
-                        <Button 
                             onClick={() => navigate('/dashboard')}
                             className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25 text-sm sm:text-base w-full sm:w-auto"
                         >
