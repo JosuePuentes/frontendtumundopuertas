@@ -39,7 +39,7 @@ const ClienteDashboard: React.FC = () => {
     const clienteId = localStorage.getItem("cliente_id");
     const token = localStorage.getItem("cliente_access_token");
     
-    if (clienteId && token) {
+    if (clienteId && token && token !== 'null' && token !== 'undefined') {
       try {
         // Último guardado en BD antes de cerrar sesión (esperar a que se complete)
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
@@ -97,19 +97,28 @@ const ClienteDashboard: React.FC = () => {
   // Verificar autenticación y cargar datos guardados desde BD
   useEffect(() => {
     const token = localStorage.getItem("cliente_access_token");
-    if (!token) {
+    // Validar que el token existe y no es 'null' o 'undefined' como string
+    if (!token || token === 'null' || token === 'undefined' || token.trim() === '') {
+      console.warn("Token de cliente no encontrado o inválido, redirigiendo al login");
       navigate("/usuarios");
       return;
     }
 
     const clienteId = localStorage.getItem("cliente_id");
-    if (!clienteId) {
+    if (!clienteId || clienteId === 'null' || clienteId === 'undefined' || clienteId.trim() === '') {
+      console.warn("ID de cliente no encontrado, redirigiendo al login");
       navigate("/usuarios");
       return;
     }
 
     // Cargar todos los datos del dashboard desde el endpoint unificado
     const cargarDatosDashboard = async () => {
+      // Validar token antes de hacer peticiones
+      if (!token || token === 'null' || token === 'undefined') {
+        console.error("Token no válido para cargar datos del dashboard");
+        return;
+      }
+      
       try {
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
         const res = await fetch(`${apiUrl}/clientes/${clienteId}/datos-dashboard`, {
@@ -174,6 +183,12 @@ const ClienteDashboard: React.FC = () => {
 
     // Función de fallback para cargar desde endpoints individuales
     const cargarDatosIndividuales = async (clienteId: string, token: string) => {
+      // Validar token antes de hacer peticiones
+      if (!token || token === 'null' || token === 'undefined') {
+        console.error("Token no válido para cargar datos individuales");
+        return;
+      }
+      
       try {
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
         
@@ -212,7 +227,12 @@ const ClienteDashboard: React.FC = () => {
   useEffect(() => {
     const clienteId = localStorage.getItem("cliente_id");
     const token = localStorage.getItem("cliente_access_token");
-    if (!clienteId || !token) return;
+    
+    // Validar que existan clienteId y token válido
+    if (!clienteId || !token || token === 'null' || token === 'undefined') {
+      console.warn("No se puede guardar carrito: falta clienteId o token válido");
+      return;
+    }
 
     // Guardar en localStorage inmediatamente (para rapidez)
     localStorage.setItem(`cliente_carrito_${clienteId}`, JSON.stringify(itemsCarrito));
@@ -388,7 +408,7 @@ const ClienteDashboard: React.FC = () => {
                     // Guardar preferencia de vista activa en BD inmediatamente
                     const clienteId = localStorage.getItem("cliente_id");
                     const token = localStorage.getItem("cliente_access_token");
-                    if (clienteId && token) {
+                    if (clienteId && token && token !== 'null' && token !== 'undefined') {
                       try {
                         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
                         const res = await fetch(`${apiUrl}/clientes/${clienteId}/preferencias`, {

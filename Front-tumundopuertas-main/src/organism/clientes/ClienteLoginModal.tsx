@@ -40,10 +40,21 @@ const ClienteLoginModal: React.FC<ClienteLoginModalProps> = ({
         throw new Error(data.detail || "Error de autenticación");
       }
       const data = await res.json();
-      localStorage.setItem("cliente_access_token", data.access_token);
-      localStorage.setItem("cliente_usuario", data.usuario);
+      
+      // El backend devuelve cliente_access_token, no access_token
+      const clienteAccessToken = data.cliente_access_token || data.access_token;
+      
+      // Validar que el token existe antes de guardarlo
+      if (!clienteAccessToken || clienteAccessToken === 'undefined' || clienteAccessToken === 'null') {
+        throw new Error("El servidor no devolvió un token válido");
+      }
+      
+      localStorage.setItem("cliente_access_token", clienteAccessToken);
+      localStorage.setItem("cliente_usuario", data.usuario || "");
       localStorage.setItem("cliente_id", data.cliente_id || "");
       localStorage.setItem("cliente_nombre", data.nombre || "");
+      
+      console.log("✓ Token guardado correctamente en localStorage");
       
       // Cargar datos del dashboard después del login
       const clienteId = data.cliente_id || "";
@@ -51,7 +62,7 @@ const ClienteLoginModal: React.FC<ClienteLoginModalProps> = ({
         try {
           const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
           const resDashboard = await fetch(`${apiUrl}/clientes/${clienteId}/datos-dashboard`, {
-            headers: { "Authorization": `Bearer ${data.access_token}` },
+            headers: { "Authorization": `Bearer ${clienteAccessToken}` },
           });
           
           if (resDashboard.ok) {
