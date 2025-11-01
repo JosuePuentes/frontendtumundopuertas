@@ -258,8 +258,25 @@ const CuentasPorPagar: React.FC = () => {
           monto: typeof cuenta.monto === 'number' ? cuenta.monto : undefined,
           estado: cuenta.estado || "pendiente",
           fechaCreacion: cuenta.fechaCreacion || cuenta.fecha_creacion || cuenta.createdAt || new Date().toISOString(),
-          // Preservar items si vienen del backend
-          items: cuenta.items || []
+          // Normalizar items - asegurar que costo esté disponible
+          items: (cuenta.items || []).map((item: any) => {
+            // Calcular costo unitario desde subtotal si no está disponible
+            let costoUnitario = item.costo || item.costo_unitario || item.costoUnitario || 0;
+            
+            // Si no hay costo pero hay subtotal y cantidad, calcularlo
+            if (!costoUnitario && item.subtotal && item.cantidad && item.cantidad > 0) {
+              costoUnitario = item.subtotal / item.cantidad;
+            }
+            
+            return {
+              itemId: item.itemId || item.item_id || item._id || "",
+              codigo: item.codigo || "",
+              nombre: item.nombre || "",
+              costo: costoUnitario,
+              cantidad: item.cantidad || 0,
+              subtotal: item.subtotal || (costoUnitario * (item.cantidad || 0))
+            };
+          })
         };
         
         console.log("✅ Cuenta normalizada:", cuentaNormalizada._id, "- Proveedor:", cuentaNormalizada.proveedor);
