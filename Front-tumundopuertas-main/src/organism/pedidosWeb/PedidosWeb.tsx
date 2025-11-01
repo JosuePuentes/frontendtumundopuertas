@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Toast } from "@/components/ui/toast";
 import { 
   Search, 
   Eye, 
@@ -15,8 +16,36 @@ import {
   Package,
   Image as ImageIcon,
   FileText,
-  X
+  X,
+  Receipt,
+  DollarSign,
+  CheckCircle2,
+  Bell
 } from "lucide-react";
+
+interface Abono {
+  fecha?: string;
+  cantidad: number;
+  metodo_pago?: string;
+  numero_referencia?: string;
+  comprobante_url?: string;
+  estado?: string;
+}
+
+interface Factura {
+  _id: string;
+  numero_factura?: string;
+  numeroFactura?: string;
+  monto_total?: number;
+  montoTotal?: number;
+  monto_abonado?: number;
+  montoAbonado?: number;
+  saldo_pendiente?: number;
+  saldoPendiente?: number;
+  historial_abonos?: Abono[];
+  historialAbonos?: Abono[];
+  estado?: string;
+}
 
 interface PedidoWeb {
   _id: string;
@@ -42,6 +71,7 @@ interface PedidoWeb {
   estado: string;
   fecha_creacion?: string;
   createdAt?: string;
+  factura?: Factura;
 }
 
 const PedidosWeb: React.FC = () => {
@@ -50,51 +80,164 @@ const PedidosWeb: React.FC = () => {
   const [search, setSearch] = useState("");
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState<PedidoWeb | null>(null);
   const [modalDetalleAbierto, setModalDetalleAbierto] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"pedido" | "abono">("pedido");
+  
+  // Referencias para detectar cambios
+  const pedidosAnterioresRef = useRef<Set<string>>(new Set());
+  const abonosAnterioresRef = useRef<Map<string, number>>(new Map());
+  
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 
   useEffect(() => {
     cargarPedidos();
+    
+    // Polling cada 10 segundos para detectar nuevos pedidos y abonos
+    const intervalId = setInterval(() => {
+      cargarPedidos(true); // true = modo silencioso (no mostrar loading)
+    }, 10000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
-  const cargarPedidos = async () => {
+  const cargarPedidos = async (silencioso = false) => {
     try {
-      setLoading(true);
+      if (!silencioso) {
+        setLoading(true);
+      }
       const token = localStorage.getItem("access_token");
-      const res = await fetch(`${apiUrl}/pedidos/cliente`, {
+      
+      // Cargar pedidos
+      const resPedidos = await fetch(`${apiUrl}/pedidos/cliente`, {
         headers: {
           "Authorization": `Bearer ${token}`,
         },
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        // Normalizar datos de pedidos
-        const pedidosNormalizados = Array.isArray(data) ? data.map((pedido: any) => ({
-          _id: pedido._id || pedido.id,
-          cliente_id: pedido.cliente_id || pedido.clienteId,
-          cliente_nombre: pedido.cliente_nombre || pedido.clienteNombre || pedido.cliente?.nombre || "Sin nombre",
-          cliente_cedula: pedido.cliente_cedula || pedido.clienteCedula || pedido.cliente?.cedula || "Sin cédula",
-          cliente_direccion: pedido.cliente_direccion || pedido.clienteDireccion || pedido.cliente?.direccion || "Sin dirección",
-          cliente_telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono || "Sin teléfono",
-          items: pedido.items || [],
-          metodo_pago: pedido.metodo_pago || pedido.metodoPago || "No especificado",
-          numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
-          comprobante_url: pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "",
-          total: pedido.total || 0,
-          estado: pedido.estado || "pendiente",
-          fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || pedido.createdAt || new Date().toISOString(),
-        })) : [];
+      if (resPedidos.ok) {
+        const dataPedidos = await resPedidos.json();
         
-        setPedidos(pedidosNormalizados);
+        // Para cada pedido, cargar su factura asociada
+        const pedidosConFacturas = await Promise.all(
+          (Array.isArray(dataPedidos) ? dataPedidos : []).map(async (pedido: any) => {
+            try {
+              // Buscar factura por pedido_id
+              const resFactura = await fetch(`${apiUrl}/facturas/pedido/${pedido._id || pedido.id}`, {
+                headers: {
+                  "Authorization": `Bearer ${token}`,
+                },
+              });
+              
+              let factura = null;
+              if (resFactura.ok) {
+                const dataFactura = await resFactura.json();
+                factura = Array.isArray(dataFactura) ? dataFactura[0] : dataFactura;
+              }
+              
+              return {
+                _id: pedido._id || pedido.id,
+                cliente_id: pedido.cliente_id || pedido.clienteId,
+                cliente_nombre: pedido.cliente_nombre || pedido.clienteNombre || pedido.cliente?.nombre || "Sin nombre",
+                cliente_cedula: pedido.cliente_cedula || pedido.clienteCedula || pedido.cliente?.cedula || "Sin cédula",
+                cliente_direccion: pedido.cliente_direccion || pedido.clienteDireccion || pedido.cliente?.direccion || "Sin dirección",
+                cliente_telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono || "Sin teléfono",
+                items: pedido.items || [],
+                metodo_pago: pedido.metodo_pago || pedido.metodoPago || "No especificado",
+                numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
+                comprobante_url: pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "",
+                total: pedido.total || 0,
+                estado: pedido.estado || "pendiente",
+                fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || pedido.createdAt || new Date().toISOString(),
+                factura: factura ? {
+                  _id: factura._id || factura.id,
+                  numero_factura: factura.numero_factura || factura.numeroFactura || "Sin número",
+                  monto_total: factura.monto_total || factura.montoTotal || 0,
+                  monto_abonado: factura.monto_abonado || factura.montoAbonado || 0,
+                  saldo_pendiente: factura.saldo_pendiente || factura.saldoPendiente || (factura.monto_total || factura.montoTotal || 0) - (factura.monto_abonado || factura.montoAbonado || 0),
+                  historial_abonos: factura.historial_abonos || factura.historialAbonos || [],
+                  estado: factura.estado || "pendiente",
+                } : null,
+              };
+            } catch (error) {
+              console.error("Error al cargar factura para pedido:", error);
+              return {
+                _id: pedido._id || pedido.id,
+                cliente_id: pedido.cliente_id || pedido.clienteId,
+                cliente_nombre: pedido.cliente_nombre || pedido.clienteNombre || "Sin nombre",
+                cliente_cedula: pedido.cliente_cedula || pedido.clienteCedula || "Sin cédula",
+                cliente_direccion: pedido.cliente_direccion || pedido.clienteDireccion || "Sin dirección",
+                cliente_telefono: pedido.cliente_telefono || pedido.clienteTelefono || "Sin teléfono",
+                items: pedido.items || [],
+                metodo_pago: pedido.metodo_pago || pedido.metodoPago || "No especificado",
+                numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
+                comprobante_url: pedido.comprobante_url || pedido.comprobanteUrl || "",
+                total: pedido.total || 0,
+                estado: pedido.estado || "pendiente",
+                fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || new Date().toISOString(),
+                factura: null,
+              };
+            }
+          })
+        );
+
+        // Detectar nuevos pedidos
+        if (silencioso && pedidosAnterioresRef.current.size > 0) {
+          const pedidosNuevos = pedidosConFacturas.filter(
+            (p) => !pedidosAnterioresRef.current.has(p._id)
+          );
+          if (pedidosNuevos.length > 0) {
+            setToastMessage(`🔔 Nuevo pedido de ${pedidosNuevos[0].cliente_nombre}`);
+            setToastType("pedido");
+            setToastVisible(true);
+          }
+        }
+
+        // Detectar nuevos abonos
+        if (silencioso) {
+          pedidosConFacturas.forEach((pedido) => {
+            if (pedido.factura) {
+              const cantidadAbonosActual = (pedido.factura.historial_abonos || []).length;
+              const cantidadAbonosAnterior = abonosAnterioresRef.current.get(pedido._id) || 0;
+              
+              if (cantidadAbonosActual > cantidadAbonosAnterior && cantidadAbonosAnterior > 0) {
+                setToastMessage(`💰 Nuevo abono de ${pedido.cliente_nombre} - ${pedido.factura.numero_factura}`);
+                setToastType("abono");
+                setToastVisible(true);
+              }
+              
+              abonosAnterioresRef.current.set(pedido._id, cantidadAbonosActual);
+            }
+          });
+        }
+
+        // Actualizar referencias
+        pedidosAnterioresRef.current = new Set(pedidosConFacturas.map((p) => p._id));
+        pedidosConFacturas.forEach((pedido) => {
+          if (pedido.factura) {
+            abonosAnterioresRef.current.set(
+              pedido._id,
+              (pedido.factura.historial_abonos || []).length
+            );
+          }
+        });
+
+        setPedidos(pedidosConFacturas);
       } else {
-        console.error("Error al cargar pedidos:", res.statusText);
-        setPedidos([]);
+        console.error("Error al cargar pedidos:", resPedidos.statusText);
+        if (!silencioso) {
+          setPedidos([]);
+        }
       }
     } catch (error) {
       console.error("Error al cargar pedidos:", error);
-      setPedidos([]);
+      if (!silencioso) {
+        setPedidos([]);
+      }
     } finally {
-      setLoading(false);
+      if (!silencioso) {
+        setLoading(false);
+      }
     }
   };
 
@@ -104,7 +247,8 @@ const PedidosWeb: React.FC = () => {
       (pedido.cliente_nombre || "").toLowerCase().includes(searchLower) ||
       (pedido.cliente_cedula || "").toLowerCase().includes(searchLower) ||
       (pedido.numero_referencia || "").toLowerCase().includes(searchLower) ||
-      (pedido._id || "").toLowerCase().includes(searchLower)
+      (pedido._id || "").toLowerCase().includes(searchLower) ||
+      (pedido.factura?.numero_factura || "").toLowerCase().includes(searchLower)
     );
   });
 
@@ -150,9 +294,15 @@ const PedidosWeb: React.FC = () => {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Pedidos Web</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-white">Pedidos Web</h1>
+          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 flex items-center gap-1">
+            <Bell className="w-3 h-3" />
+            <span>Monitoreo activo</span>
+          </Badge>
+        </div>
         <Button
-          onClick={cargarPedidos}
+          onClick={() => cargarPedidos()}
           variant="outline"
           className="border-cyan-400 text-cyan-400 hover:bg-cyan-400/10"
         >
@@ -165,7 +315,7 @@ const PedidosWeb: React.FC = () => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
         <Input
           type="text"
-          placeholder="Buscar por nombre, cédula, referencia o ID de pedido..."
+          placeholder="Buscar por nombre, cédula, referencia, ID de pedido o número de factura..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400"
@@ -186,6 +336,12 @@ const PedidosWeb: React.FC = () => {
         <div className="grid grid-cols-1 gap-4">
           {pedidosFiltrados.map((pedido) => {
             const estadoInfo = getEstadoBadge(pedido.estado);
+            const factura = pedido.factura;
+            const montoTotalFactura = factura?.monto_total || pedido.total || 0;
+            const montoAbonado = factura?.monto_abonado || 0;
+            const saldoPendiente = factura?.saldo_pendiente || (montoTotalFactura - montoAbonado);
+            const historialAbonos = factura?.historial_abonos || [];
+            
             return (
               <Card
                 key={pedido._id}
@@ -233,6 +389,75 @@ const PedidosWeb: React.FC = () => {
                       <span>${pedido.total.toFixed(2)}</span>
                     </div>
                   </div>
+
+                  {/* Información de Factura */}
+                  {factura && (
+                    <div className="mb-4 p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Receipt className="w-5 h-5 text-cyan-400" />
+                        <h4 className="text-white font-semibold">Factura: {factura.numero_factura}</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div>
+                          <p className="text-gray-400 text-sm mb-1">Monto Total Factura</p>
+                          <p className="text-white font-bold text-lg">${montoTotalFactura.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-sm mb-1">Monto Total Abonado</p>
+                          <p className="text-cyan-400 font-bold text-lg">${montoAbonado.toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400 text-sm mb-1">Saldo Pendiente</p>
+                          <p className={`font-bold text-lg ${saldoPendiente > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                            ${saldoPendiente.toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Historial de Abonos */}
+                      {historialAbonos.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-600">
+                          <p className="text-gray-400 text-sm mb-2 font-semibold">Historial de Abonos:</p>
+                          <div className="space-y-2 max-h-40 overflow-y-auto">
+                            {historialAbonos.map((abono, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-between p-2 bg-gray-800/50 rounded border border-gray-600"
+                              >
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 text-white text-sm">
+                                    <DollarSign className="w-4 h-4 text-cyan-400" />
+                                    <span className="font-semibold">${abono.cantidad.toFixed(2)}</span>
+                                    <span className="text-gray-400">-</span>
+                                    <span className="text-gray-400">{abono.metodo_pago || "Sin método"}</span>
+                                    <span className="text-gray-400">-</span>
+                                    <span className="text-gray-400 text-xs">
+                                      Ref: {abono.numero_referencia || "Sin referencia"}
+                                    </span>
+                                  </div>
+                                  {abono.fecha && (
+                                    <p className="text-gray-500 text-xs mt-1">
+                                      {formatearFecha(abono.fecha)}
+                                    </p>
+                                  )}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-green-500/30 text-green-400 hover:bg-green-500/10 ml-2"
+                                  disabled
+                                  title="Botón visual - No modifica nada"
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                                  Validar
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between pt-4 border-t border-gray-700">
                     <div className="text-sm text-gray-400">
@@ -377,13 +602,101 @@ const PedidosWeb: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Comprobante de Pago */}
+              {/* Información de Factura y Abonos */}
+              {pedidoSeleccionado.factura && (
+                <Card className="bg-gray-700/50 border-gray-600">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Receipt className="w-5 h-5" />
+                      Factura y Abonos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-gray-400 text-sm">Número de Factura</p>
+                        <p className="text-white font-semibold">{pedidoSeleccionado.factura?.numero_factura}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Monto Total Factura</p>
+                        <p className="text-white font-bold text-lg">${(pedidoSeleccionado.factura?.monto_total || 0).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm">Monto Total Abonado</p>
+                        <p className="text-cyan-400 font-bold text-lg">${(pedidoSeleccionado.factura?.monto_abonado || 0).toFixed(2)}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm">Saldo Pendiente</p>
+                      <p className={`font-bold text-xl ${(pedidoSeleccionado.factura?.saldo_pendiente || 0) > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                        ${(pedidoSeleccionado.factura?.saldo_pendiente || 0).toFixed(2)}
+                      </p>
+                    </div>
+
+                    {/* Historial de Abonos en Modal */}
+                    {(pedidoSeleccionado.factura?.historial_abonos || []).length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-gray-600">
+                        <p className="text-gray-400 text-sm mb-3 font-semibold">Historial de Abonos:</p>
+                        <div className="space-y-3">
+                          {(pedidoSeleccionado.factura?.historial_abonos || []).map((abono, index) => (
+                            <div
+                              key={index}
+                              className="bg-gray-800/50 rounded-lg p-4 border border-gray-600"
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <DollarSign className="w-5 h-5 text-cyan-400" />
+                                    <span className="text-white font-bold text-lg">${abono.cantidad.toFixed(2)}</span>
+                                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                                      {abono.metodo_pago || "Sin método"}
+                                    </Badge>
+                                  </div>
+                                  <div className="space-y-1 text-sm text-gray-400">
+                                    <p>Referencia: {abono.numero_referencia || "Sin referencia"}</p>
+                                    {abono.fecha && <p>Fecha: {formatearFecha(abono.fecha)}</p>}
+                                    {abono.comprobante_url && (
+                                      <div className="mt-2">
+                                        <a
+                                          href={abono.comprobante_url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-cyan-400 hover:underline flex items-center gap-1"
+                                        >
+                                          <ImageIcon className="w-4 h-4" />
+                                          Ver comprobante
+                                        </a>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                                  disabled
+                                  title="Botón visual - No modifica nada"
+                                >
+                                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                                  Validar
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Comprobante de Pago del Pedido */}
               {pedidoSeleccionado.comprobante_url && (
                 <Card className="bg-gray-700/50 border-gray-600">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <ImageIcon className="w-5 h-5" />
-                      Comprobante de Pago
+                      Comprobante de Pago del Pedido
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -404,9 +717,28 @@ const PedidosWeb: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Toast de Notificación */}
+      <div className={`fixed top-20 right-4 z-[100] transition-all duration-300 ${toastVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
+        <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center space-x-3 min-w-[300px] max-w-md ${
+          toastType === "pedido" ? "bg-blue-500 text-white" : "bg-green-500 text-white"
+        }`}>
+          {toastType === "pedido" ? (
+            <Bell className="w-5 h-5 flex-shrink-0" />
+          ) : (
+            <DollarSign className="w-5 h-5 flex-shrink-0" />
+          )}
+          <p className="flex-1 text-sm font-medium">{toastMessage}</p>
+          <button
+            onClick={() => setToastVisible(false)}
+            className="flex-shrink-0 hover:bg-black/20 rounded p-1 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
 export default PedidosWeb;
-

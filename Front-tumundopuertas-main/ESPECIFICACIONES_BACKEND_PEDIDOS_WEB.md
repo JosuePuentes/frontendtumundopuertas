@@ -3,13 +3,15 @@
 ## Descripción
 Este documento especifica los requerimientos del backend para el módulo **Pedidos Web**, que permite a los administradores ver y gestionar los pedidos que los clientes realizan desde el catálogo web (`/clientes`).
 
-## Endpoint Principal
+## Endpoints Principales
 
 ### GET `/pedidos/cliente`
 
 **Descripción:** Obtiene todos los pedidos creados desde el carrito de clientes web.
 
 **Autenticación:** Requiere token de administrador (`Bearer token`).
+
+**Nota:** Este endpoint es usado por el módulo "Pedidos Web" para mostrar todos los pedidos. NO modifica la lógica existente, solo retorna los datos.
 
 **Respuesta Exitosa (200):**
 
@@ -261,5 +263,9 @@ db.pedidos_cliente.createIndex({ "cliente_nombre": 1 }); // Para búsquedas
 
 - Los pedidos web son diferentes a los pedidos administrativos (`/pedidos/all`). Mantener colecciones separadas o un campo `origen: "web"` para diferenciarlos.
 - La imagen del comprobante se sube previamente usando `/files/upload` (endpoint existente).
-- Considerar agregar endpoints para actualizar el estado del pedido desde el panel administrativo.
+- **IMPORTANTE:** El módulo "Pedidos Web" es SOLO de visualización. Los botones "Validar" que aparecen en el historial de abonos NO deben modificar nada en el backend. Son puramente visuales.
+- Cuando se crea un pedido desde `/clientes`, automáticamente se crea una factura (ver `ESPECIFICACIONES_BACKEND_PEDIDOS_CLIENTES_Y_FACTURAS.md`).
+- Cuando un cliente realiza un abono, este se agrega al `historial_abonos` de la factura y se actualiza `monto_abonado` y `saldo_pendiente`.
+- El módulo "Pedidos Web" utiliza polling cada 10 segundos para detectar nuevos pedidos y abonos y mostrar notificaciones.
+- El endpoint `GET /facturas/pedido/{pedido_id}` debe buscar por el campo `pedido_id` en la colección `facturas_cliente`.
 
