@@ -514,12 +514,6 @@ const HomePage: React.FC = () => {
                         <div className="max-w-4xl mx-auto text-center">
                             <h2 className="text-4xl font-bold text-gray-200 mb-6">{currentConfig.contact.title}</h2>
                             <p className="text-gray-200 text-lg mb-8">{currentConfig.contact.subtitle}</p>
-                            <Button 
-                                onClick={() => navigate('/login')}
-                                className="bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-bold px-12 py-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50"
-                            >
-                                CONTÁCTANOS
-                            </Button>
                         </div>
                     </section>
                 )}
