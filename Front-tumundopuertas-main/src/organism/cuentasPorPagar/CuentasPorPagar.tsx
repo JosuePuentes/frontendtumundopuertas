@@ -1034,12 +1034,12 @@ const CuentasPorPagar: React.FC = () => {
                         <Table>
                           <TableHeader className="sticky top-0 bg-gray-100 z-10">
                             <TableRow>
-                              <TableHead className="font-bold min-w-[100px]">Código</TableHead>
-                              <TableHead className="font-bold min-w-[200px]">Nombre</TableHead>
-                              <TableHead className="font-bold min-w-[120px]">Costo</TableHead>
-                              <TableHead className="font-bold min-w-[100px]">Cantidad</TableHead>
-                              <TableHead className="font-bold min-w-[120px]">Subtotal</TableHead>
-                              <TableHead className="font-bold min-w-[100px]">Acción</TableHead>
+                              <TableHead className="font-bold min-w-[80px]">Código</TableHead>
+                              <TableHead className="font-bold min-w-[180px]">Nombre</TableHead>
+                              <TableHead className="font-bold min-w-[100px]">Costo</TableHead>
+                              <TableHead className="font-bold min-w-[80px]">Cantidad</TableHead>
+                              <TableHead className="font-bold min-w-[100px]">Subtotal</TableHead>
+                              <TableHead className="font-bold min-w-[80px] text-center">Eliminar</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -1067,16 +1067,16 @@ const CuentasPorPagar: React.FC = () => {
                                   />
                                 </TableCell>
                                 <TableCell className="font-bold text-blue-700">${item.subtotal.toFixed(2)}</TableCell>
-                                <TableCell>
+                                <TableCell className="text-center">
                                   <Button
                                     variant="destructive"
                                     size="sm"
                                     onClick={() => eliminarItem(index)}
-                                    className="w-full gap-1"
-                                    title="Eliminar item"
+                                    className="gap-1 px-3 py-2 hover:scale-105 transition-transform"
+                                    title={`Eliminar ${item.nombre}`}
                                   >
                                     <Trash2 className="w-4 h-4" />
-                                    Eliminar
+                                    <span className="text-xs font-semibold">Eliminar</span>
                                   </Button>
                                 </TableCell>
                               </TableRow>
