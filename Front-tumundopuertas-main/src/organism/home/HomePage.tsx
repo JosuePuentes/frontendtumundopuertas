@@ -531,6 +531,9 @@ const HomePage: React.FC = () => {
                     onLoginSuccess={() => {
                         navigate('/clientes');
                     }}
+                    onForgotPassword={() => {
+                        setForgotPasswordModalOpen(true);
+                    }}
                 />
 
                 <ClienteRegisterModal
@@ -542,6 +545,15 @@ const HomePage: React.FC = () => {
                     }}
                     onRegisterSuccess={() => {
                         setRegisterModalOpen(false);
+                        setLoginModalOpen(true);
+                    }}
+                />
+
+                <ClienteForgotPassword
+                    open={forgotPasswordModalOpen}
+                    onClose={() => setForgotPasswordModalOpen(false)}
+                    onSwitchToLogin={() => {
+                        setForgotPasswordModalOpen(false);
                         setLoginModalOpen(true);
                     }}
                 />
