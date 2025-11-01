@@ -33,13 +33,101 @@ const ClienteDashboard: React.FC = () => {
   const prevItemsCountRef = useRef(0);
   const clienteNombre = localStorage.getItem("cliente_nombre") || "Usuario";
 
-  // Verificar autenticación
+  // Verificar autenticación y cargar datos guardados desde BD
   useEffect(() => {
     const token = localStorage.getItem("cliente_access_token");
     if (!token) {
       navigate("/usuarios");
+      return;
     }
+
+    const clienteId = localStorage.getItem("cliente_id");
+    if (!clienteId) return;
+
+    // Cargar carrito desde BD
+    const cargarCarritoBD = async () => {
+      try {
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        const res = await fetch(`${apiUrl}/clientes/${clienteId}/carrito`, {
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+            setItemsCarrito(data.items);
+            const itemsCount = data.items.reduce((total: number, item: any) => total + item.cantidad, 0);
+            prevItemsCountRef.current = itemsCount;
+          }
+        }
+      } catch (error) {
+        console.error("Error al cargar carrito desde BD:", error);
+        // Fallback a localStorage si hay error
+        const carritoLocal = localStorage.getItem(`cliente_carrito_${clienteId}`);
+        if (carritoLocal) {
+          try {
+            const carrito = JSON.parse(carritoLocal);
+            if (Array.isArray(carrito) && carrito.length > 0) {
+              setItemsCarrito(carrito);
+              const itemsCount = carrito.reduce((total: number, item: any) => total + item.cantidad, 0);
+              prevItemsCountRef.current = itemsCount;
+            }
+          } catch (e) {
+            console.error("Error al cargar carrito desde localStorage:", e);
+          }
+        }
+      }
+    };
+
+    // Cargar preferencias desde BD
+    const cargarPreferenciasBD = async () => {
+      try {
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        const res = await fetch(`${apiUrl}/clientes/${clienteId}/preferencias`, {
+          headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.vista_activa) {
+            setVistaActiva(data.vista_activa as VistaActiva);
+          }
+        }
+      } catch (error) {
+        console.error("Error al cargar preferencias desde BD:", error);
+      }
+    };
+
+    cargarCarritoBD();
+    cargarPreferenciasBD();
   }, [navigate]);
+
+  // Guardar carrito en BD cuando cambie (con debounce)
+  useEffect(() => {
+    const clienteId = localStorage.getItem("cliente_id");
+    const token = localStorage.getItem("cliente_access_token");
+    if (!clienteId || !token) return;
+
+    // Guardar en localStorage inmediatamente (para rapidez)
+    localStorage.setItem(`cliente_carrito_${clienteId}`, JSON.stringify(itemsCarrito));
+
+    // Guardar en BD con debounce (cada 2 segundos después del último cambio)
+    const timeoutId = setTimeout(async () => {
+      try {
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        await fetch(`${apiUrl}/clientes/${clienteId}/carrito`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ items: itemsCarrito }),
+        });
+      } catch (error) {
+        console.error("Error al guardar carrito en BD:", error);
+      }
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+  }, [itemsCarrito]);
 
   // Detectar cuando se agregan items al carrito y mostrar notificación
   useEffect(() => {
@@ -98,6 +186,8 @@ const ClienteDashboard: React.FC = () => {
   ];
 
   const handleLogout = () => {
+    // No eliminar el carrito al cerrar sesión, solo las credenciales
+    // El carrito se mantiene guardado por cliente_id para cuando vuelva a iniciar sesión
     localStorage.removeItem("cliente_access_token");
     localStorage.removeItem("cliente_usuario");
     localStorage.removeItem("cliente_id");
@@ -178,9 +268,27 @@ const ClienteDashboard: React.FC = () => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => {
+                  onClick={async () => {
                     setVistaActiva(item.id);
                     setMenuAbierto(false);
+                    // Guardar preferencia de vista activa en BD
+                    const clienteId = localStorage.getItem("cliente_id");
+                    const token = localStorage.getItem("cliente_access_token");
+                    if (clienteId && token) {
+                      try {
+                        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+                        await fetch(`${apiUrl}/clientes/${clienteId}/preferencias`, {
+                          method: "PUT",
+                          headers: {
+                            "Authorization": `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({ vista_activa: item.id }),
+                        });
+                      } catch (error) {
+                        console.error("Error al guardar preferencia:", error);
+                      }
+                    }
                   }}
                   className={`
                     w-full flex items-center space-x-3 px-4 py-3 rounded-lg
