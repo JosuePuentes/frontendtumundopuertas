@@ -552,6 +552,261 @@ const CuentasPorPagar: React.FC = () => {
     setMostrarFormularioNuevoProveedor(false);
   };
 
+  // Imprimir cuenta desde modal preliminar
+  const handleImprimirPreliminar = () => {
+    if (!cuentaPreliminar) return;
+
+    const contenidoHTML = generarHTMLImpresionPreliminar();
+    const ventanaImpresion = window.open('', '_blank');
+    if (ventanaImpresion) {
+      ventanaImpresion.document.write(contenidoHTML);
+      ventanaImpresion.document.close();
+      ventanaImpresion.focus();
+      setTimeout(() => {
+        ventanaImpresion.print();
+      }, 250);
+    }
+  };
+
+  // Exportar PDF desde modal preliminar
+  const handleExportarPDFPreliminar = () => {
+    if (!cuentaPreliminar) return;
+
+    const doc = new jsPDF();
+    
+    // Título
+    doc.setFontSize(18);
+    doc.text('Cuenta por Pagar', 14, 22);
+    
+    // Información del proveedor
+    doc.setFontSize(12);
+    doc.text(`Proveedor: ${cuentaPreliminar.proveedor?.nombre || "Sin nombre"}`, 14, 32);
+    doc.text(`RIF: ${cuentaPreliminar.proveedor?.rif || "Sin RIF"}`, 14, 38);
+    if (cuentaPreliminar.proveedor?.telefono) {
+      doc.text(`Teléfono: ${cuentaPreliminar.proveedor.telefono}`, 14, 44);
+    }
+    
+    // Fecha
+    doc.text(`Fecha: ${new Date(cuentaPreliminar.fechaCreacion).toLocaleDateString('es-ES')}`, 14, 50);
+    
+    let startY = 60;
+
+    if (cuentaPreliminar.items && cuentaPreliminar.items.length > 0) {
+      // Tabla de items
+      const itemsData = cuentaPreliminar.items.map(item => [
+        item.codigo || "Sin código",
+        item.nombre || "Sin nombre",
+        `$${(item.costo || 0).toFixed(2)}`,
+        (item.cantidad || 0).toString(),
+        `$${(item.subtotal || 0).toFixed(2)}`
+      ]);
+
+      (doc as any).autoTable({
+        startY: startY,
+        head: [['Código', 'Nombre', 'Costo', 'Cantidad', 'Subtotal']],
+        body: itemsData,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 139, 202] },
+        styles: { fontSize: 9 },
+      });
+
+      startY = (doc as any).lastAutoTable.finalY + 10;
+      
+      // Total
+      doc.setFontSize(14);
+      doc.text(`Total: $${(cuentaPreliminar.total || 0).toFixed(2)}`, 150, startY, { align: 'right' });
+    } else if (cuentaPreliminar.descripcion) {
+      // Descripción
+      doc.setFontSize(12);
+      doc.text('Descripción:', 14, startY);
+      startY += 8;
+      
+      const descripcionLines = doc.splitTextToSize(cuentaPreliminar.descripcion, 180);
+      doc.setFontSize(10);
+      descripcionLines.forEach((line: string) => {
+        doc.text(line, 14, startY);
+        startY += 6;
+      });
+      
+      startY += 5;
+      
+      // Monto
+      doc.setFontSize(14);
+      doc.text(`Monto: $${(cuentaPreliminar.monto || cuentaPreliminar.total || 0).toFixed(2)}`, 150, startY, { align: 'right' });
+    }
+
+    // Historial de abonos si existe
+    if (cuentaPreliminar.historialAbonos && cuentaPreliminar.historialAbonos.length > 0) {
+      startY += 10;
+      doc.setFontSize(12);
+      doc.text('Historial de Abonos:', 14, startY);
+      startY += 8;
+
+      const abonosData = cuentaPreliminar.historialAbonos.map(abono => [
+        new Date(abono.fecha).toLocaleDateString('es-ES'),
+        `$${(abono.monto || 0).toFixed(2)}`,
+        abono.metodoPagoNombre || abono.metodoPago || "N/A"
+      ]);
+
+      (doc as any).autoTable({
+        startY: startY,
+        head: [['Fecha', 'Monto', 'Método de Pago']],
+        body: abonosData,
+        theme: 'grid',
+        headStyles: { fillColor: [66, 139, 202] },
+        styles: { fontSize: 9 },
+      });
+
+      startY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(12);
+      doc.text(`Total Abonado: $${(cuentaPreliminar.montoAbonado || 0).toFixed(2)}`, 150, startY, { align: 'right' });
+    }
+
+    // Guardar PDF
+    const nombreArchivo = `cuenta-por-pagar-${cuentaPreliminar.proveedor?.rif || cuentaPreliminar._id.slice(-6)}-${new Date(cuentaPreliminar.fechaCreacion).toISOString().split('T')[0]}.pdf`;
+    doc.save(nombreArchivo);
+  };
+
+  // Generar HTML para impresión desde preliminar
+  const generarHTMLImpresionPreliminar = () => {
+    if (!cuentaPreliminar) return '';
+
+    const fecha = new Date(cuentaPreliminar.fechaCreacion).toLocaleDateString('es-ES');
+
+    let itemsHTML = '';
+    if (cuentaPreliminar.items && cuentaPreliminar.items.length > 0) {
+      itemsHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Código</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Nombre</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Costo</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Cantidad</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cuentaPreliminar.items.map(item => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">${item.codigo || "Sin código"}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${item.nombre || "Sin nombre"}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">$${(item.costo || 0).toFixed(2)}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${item.cantidad || 0}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">$${(item.subtotal || 0).toFixed(2)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="4" style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">Total:</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">$${(cuentaPreliminar.total || 0).toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      `;
+    }
+
+    const descripcionHTML = !cuentaPreliminar.items && cuentaPreliminar.descripcion ? `
+      <div style="margin: 20px 0;">
+        <h3 style="margin-bottom: 10px;">Descripción:</h3>
+        <p style="white-space: pre-wrap;">${cuentaPreliminar.descripcion}</p>
+        <p style="text-align: right; margin-top: 20px; font-size: 18px; font-weight: bold;">Monto: $${(cuentaPreliminar.monto || cuentaPreliminar.total || 0).toFixed(2)}</p>
+      </div>
+    ` : '';
+
+    const historialHTML = cuentaPreliminar.historialAbonos && cuentaPreliminar.historialAbonos.length > 0 ? `
+      <div style="margin: 20px 0;">
+        <h3 style="margin-bottom: 10px;">Historial de Abonos</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #f2f2f2;">
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Fecha</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Monto</th>
+              <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Método de Pago</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${cuentaPreliminar.historialAbonos.map(abono => `
+              <tr>
+                <td style="border: 1px solid #ddd; padding: 8px;">${new Date(abono.fecha).toLocaleDateString('es-ES')}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">$${(abono.monto || 0).toFixed(2)}</td>
+                <td style="border: 1px solid #ddd; padding: 8px;">${abono.metodoPagoNombre || abono.metodoPago || "N/A"}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">Total Abonado:</td>
+              <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">$${(cuentaPreliminar.montoAbonado || 0).toFixed(2)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    ` : '';
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Cuenta por Pagar - ${cuentaPreliminar.proveedor?.nombre || "Sin nombre"}</title>
+        <style>
+          @media print {
+            @page { margin: 20mm; }
+            body { margin: 0; }
+          }
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+          .info-section { margin: 20px 0; }
+          .info-row { margin: 5px 0; }
+          .label { font-weight: bold; display: inline-block; width: 120px; }
+          table { width: 100%; border-collapse: collapse; }
+          th, td { border: 1px solid #ddd; padding: 8px; }
+          th { background-color: #f2f2f2; }
+          .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 class="title">CUENTA POR PAGAR</h1>
+          <p>#${cuentaPreliminar._id.slice(-6)}</p>
+        </div>
+        <div class="info-section">
+          <div class="info-row">
+            <span class="label">Proveedor:</span>
+            <span>${cuentaPreliminar.proveedor?.nombre || "Sin nombre"}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">RIF:</span>
+            <span>${cuentaPreliminar.proveedor?.rif || "Sin RIF"}</span>
+          </div>
+          ${cuentaPreliminar.proveedor?.telefono ? `
+          <div class="info-row">
+            <span class="label">Teléfono:</span>
+            <span>${cuentaPreliminar.proveedor.telefono}</span>
+          </div>
+          ` : ''}
+          <div class="info-row">
+            <span class="label">Fecha:</span>
+            <span>${fecha}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Estado:</span>
+            <span>${cuentaPreliminar.estado === 'pagada' ? 'Pagada' : 'Pendiente'}</span>
+          </div>
+        </div>
+        ${itemsHTML}
+        ${descripcionHTML}
+        ${historialHTML}
+        <div class="footer">
+          <p>Generado el ${new Date().toLocaleDateString('es-ES')} a las ${new Date().toLocaleTimeString('es-ES')}</p>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
   // Imprimir cuenta por pagar
   const handleImprimirCuenta = () => {
     if (!proveedor.nombre || !proveedorSeleccionadoId) {
@@ -872,18 +1127,35 @@ const CuentasPorPagar: React.FC = () => {
                     <div className="mb-3">
                       <p className="text-2xl font-bold text-red-700">${(cuenta.total || 0).toFixed(2)}</p>
                       <p className="text-sm text-gray-600">
-                        Abonado: ${(cuenta.montoAbonado || 0).toFixed(2)} | 
+                        Abonado: ${(() => {
+                          // Calcular total de abonos desde historial si existe, sino usar montoAbonado
+                          if (cuenta.historialAbonos && cuenta.historialAbonos.length > 0) {
+                            return cuenta.historialAbonos.reduce((sum, abono) => sum + (abono.monto || 0), 0);
+                          }
+                          return cuenta.montoAbonado || 0;
+                        })().toFixed(2)} | 
                         Saldo: ${(cuenta.saldoPendiente || 0).toFixed(2)}
                       </p>
                     </div>
-                    <Button
-                      onClick={() => handleAbrirModalAbonar(cuenta)}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                      size="sm"
-                    >
-                      <DollarSign className="w-4 h-4 mr-2" />
-                      Abonar
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={() => handleAbrirModalAbonar(cuenta)}
+                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                        size="sm"
+                      >
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Abonar
+                      </Button>
+                      <Button
+                        onClick={() => handleVerPreliminar(cuenta)}
+                        variant="outline"
+                        className="flex-1"
+                        size="sm"
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Ver Preliminar
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1288,7 +1560,15 @@ const CuentasPorPagar: React.FC = () => {
           <div className="space-y-4">
             <div>
               <p className="text-sm text-gray-600">Total: ${((cuentaSeleccionada?.total) || 0).toFixed(2)}</p>
-              <p className="text-sm text-gray-600">Abonado: ${((cuentaSeleccionada?.montoAbonado) || 0).toFixed(2)}</p>
+              <p className="text-sm text-gray-600">
+                Abonado: ${(() => {
+                  // Calcular total de abonos desde historial si existe, sino usar montoAbonado
+                  if (cuentaSeleccionada?.historialAbonos && cuentaSeleccionada.historialAbonos.length > 0) {
+                    return cuentaSeleccionada.historialAbonos.reduce((sum, abono) => sum + (abono.monto || 0), 0);
+                  }
+                  return cuentaSeleccionada?.montoAbonado || 0;
+                })().toFixed(2)}
+              </p>
               <p className="text-sm font-bold text-red-600">
                 Saldo Pendiente: ${((cuentaSeleccionada?.saldoPendiente) || 0).toFixed(2)}
               </p>
@@ -1343,7 +1623,29 @@ const CuentasPorPagar: React.FC = () => {
       <Dialog open={modalPreliminarOpen} onOpenChange={setModalPreliminarOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Preliminar - Cuenta por Pagar #{cuentaPreliminar?._id.slice(-6)}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle>Preliminar - Cuenta por Pagar #{cuentaPreliminar?._id.slice(-6)}</DialogTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleImprimirPreliminar}
+                  className="gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  Imprimir
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportarPDFPreliminar}
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Exportar PDF
+                </Button>
+              </div>
+            </div>
           </DialogHeader>
 
           {cuentaPreliminar && (
@@ -1393,10 +1695,26 @@ const CuentasPorPagar: React.FC = () => {
               )}
 
               {/* Resumen */}
-              <div className="border rounded-lg p-4">
+              <div className="border rounded-lg p-4 space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-lg">Total:</span>
                   <span className="font-bold text-xl">${(cuentaPreliminar.total || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="font-semibold">Total Abonado:</span>
+                  <span className="font-bold text-green-600">
+                    ${(() => {
+                      // Calcular total de abonos desde historial si existe, sino usar montoAbonado
+                      if (cuentaPreliminar.historialAbonos && cuentaPreliminar.historialAbonos.length > 0) {
+                        return cuentaPreliminar.historialAbonos.reduce((sum, abono) => sum + (abono.monto || 0), 0);
+                      }
+                      return cuentaPreliminar.montoAbonado || 0;
+                    })().toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-semibold">Saldo Pendiente:</span>
+                  <span className="font-bold text-red-600">${(cuentaPreliminar.saldoPendiente || 0).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -1427,7 +1745,13 @@ const CuentasPorPagar: React.FC = () => {
                   <div className="mt-2 pt-2 border-t">
                     <div className="flex justify-between">
                       <span>Total Abonado:</span>
-                      <span className="font-bold">${(cuentaPreliminar.montoAbonado || 0).toFixed(2)}</span>
+                      <span className="font-bold">${(() => {
+                        // Calcular total de abonos desde historial si existe, sino usar montoAbonado
+                        if (cuentaPreliminar.historialAbonos && cuentaPreliminar.historialAbonos.length > 0) {
+                          return cuentaPreliminar.historialAbonos.reduce((sum, abono) => sum + (abono.monto || 0), 0);
+                        }
+                        return cuentaPreliminar.montoAbonado || 0;
+                      })().toFixed(2)}</span>
                     </div>
                   </div>
                 </div>
