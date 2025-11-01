@@ -439,56 +439,10 @@ const CuentasPorPagar: React.FC = () => {
       console.log("✅ Cuenta por pagar creada - Respuesta del backend:", respuesta);
       console.log("✅ Respuesta completa:", JSON.stringify(respuesta, null, 2));
 
-      // Si hay items, actualizar inventario SUMANDO las cantidades
-      if (mostrarItems && itemsSeleccionados.length > 0) {
-        console.log("🔄 Actualizando inventario - sumando cantidades...");
-        for (const item of itemsSeleccionados) {
-          try {
-            const token = localStorage.getItem('access_token');
-            // Primero obtener el item actual
-            const response = await fetch(`${apiUrl}/inventario/id/${item.itemId}/`, {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-            
-            if (!response.ok) {
-              throw new Error(`Error al obtener item: ${response.statusText}`);
-            }
-            
-            const itemActual = await response.json();
-            console.log(`📦 Item actual ${item.codigo || item.nombre}: cantidad actual = ${itemActual.cantidad || 0}`);
-            
-            // Actualizar con la nueva cantidad (SUMAR)
-            const nuevaCantidad = (itemActual.cantidad || 0) + item.cantidad;
-            console.log(`➕ Sumando ${item.cantidad} a ${itemActual.cantidad || 0} = ${nuevaCantidad}`);
-            
-            const updateResponse = await fetch(`${apiUrl}/inventario/id/${item.itemId}/`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                cantidad: nuevaCantidad
-              })
-            });
-            
-            if (!updateResponse.ok) {
-              const errorData = await updateResponse.json().catch(() => ({ message: updateResponse.statusText }));
-              throw new Error(`Error al actualizar: ${errorData.message || updateResponse.statusText}`);
-            }
-            
-            console.log(`✅ Item ${item.codigo || item.nombre} actualizado correctamente a ${nuevaCantidad}`);
-          } catch (error: any) {
-            console.error(`❌ Error al actualizar item ${item.itemId} (${item.nombre}):`, error);
-            alert(`Error al actualizar inventario del item "${item.nombre}": ${error.message}`);
-          }
-        }
-        console.log("✅ Inventario actualizado correctamente");
-      }
+      // El backend ahora actualiza automáticamente el inventario (cantidad y costo)
+      // No es necesario actualizar desde el frontend
 
-      alert("✓ Cuenta por pagar creada exitosamente\n✓ Inventario actualizado (cantidades sumadas)");
+      alert("✓ Cuenta por pagar creada exitosamente\n✓ Inventario actualizado automáticamente por el backend");
       resetearFormulario();
       setModalCrearOpen(false);
       fetchCuentasData();
