@@ -39,29 +39,47 @@ const ClienteDashboard: React.FC = () => {
     const clienteId = localStorage.getItem("cliente_id");
     const token = localStorage.getItem("cliente_access_token");
     
-    if (clienteId && token && itemsCarrito.length >= 0) {
+    if (clienteId && token) {
       try {
-        // Último guardado en BD antes de cerrar sesión
+        // Último guardado en BD antes de cerrar sesión (esperar a que se complete)
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-        await fetch(`${apiUrl}/clientes/${clienteId}/carrito`, {
-          method: "PUT",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ items: itemsCarrito }),
-        });
+        await Promise.all([
+          // Guardar carrito
+          fetch(`${apiUrl}/clientes/${clienteId}/carrito`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ items: itemsCarrito }),
+          }),
+          // Guardar preferencias (vista activa)
+          fetch(`${apiUrl}/clientes/${clienteId}/preferencias`, {
+            method: "PUT",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ vista_activa: vistaActiva }),
+          }),
+        ]);
+        console.log("✓ Datos guardados antes de cerrar sesión");
       } catch (error) {
-        console.error("Error al guardar carrito antes de cerrar sesión:", error);
+        console.error("Error al guardar datos antes de cerrar sesión:", error);
+        // Continuar con el logout aunque falle el guardado
       }
     }
     
-    // Solo eliminar credenciales, NO los datos del carrito
-    // El carrito se mantiene guardado por cliente_id en localStorage y BD
+    // Solo eliminar credenciales, NO los datos
+    // El carrito, preferencias y perfil se mantienen guardados por cliente_id en BD
     localStorage.removeItem("cliente_access_token");
     localStorage.removeItem("cliente_usuario");
     localStorage.removeItem("cliente_id");
     localStorage.removeItem("cliente_nombre");
+    
+    // NO eliminar localStorage del carrito - se mantiene para próxima sesión
+    // localStorage.removeItem(`cliente_carrito_${clienteId}`); // NO hacer esto
+    
     navigate("/usuarios");
   };
 
@@ -128,8 +146,15 @@ const ClienteDashboard: React.FC = () => {
             setVistaActiva(data.preferencias.vista_activa as VistaActiva);
           }
 
+          // Guardar preferencias en localStorage también
+          if (data.preferencias && data.preferencias.vista_activa) {
+            localStorage.setItem(`cliente_preferencias_${clienteId}`, JSON.stringify(data.preferencias));
+          }
+
           // Cargar borradores si es necesario en el futuro
           // if (data.borradores) { ... }
+          
+          console.log("✓ Datos del dashboard cargados desde BD");
           
         } else {
           console.error("Error al cargar datos del dashboard:", res.statusText);
@@ -183,7 +208,7 @@ const ClienteDashboard: React.FC = () => {
     cargarDatosDashboard();
   }, [navigate]);
 
-  // Guardar carrito en BD cuando cambie (con debounce)
+  // Guardar carrito en BD cuando cambie (con debounce reducido)
   useEffect(() => {
     const clienteId = localStorage.getItem("cliente_id");
     const token = localStorage.getItem("cliente_access_token");
@@ -192,11 +217,11 @@ const ClienteDashboard: React.FC = () => {
     // Guardar en localStorage inmediatamente (para rapidez)
     localStorage.setItem(`cliente_carrito_${clienteId}`, JSON.stringify(itemsCarrito));
 
-    // Guardar en BD con debounce (cada 2 segundos después del último cambio)
+    // Guardar en BD con debounce reducido (500ms después del último cambio)
     const timeoutId = setTimeout(async () => {
       try {
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-        await fetch(`${apiUrl}/clientes/${clienteId}/carrito`, {
+        const res = await fetch(`${apiUrl}/clientes/${clienteId}/carrito`, {
           method: "PUT",
           headers: {
             "Authorization": `Bearer ${token}`,
@@ -204,10 +229,15 @@ const ClienteDashboard: React.FC = () => {
           },
           body: JSON.stringify({ items: itemsCarrito }),
         });
+        if (res.ok) {
+          console.log("✓ Carrito guardado en BD");
+        } else {
+          console.error("Error al guardar carrito en BD:", res.statusText);
+        }
       } catch (error) {
         console.error("Error al guardar carrito en BD:", error);
       }
-    }, 2000);
+    }, 500); // Reducido de 2000ms a 500ms para guardar más rápido
 
     return () => clearTimeout(timeoutId);
   }, [itemsCarrito]);
@@ -355,13 +385,13 @@ const ClienteDashboard: React.FC = () => {
                   onClick={async () => {
                     setVistaActiva(item.id);
                     setMenuAbierto(false);
-                    // Guardar preferencia de vista activa en BD
+                    // Guardar preferencia de vista activa en BD inmediatamente
                     const clienteId = localStorage.getItem("cliente_id");
                     const token = localStorage.getItem("cliente_access_token");
                     if (clienteId && token) {
                       try {
                         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-                        await fetch(`${apiUrl}/clientes/${clienteId}/preferencias`, {
+                        const res = await fetch(`${apiUrl}/clientes/${clienteId}/preferencias`, {
                           method: "PUT",
                           headers: {
                             "Authorization": `Bearer ${token}`,
@@ -369,6 +399,9 @@ const ClienteDashboard: React.FC = () => {
                           },
                           body: JSON.stringify({ vista_activa: item.id }),
                         });
+                        if (res.ok) {
+                          console.log("✓ Preferencia guardada en BD");
+                        }
                       } catch (error) {
                         console.error("Error al guardar preferencia:", error);
                       }
