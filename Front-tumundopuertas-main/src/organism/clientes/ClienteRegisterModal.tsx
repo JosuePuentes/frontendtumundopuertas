@@ -24,6 +24,7 @@ const ClienteRegisterModal: React.FC<ClienteRegisterModalProps> = ({
     cedula: "",
     direccion: "",
     telefono: "",
+    email: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +142,19 @@ const ClienteRegisterModal: React.FC<ClienteRegisterModalProps> = ({
               onChange={handleChange}
               className="bg-gray-700 border-gray-600 text-white mt-1"
               placeholder="Ingresa tu teléfono"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="email" className="text-gray-200">Correo Electrónico</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={handleChange}
+              className="bg-gray-700 border-gray-600 text-white mt-1"
+              placeholder="Ingresa tu correo electrónico"
               required
             />
           </div>

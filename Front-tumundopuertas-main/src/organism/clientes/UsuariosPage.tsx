@@ -3,11 +3,13 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import ClienteLoginModal from "./ClienteLoginModal";
 import ClienteRegisterModal from "./ClienteRegisterModal";
+import ClienteForgotPassword from "./ClienteForgotPassword";
 
 const UsuariosPage: React.FC = () => {
   const navigate = useNavigate();
   const [loginOpen, setLoginOpen] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false);
 
   // Verificar si ya está logueado
   React.useEffect(() => {
@@ -67,6 +69,9 @@ const UsuariosPage: React.FC = () => {
           setRegisterOpen(true);
         }}
         onLoginSuccess={handleLoginSuccess}
+        onForgotPassword={() => {
+          setForgotPasswordOpen(true);
+        }}
       />
 
       <ClienteRegisterModal
@@ -78,6 +83,15 @@ const UsuariosPage: React.FC = () => {
         }}
         onRegisterSuccess={() => {
           setRegisterOpen(false);
+          setLoginOpen(true);
+        }}
+      />
+
+      <ClienteForgotPassword
+        open={forgotPasswordOpen}
+        onClose={() => setForgotPasswordOpen(false)}
+        onSwitchToLogin={() => {
+          setForgotPasswordOpen(false);
           setLoginOpen(true);
         }}
       />

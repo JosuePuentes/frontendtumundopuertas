@@ -9,6 +9,7 @@ interface ClienteLoginModalProps {
   onClose: () => void;
   onSwitchToRegister: () => void;
   onLoginSuccess: () => void;
+  onForgotPassword: () => void;
 }
 
 const ClienteLoginModal: React.FC<ClienteLoginModalProps> = ({
@@ -16,6 +17,7 @@ const ClienteLoginModal: React.FC<ClienteLoginModalProps> = ({
   onClose,
   onSwitchToRegister,
   onLoginSuccess,
+  onForgotPassword,
 }) => {
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
@@ -94,13 +96,23 @@ const ClienteLoginModal: React.FC<ClienteLoginModalProps> = ({
           >
             {loading ? "Ingresando..." : "Iniciar Sesión"}
           </Button>
-          <div className="text-center mt-4">
+          <div className="text-center mt-4 space-y-2">
             <button
               type="button"
               onClick={onSwitchToRegister}
-              className="text-cyan-400 hover:text-cyan-300 text-sm underline"
+              className="text-cyan-400 hover:text-cyan-300 text-sm underline block"
             >
               ¿No tienes cuenta? Crear usuario
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onForgotPassword();
+              }}
+              className="text-cyan-400 hover:text-cyan-300 text-sm underline block"
+            >
+              ¿Olvidaste tu contraseña?
             </button>
           </div>
         </form>

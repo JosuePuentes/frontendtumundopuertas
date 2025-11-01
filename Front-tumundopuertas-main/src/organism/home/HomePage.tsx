@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import ClienteLoginModal from "@/organism/clientes/ClienteLoginModal";
 import ClienteRegisterModal from "@/organism/clientes/ClienteRegisterModal";
+import ClienteForgotPassword from "@/organism/clientes/ClienteForgotPassword";
 import { 
   Users, 
   Package, 
@@ -79,6 +80,7 @@ const HomePage: React.FC = () => {
     const [config, setConfig] = useState<HomeConfig | null>(null);
     const [loginModalOpen, setLoginModalOpen] = useState(false);
     const [registerModalOpen, setRegisterModalOpen] = useState(false);
+    const [forgotPasswordModalOpen, setForgotPasswordModalOpen] = useState(false);
     
     // Función para obtener permisos del usuario
     const getPermisos = (): string[] => {
@@ -641,6 +643,9 @@ const HomePage: React.FC = () => {
                 onLoginSuccess={() => {
                     navigate('/clientes');
                 }}
+                onForgotPassword={() => {
+                    setForgotPasswordModalOpen(true);
+                }}
             />
 
             <ClienteRegisterModal
@@ -652,6 +657,15 @@ const HomePage: React.FC = () => {
                 }}
                 onRegisterSuccess={() => {
                     setRegisterModalOpen(false);
+                    setLoginModalOpen(true);
+                }}
+            />
+
+            <ClienteForgotPassword
+                open={forgotPasswordModalOpen}
+                onClose={() => setForgotPasswordModalOpen(false)}
+                onSwitchToLogin={() => {
+                    setForgotPasswordModalOpen(false);
                     setLoginModalOpen(true);
                 }}
             />

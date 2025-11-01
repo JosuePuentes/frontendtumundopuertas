@@ -23,7 +23,8 @@ Se ha creado un módulo completo para que los clientes puedan:
   "nombre": "string",
   "cedula": "string",
   "direccion": "string",
-  "telefono": "string"
+  "telefono": "string",
+  "email": "string (formato email válido)"
 }
 ```
 
@@ -37,6 +38,7 @@ Se ha creado un módulo completo para que los clientes puedan:
 
 **Validaciones:**
 - Usuario único
+- Email único y formato válido
 - Password mínimo 6 caracteres
 - Todos los campos requeridos
 
@@ -51,6 +53,7 @@ Se ha creado un módulo completo para que los clientes puedan:
   cedula: String,
   direccion: String,
   telefono: String,
+  email: String,  // único, formato email válido
   rol: "cliente",  // fijo
   fecha_creacion: Date,
   activo: Boolean // default: true
@@ -84,6 +87,113 @@ Se ha creado un módulo completo para que los clientes puedan:
 - Verificar que el cliente existe
 - Verificar password
 - Verificar que está activo
+
+---
+
+### POST `/auth/clientes/forgot-password/`
+**Descripción:** Solicitar código de recuperación de contraseña por email
+
+**Body:**
+```json
+{
+  "email": "string"
+}
+```
+
+**Respuesta (200):**
+```json
+{
+  "message": "Código de recuperación enviado a tu correo electrónico"
+}
+```
+
+**Validaciones:**
+- Verificar que el email existe en la colección `clientes`
+- Generar código de recuperación único (6 dígitos o alfanumérico)
+- Almacenar código con timestamp de expiración (15 minutos)
+- Enviar código por email al cliente
+
+**Estructura temporal para códigos de recuperación:**
+```javascript
+// Puede almacenarse en una colección separada o en el documento del cliente
+{
+  cliente_id: ObjectId,
+  codigo: String, // código de 6 dígitos o alfanumérico
+  email: String,
+  expira_en: Date, // fecha de expiración (15 minutos)
+  usado: Boolean // default: false
+}
+```
+
+**Nota:** El código debe expirar después de 15 minutos y solo puede usarse una vez.
+
+---
+
+### POST `/auth/clientes/verify-code/`
+**Descripción:** Verificar código de recuperación
+
+**Body:**
+```json
+{
+  "email": "string",
+  "codigo": "string"
+}
+```
+
+**Respuesta (200):**
+```json
+{
+  "message": "Código verificado correctamente",
+  "valid": true
+}
+```
+
+**Validaciones:**
+- Verificar que el código existe y no ha expirado
+- Verificar que el código no ha sido usado
+- Verificar que el email coincide
+- Marcar código como usado después de verificación exitosa
+
+**Errores:**
+- `400`: Código inválido o expirado
+- `400`: Código ya usado
+- `404`: Email no encontrado
+
+---
+
+### POST `/auth/clientes/reset-password/`
+**Descripción:** Restablecer contraseña con código de recuperación
+
+**Body:**
+```json
+{
+  "email": "string",
+  "codigo": "string",
+  "nueva_password": "string (mínimo 6 caracteres)"
+}
+```
+
+**Respuesta (200):**
+```json
+{
+  "message": "Contraseña restablecida exitosamente"
+}
+```
+
+**Validaciones:**
+- Verificar que el código es válido y no ha expirado
+- Verificar que el código no ha sido usado
+- Verificar que la nueva contraseña tiene mínimo 6 caracteres
+- Hashear la nueva contraseña con bcrypt
+- Actualizar password en el documento del cliente
+- Eliminar o marcar como usado el código de recuperación
+
+**Errores:**
+- `400`: Código inválido o expirado
+- `400`: Nueva contraseña debe tener mínimo 6 caracteres
+- `404`: Email no encontrado
+
+**Nota:** Después de restablecer la contraseña, el código debe invalidarse para evitar uso múltiple.
 
 ---
 
@@ -256,9 +366,12 @@ Authorization: Bearer {cliente_access_token}
   "cedula": "string",
   "direccion": "string",
   "telefono": "string",
+  "email": "string",
   "usuario": "string"
 }
 ```
+
+**Nota:** Se actualizó para incluir el campo `email` en la respuesta.
 
 ---
 
@@ -277,9 +390,12 @@ Content-Type: application/json
   "nombre": "string",
   "cedula": "string",
   "direccion": "string",
-  "telefono": "string"
+  "telefono": "string",
+  "email": "string"
 }
 ```
+
+**Nota:** Se actualizó para incluir el campo `email` en la actualización.
 
 **Respuesta (200):**
 ```json
@@ -334,6 +450,11 @@ Authorization: Bearer {cliente_access_token}
 // Colección clientes
 db.clientes.createIndex({ "usuario": 1 }, { unique: true });
 db.clientes.createIndex({ "cedula": 1 });
+db.clientes.createIndex({ "email": 1 }, { unique: true });
+
+// Colección códigos de recuperación (si se usa colección separada)
+db.codigos_recuperacion.createIndex({ "email": 1, "codigo": 1 });
+db.codigos_recuperacion.createIndex({ "expira_en": 1 }, { expireAfterSeconds: 0 });
 
 // Colección pedidos (para clientes)
 db.pedidos.createIndex({ "cliente_id": 1, "tipo": "cliente" });
