@@ -34,7 +34,30 @@ const ClienteDashboard: React.FC = () => {
   const prevItemsCountRef = useRef(0);
   const clienteNombre = localStorage.getItem("cliente_nombre") || "Usuario";
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Guardar carrito y datos antes de cerrar sesión (si hay cliente_id)
+    const clienteId = localStorage.getItem("cliente_id");
+    const token = localStorage.getItem("cliente_access_token");
+    
+    if (clienteId && token && itemsCarrito.length >= 0) {
+      try {
+        // Último guardado en BD antes de cerrar sesión
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        await fetch(`${apiUrl}/clientes/${clienteId}/carrito`, {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ items: itemsCarrito }),
+        });
+      } catch (error) {
+        console.error("Error al guardar carrito antes de cerrar sesión:", error);
+      }
+    }
+    
+    // Solo eliminar credenciales, NO los datos del carrito
+    // El carrito se mantiene guardado por cliente_id en localStorage y BD
     localStorage.removeItem("cliente_access_token");
     localStorage.removeItem("cliente_usuario");
     localStorage.removeItem("cliente_id");
@@ -350,21 +373,21 @@ const ClienteDashboard: React.FC = () => {
         duration={3000}
       />
 
-      {/* Carrito flotante */}
-      {totalItemsCarrito > 0 && (
-        <button
-          onClick={() => setVistaActiva("carrito")}
-          className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-full p-4 shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-cyan-500/50 flex items-center justify-center group"
-          title="Ver carrito"
-        >
-          <div className="relative">
-            <ShoppingCart className="w-6 h-6" />
+      {/* Carrito flotante - Siempre visible */}
+      <button
+        onClick={() => setVistaActiva("carrito")}
+        className="fixed bottom-6 right-6 z-50 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white rounded-full p-4 shadow-2xl transition-all duration-300 hover:scale-110 hover:shadow-cyan-500/50 flex items-center justify-center group"
+        title="Ver carrito"
+      >
+        <div className="relative">
+          <ShoppingCart className="w-6 h-6" />
+          {totalItemsCarrito > 0 && (
             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center animate-pulse">
               {totalItemsCarrito > 99 ? '99+' : totalItemsCarrito}
             </span>
-          </div>
-        </button>
-      )}
+          )}
+        </div>
+      </button>
     </div>
   );
 };
