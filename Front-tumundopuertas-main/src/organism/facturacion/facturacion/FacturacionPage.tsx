@@ -523,14 +523,16 @@ const FacturacionPage: React.FC = () => {
           const facturasLocal = JSON.parse(storedFacturas);
           if (Array.isArray(facturasLocal) && facturasLocal.length > 0) {
             // Normalizar también las facturas del localStorage
+            // Nota: En esta carga inicial no tenemos los pedidos completos aún, 
+            // pero los normalizaremos cuando llegue la respuesta del backend
             const facturasLocalNormalizadas = facturasLocal.map((f: any) => ({
               id: f.id || f._id || `factura-${Date.now()}-${Math.random()}`,
               numeroFactura: f.numeroFactura || f.numero_factura || 'Sin número',
               pedidoId: f.pedidoId || f.pedido_id || f._id || '',
               clienteNombre: f.clienteNombre || f.cliente_nombre || 'Sin nombre',
               clienteId: f.clienteId || f.cliente_id || '',
-              montoTotal: typeof f.montoTotal === 'number' ? f.montoTotal : 
-                         (typeof f.monto_total === 'number' ? f.monto_total : 0),
+              montoTotal: typeof f.montoTotal === 'number' && f.montoTotal > 0 ? f.montoTotal : 
+                         (typeof f.monto_total === 'number' && f.monto_total > 0 ? f.monto_total : 0),
               fechaCreacion: f.fechaCreacion || f.fecha_creacion || new Date().toISOString(),
               fechaFacturacion: f.fechaFacturacion || f.fecha_facturacion || f.createdAt || new Date().toISOString(),
               items: f.items || []
@@ -563,25 +565,56 @@ const FacturacionPage: React.FC = () => {
           // SIEMPRE usar datos del backend si están disponibles (aunque esté vacío)
           // Esto asegura que los datos en la UI coincidan con lo que está en la BD
           console.log('📥 Facturas recibidas del backend:', facturasBackend.length);
+          console.log('📥 Ejemplo de factura cruda del backend:', facturasBackend[0]);
+          
+          // Intentar obtener los pedidos completos para completar datos faltantes
+          let pedidosCompletos: any[] = [];
+          try {
+            const res = await fetch(`${getApiUrl()}/pedidos/all/`);
+            if (res.ok) {
+              pedidosCompletos = await res.json();
+              console.log('📦 Pedidos completos obtenidos para complementar facturas:', pedidosCompletos.length);
+            }
+          } catch (e) {
+            console.warn('⚠️ No se pudieron obtener pedidos completos:', e);
+          }
           
           // Normalizar las facturas del backend para asegurar que tengan todos los campos necesarios
-          const facturasNormalizadas = facturasBackend.map((f: any) => ({
-            id: f.id || f._id || `factura-${Date.now()}-${Math.random()}`,
-            numeroFactura: f.numeroFactura || f.numero_factura || 'Sin número',
-            pedidoId: f.pedidoId || f.pedido_id || f._id || '',
-            clienteNombre: f.clienteNombre || f.cliente_nombre || 'Sin nombre',
-            clienteId: f.clienteId || f.cliente_id || f.clienteId || '',
-            montoTotal: typeof f.montoTotal === 'number' ? f.montoTotal : 
-                       (typeof f.monto_total === 'number' ? f.monto_total : 0),
-            fechaCreacion: f.fechaCreacion || f.fecha_creacion || new Date().toISOString(),
-            fechaFacturacion: f.fechaFacturacion || f.fecha_facturacion || f.createdAt || new Date().toISOString(),
-            items: f.items || []
-          }));
+          const facturasNormalizadas = facturasBackend.map((f: any) => {
+            // Buscar el pedido completo correspondiente si falta información
+            const pedidoCompleto = pedidosCompletos.find((p: any) => 
+              (f.pedidoId && p._id === f.pedidoId) || 
+              (f.pedido_id && p._id === f.pedido_id) ||
+              (f._id && p._id === f._id)
+            );
+            
+            // Extraer datos del pedido completo si existe
+            const clienteNombrePedido = pedidoCompleto?.cliente_nombre || pedidoCompleto?.clienteNombre;
+            const clienteIdPedido = pedidoCompleto?.cliente_id || pedidoCompleto?.clienteId;
+            const montoTotalPedido = pedidoCompleto?.montoTotal || 
+              (pedidoCompleto?.items?.reduce((acc: number, item: any) => 
+                acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0);
+            
+            return {
+              id: f.id || f._id || `factura-${Date.now()}-${Math.random()}`,
+              numeroFactura: f.numeroFactura || f.numero_factura || 'Sin número',
+              pedidoId: f.pedidoId || f.pedido_id || f._id || pedidoCompleto?._id || '',
+              clienteNombre: f.clienteNombre || f.cliente_nombre || clienteNombrePedido || 'Sin nombre',
+              clienteId: f.clienteId || f.cliente_id || clienteIdPedido || '',
+              montoTotal: typeof f.montoTotal === 'number' && f.montoTotal > 0 ? f.montoTotal : 
+                         (typeof f.monto_total === 'number' && f.monto_total > 0 ? f.monto_total : 
+                         (montoTotalPedido > 0 ? montoTotalPedido : 0)),
+              fechaCreacion: f.fechaCreacion || f.fecha_creacion || pedidoCompleto?.fecha_creacion || new Date().toISOString(),
+              fechaFacturacion: f.fechaFacturacion || f.fecha_facturacion || f.createdAt || new Date().toISOString(),
+              items: f.items || pedidoCompleto?.items || []
+            };
+          });
           
           console.log('📥 Detalle de facturas normalizadas:', facturasNormalizadas.map((f: any) => ({
             id: f.id,
             pedidoId: f.pedidoId,
             numeroFactura: f.numeroFactura,
+            clienteNombre: f.clienteNombre,
             fechaFacturacion: f.fechaFacturacion,
             montoTotal: f.montoTotal
           })));
