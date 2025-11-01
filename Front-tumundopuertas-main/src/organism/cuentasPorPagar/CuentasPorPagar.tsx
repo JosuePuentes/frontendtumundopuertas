@@ -35,7 +35,8 @@ import {
   CheckCircle2,
   XCircle,
   Printer,
-  Download
+  Download,
+  Trash2
 } from "lucide-react";
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -283,7 +284,10 @@ const CuentasPorPagar: React.FC = () => {
   };
 
   const eliminarItem = (index: number) => {
-    setItemsSeleccionados(itemsSeleccionados.filter((_, i) => i !== index));
+    const item = itemsSeleccionados[index];
+    if (window.confirm(`¿Estás seguro de que deseas eliminar el item "${item.nombre}"?`)) {
+      setItemsSeleccionados(itemsSeleccionados.filter((_, i) => i !== index));
+    }
   };
 
   const actualizarItem = (index: number, campo: keyof ItemCuentaPorPagar, valor: any) => {
@@ -1068,8 +1072,10 @@ const CuentasPorPagar: React.FC = () => {
                                     variant="destructive"
                                     size="sm"
                                     onClick={() => eliminarItem(index)}
-                                    className="w-full"
+                                    className="w-full gap-1"
+                                    title="Eliminar item"
                                   >
+                                    <Trash2 className="w-4 h-4" />
                                     Eliminar
                                   </Button>
                                 </TableCell>
