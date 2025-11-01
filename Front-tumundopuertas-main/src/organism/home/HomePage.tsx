@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import ClienteLoginModal from "@/organism/clientes/ClienteLoginModal";
+import ClienteRegisterModal from "@/organism/clientes/ClienteRegisterModal";
 import { 
   Users, 
   Package, 
@@ -75,6 +77,8 @@ const HomePage: React.FC = () => {
     const navigate = useNavigate();
     const isAuthenticated = !!localStorage.getItem("usuario");
     const [config, setConfig] = useState<HomeConfig | null>(null);
+    const [loginModalOpen, setLoginModalOpen] = useState(false);
+    const [registerModalOpen, setRegisterModalOpen] = useState(false);
     
     // Función para obtener permisos del usuario
     const getPermisos = (): string[] => {
@@ -292,6 +296,13 @@ const HomePage: React.FC = () => {
             icon: Settings,
             color: "from-cyan-400 to-blue-500",
             href: "/dashboard"
+        },
+        {
+            title: "Área de Clientes",
+            description: "Acceso para clientes",
+            icon: Users,
+            color: "from-purple-400 to-pink-500",
+            href: "/usuarios"
         }
     ];
 
@@ -536,12 +547,20 @@ const HomePage: React.FC = () => {
                         </span>
                     </div>
                     
-                    <Button 
-                        onClick={() => navigate('/dashboard')}
-                        className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25 text-sm sm:text-base w-full sm:w-auto"
-                    >
-                        Panel de Control
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <Button 
+                            onClick={() => setLoginModalOpen(true)}
+                            className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-purple-500/25 text-sm sm:text-base"
+                        >
+                            Iniciar Sesión
+                        </Button>
+                        <Button 
+                            onClick={() => navigate('/dashboard')}
+                            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-cyan-500/25 text-sm sm:text-base w-full sm:w-auto"
+                        >
+                            Panel de Control
+                        </Button>
+                    </div>
                 </div>
             </header>
 
@@ -590,6 +609,32 @@ const HomePage: React.FC = () => {
                     </div>
                 </div>
             </main>
+
+            {/* Modales de Cliente */}
+            <ClienteLoginModal
+                open={loginModalOpen}
+                onClose={() => setLoginModalOpen(false)}
+                onSwitchToRegister={() => {
+                    setLoginModalOpen(false);
+                    setRegisterModalOpen(true);
+                }}
+                onLoginSuccess={() => {
+                    navigate('/clientes');
+                }}
+            />
+
+            <ClienteRegisterModal
+                open={registerModalOpen}
+                onClose={() => setRegisterModalOpen(false)}
+                onSwitchToLogin={() => {
+                    setRegisterModalOpen(false);
+                    setLoginModalOpen(true);
+                }}
+                onRegisterSuccess={() => {
+                    setRegisterModalOpen(false);
+                    setLoginModalOpen(true);
+                }}
+            />
         </div>
     );
 };
