@@ -268,7 +268,14 @@ const CuentasPorPagar: React.FC = () => {
     };
     setItemsSeleccionados([...itemsSeleccionados, nuevoItem]);
     setItemBusqueda("");
-    setMostrarItems(false);
+    // Mantener el dropdown visible pero limpiar la búsqueda
+    setTimeout(() => {
+      // Scroll automático hacia el nuevo item agregado después de un breve delay
+      const itemsContainer = document.querySelector('[data-items-container]');
+      if (itemsContainer) {
+        itemsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 100);
   };
 
   const eliminarItem = (index: number) => {
@@ -609,15 +616,15 @@ const CuentasPorPagar: React.FC = () => {
 
       {/* Modal Crear Cuenta */}
       <Dialog open={modalCrearOpen} onOpenChange={setModalCrearOpen}>
-        <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Agregar Cuenta por Pagar</DialogTitle>
+        <DialogContent className="max-w-[90vw] w-[90vw] max-h-[85vh] h-[85vh] overflow-hidden flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="text-2xl">Agregar Cuenta por Pagar</DialogTitle>
             <DialogDescription>
               Complete la información del proveedor y los items o descripción
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-y-auto flex-1 pr-2">
             {/* Selector de Proveedor */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -796,11 +803,13 @@ const CuentasPorPagar: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Items seleccionados */}
-                {itemsSeleccionados.length > 0 && (
-                  <div className="space-y-3 border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
-                    <Label className="text-lg font-bold text-blue-800">Items Seleccionados ({itemsSeleccionados.length})</Label>
-                    <div className="max-h-[400px] overflow-y-auto border rounded-md bg-white">
+                {/* Items seleccionados - Siempre visible cuando hay items */}
+                <div data-items-container className="space-y-3 border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
+                  <Label className="text-lg font-bold text-blue-800">
+                    Items Seleccionados ({itemsSeleccionados.length})
+                  </Label>
+                  {itemsSeleccionados.length > 0 ? (
+                    <div className="max-h-[350px] overflow-y-auto border rounded-md bg-white">
                       <Table>
                         <TableHeader className="sticky top-0 bg-gray-100 z-10">
                           <TableRow>
@@ -856,8 +865,12 @@ const CuentasPorPagar: React.FC = () => {
                       <span className="text-lg font-semibold text-gray-700">Total de Items:</span>
                       <span className="text-2xl font-bold text-blue-700">${totalItems.toFixed(2)}</span>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="border rounded-md bg-white p-8 text-center text-gray-500">
+                      <p>No hay items agregados. Busca y selecciona items del inventario arriba.</p>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="space-y-4">
@@ -884,21 +897,22 @@ const CuentasPorPagar: React.FC = () => {
               </div>
             )}
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
-              <Button variant="outline" onClick={() => {
-                setModalCrearOpen(false);
-                resetearFormulario();
-              }}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleCrearCuenta}
-                disabled={loading}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {loading ? "Guardando..." : "Guardar Cuenta por Pagar"}
-              </Button>
-            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 mt-4">
+            <Button variant="outline" onClick={() => {
+              setModalCrearOpen(false);
+              resetearFormulario();
+            }}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCrearCuenta}
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {loading ? "Guardando..." : "Guardar Cuenta por Pagar"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
