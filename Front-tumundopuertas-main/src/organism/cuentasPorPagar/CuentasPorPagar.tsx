@@ -806,7 +806,7 @@ const CuentasPorPagar: React.FC = () => {
 
       {/* Modal Crear Cuenta */}
       <Dialog open={modalCrearOpen} onOpenChange={setModalCrearOpen}>
-        <DialogContent className="max-w-[80vw] w-[80vw] max-h-[80vh] h-[80vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[95vh] h-[95vh] overflow-hidden flex flex-col p-0 m-0">
           <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
             <div className="flex items-center justify-between">
               <div>
@@ -1026,7 +1026,7 @@ const CuentasPorPagar: React.FC = () => {
                   </Label>
                   {itemsSeleccionados.length > 0 ? (
                     <>
-                      <div className="max-h-[350px] overflow-y-auto border rounded-md bg-white">
+                      <div className="max-h-[500px] overflow-y-auto border rounded-md bg-white">
                         <Table>
                           <TableHeader className="sticky top-0 bg-gray-100 z-10">
                             <TableRow>
