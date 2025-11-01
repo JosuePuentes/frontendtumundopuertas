@@ -350,23 +350,36 @@ const CuentasPorPagar: React.FC = () => {
         estado: "pendiente"
       };
 
-      await createCuentaPorPagar(nuevaCuenta);
+      console.log("📤 Enviando cuenta por pagar:", nuevaCuenta);
 
-      // Si hay items, actualizar inventario sumando las cantidades
+      const respuesta = await createCuentaPorPagar(nuevaCuenta);
+      console.log("✅ Cuenta por pagar creada:", respuesta);
+
+      // Si hay items, actualizar inventario SUMANDO las cantidades
       if (mostrarItems && itemsSeleccionados.length > 0) {
+        console.log("🔄 Actualizando inventario - sumando cantidades...");
         for (const item of itemsSeleccionados) {
           try {
             const token = localStorage.getItem('access_token');
             // Primero obtener el item actual
-            const itemActual = await fetch(`${apiUrl}/inventario/id/${item.itemId}/`, {
+            const response = await fetch(`${apiUrl}/inventario/id/${item.itemId}/`, {
               headers: {
                 'Authorization': `Bearer ${token}`
               }
-            }).then(res => res.json());
+            });
             
-            // Actualizar con la nueva cantidad (sumar)
+            if (!response.ok) {
+              throw new Error(`Error al obtener item: ${response.statusText}`);
+            }
+            
+            const itemActual = await response.json();
+            console.log(`📦 Item actual ${item.codigo || item.nombre}: cantidad actual = ${itemActual.cantidad || 0}`);
+            
+            // Actualizar con la nueva cantidad (SUMAR)
             const nuevaCantidad = (itemActual.cantidad || 0) + item.cantidad;
-            await fetch(`${apiUrl}/inventario/id/${item.itemId}/`, {
+            console.log(`➕ Sumando ${item.cantidad} a ${itemActual.cantidad || 0} = ${nuevaCantidad}`);
+            
+            const updateResponse = await fetch(`${apiUrl}/inventario/id/${item.itemId}/`, {
               method: 'PATCH',
               headers: {
                 'Content-Type': 'application/json',
@@ -376,20 +389,43 @@ const CuentasPorPagar: React.FC = () => {
                 cantidad: nuevaCantidad
               })
             });
-          } catch (error) {
-            console.error(`Error al actualizar item ${item.itemId}:`, error);
+            
+            if (!updateResponse.ok) {
+              const errorData = await updateResponse.json().catch(() => ({ message: updateResponse.statusText }));
+              throw new Error(`Error al actualizar: ${errorData.message || updateResponse.statusText}`);
+            }
+            
+            console.log(`✅ Item ${item.codigo || item.nombre} actualizado correctamente a ${nuevaCantidad}`);
+          } catch (error: any) {
+            console.error(`❌ Error al actualizar item ${item.itemId} (${item.nombre}):`, error);
+            alert(`Error al actualizar inventario del item "${item.nombre}": ${error.message}`);
           }
         }
+        console.log("✅ Inventario actualizado correctamente");
       }
 
-      alert("✓ Cuenta por pagar creada exitosamente");
+      alert("✓ Cuenta por pagar creada exitosamente\n✓ Inventario actualizado (cantidades sumadas)");
       resetearFormulario();
       setModalCrearOpen(false);
       fetchCuentasData();
       fetchItems(`${apiUrl}/inventario/all`);
     } catch (error: any) {
-      console.error("Error al crear cuenta:", error);
-      alert(`Error al crear la cuenta por pagar: ${error.message}`);
+      console.error("❌ Error al crear cuenta:", error);
+      let mensajeError = "Error desconocido";
+      
+      // Intentar obtener el mensaje de error del backend
+      if (error.message) {
+        mensajeError = error.message;
+      } else if (error.response) {
+        const errorData = await error.response.json().catch(() => null);
+        if (errorData?.detail) {
+          mensajeError = Array.isArray(errorData.detail) 
+            ? errorData.detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(', ')
+            : errorData.detail;
+        }
+      }
+      
+      alert(`❌ Error al crear la cuenta por pagar:\n${mensajeError}\n\nPor favor verifica los datos e intenta nuevamente.`);
     } finally {
       setLoading(false);
     }

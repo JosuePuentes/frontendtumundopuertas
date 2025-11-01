@@ -26,8 +26,25 @@ const api = async (url: string, options: RequestInit = {}) => {
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Something went wrong');
+    let errorMessage = 'Something went wrong';
+    try {
+      const error = await response.json();
+      // Manejar diferentes formatos de error
+      if (error.detail) {
+        errorMessage = Array.isArray(error.detail) 
+          ? error.detail.map((e: any) => e.msg || e.message || JSON.stringify(e)).join(', ')
+          : error.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+    } catch {
+      errorMessage = `Error ${response.status}: ${response.statusText}`;
+    }
+    const error = new Error(errorMessage);
+    (error as any).response = response;
+    throw error;
   }
 
   return response.json();
