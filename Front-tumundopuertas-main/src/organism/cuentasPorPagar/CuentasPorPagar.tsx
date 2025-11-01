@@ -609,7 +609,7 @@ const CuentasPorPagar: React.FC = () => {
 
       {/* Modal Crear Cuenta */}
       <Dialog open={modalCrearOpen} onOpenChange={setModalCrearOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl w-[95vw] max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Agregar Cuenta por Pagar</DialogTitle>
             <DialogDescription>
@@ -798,59 +798,63 @@ const CuentasPorPagar: React.FC = () => {
 
                 {/* Items seleccionados */}
                 {itemsSeleccionados.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>Items Seleccionados</Label>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Código</TableHead>
-                          <TableHead>Nombre</TableHead>
-                          <TableHead>Costo</TableHead>
-                          <TableHead>Cantidad</TableHead>
-                          <TableHead>Subtotal</TableHead>
-                          <TableHead></TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {itemsSeleccionados.map((item, index) => (
-                          <TableRow key={index}>
-                            <TableCell>{item.codigo}</TableCell>
-                            <TableCell>{item.nombre}</TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                value={item.costo}
-                                onChange={(e) => actualizarItem(index, "costo", parseFloat(e.target.value) || 0)}
-                                className="w-20"
-                                step="0.01"
-                                min="0"
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                value={item.cantidad}
-                                onChange={(e) => actualizarItem(index, "cantidad", parseInt(e.target.value) || 0)}
-                                className="w-20"
-                                min="1"
-                              />
-                            </TableCell>
-                            <TableCell>${item.subtotal.toFixed(2)}</TableCell>
-                            <TableCell>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => eliminarItem(index)}
-                              >
-                                Eliminar
-                              </Button>
-                            </TableCell>
+                  <div className="space-y-3 border-2 border-blue-300 rounded-lg p-4 bg-blue-50">
+                    <Label className="text-lg font-bold text-blue-800">Items Seleccionados ({itemsSeleccionados.length})</Label>
+                    <div className="max-h-[400px] overflow-y-auto border rounded-md bg-white">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-gray-100 z-10">
+                          <TableRow>
+                            <TableHead className="font-bold min-w-[100px]">Código</TableHead>
+                            <TableHead className="font-bold min-w-[200px]">Nombre</TableHead>
+                            <TableHead className="font-bold min-w-[120px]">Costo</TableHead>
+                            <TableHead className="font-bold min-w-[100px]">Cantidad</TableHead>
+                            <TableHead className="font-bold min-w-[120px]">Subtotal</TableHead>
+                            <TableHead className="font-bold min-w-[100px]">Acción</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    <div className="text-right font-bold text-lg">
-                      Total: ${totalItems.toFixed(2)}
+                        </TableHeader>
+                        <TableBody>
+                          {itemsSeleccionados.map((item, index) => (
+                            <TableRow key={index} className="hover:bg-gray-50">
+                              <TableCell className="font-medium">{item.codigo || "Sin código"}</TableCell>
+                              <TableCell className="font-medium max-w-[200px] truncate" title={item.nombre}>{item.nombre}</TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={item.costo}
+                                  onChange={(e) => actualizarItem(index, "costo", parseFloat(e.target.value) || 0)}
+                                  className="w-full min-w-[100px]"
+                                  step="0.01"
+                                  min="0"
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <Input
+                                  type="number"
+                                  value={item.cantidad}
+                                  onChange={(e) => actualizarItem(index, "cantidad", parseInt(e.target.value) || 0)}
+                                  className="w-full min-w-[80px]"
+                                  min="1"
+                                />
+                              </TableCell>
+                              <TableCell className="font-bold text-blue-700">${item.subtotal.toFixed(2)}</TableCell>
+                              <TableCell>
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => eliminarItem(index)}
+                                  className="w-full"
+                                >
+                                  Eliminar
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    <div className="flex justify-end items-center gap-4 pt-2 border-t-2 border-blue-300">
+                      <span className="text-lg font-semibold text-gray-700">Total de Items:</span>
+                      <span className="text-2xl font-bold text-blue-700">${totalItems.toFixed(2)}</span>
                     </div>
                   </div>
                 )}
