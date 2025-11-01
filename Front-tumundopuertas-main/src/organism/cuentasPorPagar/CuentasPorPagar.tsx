@@ -1069,10 +1069,8 @@ const CuentasPorPagar: React.FC = () => {
                                 <TableCell className="font-bold text-blue-700">${item.subtotal.toFixed(2)}</TableCell>
                                 <TableCell className="text-center">
                                   <Button
-                                    variant="destructive"
-                                    size="sm"
                                     onClick={() => eliminarItem(index)}
-                                    className="gap-1 px-3 py-2 hover:scale-105 transition-transform"
+                                    className="gap-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white border border-red-700 hover:scale-105 transition-transform shadow-md"
                                     title={`Eliminar ${item.nombre}`}
                                   >
                                     <Trash2 className="w-4 h-4" />
