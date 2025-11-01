@@ -70,6 +70,11 @@ interface RegistroPago {
   metodo: string;
 }
 
+interface Adicional {
+  descripcion: string;
+  monto: number;
+}
+
 interface PedidoPayload {
   cliente_id: string;
   cliente_nombre: string;
@@ -81,6 +86,7 @@ interface PedidoPayload {
   pago: string;
   historial_pagos: RegistroPago[];
   total_abonado: number;
+  adicionales?: Adicional[];
 }
 
 type SelectedItem = {
@@ -111,6 +117,9 @@ const CrearPedido: React.FC = () => {
   const [modalFaltaExistenciaOpen, setModalFaltaExistenciaOpen] = useState(false);
   const [itemsFaltantes, setItemsFaltantes] = useState<Array<{nombre: string, codigo: string, cantidadSolicitada: number, cantidadDisponible: number, cantidadFaltante: number}>>([]);
   const [itemsAjustados, setItemsAjustados] = useState<SelectedItem[]>([]);
+  const [adicionales, setAdicionales] = useState<Adicional[]>([]);
+  const [nuevoAdicionalDescripcion, setNuevoAdicionalDescripcion] = useState<string>("");
+  const [nuevoAdicionalMonto, setNuevoAdicionalMonto] = useState<number>(0);
 
   const { fetchPedido } = usePedido();
   const {
@@ -151,11 +160,16 @@ const CrearPedido: React.FC = () => {
     (acc, item) => acc + (item.confirmed ? item.cantidad : 0),
     0
   );
-  const totalMonto = selectedItems.reduce(
+  const totalMontoItems = selectedItems.reduce(
     (acc, item) =>
       acc + (item.confirmed && item.precio ? item.cantidad * item.precio : 0),
     0
   );
+  const totalAdicionales = adicionales.reduce(
+    (acc, adicional) => acc + (adicional.monto || 0),
+    0
+  );
+  const totalMonto = totalMontoItems + totalAdicionales;
 
   // === Handlers ===
   // @ts-ignore - Function is used in JSX but TypeScript doesn't detect it
@@ -186,7 +200,7 @@ const CrearPedido: React.FC = () => {
     // Calcular el total abonado actual
     const totalAbonadoActual = pagos.reduce((acc, p) => acc + p.monto, 0);
     
-    // Verificar que no se exceda el total del pedido
+    // Verificar que no se exceda el total del pedido (items + adicionales)
     if (totalAbonadoActual + abono > totalMonto) {
       setMensaje(`El total abonado no puede exceder el total del pedido (${totalMonto.toFixed(2)}).`);
       setMensajeTipo("error");
@@ -292,6 +306,39 @@ const CrearPedido: React.FC = () => {
       clearTimeout(blurTimeouts.current[index]);
       delete blurTimeouts.current[index];
     }
+  };
+
+  const handleAgregarAdicional = () => {
+    if (!nuevoAdicionalDescripcion.trim()) {
+      setMensaje("Debes ingresar una descripción para el adicional.");
+      setMensajeTipo("error");
+      return;
+    }
+    if (nuevoAdicionalMonto <= 0) {
+      setMensaje("El monto del adicional debe ser mayor a cero.");
+      setMensajeTipo("error");
+      return;
+    }
+    
+    const descripcionGuardada = nuevoAdicionalDescripcion.trim();
+    
+    setAdicionales([...adicionales, {
+      descripcion: descripcionGuardada,
+      monto: nuevoAdicionalMonto
+    }]);
+    
+    setMensaje(`✓ Adicional "${descripcionGuardada}" agregado exitosamente.`);
+    setMensajeTipo("success");
+    setNuevoAdicionalDescripcion("");
+    setNuevoAdicionalMonto(0);
+    setTimeout(() => {
+      setMensaje("");
+      setMensajeTipo("");
+    }, 2000);
+  };
+
+  const handleEliminarAdicional = (index: number) => {
+    setAdicionales(adicionales.filter((_, i) => i !== index));
   };
 
 
@@ -460,6 +507,7 @@ const CrearPedido: React.FC = () => {
       historial_pagos: pagos.length > 0 ? pagos : [],
       total_abonado: pagos.reduce((acc, p) => acc + p.monto, 0),
       todos_items_disponibles: todosTienenExistencia && !forzarProduccion, // Flag para el backend
+      adicionales: adicionales.length > 0 ? adicionales : undefined,
     };
 
     // Debug: Log del payload completo
@@ -509,6 +557,9 @@ const CrearPedido: React.FC = () => {
         setPagos([]);
         setItemsFaltantes([]);
         setItemsAjustados([]);
+        setAdicionales([]);
+        setNuevoAdicionalDescripcion("");
+        setNuevoAdicionalMonto(0);
         // Refrescar la lista de items para mostrar las existencias actualizadas
         fetchItems(`${apiUrl}/inventario/all`);
         
@@ -945,6 +996,26 @@ const CrearPedido: React.FC = () => {
                       </p>
                     </div>
                     <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                      <p className="text-gray-600 text-sm font-medium mb-2">Total Items</p>
+                      <p className="text-2xl font-bold text-gray-700">
+                        ${totalMontoItems.toLocaleString("es-AR", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </p>
+                    </div>
+                    {totalAdicionales > 0 && (
+                      <div className="bg-yellow-50 rounded-lg p-4 shadow-sm border-2 border-yellow-200">
+                        <p className="text-gray-600 text-sm font-medium mb-2">Adicionales</p>
+                        <p className="text-2xl font-bold text-yellow-700">
+                          +${totalAdicionales.toLocaleString("es-AR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                      </div>
+                    )}
+                    <div className="bg-white rounded-lg p-4 shadow-sm border-2 border-blue-300">
                       <p className="text-gray-600 text-sm font-medium mb-2">Total del Pedido</p>
                       <p className="text-3xl font-bold text-blue-700">
                         ${totalMonto.toLocaleString("es-AR", {
@@ -1100,6 +1171,86 @@ const CrearPedido: React.FC = () => {
                       </div>
                     </div>
                   )}
+
+                  {/* Sección de Adicionales */}
+                  <div className="space-y-3 mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Adicionales
+                      </Label>
+                      <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 border-yellow-300">
+                        Opcional
+                      </Badge>
+                    </div>
+                    
+                    {/* Formulario para agregar adicional */}
+                    <div className="space-y-2 bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <div className="space-y-2">
+                        <Label htmlFor="adicionalDescripcion" className="text-xs font-medium text-gray-600">
+                          Descripción
+                        </Label>
+                        <Input
+                          id="adicionalDescripcion"
+                          type="text"
+                          value={nuevoAdicionalDescripcion}
+                          onChange={(e) => setNuevoAdicionalDescripcion(e.target.value)}
+                          placeholder="Ej: Transporte, Instalación..."
+                          className="text-sm focus:ring-2 focus:ring-yellow-400 border-2"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="adicionalMonto" className="text-xs font-medium text-gray-600">
+                          Monto ($)
+                        </Label>
+                        <Input
+                          id="adicionalMonto"
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          value={nuevoAdicionalMonto || ""}
+                          onChange={(e) => setNuevoAdicionalMonto(Number(e.target.value))}
+                          placeholder="0.00"
+                          className="text-sm focus:ring-2 focus:ring-yellow-400 border-2"
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleAgregarAdicional}
+                        disabled={!nuevoAdicionalDescripcion.trim() || nuevoAdicionalMonto <= 0}
+                        className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold text-sm"
+                      >
+                        <FaPlus className="mr-2" />
+                        Agregar Adicional
+                      </Button>
+                    </div>
+
+                    {/* Lista de adicionales agregados */}
+                    {adicionales.length > 0 && (
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {adicionales.map((adicional, idx) => (
+                          <div key={idx} className="bg-yellow-50 rounded-lg p-3 shadow-sm border-2 border-yellow-200 hover:border-yellow-300 transition">
+                            <div className="flex justify-between items-center">
+                              <div className="flex-1">
+                                <p className="text-sm font-semibold text-gray-800">{adicional.descripcion}</p>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-yellow-700">${adicional.monto.toFixed(2)}</p>
+                                <Button
+                                  type="button"
+                                  variant="destructive"
+                                  size="sm"
+                                  className="bg-red-500 hover:bg-red-600 text-white h-6 w-6 p-0"
+                                  onClick={() => handleEliminarAdicional(idx)}
+                                >
+                                  ×
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Lista de items agregados */}
                   {selectedItems.filter(item => item.confirmed).length > 0 && (
