@@ -213,20 +213,21 @@ const CuentasPorPagar: React.FC = () => {
         console.log("🔄 Datos completos de la cuenta:", JSON.stringify(cuenta, null, 2));
         
         // Normalizar proveedor - puede venir en formato anidado o plano
+        // El backend envía: proveedor_nombre, proveedor_rif (con guión bajo)
         let proveedor: Proveedor;
         if (cuenta.proveedor && typeof cuenta.proveedor === 'object') {
           // Formato anidado
           proveedor = {
-            nombre: cuenta.proveedor.nombre || cuenta.proveedor.proveedorNombre || "",
-            rif: cuenta.proveedor.rif || cuenta.proveedor.proveedorRif || "",
-            telefono: cuenta.proveedor.telefono || cuenta.proveedor.proveedorTelefono || ""
+            nombre: cuenta.proveedor.nombre || cuenta.proveedor.proveedorNombre || cuenta.proveedor.proveedor_nombre || "",
+            rif: cuenta.proveedor.rif || cuenta.proveedor.proveedorRif || cuenta.proveedor.proveedor_rif || "",
+            telefono: cuenta.proveedor.telefono || cuenta.proveedor.proveedorTelefono || cuenta.proveedor.proveedor_telefono || ""
           };
         } else {
-          // Formato plano del backend o proveedor es null/undefined
+          // Formato plano del backend (puede venir como proveedor_nombre o proveedorNombre)
           proveedor = {
-            nombre: cuenta.proveedorNombre || cuenta.proveedor?.nombre || "",
-            rif: cuenta.proveedorRif || cuenta.proveedor?.rif || "",
-            telefono: cuenta.proveedorTelefono || cuenta.proveedor?.telefono || ""
+            nombre: cuenta.proveedor_nombre || cuenta.proveedorNombre || cuenta.proveedor?.nombre || "",
+            rif: cuenta.proveedor_rif || cuenta.proveedorRif || cuenta.proveedor?.rif || "",
+            telefono: cuenta.proveedor_telefono || cuenta.proveedorTelefono || cuenta.proveedor?.telefono || ""
           };
         }
 
@@ -240,12 +241,25 @@ const CuentasPorPagar: React.FC = () => {
           _id: cuenta._id || cuenta.id,
           proveedor: proveedor,
           // Normalizar campos numéricos
-          total: typeof cuenta.total === 'number' ? cuenta.total : (typeof cuenta.montoTotal === 'number' ? cuenta.montoTotal : (typeof cuenta.monto === 'number' ? cuenta.monto : 0)),
-          montoAbonado: typeof cuenta.montoAbonado === 'number' ? cuenta.montoAbonado : 0,
-          saldoPendiente: typeof cuenta.saldoPendiente === 'number' ? cuenta.saldoPendiente : (typeof cuenta.total === 'number' ? cuenta.total : (typeof cuenta.montoTotal === 'number' ? cuenta.montoTotal : (typeof cuenta.monto === 'number' ? cuenta.monto : 0))),
+          // El backend envía: monto_total (con guión bajo)
+          total: typeof cuenta.total === 'number' ? cuenta.total : 
+                 (typeof cuenta.monto_total === 'number' ? cuenta.monto_total : 
+                 (typeof cuenta.montoTotal === 'number' ? cuenta.montoTotal : 
+                 (typeof cuenta.monto === 'number' ? cuenta.monto : 0))),
+          montoAbonado: typeof cuenta.montoAbonado === 'number' ? cuenta.montoAbonado : 
+                       (typeof cuenta.monto_abonado === 'number' ? cuenta.monto_abonado : 0),
+          // El backend envía: saldo_pendiente (con guión bajo)
+          saldoPendiente: typeof cuenta.saldoPendiente === 'number' ? cuenta.saldoPendiente : 
+                         (typeof cuenta.saldo_pendiente === 'number' ? cuenta.saldo_pendiente :
+                         (typeof cuenta.total === 'number' ? cuenta.total : 
+                         (typeof cuenta.monto_total === 'number' ? cuenta.monto_total : 
+                         (typeof cuenta.montoTotal === 'number' ? cuenta.montoTotal : 
+                         (typeof cuenta.monto === 'number' ? cuenta.monto : 0))))),
           monto: typeof cuenta.monto === 'number' ? cuenta.monto : undefined,
           estado: cuenta.estado || "pendiente",
-          fechaCreacion: cuenta.fechaCreacion || cuenta.fecha_creacion || cuenta.createdAt || new Date().toISOString()
+          fechaCreacion: cuenta.fechaCreacion || cuenta.fecha_creacion || cuenta.createdAt || new Date().toISOString(),
+          // Preservar items si vienen del backend
+          items: cuenta.items || []
         };
         
         console.log("✅ Cuenta normalizada:", cuentaNormalizada._id, "- Proveedor:", cuentaNormalizada.proveedor);
