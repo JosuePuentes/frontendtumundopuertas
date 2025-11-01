@@ -190,6 +190,25 @@ const MisPagos: React.FC = () => {
                       ? true
                       : (pedido.cliente_nombre || "").toLowerCase().includes(clienteFiltro.trim().toLowerCase())
                   )
+                  .sort((a, b) => {
+                    // Obtener fecha más reciente de todo el historial_pagos (ordenar fechas y tomar la más reciente)
+                    const getFechaMasReciente = (pedido: PedidoConPagos): number => {
+                      if (!pedido.historial_pagos || pedido.historial_pagos.length === 0) {
+                        return 0;
+                      }
+                      // Ordenar fechas descendente y tomar la primera (más reciente)
+                      const fechas = pedido.historial_pagos
+                        .map(pago => new Date(pago.fecha).getTime())
+                        .sort((a, b) => b - a);
+                      return fechas[0] || 0;
+                    };
+                    
+                    const fechaA = getFechaMasReciente(a);
+                    const fechaB = getFechaMasReciente(b);
+                    
+                    // Ordenar descendente (fechas más recientes primero)
+                    return fechaB - fechaA;
+                  })
                   .map((pedido) => {
                   const totalPedido = calculateTotalPedido(pedido);
                   const montoAbonado = pedido.total_abonado || 0;
