@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ChevronLeft, ChevronRight, Plus, Minus, ShoppingCart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Minus, ShoppingCart, Search, X } from "lucide-react";
 
 interface Item {
   _id: string;
@@ -22,6 +23,7 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
   const [loading, setLoading] = useState(true);
   const [paginaActual, setPaginaActual] = useState(1);
   const [imagenModal, setImagenModal] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState("");
   const itemsPorPagina = 10;
   const [cantidades, setCantidades] = useState<Record<string, number>>({});
 
@@ -51,10 +53,33 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
     }
   };
 
-  const totalPaginas = Math.ceil(items.length / itemsPorPagina);
+  // Filtrar items en tiempo real según la búsqueda
+  const itemsFiltrados = useMemo(() => {
+    if (!busqueda.trim()) {
+      return items;
+    }
+    
+    const busquedaLower = busqueda.toLowerCase().trim();
+    return items.filter(item => {
+      const codigo = (item.codigo || "").toLowerCase();
+      const nombre = (item.nombre || "").toLowerCase();
+      const descripcion = (item.descripcion || "").toLowerCase();
+      
+      return codigo.includes(busquedaLower) || 
+             nombre.includes(busquedaLower) || 
+             descripcion.includes(busquedaLower);
+    });
+  }, [items, busqueda]);
+
+  // Resetear página cuando cambia la búsqueda
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [busqueda]);
+
+  const totalPaginas = Math.ceil(itemsFiltrados.length / itemsPorPagina);
   const inicio = (paginaActual - 1) * itemsPorPagina;
   const fin = inicio + itemsPorPagina;
-  const itemsPagina = items.slice(inicio, fin);
+  const itemsPagina = itemsFiltrados.slice(inicio, fin);
 
   const aumentarCantidad = (itemId: string) => {
     setCantidades(prev => ({
@@ -97,9 +122,48 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
         <p className="text-gray-300">Explora nuestro catálogo completo</p>
       </div>
 
+      {/* Buscador en tiempo real */}
+      <div className="relative max-w-2xl mx-auto">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input
+            type="text"
+            placeholder="Buscar por código, nombre o descripción..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="pl-10 pr-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400 focus:ring-cyan-400"
+          />
+          {busqueda && (
+            <button
+              onClick={() => setBusqueda("")}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              title="Limpiar búsqueda"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+        {busqueda && (
+          <p className="text-sm text-gray-400 mt-2 text-center">
+            {itemsFiltrados.length} {itemsFiltrados.length === 1 ? 'producto encontrado' : 'productos encontrados'}
+          </p>
+        )}
+      </div>
+
       {items.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-gray-400 text-lg">No hay productos disponibles</p>
+        </div>
+      ) : itemsFiltrados.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-gray-400 text-lg">No se encontraron productos que coincidan con "{busqueda}"</p>
+          <Button
+            onClick={() => setBusqueda("")}
+            variant="outline"
+            className="mt-4 border-gray-600 text-white hover:bg-gray-700"
+          >
+            Limpiar búsqueda
+          </Button>
         </div>
       ) : (
         <>
