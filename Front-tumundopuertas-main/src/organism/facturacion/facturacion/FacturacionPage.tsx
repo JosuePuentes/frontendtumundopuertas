@@ -1245,7 +1245,8 @@ const FacturacionPage: React.FC = () => {
           pedidoId: selectedPedido._id,
           montoItems,
           montoAdicionales,
-          adicionalesCount: selectedPedido.adicionales?.length || 0,
+          adicionalesCount: adicionalesNormalizados.length,
+          adicionalesRaw: selectedPedido.adicionales, // Para debug: ver qué viene del backend
           montoTotalBackend: selectedPedido.montoTotal,
           montoTotalCalculado,
           diferencia: selectedPedido.montoTotal ? (montoTotalCalculado - selectedPedido.montoTotal) : 0
