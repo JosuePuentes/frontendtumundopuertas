@@ -143,19 +143,6 @@ const MisPedidos: React.FC = () => {
     }
   };
 
-  const abrirChat = (pedido: Pedido) => {
-    setPedidoChatActual(pedido);
-    setChatAbierto(true);
-    // Marcar mensajes como leídos cuando se abre el chat
-    if (mensajesNoLeidos.has(pedido._id)) {
-      setMensajesNoLeidos(prev => {
-        const nuevo = new Map(prev);
-        nuevo.delete(pedido._id);
-        return nuevo;
-      });
-    }
-  };
-
   const cargarPedidos = async () => {
     try {
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
