@@ -153,8 +153,21 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
     }
   };
 
+  // Persistir estado del chat abierto en localStorage
+  useEffect(() => {
+    if (open) {
+      // Guardar que este chat está abierto
+      localStorage.setItem(`chat_${pedidoId}_abierto`, "true");
+    }
+  }, [open, pedidoId]);
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      // Si se intenta cerrar, solo minimizar pero mantener datos
+      if (!isOpen) {
+        onClose();
+      }
+    }}>
       <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-lg h-[600px] flex flex-col p-0">
         <DialogHeader className="px-4 py-3 border-b border-gray-200">
           <div className="flex items-center justify-between">
