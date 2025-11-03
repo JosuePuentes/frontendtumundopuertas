@@ -15,8 +15,9 @@ interface Pedido {
     costoProduccion?: string;
   }>;
   adicionales?: Array<{
-    descripcion: string;
-    monto: number;
+    descripcion?: string;
+    precio: number;
+    cantidad?: number; // default 1
   }>;
 }
 

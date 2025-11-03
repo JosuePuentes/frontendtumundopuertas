@@ -25,8 +25,9 @@ interface Pedido {
     costoProduccion?: string;
   }>;
   adicionales?: Array<{
-    descripcion: string;
-    monto: number;
+    descripcion?: string;
+    precio: number;
+    cantidad?: number; // default 1
   }>;
 }
 
@@ -330,26 +331,39 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
             </div>
           )}
 
-          {/* Mostrar adicionales si existen */}
-          {Array.isArray(pedido.adicionales) && pedido.adicionales.length > 0 && (
-            <div className="mt-3 pr-32 p-3 bg-yellow-50 rounded-lg border-2 border-yellow-200">
-              <div className="font-semibold mb-2 text-yellow-800">💰 Adicionales:</div>
-              <ul className="list-disc ml-6">
-                {pedido.adicionales.map((adicional, idx) => (
+        {/* Mostrar adicionales si existen */}
+        {Array.isArray(pedido.adicionales) && pedido.adicionales.length > 0 && (
+          <div className="mt-3 pr-32 p-3 bg-yellow-50 rounded-lg border-2 border-yellow-200">
+            <div className="font-semibold mb-2 text-yellow-800">💰 Adicionales:</div>
+            <ul className="list-disc ml-6">
+              {pedido.adicionales.map((adicional: any, idx: number) => {
+                const cantidad = adicional.cantidad || 1;
+                const precio = adicional.precio || 0;
+                const montoAdicional = precio * cantidad;
+                
+                return (
                   <li key={idx} className="mb-1 flex items-center justify-between">
-                    <span className="text-gray-700">{adicional.descripcion}</span>
-                    <span className="text-yellow-700 font-bold">+${adicional.monto.toFixed(2)}</span>
+                    <span className="text-gray-700">
+                      {adicional.descripcion || 'Adicional sin descripción'}
+                      {cantidad > 1 && <span className="text-xs text-gray-500 ml-2">(x{cantidad})</span>}
+                    </span>
+                    <span className="text-yellow-700 font-bold">+${montoAdicional.toFixed(2)}</span>
                   </li>
-                ))}
-              </ul>
-              <div className="mt-2 pt-2 border-t border-yellow-300 flex justify-between items-center">
-                <span className="font-semibold text-yellow-800">Total Adicionales:</span>
-                <span className="text-yellow-800 font-bold text-lg">
-                  ${pedido.adicionales.reduce((acc, ad) => acc + ad.monto, 0).toFixed(2)}
-                </span>
-              </div>
+                );
+              })}
+            </ul>
+            <div className="mt-2 pt-2 border-t border-yellow-300 flex justify-between items-center">
+              <span className="font-semibold text-yellow-800">Total Adicionales:</span>
+              <span className="text-yellow-800 font-bold text-lg">
+                ${pedido.adicionales.reduce((acc: number, ad: any) => {
+                  const cantidad = ad.cantidad || 1;
+                  const precio = ad.precio || 0;
+                  return acc + (precio * cantidad);
+                }, 0).toFixed(2)}
+              </span>
             </div>
-          )}
+          </div>
+        )}
 
           {Array.isArray(pedido.items) && pedido.items.length > 0 && (
             <div className="mt-2 pr-32">
