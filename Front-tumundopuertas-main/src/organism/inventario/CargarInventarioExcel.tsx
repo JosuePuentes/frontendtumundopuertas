@@ -292,9 +292,16 @@ const CargarInventarioExcel: React.FC = () => {
       return;
     }
 
+    // Convertir a número desde el string del input
     const cantidad = parseFloat(cantidadOperacion);
     if (isNaN(cantidad) || cantidad <= 0) {
       setMensaje('La cantidad debe ser un número mayor a 0.');
+      return;
+    }
+    
+    // Validar que itemSeleccionado tenga _id válido (ObjectId de MongoDB)
+    if (!itemSeleccionado._id || !/^[0-9a-fA-F]{24}$/.test(itemSeleccionado._id)) {
+      setMensaje('Error: El ID del item no es válido.');
       return;
     }
 
@@ -327,70 +334,134 @@ const CargarInventarioExcel: React.FC = () => {
 
     setProcesando(true);
     try {
+      // Convertir cantidad a número para asegurar formato correcto
+      const cantidadNumero = typeof cantidad === 'string' ? parseFloat(cantidad) : cantidad;
+      
+      if (isNaN(cantidadNumero) || cantidadNumero <= 0) {
+        setMensaje('La cantidad debe ser un número mayor a 0.');
+        setProcesando(false);
+        return;
+      }
+
       if (tipoOperacion === 'transferir') {
         // Transferencia: descargar de origen y cargar en destino
+        const url = `${apiUrl}/inventario/${itemSeleccionado._id}/existencia`;
+        
         // Primero descargar de la sucursal origen
-        const urlDescarga = `${apiUrl}/inventario/${itemSeleccionado._id}/existencia`;
-        const responseDescarga = await fetch(urlDescarga, {
+        console.log('🔄 Transferencia: Descargando de', sucursalOrigen, 'cantidad:', cantidadNumero);
+        const responseDescarga = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+          },
           body: JSON.stringify({
-            cantidad: cantidad,
-            tipo: 'descargar',
-            sucursal: sucursalOrigen,
+            cantidad: cantidadNumero,  // Asegurar que sea número
+            tipo: 'descargar',          // Exactamente en minúsculas
+            sucursal: sucursalOrigen,   // Exactamente "sucursal1" o "sucursal2"
           }),
         });
 
         if (!responseDescarga.ok) {
           const errorData = await responseDescarga.json().catch(() => ({ detail: 'Error al descargar de la sucursal origen' }));
+          console.error('❌ Error en descarga:', errorData);
           throw new Error(errorData.detail || 'Error al descargar de la sucursal origen');
         }
 
+        const resultDescarga = await responseDescarga.json();
+        console.log('✅ Descarga completada. Resultado:', resultDescarga);
+        
+        // Verificar que la descarga realmente se hizo
+        const existenciaOrigenDespues = sucursalOrigen === 'sucursal1' 
+          ? (resultDescarga.cantidad !== undefined ? resultDescarga.cantidad : (resultDescarga.existencia || 0))
+          : (resultDescarga.existencia2 !== undefined ? resultDescarga.existencia2 : 0);
+        
+        const existenciaOrigenEsperada = sucursalOrigen === 'sucursal1'
+          ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+          : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0);
+        
+        console.log('📊 Existencia origen esperada después de descarga:', existenciaOrigenEsperada - cantidad);
+        console.log('📊 Existencia origen actual después de descarga:', existenciaOrigenDespues);
+        
         // Luego cargar en la sucursal destino
-        const responseCarga = await fetch(urlDescarga, {
+        console.log('🔄 Transferencia: Cargando en', sucursalDestino, 'cantidad:', cantidadNumero);
+        const responseCarga = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+          },
           body: JSON.stringify({
-            cantidad: cantidad,
-            tipo: 'cargar',
-            sucursal: sucursalDestino,
+            cantidad: cantidadNumero,  // Asegurar que sea número
+            tipo: 'cargar',            // Exactamente en minúsculas
+            sucursal: sucursalDestino, // Exactamente "sucursal1" o "sucursal2"
           }),
         });
 
         if (!responseCarga.ok) {
           const errorData = await responseCarga.json().catch(() => ({ detail: 'Error al cargar en la sucursal destino' }));
+          console.error('❌ Error en carga:', errorData);
           // Intentar revertir la descarga si la carga falla
-          await fetch(urlDescarga, {
+          console.log('⚠️ Error en carga, intentando revertir descarga...');
+          await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+            },
             body: JSON.stringify({
-              cantidad: cantidad,
+              cantidad: cantidadNumero,
               tipo: 'cargar',
               sucursal: sucursalOrigen,
             }),
-          }).catch(() => {});
+          }).catch(() => {
+            console.error('❌ No se pudo revertir la descarga');
+          });
           throw new Error(errorData.detail || 'Error al cargar en la sucursal destino');
         }
 
-        const result = await responseCarga.json();
-        const existenciaOrigen = sucursalOrigen === 'sucursal1' ? result.cantidad : result.existencia2;
-        const existenciaDestino = sucursalDestino === 'sucursal1' ? result.cantidad : result.existencia2;
+        const resultCarga = await responseCarga.json();
+        console.log('✅ Carga completada. Resultado:', resultCarga);
         
-        setMensaje(`✅ Transferencia realizada exitosamente. ${sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}: ${existenciaOrigen}, ${sucursalDestino === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}: ${existenciaDestino}`);
+        // Obtener existencias finales: usar el resultado de la descarga para origen y el de la carga para destino
+        // El resultado de la descarga debería tener la existencia de origen ya actualizada
+        const existenciaOrigenFinal = sucursalOrigen === 'sucursal1' 
+          ? (resultDescarga.cantidad !== undefined ? resultDescarga.cantidad : (resultDescarga.existencia || 0))
+          : (resultDescarga.existencia2 !== undefined ? resultDescarga.existencia2 : 0);
+        
+        // El resultado de la carga debería tener la existencia de destino actualizada
+        const existenciaDestinoFinal = sucursalDestino === 'sucursal1' 
+          ? (resultCarga.cantidad !== undefined ? resultCarga.cantidad : (resultCarga.existencia || 0))
+          : (resultCarga.existencia2 !== undefined ? resultCarga.existencia2 : 0);
+        
+        console.log('📊 Existencia origen final (desde resultado descarga):', existenciaOrigenFinal);
+        console.log('📊 Existencia destino final (desde resultado carga):', existenciaDestinoFinal);
+        
+        setMensaje(`✅ Transferencia realizada exitosamente. ${sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}: ${existenciaOrigenFinal}, ${sucursalDestino === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}: ${existenciaDestinoFinal}`);
       } else {
         const url = `${apiUrl}/inventario/${itemSeleccionado._id}/existencia`;
+        
+        // Asegurar que tipoOperacion esté en minúsculas
+        const tipoOperacionLower = tipoOperacion?.toLowerCase() as 'cargar' | 'descargar';
+        
+        console.log('🔄 Operación:', tipoOperacionLower, 'Sucursal:', sucursalSeleccionada, 'Cantidad:', cantidadNumero);
+        
         const response = await fetch(url, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token') || ''}`
+          },
           body: JSON.stringify({
-            cantidad: cantidad,
-            tipo: tipoOperacion, // 'cargar' o 'descargar'
-            sucursal: sucursalSeleccionada, // 'sucursal1' o 'sucursal2'
+            cantidad: cantidadNumero,      // Asegurar que sea número
+            tipo: tipoOperacionLower,      // Exactamente en minúsculas
+            sucursal: sucursalSeleccionada, // Exactamente "sucursal1" o "sucursal2"
           }),
         });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ detail: 'Error en la operación' }));
+          console.error('❌ Error del backend:', errorData);
           throw new Error(errorData.detail || 'Error en la operación');
         }
 
