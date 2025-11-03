@@ -111,12 +111,6 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
     return tipo === "deposito" ? "text-green-600" : "text-red-600";
   };
 
-  const getTipoLabel = (tipo: string) => {
-    if (tipo === "deposito") return "Depósito";
-    if (tipo === "transferencia" || tipo === "transferir") return "Transferencia";
-    return tipo.charAt(0).toUpperCase() + tipo.slice(1);
-  };
-
   const exportToPDF = () => {
     const doc = new jsPDF();
     
@@ -129,7 +123,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
     doc.text(`Banco: ${metodo.banco}`, 14, 30);
     doc.text(`Titular: ${metodo.titular}`, 14, 35);
     doc.text(`Número de Cuenta: ${metodo.numero_cuenta}`, 14, 40);
-    doc.text(`Saldo Disponible: ${metodo.moneda === 'USD' ? '$' : 'Bs.'} ${metodo.saldo.toFixed(2)}`, 14, 45);
+    doc.text(`Saldo Disponible: ${metodo.moneda === 'dolar' ? '$' : 'Bs.'} ${metodo.saldo.toFixed(2)}`, 14, 45);
     doc.text(`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`, 14, 50);
     
     // Preparar datos para la tabla
@@ -137,7 +131,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
       formatFecha(transaccion.fecha),
       transaccion.tipo.charAt(0).toUpperCase() + transaccion.tipo.slice(1),
       formatMonto(transaccion.monto, transaccion.tipo),
-      `${metodo.moneda === 'USD' ? '$' : 'Bs.'} ${(transaccion.saldo_despues ?? 0).toFixed(2)}`,
+      `${metodo.moneda === 'dolar' ? '$' : 'Bs.'} ${(transaccion.saldo_despues ?? 0).toFixed(2)}`,
       transaccion.concepto
     ]);
     
@@ -170,7 +164,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
       'Fecha': formatFecha(transaccion.fecha),
       'Tipo': transaccion.tipo.charAt(0).toUpperCase() + transaccion.tipo.slice(1),
       'Monto': formatMonto(transaccion.monto, transaccion.tipo),
-      'Saldo después': `${metodo.moneda === 'USD' ? '$' : 'Bs.'} ${(transaccion.saldo_despues ?? 0).toFixed(2)}`,
+      'Saldo después': `${metodo.moneda === 'dolar' ? '$' : 'Bs.'} ${(transaccion.saldo_despues ?? 0).toFixed(2)}`,
       'Concepto': transaccion.concepto
     }));
     
@@ -184,7 +178,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
       [`Banco: ${metodo.banco}`],
       [`Titular: ${metodo.titular}`],
       [`Número de Cuenta: ${metodo.numero_cuenta}`],
-      [`Saldo Disponible: ${metodo.moneda === 'USD' ? '$' : 'Bs.'} ${metodo.saldo.toFixed(2)}`],
+      [`Saldo Disponible: ${metodo.moneda === 'dolar' ? '$' : 'Bs.'} ${metodo.saldo.toFixed(2)}`],
       [`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`],
       [''], // Fila vacía
     ];
@@ -216,7 +210,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
               <DialogTitle>Historial de Transacciones - {metodo.nombre}</DialogTitle>
               <p className="text-sm text-gray-600 mt-1">
                 Saldo disponible: <span className="font-semibold text-lg text-blue-600">
-                  {metodo.moneda === 'USD' ? '$' : 'Bs.'} {metodo.saldo.toFixed(2)}
+                  {metodo.moneda === 'dolar' ? '$' : 'Bs.'} {metodo.saldo.toFixed(2)}
                 </span>
               </p>
             </div>
@@ -284,7 +278,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
                         </TableCell>
                         <TableCell>
                           <span className="font-semibold text-blue-600">
-                            {metodo.moneda === 'USD' ? '$' : 'Bs.'} {(transaccion.saldo_despues ?? 0).toFixed(2)}
+                            {metodo.moneda === 'dolar' ? '$' : 'Bs.'} {(transaccion.saldo_despues ?? 0).toFixed(2)}
                           </span>
                         </TableCell>
                         <TableCell>{transaccion.concepto}</TableCell>
