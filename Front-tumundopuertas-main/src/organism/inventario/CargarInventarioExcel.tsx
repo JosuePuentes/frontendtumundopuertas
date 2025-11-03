@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -229,11 +231,136 @@ const CargarInventarioExcel: React.FC = () => {
   };
 
   const handleExportPdf = () => {
-    setMensaje('Exportando a PDF... (funcionalidad no implementada)');
+    if (!filteredInventory || filteredInventory.length === 0) {
+      setMensaje('No hay datos para exportar.');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      
+      // Título del documento
+      doc.setFontSize(18);
+      doc.text('Inventario Actual', 14, 22);
+      
+      // Información de la fecha
+      doc.setFontSize(10);
+      doc.text(`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`, 14, 30);
+      doc.text(`Total de Items: ${filteredInventory.length}`, 14, 36);
+      
+      if (searchTermInventario) {
+        doc.text(`Filtrado por: "${searchTermInventario}"`, 14, 42);
+      }
+      
+      // Preparar datos para la tabla
+      const tableData = filteredInventory.map((item: any) => [
+        item.codigo || 'Sin código',
+        item.descripcion || item.nombre || 'Sin descripción',
+        item.modelo || 'N/A',
+        `$${(item.costo || 0).toFixed(2)}`,
+        (item.cantidad !== undefined ? item.cantidad : (item.existencia || 0)).toString(),
+        (item.existencia2 !== undefined ? item.existencia2 : 0).toString(),
+        `$${(item.precio || 0).toFixed(2)}`
+      ]);
+      
+      // Crear tabla
+      autoTable(doc, {
+        head: [['Código', 'Descripción', 'Modelo', 'Costo', 'Sucursal 1', 'Sucursal 2', 'Precio']],
+        body: tableData,
+        startY: searchTermInventario ? 48 : 42,
+        styles: {
+          fontSize: 8,
+          cellPadding: 2,
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+          3: { halign: 'right' }, // Costo
+          6: { halign: 'right' }, // Precio
+        },
+      });
+      
+      // Guardar archivo
+      const nombreArchivo = searchTermInventario 
+        ? `inventario_filtrado_${new Date().toISOString().split('T')[0]}.pdf`
+        : `inventario_completo_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(nombreArchivo);
+      
+      setMensaje('✅ Inventario exportado a PDF correctamente.');
+      setTimeout(() => setMensaje(''), 3000);
+    } catch (error: any) {
+      console.error('Error al exportar a PDF:', error);
+      setMensaje(`❌ Error al exportar a PDF: ${error.message}`);
+      setTimeout(() => setMensaje(''), 5000);
+    }
   };
 
   const handleExportExcel = () => {
-    setMensaje('Exportando a Excel... (funcionalidad no implementada)');
+    if (!filteredInventory || filteredInventory.length === 0) {
+      setMensaje('No hay datos para exportar.');
+      return;
+    }
+
+    try {
+      // Preparar datos para Excel
+      const excelData = filteredInventory.map((item: any) => ({
+        'Código': item.codigo || 'Sin código',
+        'Descripción': item.descripcion || item.nombre || 'Sin descripción',
+        'Modelo': item.modelo || 'N/A',
+        'Costo': item.costo || 0,
+        'Sucursal 1': item.cantidad !== undefined ? item.cantidad : (item.existencia || 0),
+        'Sucursal 2': item.existencia2 !== undefined ? item.existencia2 : 0,
+        'Precio': item.precio || 0
+      }));
+      
+      // Crear workbook
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      const wb = XLSX.utils.book_new();
+      
+      // Agregar información del reporte como primeras filas
+      const infoData = [
+        ['Inventario Actual'],
+        [`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`],
+        [`Total de Items: ${filteredInventory.length}`],
+        searchTermInventario ? [`Filtrado por: "${searchTermInventario}"`] : [''],
+        [''], // Fila vacía
+      ];
+      
+      // Insertar información al inicio
+      XLSX.utils.sheet_add_aoa(ws, infoData, { origin: 'A1' });
+      
+      // Ajustar ancho de columnas
+      ws['!cols'] = [
+        { wch: 15 }, // Código
+        { wch: 30 }, // Descripción
+        { wch: 15 }, // Modelo
+        { wch: 12 }, // Costo
+        { wch: 12 }, // Sucursal 1
+        { wch: 12 }, // Sucursal 2
+        { wch: 12 }, // Precio
+      ];
+      
+      XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
+      
+      // Guardar archivo
+      const nombreArchivo = searchTermInventario 
+        ? `inventario_filtrado_${new Date().toISOString().split('T')[0]}.xlsx`
+        : `inventario_completo_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, nombreArchivo);
+      
+      setMensaje('✅ Inventario exportado a Excel correctamente.');
+      setTimeout(() => setMensaje(''), 3000);
+    } catch (error: any) {
+      console.error('Error al exportar a Excel:', error);
+      setMensaje(`❌ Error al exportar a Excel: ${error.message}`);
+      setTimeout(() => setMensaje(''), 5000);
+    }
   };
 
   // Filtrar inventario normal por término de búsqueda
