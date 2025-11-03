@@ -470,8 +470,17 @@ const CargarInventarioExcel: React.FC = () => {
           }, 0);
         }
         
-        // Buscar si este pedido ya está en localStorage con información de carga
+        // Buscar si este pedido ya está en localStorage o en el estado actual con información de carga
         const pedidoEnStorage = pedidosDesdeStorage.find((p: PedidoCargadoInventario) => p.pedidoId === pedido._id);
+        const pedidoEnEstado = pedidosCargadosInventario.find((p: PedidoCargadoInventario) => p.pedidoId === pedido._id);
+        
+        // Priorizar fechaCargaInventario del estado actual, luego localStorage, y solo usar fecha_creacion como último recurso
+        // PERO solo si fechaCargaInventario es diferente de fechaCreacion (es decir, el pedido fue realmente cargado)
+        const fechaCargaPreservada = pedidoEnEstado?.fechaCargaInventario || pedidoEnStorage?.fechaCargaInventario;
+        const fechaCreacion = pedido.fecha_creacion || new Date().toISOString();
+        const fechaCargaInventario = (fechaCargaPreservada && fechaCargaPreservada !== fechaCreacion) 
+          ? fechaCargaPreservada 
+          : fechaCreacion;
         
         return {
           id: pedido._id,
@@ -479,9 +488,8 @@ const CargarInventarioExcel: React.FC = () => {
           clienteNombre: pedido.cliente_nombre || 'TU MUNDO PUERTA',
           clienteId: pedido.cliente_id || rifClienteEspecial,
           montoTotal: montoTotal,
-          fechaCreacion: pedido.fecha_creacion || new Date().toISOString(),
-          // Preservar fechaCargaInventario si existe en localStorage, sino usar fecha_creacion
-          fechaCargaInventario: pedidoEnStorage?.fechaCargaInventario || pedido.fecha_creacion || new Date().toISOString(),
+          fechaCreacion: fechaCreacion,
+          fechaCargaInventario: fechaCargaInventario,
           items: pedido.items || []
         };
       }).sort((a: PedidoCargadoInventario, b: PedidoCargadoInventario) => {
@@ -491,19 +499,53 @@ const CargarInventarioExcel: React.FC = () => {
         return fechaB - fechaA;
       });
       
-      // Combinar con los pedidos del localStorage que no están en el backend (por si acaso)
+      // Combinar con los pedidos del estado actual que no están en el backend (para preservar pedidos cargados)
       const pedidosIdsDelBackend = new Set(pedidosFormateados.map((p: PedidoCargadoInventario) => p.pedidoId));
+      
+      // Priorizar pedidos del estado actual sobre los del localStorage
+      const pedidosEstadoActual = pedidosCargadosInventario.filter(
+        (p: PedidoCargadoInventario) => {
+          // Incluir pedidos que no están en el backend O que tienen fechaCargaInventario diferente de fechaCreacion
+          const estaEnBackend = pedidosIdsDelBackend.has(p.pedidoId);
+          const tieneFechaCargaValida = p.fechaCargaInventario && p.fechaCargaInventario !== p.fechaCreacion;
+          return !estaEnBackend || tieneFechaCargaValida;
+        }
+      );
+      
+      // También incluir pedidos del localStorage que no están en el backend ni en el estado actual
       const pedidosSoloEnStorage = pedidosDesdeStorage.filter(
+        (p: PedidoCargadoInventario) => {
+          const estaEnBackend = pedidosIdsDelBackend.has(p.pedidoId);
+          const estaEnEstado = pedidosCargadosInventario.some((pe: PedidoCargadoInventario) => pe.pedidoId === p.pedidoId);
+          return !estaEnBackend && !estaEnEstado;
+        }
+      );
+      
+      // Combinar todos los pedidos: primero los del backend formateados, luego los del estado actual, luego los del localStorage
+      // Para cada pedido del backend, verificar si hay uno en el estado actual con fechaCargaInventario válida y usarlo
+      const pedidosCombinadosFinal = pedidosFormateados.map((pedidoFormateado: PedidoCargadoInventario) => {
+        const pedidoEnEstado = pedidosEstadoActual.find((p: PedidoCargadoInventario) => p.pedidoId === pedidoFormateado.pedidoId);
+        if (pedidoEnEstado && pedidoEnEstado.fechaCargaInventario && 
+            pedidoEnEstado.fechaCargaInventario !== pedidoEnEstado.fechaCreacion) {
+          // Usar el pedido del estado actual si tiene fechaCargaInventario válida
+          return pedidoEnEstado;
+        }
+        return pedidoFormateado;
+      });
+      
+      // Filtrar pedidos del estado actual que ya están incluidos en pedidosFormateados
+      const pedidosEstadoActualSinDuplicar = pedidosEstadoActual.filter(
         (p: PedidoCargadoInventario) => !pedidosIdsDelBackend.has(p.pedidoId)
       );
       
-      const pedidosCombinados = [...pedidosFormateados, ...pedidosSoloEnStorage].sort((a: PedidoCargadoInventario, b: PedidoCargadoInventario) => {
+      const pedidosCombinados = [...pedidosCombinadosFinal, ...pedidosEstadoActualSinDuplicar, ...pedidosSoloEnStorage].sort((a: PedidoCargadoInventario, b: PedidoCargadoInventario) => {
         const fechaA = new Date(a.fechaCreacion).getTime();
         const fechaB = new Date(b.fechaCreacion).getTime();
         return fechaB - fechaA;
       });
       
       setPedidosCargadosInventario(pedidosCombinados);
+      localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(pedidosCombinados));
       console.log(`✅ Pedidos de TU MUNDO PUERTA cargados: ${pedidosCombinados.length}`);
     } catch (error) {
       console.error('Error al obtener pedidos de TU MUNDO PUERTA:', error);
@@ -517,19 +559,15 @@ const CargarInventarioExcel: React.FC = () => {
     }
   };
 
-  // Cargar pedidos de TU MUNDO PUERTA al iniciar
-  useEffect(() => {
-    fetchPedidosTuMundoPuerta();
-  }, []);
-
   // Cargar pedidos cargados al inventario desde backend y localStorage
   useEffect(() => {
     const cargarDatos = async () => {
       // 1. Cargar PRIMERO desde localStorage para mostrar datos inmediatamente
       const storedPedidosInventario = localStorage.getItem('pedidos_cargados_inventario');
+      let pedidosLocal: PedidoCargadoInventario[] = [];
       if (storedPedidosInventario) {
         try {
-          const pedidosLocal = JSON.parse(storedPedidosInventario);
+          pedidosLocal = JSON.parse(storedPedidosInventario);
           if (Array.isArray(pedidosLocal) && pedidosLocal.length > 0) {
             setPedidosCargadosInventario(pedidosLocal);
             console.log('📦 Pedidos cargados al inventario cargados desde localStorage (inicial):', pedidosLocal.length);
@@ -539,28 +577,64 @@ const CargarInventarioExcel: React.FC = () => {
         }
       }
       
-      // 2. Intentar actualizar desde backend (priorizar BD sobre localStorage)
+      // 2. Intentar actualizar desde backend (combinar con localStorage para preservar fechaCargaInventario)
       try {
         const pedidosBackend = await apiGetPedidosInventario();
         if (pedidosBackend && Array.isArray(pedidosBackend)) {
-          setPedidosCargadosInventario(pedidosBackend);
-          localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(pedidosBackend));
+          // Combinar datos: usar información de localStorage si existe para preservar fechaCargaInventario
+          const pedidosCombinados = pedidosBackend.map((pedidoBackend: PedidoCargadoInventario) => {
+            const pedidoLocal = pedidosLocal.find((p: PedidoCargadoInventario) => p.pedidoId === pedidoBackend.pedidoId);
+            // Si el pedido existe en localStorage y tiene fechaCargaInventario diferente de fechaCreacion, preservarla
+            if (pedidoLocal && pedidoLocal.fechaCargaInventario && 
+                pedidoLocal.fechaCargaInventario !== pedidoLocal.fechaCreacion) {
+              return {
+                ...pedidoBackend,
+                fechaCargaInventario: pedidoLocal.fechaCargaInventario
+              };
+            }
+            return pedidoBackend;
+          });
           
-          if (pedidosBackend.length > 0) {
-            console.log('✅ Pedidos cargados al inventario sincronizados desde BD:', pedidosBackend.length);
+          // Agregar pedidos que están solo en localStorage pero no en backend
+          const idsBackend = new Set(pedidosCombinados.map((p: PedidoCargadoInventario) => p.pedidoId));
+          const pedidosSoloLocal = pedidosLocal.filter((p: PedidoCargadoInventario) => !idsBackend.has(p.pedidoId));
+          const pedidosFinales = [...pedidosCombinados, ...pedidosSoloLocal];
+          
+          setPedidosCargadosInventario(pedidosFinales);
+          localStorage.setItem('pedidos_cargados_inventario', JSON.stringify(pedidosFinales));
+          
+          if (pedidosFinales.length > 0) {
+            console.log('✅ Pedidos cargados al inventario sincronizados desde BD:', pedidosFinales.length);
           } else {
             console.log('📭 BD está vacía para pedidos (se sincronizó correctamente)');
           }
         } else {
           console.warn('⚠️ Respuesta del backend no es un array válido:', pedidosBackend);
+          // Si el backend no responde bien, mantener los datos de localStorage
+          if (pedidosLocal.length > 0) {
+            setPedidosCargadosInventario(pedidosLocal);
+          }
         }
       } catch (error) {
         console.error('❌ Error al cargar pedidos desde BD:', error);
         console.warn('⚠️ Usando datos de localStorage como fallback');
+        // Mantener datos de localStorage si el backend falla
+        if (pedidosLocal.length > 0) {
+          setPedidosCargadosInventario(pedidosLocal);
+        }
       }
     };
     
     cargarDatos();
+  }, []);
+
+  // Cargar pedidos de TU MUNDO PUERTA después de que se carguen los pedidos cargados
+  useEffect(() => {
+    // Esperar un momento para asegurar que pedidosCargadosInventario esté inicializado
+    const timeoutId = setTimeout(() => {
+      fetchPedidosTuMundoPuerta();
+    }, 100);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Separar pedidos de TU MUNDO PUERTA en dos listas: pendientes y cargados
