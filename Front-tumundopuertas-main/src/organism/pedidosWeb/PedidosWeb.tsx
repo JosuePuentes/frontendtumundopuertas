@@ -274,10 +274,10 @@ const PedidosWeb: React.FC = () => {
 
   const getEstadoBadge = (estado: string) => {
     const estados: Record<string, { color: string; label: string }> = {
-      pendiente: { color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30", label: "Pendiente" },
-      procesando: { color: "bg-blue-500/20 text-blue-400 border-blue-500/30", label: "Procesando" },
-      confirmado: { color: "bg-green-500/20 text-green-400 border-green-500/30", label: "Confirmado" },
-      cancelado: { color: "bg-red-500/20 text-red-400 border-red-500/30", label: "Cancelado" },
+      pendiente: { color: "bg-yellow-100 text-yellow-800 border-yellow-300", label: "Pendiente" },
+      procesando: { color: "bg-blue-100 text-blue-800 border-blue-300", label: "Procesando" },
+      confirmado: { color: "bg-green-100 text-green-800 border-green-300", label: "Confirmado" },
+      cancelado: { color: "bg-red-100 text-red-800 border-red-300", label: "Cancelado" },
     };
     return estados[estado.toLowerCase()] || estados.pendiente;
   };
@@ -285,17 +285,17 @@ const PedidosWeb: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <p className="text-gray-400">Cargando pedidos...</p>
+        <p className="text-gray-600">Cargando pedidos...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 bg-white min-h-screen">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold text-white">Pedidos Web</h1>
-          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 flex items-center gap-1">
+          <h1 className="text-3xl font-bold text-gray-900">Pedidos Web</h1>
+          <Badge className="bg-blue-100 text-blue-700 border-blue-300 flex items-center gap-1">
             <Bell className="w-3 h-3" />
             <span>Monitoreo activo</span>
           </Badge>
@@ -303,7 +303,7 @@ const PedidosWeb: React.FC = () => {
         <Button
           onClick={() => cargarPedidos()}
           variant="outline"
-          className="border-cyan-400 text-cyan-400 hover:bg-cyan-400/10"
+          className="border-blue-600 text-blue-700 hover:bg-blue-50"
         >
           Actualizar
         </Button>
@@ -311,22 +311,22 @@ const PedidosWeb: React.FC = () => {
 
       {/* Buscador */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
         <Input
           type="text"
           placeholder="Buscar por nombre, cédula, referencia, ID de pedido o número de factura..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="pl-10 bg-gray-800/50 border-gray-600 text-white placeholder-gray-400 focus:border-cyan-400"
+          className="pl-10 bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
         />
       </div>
 
       {/* Lista de pedidos */}
       {pedidosFiltrados.length === 0 ? (
-        <Card className="bg-gray-800/50 border-gray-700">
+        <Card className="bg-white border-gray-200 shadow-sm">
           <CardContent className="p-8 text-center">
-            <Package className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
+            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg">
               {search ? "No se encontraron pedidos con esa búsqueda" : "No hay pedidos web registrados"}
             </p>
           </CardContent>
@@ -344,26 +344,26 @@ const PedidosWeb: React.FC = () => {
             return (
               <Card
                 key={pedido._id}
-                className="bg-gray-800/50 border-gray-700 hover:border-cyan-400/50 transition-colors"
+                className="bg-white border-gray-200 hover:border-blue-400 hover:shadow-md transition-all"
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="text-white flex items-center gap-2 mb-2">
-                        <User className="w-5 h-5" />
+                      <CardTitle className="text-gray-900 flex items-center gap-2 mb-2">
+                        <User className="w-5 h-5 text-blue-600" />
                         {pedido.cliente_nombre}
                       </CardTitle>
-                      <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                         <span className="flex items-center gap-1">
-                          <FileText className="w-4 h-4" />
+                          <FileText className="w-4 h-4 text-gray-500" />
                           Cédula: {pedido.cliente_cedula}
                         </span>
                         <span className="flex items-center gap-1">
-                          <Phone className="w-4 h-4" />
+                          <Phone className="w-4 h-4 text-gray-500" />
                           {pedido.cliente_telefono}
                         </span>
                         <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
+                          <MapPin className="w-4 h-4 text-gray-500" />
                           {pedido.cliente_direccion}
                         </span>
                       </div>
@@ -373,17 +373,17 @@ const PedidosWeb: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Calendar className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <Calendar className="w-4 h-4 text-gray-500" />
                       <span className="text-sm">{formatearFecha(pedido.fecha_creacion)}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <CreditCard className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-gray-700">
+                      <CreditCard className="w-4 h-4 text-gray-500" />
                       <span className="text-sm">
                         {pedido.metodo_pago} - Ref: {pedido.numero_referencia}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-cyan-400 font-bold">
+                    <div className="flex items-center gap-2 text-blue-600 font-bold">
                       <Package className="w-4 h-4" />
                       <span>${pedido.total.toFixed(2)}</span>
                     </div>
@@ -391,23 +391,23 @@ const PedidosWeb: React.FC = () => {
 
                   {/* Información de Factura */}
                   {factura && (
-                    <div className="mb-4 p-4 bg-gray-700/50 rounded-lg border border-gray-600">
+                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
                       <div className="flex items-center gap-2 mb-3">
-                        <Receipt className="w-5 h-5 text-cyan-400" />
-                        <h4 className="text-white font-semibold">Factura: {factura.numero_factura}</h4>
+                        <Receipt className="w-5 h-5 text-blue-600" />
+                        <h4 className="text-gray-900 font-semibold">Factura: {factura.numero_factura}</h4>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
                         <div>
-                          <p className="text-gray-400 text-sm mb-1">Monto Total Factura</p>
-                          <p className="text-white font-bold text-lg">${montoTotalFactura.toFixed(2)}</p>
+                          <p className="text-gray-600 text-sm mb-1">Monto Total Factura</p>
+                          <p className="text-gray-900 font-bold text-lg">${montoTotalFactura.toFixed(2)}</p>
                         </div>
                         <div>
-                          <p className="text-gray-400 text-sm mb-1">Monto Total Abonado</p>
-                          <p className="text-cyan-400 font-bold text-lg">${montoAbonado.toFixed(2)}</p>
+                          <p className="text-gray-600 text-sm mb-1">Monto Total Abonado</p>
+                          <p className="text-blue-600 font-bold text-lg">${montoAbonado.toFixed(2)}</p>
                         </div>
                         <div>
-                          <p className="text-gray-400 text-sm mb-1">Saldo Pendiente</p>
-                          <p className={`font-bold text-lg ${saldoPendiente > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                          <p className="text-gray-600 text-sm mb-1">Saldo Pendiente</p>
+                          <p className={`font-bold text-lg ${saldoPendiente > 0 ? 'text-red-600' : 'text-green-600'}`}>
                             ${saldoPendiente.toFixed(2)}
                           </p>
                         </div>
@@ -415,22 +415,22 @@ const PedidosWeb: React.FC = () => {
 
                       {/* Historial de Abonos */}
                       {historialAbonos.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-gray-600">
-                          <p className="text-gray-400 text-sm mb-2 font-semibold">Historial de Abonos:</p>
+                        <div className="mt-4 pt-4 border-t border-blue-200">
+                          <p className="text-gray-700 text-sm mb-2 font-semibold">Historial de Abonos:</p>
                           <div className="space-y-2 max-h-40 overflow-y-auto">
                             {historialAbonos.map((abono, index) => (
                               <div
                                 key={index}
-                                className="flex items-center justify-between p-2 bg-gray-800/50 rounded border border-gray-600"
+                                className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
                               >
                                 <div className="flex-1">
-                                  <div className="flex items-center gap-2 text-white text-sm">
-                                    <DollarSign className="w-4 h-4 text-cyan-400" />
+                                  <div className="flex items-center gap-2 text-gray-900 text-sm">
+                                    <DollarSign className="w-4 h-4 text-blue-600" />
                                     <span className="font-semibold">${abono.cantidad.toFixed(2)}</span>
                                     <span className="text-gray-400">-</span>
-                                    <span className="text-gray-400">{abono.metodo_pago || "Sin método"}</span>
+                                    <span className="text-gray-600">{abono.metodo_pago || "Sin método"}</span>
                                     <span className="text-gray-400">-</span>
-                                    <span className="text-gray-400 text-xs">
+                                    <span className="text-gray-500 text-xs">
                                       Ref: {abono.numero_referencia || "Sin referencia"}
                                     </span>
                                   </div>
@@ -443,7 +443,7 @@ const PedidosWeb: React.FC = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="border-green-500/30 text-green-400 hover:bg-green-500/10 ml-2"
+                                  className="border-green-500 text-green-600 hover:bg-green-50 ml-2"
                                   disabled
                                   title="Botón visual - No modifica nada"
                                 >
@@ -458,14 +458,14 @@ const PedidosWeb: React.FC = () => {
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-700">
-                    <div className="text-sm text-gray-400">
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                    <div className="text-sm text-gray-600">
                       {pedido.items.length} {pedido.items.length === 1 ? "item" : "items"}
                     </div>
                     <Button
                       onClick={() => verDetalle(pedido)}
                       variant="outline"
-                      className="border-cyan-400 text-cyan-400 hover:bg-cyan-400/10"
+                      className="border-blue-600 text-blue-700 hover:bg-blue-50"
                     >
                       <Eye className="w-4 h-4 mr-2" />
                       Ver Detalles
@@ -480,7 +480,7 @@ const PedidosWeb: React.FC = () => {
 
       {/* Modal de Detalle */}
       <Dialog open={modalDetalleAbierto} onOpenChange={setModalDetalleAbierto}>
-        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold flex items-center justify-between">
               <span>Detalle del Pedido</span>
@@ -488,7 +488,7 @@ const PedidosWeb: React.FC = () => {
                 variant="ghost"
                 size="sm"
                 onClick={() => setModalDetalleAbierto(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-gray-500 hover:text-gray-900"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -498,102 +498,102 @@ const PedidosWeb: React.FC = () => {
           {pedidoSeleccionado && (
             <div className="space-y-6 mt-4">
               {/* Información del Cliente */}
-              <Card className="bg-gray-700/50 border-gray-600">
+              <Card className="bg-white border-gray-200">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <User className="w-5 h-5" />
+                    <User className="w-5 h-5 text-blue-600" />
                     Información del Cliente
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-gray-400 text-sm">Nombre</p>
-                      <p className="text-white font-semibold">{pedidoSeleccionado.cliente_nombre}</p>
+                      <p className="text-gray-600 text-sm">Nombre</p>
+                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.cliente_nombre}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Cédula</p>
-                      <p className="text-white font-semibold">{pedidoSeleccionado.cliente_cedula}</p>
+                      <p className="text-gray-600 text-sm">Cédula</p>
+                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.cliente_cedula}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Teléfono</p>
-                      <p className="text-white font-semibold">{pedidoSeleccionado.cliente_telefono}</p>
+                      <p className="text-gray-600 text-sm">Teléfono</p>
+                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.cliente_telefono}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Dirección</p>
-                      <p className="text-white font-semibold">{pedidoSeleccionado.cliente_direccion}</p>
+                      <p className="text-gray-600 text-sm">Dirección</p>
+                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.cliente_direccion}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Información del Pedido */}
-              <Card className="bg-gray-700/50 border-gray-600">
+              <Card className="bg-white border-gray-200">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Package className="w-5 h-5" />
+                    <Package className="w-5 h-5 text-blue-600" />
                     Detalles del Pedido
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-gray-400 text-sm">Fecha</p>
-                      <p className="text-white font-semibold">{formatearFecha(pedidoSeleccionado.fecha_creacion)}</p>
+                      <p className="text-gray-600 text-sm">Fecha</p>
+                      <p className="text-gray-900 font-semibold">{formatearFecha(pedidoSeleccionado.fecha_creacion)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Estado</p>
+                      <p className="text-gray-600 text-sm">Estado</p>
                       <Badge className={getEstadoBadge(pedidoSeleccionado.estado).color + " border"}>
                         {getEstadoBadge(pedidoSeleccionado.estado).label}
                       </Badge>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Método de Pago</p>
-                      <p className="text-white font-semibold">{pedidoSeleccionado.metodo_pago}</p>
+                      <p className="text-gray-600 text-sm">Método de Pago</p>
+                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.metodo_pago}</p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Número de Referencia</p>
-                      <p className="text-white font-semibold">{pedidoSeleccionado.numero_referencia}</p>
+                      <p className="text-gray-600 text-sm">Número de Referencia</p>
+                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.numero_referencia}</p>
                     </div>
                   </div>
 
                   {/* Items del Pedido */}
                   <div className="mt-4">
-                    <p className="text-gray-400 text-sm mb-2">Items del Pedido</p>
+                    <p className="text-gray-700 text-sm mb-2 font-semibold">Items del Pedido</p>
                     <div className="space-y-2">
                       {pedidoSeleccionado.items.map((item, index) => (
                         <div
                           key={index}
-                          className="bg-gray-800/50 rounded-lg p-3 flex justify-between items-center"
+                          className="bg-gray-50 rounded-lg p-3 flex justify-between items-center border border-gray-200"
                         >
                           <div>
-                            <p className="text-white font-semibold">
+                            <p className="text-gray-900 font-semibold">
                               {item.item?.nombre || `Item ${index + 1}`}
                             </p>
                             {item.item?.codigo && (
-                              <p className="text-gray-400 text-sm">Código: {item.item.codigo}</p>
+                              <p className="text-gray-600 text-sm">Código: {item.item.codigo}</p>
                             )}
                             {item.item?.descripcion && (
-                              <p className="text-gray-400 text-sm mt-1">{item.item.descripcion}</p>
+                              <p className="text-gray-600 text-sm mt-1">{item.item.descripcion}</p>
                             )}
                           </div>
                           <div className="text-right">
-                            <p className="text-white font-semibold">
+                            <p className="text-gray-900 font-semibold">
                               Cantidad: {item.cantidad}
                             </p>
-                            <p className="text-cyan-400 font-semibold">
+                            <p className="text-blue-600 font-semibold">
                               ${(item.precio * item.cantidad).toFixed(2)}
                             </p>
-                            <p className="text-gray-400 text-xs">
+                            <p className="text-gray-500 text-xs">
                               ${item.precio.toFixed(2)} c/u
                             </p>
                           </div>
                         </div>
                       ))}
                     </div>
-                    <div className="mt-4 pt-4 border-t border-gray-600 flex justify-between items-center">
-                      <span className="text-lg font-semibold text-white">Total:</span>
-                      <span className="text-2xl font-bold text-cyan-400">
+                    <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-900">Total:</span>
+                      <span className="text-2xl font-bold text-blue-600">
                         ${pedidoSeleccionado.total.toFixed(2)}
                       </span>
                     </div>
@@ -603,55 +603,55 @@ const PedidosWeb: React.FC = () => {
 
               {/* Información de Factura y Abonos */}
               {pedidoSeleccionado.factura && (
-                <Card className="bg-gray-700/50 border-gray-600">
+                <Card className="bg-blue-50 border-blue-200">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <Receipt className="w-5 h-5" />
+                      <Receipt className="w-5 h-5 text-blue-600" />
                       Factura y Abonos
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <p className="text-gray-400 text-sm">Número de Factura</p>
-                        <p className="text-white font-semibold">{pedidoSeleccionado.factura?.numero_factura}</p>
+                        <p className="text-gray-600 text-sm">Número de Factura</p>
+                        <p className="text-gray-900 font-semibold">{pedidoSeleccionado.factura?.numero_factura}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Monto Total Factura</p>
-                        <p className="text-white font-bold text-lg">${(pedidoSeleccionado.factura?.monto_total || 0).toFixed(2)}</p>
+                        <p className="text-gray-600 text-sm">Monto Total Factura</p>
+                        <p className="text-gray-900 font-bold text-lg">${(pedidoSeleccionado.factura?.monto_total || 0).toFixed(2)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Monto Total Abonado</p>
-                        <p className="text-cyan-400 font-bold text-lg">${(pedidoSeleccionado.factura?.monto_abonado || 0).toFixed(2)}</p>
+                        <p className="text-gray-600 text-sm">Monto Total Abonado</p>
+                        <p className="text-blue-600 font-bold text-lg">${(pedidoSeleccionado.factura?.monto_abonado || 0).toFixed(2)}</p>
                       </div>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-sm">Saldo Pendiente</p>
-                      <p className={`font-bold text-xl ${(pedidoSeleccionado.factura?.saldo_pendiente || 0) > 0 ? 'text-red-400' : 'text-green-400'}`}>
+                      <p className="text-gray-600 text-sm">Saldo Pendiente</p>
+                      <p className={`font-bold text-xl ${(pedidoSeleccionado.factura?.saldo_pendiente || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
                         ${(pedidoSeleccionado.factura?.saldo_pendiente || 0).toFixed(2)}
                       </p>
                     </div>
 
                     {/* Historial de Abonos en Modal */}
                     {(pedidoSeleccionado.factura?.historial_abonos || []).length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-gray-600">
-                        <p className="text-gray-400 text-sm mb-3 font-semibold">Historial de Abonos:</p>
+                      <div className="mt-4 pt-4 border-t border-blue-200">
+                        <p className="text-gray-700 text-sm mb-3 font-semibold">Historial de Abonos:</p>
                         <div className="space-y-3">
                           {(pedidoSeleccionado.factura?.historial_abonos || []).map((abono, index) => (
                             <div
                               key={index}
-                              className="bg-gray-800/50 rounded-lg p-4 border border-gray-600"
+                              className="bg-white rounded-lg p-4 border border-gray-200"
                             >
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2 mb-2">
-                                    <DollarSign className="w-5 h-5 text-cyan-400" />
-                                    <span className="text-white font-bold text-lg">${abono.cantidad.toFixed(2)}</span>
-                                    <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+                                    <DollarSign className="w-5 h-5 text-blue-600" />
+                                    <span className="text-gray-900 font-bold text-lg">${abono.cantidad.toFixed(2)}</span>
+                                    <Badge className="bg-blue-100 text-blue-800 border-blue-300">
                                       {abono.metodo_pago || "Sin método"}
                                     </Badge>
                                   </div>
-                                  <div className="space-y-1 text-sm text-gray-400">
+                                  <div className="space-y-1 text-sm text-gray-600">
                                     <p>Referencia: {abono.numero_referencia || "Sin referencia"}</p>
                                     {abono.fecha && <p>Fecha: {formatearFecha(abono.fecha)}</p>}
                                     {abono.comprobante_url && (
@@ -660,7 +660,7 @@ const PedidosWeb: React.FC = () => {
                                           href={abono.comprobante_url}
                                           target="_blank"
                                           rel="noopener noreferrer"
-                                          className="text-cyan-400 hover:underline flex items-center gap-1"
+                                          className="text-blue-600 hover:underline flex items-center gap-1"
                                         >
                                           <ImageIcon className="w-4 h-4" />
                                           Ver comprobante
@@ -672,7 +672,7 @@ const PedidosWeb: React.FC = () => {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+                                  className="border-green-500 text-green-600 hover:bg-green-50"
                                   disabled
                                   title="Botón visual - No modifica nada"
                                 >
@@ -691,10 +691,10 @@ const PedidosWeb: React.FC = () => {
 
               {/* Comprobante de Pago del Pedido */}
               {pedidoSeleccionado.comprobante_url && (
-                <Card className="bg-gray-700/50 border-gray-600">
+                <Card className="bg-white border-gray-200">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <ImageIcon className="w-5 h-5" />
+                      <ImageIcon className="w-5 h-5 text-blue-600" />
                       Comprobante de Pago del Pedido
                     </CardTitle>
                   </CardHeader>
@@ -703,7 +703,7 @@ const PedidosWeb: React.FC = () => {
                       <img
                         src={pedidoSeleccionado.comprobante_url}
                         alt="Comprobante de pago"
-                        className="max-w-full max-h-96 rounded-lg border border-gray-600"
+                        className="max-w-full max-h-96 rounded-lg border border-gray-300"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = "/placeholder.png";
                         }}
