@@ -444,7 +444,6 @@ const PedidosWeb: React.FC = () => {
               
               // OPTIMIZACIÓN: NO cargar facturas aquí - solo cuando se abra el modal de detalle
               // Esto reduce significativamente la carga inicial de la página
-              let factura = null;
               // Las facturas se cargarán solo cuando se necesiten (al abrir el modal)
               
               // Buscar datos del cliente
@@ -537,7 +536,9 @@ const PedidosWeb: React.FC = () => {
           }
         }
 
-        // Detectar nuevos abonos
+        // Detectar nuevos abonos (solo si hay facturas cargadas)
+        // Nota: Como ya no cargamos facturas en la carga inicial, esta lógica solo funciona
+        // cuando se cargan facturas manualmente (al abrir modales, etc.)
         if (silencioso) {
           pedidosConFacturas.forEach((pedido) => {
             if (pedido.factura) {
@@ -555,16 +556,9 @@ const PedidosWeb: React.FC = () => {
           });
         }
 
-        // Actualizar referencias
+        // Actualizar referencias de pedidos (sin facturas por ahora)
         pedidosAnterioresRef.current = new Set(pedidosConFacturas.map((p) => p._id));
-        pedidosConFacturas.forEach((pedido) => {
-          if (pedido.factura) {
-            abonosAnterioresRef.current.set(
-              pedido._id,
-              (pedido.factura.historial_abonos || []).length
-            );
-          }
-        });
+        // Nota: No actualizamos referencias de abonos aquí porque las facturas no se cargan en la carga inicial
 
         setPedidos(pedidosConFacturas);
       } else {
