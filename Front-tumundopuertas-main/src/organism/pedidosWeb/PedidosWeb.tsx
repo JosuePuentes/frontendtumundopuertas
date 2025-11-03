@@ -630,14 +630,30 @@ const PedidosWeb: React.FC = () => {
                     <div className="text-sm text-gray-600">
                       {pedido.items.length} {pedido.items.length === 1 ? "item" : "items"}
                     </div>
-                    <Button
-                      onClick={() => verDetalle(pedido)}
-                      variant="outline"
-                      className="border-blue-600 text-blue-700 hover:bg-blue-50"
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      Ver Detalles
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        onClick={() => abrirChat(pedido)}
+                        variant="outline"
+                        className="relative border-green-500 text-green-600 hover:bg-green-50"
+                        size="sm"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        {mensajesNoLeidos.get(pedido._id) ? (
+                          <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                            {mensajesNoLeidos.get(pedido._id)}
+                          </Badge>
+                        ) : null}
+                      </Button>
+                      <Button
+                        onClick={() => verDetalle(pedido)}
+                        variant="outline"
+                        className="border-blue-600 text-blue-700 hover:bg-blue-50"
+                        size="sm"
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Ver Detalles
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
