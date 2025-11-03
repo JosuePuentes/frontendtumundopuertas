@@ -501,15 +501,7 @@ const PedidosWeb: React.FC = () => {
                 total: pedido.total || 0,
                 estado: pedido.estado || pedido.estado_general || "pendiente",
                 fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || pedido.createdAt || new Date().toISOString(),
-                factura: factura ? {
-                  _id: factura._id || factura.id,
-                  numero_factura: factura.numero_factura || factura.numeroFactura || "Sin número",
-                  monto_total: factura.monto_total || factura.montoTotal || 0,
-                  monto_abonado: factura.monto_abonado || factura.montoAbonado || 0,
-                  saldo_pendiente: factura.saldo_pendiente || factura.saldoPendiente || (factura.monto_total || factura.montoTotal || 0) - (factura.monto_abonado || factura.montoAbonado || 0),
-                  historial_abonos: factura.historial_abonos || factura.historialAbonos || [],
-                  estado: factura.estado || "pendiente",
-                } : undefined,
+                factura: undefined, // Se cargará cuando se abra el modal de detalle
               };
             } catch (error) {
               console.error("Error al procesar pedido:", error);
@@ -604,9 +596,43 @@ const PedidosWeb: React.FC = () => {
     );
   });
 
-  const verDetalle = (pedido: PedidoWeb) => {
+  const verDetalle = async (pedido: PedidoWeb) => {
     setPedidoSeleccionado(pedido);
     setModalDetalleAbierto(true);
+    
+    // Cargar factura solo cuando se abre el modal (optimización)
+    if (pedido._id) {
+      try {
+        const token = localStorage.getItem("access_token");
+        const resFactura = await fetch(`${apiUrl}/facturas/pedido/${pedido._id}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+        
+        if (resFactura.ok) {
+          const facturaData = await resFactura.json();
+          const factura = Array.isArray(facturaData) ? facturaData[0] : facturaData;
+          if (factura) {
+            // Actualizar el pedido con la factura
+            setPedidoSeleccionado(prev => prev ? {
+              ...prev,
+              factura: {
+                _id: factura._id || factura.id,
+                numero_factura: factura.numero_factura || factura.numeroFactura || "Sin número",
+                monto_total: factura.monto_total || factura.montoTotal || 0,
+                monto_abonado: factura.monto_abonado || factura.montoAbonado || 0,
+                saldo_pendiente: factura.saldo_pendiente || factura.saldoPendiente || (factura.monto_total || factura.montoTotal || 0) - (factura.monto_abonado || factura.montoAbonado || 0),
+                historial_abonos: factura.historial_abonos || factura.historialAbonos || [],
+                estado: factura.estado || "pendiente",
+              }
+            } : null);
+          }
+        }
+      } catch (error) {
+        // Silenciar errores 404 (es normal que no todos los pedidos tengan factura)
+      }
+    }
   };
 
   const cambiarEstadoPedido = async (nuevoEstado: string) => {
