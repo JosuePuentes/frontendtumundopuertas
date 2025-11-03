@@ -77,12 +77,15 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
       const token = localStorage.getItem("cliente_access_token");
       const clienteId = localStorage.getItem("cliente_id");
 
-      // Preparar items del pedido
+      // Preparar items del pedido según el formato que espera el backend
       const itemsPedido = items.map(carritoItem => ({
         itemId: carritoItem.itemId,
         cantidad: carritoItem.cantidad,
-        precio: carritoItem.item.precio,
+        precio: carritoItem.item.precio || 0,
       }));
+
+      // Log del payload para debugging
+      console.log("🔍 DEBUG: Items del pedido:", itemsPedido);
 
       // Subir el archivo usando Cloudflare R2 con presigned URLs
       let archivoUrl = "";
@@ -195,6 +198,9 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
         adicionales: [], // Campo requerido según nuevas especificaciones
       };
 
+      // Log completo del payload antes de enviar
+      console.log("🔍 DEBUG: Payload completo que se enviará:", JSON.stringify(pedidoData, null, 2));
+
       const res = await fetch(`${apiUrl}/pedidos/cliente`, {
         method: "POST",
         headers: {
@@ -206,18 +212,34 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ detail: "Error al enviar el pedido" }));
-        console.error("❌ Error del backend (422):", errorData);
+        console.error("❌ Error del backend:", {
+          status: res.status,
+          statusText: res.statusText,
+          errorData: errorData,
+          detail: errorData.detail
+        });
+        
         // Mostrar detalles específicos del error 422
         if (res.status === 422 && errorData.detail) {
-          const errorMessage = Array.isArray(errorData.detail)
-            ? errorData.detail.map((e: any) => {
-                if (typeof e === 'string') return e;
-                const loc = e.loc ? e.loc.join('.') : '';
-                const msg = e.msg || e.message || JSON.stringify(e);
-                return loc ? `${loc}: ${msg}` : msg;
-              }).join(', ')
-            : errorData.detail;
-          throw new Error(errorMessage);
+          let errorMessage = "";
+          if (Array.isArray(errorData.detail)) {
+            errorMessage = errorData.detail.map((e: any, index: number) => {
+              if (typeof e === 'string') {
+                return `${index + 1}. ${e}`;
+              }
+              const loc = e.loc ? e.loc.join('.') : '';
+              const msg = e.msg || e.message || JSON.stringify(e);
+              const type = e.type ? ` (tipo: ${e.type})` : '';
+              return `${index + 1}. ${loc ? `${loc}: ` : ''}${msg}${type}`;
+            }).join('\n');
+          } else if (typeof errorData.detail === 'string') {
+            errorMessage = errorData.detail;
+          } else {
+            errorMessage = JSON.stringify(errorData.detail, null, 2);
+          }
+          
+          console.error("❌ Detalles de validación:", errorMessage);
+          throw new Error(`Error de validación:\n${errorMessage}`);
         }
         throw new Error(errorData.detail || "Error al enviar el pedido");
       }
