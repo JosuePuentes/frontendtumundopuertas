@@ -174,7 +174,7 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
             <div className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-blue-600" />
               <DialogTitle className="text-lg font-semibold">
-                {tituloChat || `Chat - ${clienteNombre}`}
+                {tituloChat ? tituloChat : `Chat - ${clienteNombre}`}
               </DialogTitle>
             </div>
             <Button
