@@ -54,7 +54,9 @@ interface Pedido {
       nombre?: string;
       codigo?: string;
       descripcion?: string;
+      imagenes?: string[];
     };
+    imagenes?: string[];
   }>;
   metodo_pago?: string;
   numero_referencia?: string;
@@ -364,9 +366,9 @@ const MisPedidos: React.FC = () => {
                           className="bg-gray-50 rounded-lg p-4 flex gap-4 items-center border border-gray-200"
                         >
                           {/* Imagen del item */}
-                          {item.item?.imagenes && item.item.imagenes.length > 0 && (
-                            <ItemImage imagenUrl={item.item.imagenes[0]} />
-                          )}
+                          {(item.item?.imagenes && item.item.imagenes.length > 0) || (item.imagenes && item.imagenes.length > 0) ? (
+                            <ItemImage imagenUrl={(item.item?.imagenes && item.item.imagenes.length > 0) ? item.item.imagenes[0] : (item.imagenes?.[0] || '')} />
+                          ) : null}
                           <div className="flex-1">
                             <p className="text-gray-900 font-semibold">
                               {item.nombre || item.item?.nombre || `Item ${index + 1}`}
