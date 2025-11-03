@@ -135,43 +135,32 @@ const PedidosWeb: React.FC = () => {
               const pedidoId = pedido._id || pedido.id;
               const clienteId = pedido.cliente_id || pedido.clienteId;
               
-              // Buscar factura por pedido_id
+              // Buscar factura por pedido_id (solo si tenemos token válido)
               let factura = null;
-              try {
-                // Intentar con y sin barra final
-                const endpointsFactura = [
-                  `${apiUrl}/facturas/pedido/${pedidoId}/`,
-                  `${apiUrl}/facturas/pedido/${pedidoId}`,
-                ];
-                
-                for (const endpoint of endpointsFactura) {
-                  try {
-                    const resFactura = await fetch(endpoint, {
-                      headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                      },
-                    });
-                    
-                    if (resFactura.ok) {
-                      const dataFactura = await resFactura.json();
-                      factura = Array.isArray(dataFactura) ? dataFactura[0] : dataFactura;
-                      break; // Si funcionó, salir del loop
-                    } else if (resFactura.status === 401) {
-                      // Token expirado o inválido - continuar sin factura
-                      console.warn(`Error 401 al cargar factura para pedido ${pedidoId}: Token no válido`);
-                      break;
-                    } else if (resFactura.status === 404) {
-                      // No hay factura para este pedido - es normal
-                      break;
-                    }
-                  } catch (fetchError) {
-                    // Continuar con el siguiente endpoint
-                    continue;
+              if (token && token !== 'null' && token !== 'undefined') {
+                try {
+                  // Intentar primero sin barra final (endpoint estándar)
+                  const endpointFactura = `${apiUrl}/facturas/pedido/${pedidoId}`;
+                  
+                  const resFactura = await fetch(endpointFactura, {
+                    headers: {
+                      "Authorization": `Bearer ${token}`,
+                      "Content-Type": "application/json",
+                    },
+                  });
+                  
+                  if (resFactura.ok) {
+                    const dataFactura = await resFactura.json();
+                    factura = Array.isArray(dataFactura) ? dataFactura[0] : dataFactura;
+                  } else if (resFactura.status === 401) {
+                    // Token expirado o inválido - silencioso, no loguear a menos que sea crítico
+                    // El usuario necesitará refrescar la sesión
+                  } else if (resFactura.status === 404) {
+                    // No hay factura para este pedido - completamente normal, no es un error
                   }
+                } catch (error) {
+                  // Error de red o similar - ignorar silenciosamente
                 }
-              } catch (error) {
-                console.error("Error al cargar factura:", error);
               }
               
               // Buscar datos del cliente
