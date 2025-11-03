@@ -1301,14 +1301,14 @@ const PedidosWeb: React.FC = () => {
 
       {/* Modal de Confirmación para Eliminar Pedido */}
       <Dialog open={confirmacionEliminarAbierta} onOpenChange={setConfirmacionEliminarAbierta}>
-        <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-md">
-          <DialogHeader>
+        <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-md p-6">
+          <DialogHeader className="mb-4">
             <DialogTitle className="text-xl font-semibold text-red-600 flex items-center gap-2">
               <Trash2 className="w-6 h-6" />
               Confirmar Eliminación
             </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-2 mb-4">
             <p className="text-gray-700 mb-4">
               ¿Estás seguro de que deseas eliminar este pedido?
             </p>
@@ -1329,7 +1329,7 @@ const PedidosWeb: React.FC = () => {
               ⚠️ Esta acción no se puede deshacer. El pedido será eliminado permanentemente.
             </p>
           </div>
-          <div className="flex justify-end gap-3">
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <Button
               variant="outline"
               onClick={() => {
@@ -1387,6 +1387,7 @@ const PedidosWeb: React.FC = () => {
                 }
               }}
               disabled={eliminando}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               {eliminando ? (
                 <>
