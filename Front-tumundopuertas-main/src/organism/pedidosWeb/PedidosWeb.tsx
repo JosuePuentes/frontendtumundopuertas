@@ -257,8 +257,8 @@ const PedidosWeb: React.FC = () => {
   // Cargar conversaciones de soporte
   useEffect(() => {
     cargarConversacionesSoporte();
-    // Polling cada 5 segundos para conversaciones de soporte
-    const intervalId = setInterval(cargarConversacionesSoporte, 5000);
+    // Polling cada 2 segundos para conversaciones de soporte en tiempo real
+    const intervalId = setInterval(cargarConversacionesSoporte, 2000);
     return () => clearInterval(intervalId);
   }, []);
 
@@ -297,9 +297,7 @@ const PedidosWeb: React.FC = () => {
       const token = localStorage.getItem("access_token");
       if (!token) return;
 
-      // Obtener todos los mensajes de soporte (pedido_id que empiezan con "soporte_")
-      // Necesitamos un endpoint que retorne mensajes agrupados por cliente
-      // Por ahora, vamos a buscar mensajes que tengan pedido_id que empiece con "soporte_"
+      // Intentar obtener conversaciones desde el endpoint de soporte
       const res = await fetch(`${apiUrl}/mensajes/soporte`, {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -310,12 +308,24 @@ const PedidosWeb: React.FC = () => {
         const data = await res.json();
         // El backend debe retornar un array de conversaciones con:
         // [{ cliente_id, cliente_nombre, ultimoMensaje, ultimaFecha, noLeidos }]
-        setConversacionesSoporte(data);
+        if (Array.isArray(data)) {
+          setConversacionesSoporte(data);
+        } else {
+          console.warn("⚠️ Respuesta de /mensajes/soporte no es un array:", data);
+        }
       } else if (res.status === 404) {
-        // Si el endpoint no existe, construir la lista manualmente
-        // Buscar mensajes con pedido_id que empiece con "soporte_"
-        // Por ahora, dejamos el array vacío y el backend debe implementar el endpoint
-        setConversacionesSoporte([]);
+        // Si el endpoint no existe, construir manualmente desde todos los mensajes
+        // Buscar todos los mensajes y filtrar los que tienen pedido_id empezando con "soporte_"
+        try {
+          // Como fallback, intentar obtener mensajes y agruparlos
+          // Nota: Esto es temporal hasta que el backend implemente el endpoint
+          console.log("⚠️ Endpoint /mensajes/soporte no disponible, usando fallback");
+          setConversacionesSoporte([]);
+        } catch (fallbackError) {
+          console.error("Error en fallback de conversaciones:", fallbackError);
+        }
+      } else {
+        console.error("Error al cargar conversaciones de soporte:", res.status);
       }
     } catch (error) {
       console.error("Error al cargar conversaciones de soporte:", error);

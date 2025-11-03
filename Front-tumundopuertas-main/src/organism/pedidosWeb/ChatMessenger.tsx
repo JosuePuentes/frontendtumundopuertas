@@ -53,9 +53,13 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
   useEffect(() => {
     if (open) {
       cargarMensajes();
-      // Polling cada 3 segundos para nuevos mensajes
-      const intervalId = setInterval(cargarMensajes, 3000);
+      // Polling cada 1 segundo para comunicación en tiempo real
+      const intervalId = setInterval(() => {
+        cargarMensajes();
+      }, 1000);
       return () => clearInterval(intervalId);
+    } else {
+      setCargando(false);
     }
   }, [open, pedidoId]);
 
@@ -69,6 +73,11 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
         usuarioActualTipo === "admin" ? "access_token" : "cliente_access_token"
       );
       
+      if (!token) {
+        console.warn("⚠️ No hay token para cargar mensajes");
+        return;
+      }
+      
       const res = await fetch(`${apiUrl}/mensajes/pedido/${pedidoId}`, {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -78,9 +87,15 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
       if (res.ok) {
         const data = await res.json();
         const mensajesData = Array.isArray(data) ? data : [];
-        setMensajes(mensajesData.sort((a, b) => 
-          new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
-        ));
+        const mensajesOrdenados = mensajesData.sort((a, b) => 
+          new Date(a.fecha || a.createdAt || 0).getTime() - new Date(b.fecha || b.createdAt || 0).getTime()
+        );
+        setMensajes(mensajesOrdenados);
+      } else if (res.status === 404) {
+        // Si no hay mensajes aún, es normal para conversaciones nuevas
+        setMensajes([]);
+      } else {
+        console.error("Error al cargar mensajes:", res.status, await res.text().catch(() => ""));
       }
     } catch (error) {
       console.error("Error al cargar mensajes:", error);
@@ -92,19 +107,41 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
   const enviarMensaje = async () => {
     if (!nuevoMensaje.trim()) return;
 
+    const mensajeTexto = nuevoMensaje.trim();
+    const mensajeTemporal: Mensaje = {
+      pedido_id: pedidoId,
+      remitente_id: usuarioActualId,
+      remitente_tipo: usuarioActualTipo,
+      remitente_nombre: usuarioActualNombre || (usuarioActualTipo === "admin" ? "Administrador" : clienteNombre),
+      mensaje: mensajeTexto,
+      fecha: new Date().toISOString(),
+      leido: false,
+    };
+
+    // Optimistic update: mostrar el mensaje inmediatamente
+    setMensajes(prev => [...prev, mensajeTemporal]);
+    setNuevoMensaje("");
+    scrollToBottom();
+
     setEnviando(true);
     try {
       const token = localStorage.getItem(
         usuarioActualTipo === "admin" ? "access_token" : "cliente_access_token"
       );
 
+      if (!token) {
+        throw new Error("No hay token de autenticación");
+      }
+
       const mensajeData = {
         pedido_id: pedidoId,
         remitente_id: usuarioActualId,
         remitente_tipo: usuarioActualTipo,
         remitente_nombre: usuarioActualNombre || (usuarioActualTipo === "admin" ? "Administrador" : clienteNombre),
-        mensaje: nuevoMensaje.trim(),
+        mensaje: mensajeTexto,
       };
+
+      console.log("📤 Enviando mensaje:", mensajeData);
 
       const res = await fetch(`${apiUrl}/mensajes`, {
         method: "POST",
@@ -116,16 +153,32 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
       });
 
       if (res.ok) {
-        setNuevoMensaje("");
+        const mensajeRespuesta = await res.json();
+        console.log("✅ Mensaje enviado exitosamente:", mensajeRespuesta);
+        
+        // Recargar mensajes inmediatamente para obtener el ID real del backend
         await cargarMensajes();
+        
+        // Notificar que hay un nuevo mensaje
         if (onNuevoMensaje) onNuevoMensaje();
       } else {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({ detail: "Error desconocido" }));
+        console.error("❌ Error al enviar mensaje:", errorData);
+        
+        // Revertir optimistic update
+        setMensajes(prev => prev.filter(m => m !== mensajeTemporal));
+        setNuevoMensaje(mensajeTexto);
+        
         alert(`Error al enviar mensaje: ${errorData.detail || "Error desconocido"}`);
       }
     } catch (error) {
-      console.error("Error al enviar mensaje:", error);
-      alert("Error al enviar el mensaje");
+      console.error("❌ Error al enviar mensaje:", error);
+      
+      // Revertir optimistic update
+      setMensajes(prev => prev.filter(m => m !== mensajeTemporal));
+      setNuevoMensaje(mensajeTexto);
+      
+      alert(`Error al enviar el mensaje: ${error instanceof Error ? error.message : "Error desconocido"}`);
     } finally {
       setEnviando(false);
     }

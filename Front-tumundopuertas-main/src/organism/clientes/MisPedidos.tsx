@@ -100,10 +100,10 @@ const MisPedidos: React.FC = () => {
       }
     }
     
-    // Polling cada 10 segundos para verificar mensajes nuevos
+    // Polling cada 2 segundos para verificar mensajes nuevos en tiempo real
     const intervalId = setInterval(() => {
       cargarMensajesNoLeidos();
-    }, 10000);
+    }, 2000);
     return () => clearInterval(intervalId);
   }, [pedidos]);
 
