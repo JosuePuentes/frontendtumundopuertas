@@ -86,16 +86,32 @@ const FacturacionPage: React.FC = () => {
         if (!res.ok) throw new Error("Error al obtener pedidos");
         pedidos = await res.json();
           console.log(`📊 Pedidos obtenidos de /pedidos/all/: ${pedidos.length}`);
-          // Debug: Verificar adicionales en los primeros pedidos
+          // Debug: Verificar adicionales en TODOS los pedidos
+          console.log(`🔍 DEBUG PEDIDO ALL - Verificando adicionales en ${pedidos.length} pedidos:`);
+          pedidos.forEach((pedido: any, idx: number) => {
+            if (pedido.adicionales !== null && pedido.adicionales !== undefined) {
+              console.log(`  📦 Pedido ${idx + 1} (${pedido._id?.slice(-8)}):`, {
+                tieneAdicionales: 'adicionales' in pedido,
+                adicionales: pedido.adicionales,
+                tipoAdicionales: typeof pedido.adicionales,
+                esArray: Array.isArray(pedido.adicionales),
+                esNull: pedido.adicionales === null,
+                esUndefined: pedido.adicionales === undefined,
+                cantidad: Array.isArray(pedido.adicionales) ? pedido.adicionales.length : 'N/A'
+              });
+            }
+          });
+          // También verificar el primer pedido en detalle
           if (pedidos.length > 0) {
             const primerPedido = pedidos[0];
-            console.log(`🔍 DEBUG PEDIDO ALL - Primer pedido:`, {
+            console.log(`🔍 DEBUG PEDIDO ALL - Primer pedido detallado:`, {
               pedidoId: primerPedido._id?.slice(-8),
               tieneAdicionales: 'adicionales' in primerPedido,
               adicionales: primerPedido.adicionales,
               tipoAdicionales: typeof primerPedido.adicionales,
               esArray: Array.isArray(primerPedido.adicionales),
-              keysPedido: Object.keys(primerPedido) // Ver todas las keys del pedido
+              keysPedido: Object.keys(primerPedido), // Ver todas las keys del pedido
+              pedidoCompleto: primerPedido
             });
           }
           // IMPORTANTE: Verificar si el pedido específico está en esta lista
@@ -1688,14 +1704,23 @@ const FacturacionPage: React.FC = () => {
                   // CRÍTICO: Calcular total como Items + Adicionales (suma manual)
                   const totalConAdicionales = montoItems + montoAdicionales;
                   
-                  // Debug: Log para verificar estructura de adicionales
+                  // Debug: Log para verificar estructura de adicionales y el pedido completo
                   console.log(`🔍 DEBUG TARJETA PEDIDO ${pedido._id?.slice(-8)}:`, {
                     adicionalesRaw,
+                    tipoAdicionalesRaw: typeof adicionalesRaw,
+                    esNull: adicionalesRaw === null,
+                    esUndefined: adicionalesRaw === undefined,
+                    esArray: Array.isArray(adicionalesRaw),
                     adicionalesNormalizados,
+                    cantidadNormalizados: adicionalesNormalizados.length,
                     montoItems,
                     montoAdicionales,
                     totalConAdicionales,
-                    montoTotalBackend: pedido.montoTotal
+                    montoTotalBackend: pedido.montoTotal,
+                    // Incluir el pedido completo para debug completo
+                    pedidoCompletoKeys: Object.keys(pedido),
+                    tieneAdicionalesEnPedido: 'adicionales' in pedido,
+                    pedidoCompleto: pedido
                   });
                   
                   return (
