@@ -251,11 +251,9 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
           }
         });
         
-        // Recargar mensajes para sincronizar (pero preservando temporales ya manejados arriba)
-        // Solo hacer esto después de un pequeño delay para dar tiempo al backend
-        setTimeout(() => {
-          cargarMensajes(true);
-        }, 500);
+        // NO recargar mensajes inmediatamente después de enviar
+        // El polling cada 1 segundo ya los actualizará automáticamente
+        // Esto evita que se borren los mensajes temporalmente mientras el backend procesa
         
         // Notificar que hay un nuevo mensaje
         if (onNuevoMensaje) onNuevoMensaje();

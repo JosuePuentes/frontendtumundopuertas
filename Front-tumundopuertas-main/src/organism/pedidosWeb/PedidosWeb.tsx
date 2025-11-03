@@ -252,8 +252,8 @@ const PedidosWeb: React.FC = () => {
     // Cargar mensajes no leídos cuando hay pedidos
     if (pedidos.length > 0) {
       cargarMensajesNoLeidos();
-      // Polling cada 10 segundos para mensajes nuevos
-      const intervalId = setInterval(cargarMensajesNoLeidos, 10000);
+      // Polling cada 3 segundos para mensajes nuevos (más frecuente para notificaciones rápidas)
+      const intervalId = setInterval(cargarMensajesNoLeidos, 3000);
       return () => clearInterval(intervalId);
     }
   }, [pedidos]);
@@ -310,13 +310,17 @@ const PedidosWeb: React.FC = () => {
 
       if (res.ok) {
         const data = await res.json();
-        // El backend debe retornar un array de conversaciones con:
-        // [{ cliente_id, cliente_nombre, ultimoMensaje, ultimaFecha, noLeidos }]
+        // El backend puede retornar un array directo o un objeto con {conversaciones: [...]}
+        let conversaciones: any[] = [];
         if (Array.isArray(data)) {
-          setConversacionesSoporte(data);
+          conversaciones = data;
+        } else if (data && Array.isArray(data.conversaciones)) {
+          conversaciones = data.conversaciones;
         } else {
-          console.warn("⚠️ Respuesta de /mensajes/soporte no es un array:", data);
+          console.warn("⚠️ Respuesta de /mensajes/soporte no tiene formato esperado:", data);
+          conversaciones = [];
         }
+        setConversacionesSoporte(conversaciones);
       } else if (res.status === 404) {
         // Si el endpoint no existe, construir manualmente desde todos los mensajes
         // Buscar todos los mensajes y filtrar los que tienen pedido_id empezando con "soporte_"
@@ -438,33 +442,10 @@ const PedidosWeb: React.FC = () => {
               const pedidoId = pedido._id || pedido.id;
               const clienteId = pedido.cliente_id || pedido.clienteId;
               
-              // Buscar factura por pedido_id (solo si tenemos token válido)
+              // OPTIMIZACIÓN: NO cargar facturas aquí - solo cuando se abra el modal de detalle
+              // Esto reduce significativamente la carga inicial de la página
               let factura = null;
-              if (token && token !== 'null' && token !== 'undefined') {
-                try {
-                  // Intentar primero sin barra final (endpoint estándar)
-                  const endpointFactura = `${apiUrl}/facturas/pedido/${pedidoId}`;
-                  
-                  const resFactura = await fetch(endpointFactura, {
-                    headers: {
-                      "Authorization": `Bearer ${token}`,
-                      "Content-Type": "application/json",
-                    },
-                  });
-                  
-                  if (resFactura.ok) {
-                    const dataFactura = await resFactura.json();
-                    factura = Array.isArray(dataFactura) ? dataFactura[0] : dataFactura;
-                  } else if (resFactura.status === 401) {
-                    // Token expirado o inválido - silencioso, no loguear a menos que sea crítico
-                    // El usuario necesitará refrescar la sesión
-                  } else if (resFactura.status === 404) {
-                    // No hay factura para este pedido - completamente normal, no es un error
-                  }
-                } catch (error) {
-                  // Error de red o similar - ignorar silenciosamente
-                }
-              }
+              // Las facturas se cargarán solo cuando se necesiten (al abrir el modal)
               
               // Buscar datos del cliente
               let datosCliente: any = {
@@ -474,8 +455,15 @@ const PedidosWeb: React.FC = () => {
                 telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono,
               };
               
-              // Si no tenemos datos del cliente y tenemos cliente_id, intentar cargarlos desde el backend
-              if (clienteId && (!datosCliente.nombre || datosCliente.nombre === "Sin nombre" || !datosCliente.cedula || datosCliente.cedula === "Sin cédula")) {
+              // OPTIMIZACIÓN: Solo cargar datos del cliente si realmente faltan datos críticos
+              // Evitar llamadas innecesarias que causan lentitud
+              const necesitaCargarCliente = clienteId && (
+                !datosCliente.nombre || 
+                datosCliente.nombre === "Sin nombre" || 
+                (!datosCliente.cedula || datosCliente.cedula === "Sin cédula")
+              );
+              
+              if (necesitaCargarCliente) {
                 try {
                   // Intentar primero con el endpoint /clientes/id/{cliente_id}/ (para clientes no autenticados)
                   const resCliente = await fetch(`${apiUrl}/clientes/id/${clienteId}/`, {
@@ -492,31 +480,10 @@ const PedidosWeb: React.FC = () => {
                       direccion: clienteData.direccion || datosCliente.direccion || "",
                       telefono: clienteData.telefono || clienteData.telefono_contacto || datosCliente.telefono || "",
                     };
-                  } else {
-                    // Si el primer endpoint falla, intentar con /clientes/{clienteId} (para clientes autenticados)
-                    // Nota: esto requiere un token válido de cliente, pero podemos intentarlo
-                    try {
-                      const resClienteAlt = await fetch(`${apiUrl}/clientes/${clienteId}`, {
-                        headers: {
-                          "Authorization": `Bearer ${token}`,
-                        },
-                      });
-                      
-                      if (resClienteAlt.ok) {
-                        const clienteDataAlt = await resClienteAlt.json();
-                        datosCliente = {
-                          nombre: clienteDataAlt.nombre || clienteDataAlt.nombres || datosCliente.nombre || "Sin nombre",
-                          cedula: clienteDataAlt.cedula || clienteDataAlt.rif || datosCliente.cedula || "",
-                          direccion: clienteDataAlt.direccion || datosCliente.direccion || "",
-                          telefono: clienteDataAlt.telefono || clienteDataAlt.telefono_contacto || datosCliente.telefono || "",
-                        };
-                      }
-                    } catch (errorAlt) {
-                      // Silenciar error del segundo intento
-                    }
                   }
+                  // No intentar segundo endpoint si el primero falla (evitar múltiples llamadas)
                 } catch (error) {
-                  console.error("Error al cargar datos del cliente:", error);
+                  // Silenciar errores para evitar spam en consola
                 }
               }
               
@@ -1429,6 +1396,7 @@ const PedidosWeb: React.FC = () => {
             cargarMensajesNoLeidos();
           }}
           onNuevoMensaje={() => {
+            // Recargar contadores de mensajes no leídos cuando hay un nuevo mensaje
             cargarMensajesNoLeidos();
           }}
         />
