@@ -20,6 +20,13 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useItems } from '@/hooks/useItems';
 
 interface InventarioItem {
@@ -41,6 +48,7 @@ const CargarInventarioExcel: React.FC = () => {
   const [items, setItems] = useState<InventarioItem[]>([]);
   const [fileName, setFileName] = useState('');
   const [mensaje, setMensaje] = useState('');
+  const [excelData, setExcelData] = useState<any[]>([]); // Guardar datos del Excel original
 
   const [showInventoryPreview, setShowInventoryPreview] = useState(false);
   const { data: currentInventory, fetchItems } = useItems();
@@ -56,6 +64,7 @@ const CargarInventarioExcel: React.FC = () => {
   const [itemSeleccionado, setItemSeleccionado] = useState<any>(null);
   const [cantidadOperacion, setCantidadOperacion] = useState<string>('');
   const [procesando, setProcesando] = useState(false);
+  const [sucursalSeleccionada, setSucursalSeleccionada] = useState<'sucursal1' | 'sucursal2'>('sucursal1');
 
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 
@@ -73,6 +82,9 @@ const CargarInventarioExcel: React.FC = () => {
           const worksheet = workbook.Sheets[sheetName];
           const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
+          // Guardar datos originales del Excel
+          setExcelData(json);
+
           const mappedItems: InventarioItem[] = json.map((row) => ({
             codigo: String(row.codigo || ''),
             nombre: String(row.nombre || row.descripcion || 'Sin Nombre'),
@@ -81,7 +93,7 @@ const CargarInventarioExcel: React.FC = () => {
             modelo: String(row.modelo || ''),
             costo: Number(row.costo || 0),
             costoProduccion: Number(row.costoProduccion || row.costo || 0),
-            cantidad: Number(row.existencia || 0),
+            cantidad: Number(row.existencia || row['Sucursal 1'] || 0),
             precio: Number(row.precio || 0),
             activo: true,
             imagenes: [],
@@ -161,6 +173,7 @@ const CargarInventarioExcel: React.FC = () => {
     setItems([]);
     setFileName('');
     setMensaje('');
+    setExcelData([]);
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     if (fileInput) {
       fileInput.value = '';
@@ -222,6 +235,8 @@ const CargarInventarioExcel: React.FC = () => {
     setItemSeleccionado(item);
     setModalBuscarOpen(false);
     setModalConfirmarOpen(true);
+    // Reset cantidad al seleccionar nuevo item
+    setCantidadOperacion('');
   };
 
   const handleConfirmarOperacion = async () => {
@@ -236,9 +251,13 @@ const CargarInventarioExcel: React.FC = () => {
       return;
     }
 
-    const existenciaActual = itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0);
+    const campoExistencia = sucursalSeleccionada === 'sucursal1' ? 'existencia' : 'existencia2';
+    const existenciaActual = itemSeleccionado[sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2'] !== undefined 
+      ? itemSeleccionado[sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2'] 
+      : (itemSeleccionado[campoExistencia] || itemSeleccionado.existencia || 0);
+    
     if (tipoOperacion === 'descargar' && cantidad > existenciaActual) {
-      setMensaje(`No puedes descargar más de lo disponible. Existencia actual: ${existenciaActual}`);
+      setMensaje(`No puedes descargar más de lo disponible. ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} actual: ${existenciaActual}`);
       return;
     }
 
@@ -251,6 +270,7 @@ const CargarInventarioExcel: React.FC = () => {
         body: JSON.stringify({
           cantidad: cantidad,
           tipo: tipoOperacion, // 'cargar' o 'descargar'
+          sucursal: sucursalSeleccionada, // 'sucursal1' o 'sucursal2'
         }),
       });
 
@@ -260,8 +280,9 @@ const CargarInventarioExcel: React.FC = () => {
       }
 
       const result = await response.json();
-      const nuevaExistencia = result.cantidad !== undefined ? result.cantidad : (result.existencia || 0);
-      setMensaje(`✅ ${tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} realizada exitosamente. Nueva existencia: ${nuevaExistencia}`);
+      const campoRespuesta = sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2';
+      const nuevaExistencia = result[campoRespuesta] !== undefined ? result[campoRespuesta] : (result.existencia || result.existencia2 || 0);
+      setMensaje(`✅ ${tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} realizada exitosamente en ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}. Nueva existencia: ${nuevaExistencia}`);
       
       // Recargar inventario
       await fetchItems(`${apiUrl}/inventario/all`);
@@ -286,6 +307,7 @@ const CargarInventarioExcel: React.FC = () => {
     setCantidadOperacion('');
     setTipoOperacion(null);
     setBusquedaItem('');
+    setSucursalSeleccionada('sucursal1'); // Reset a sucursal 1
   };
 
   return (
@@ -297,24 +319,39 @@ const CargarInventarioExcel: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
-            {/* Botones de Cargar/Descargar Existencia */}
-            <div className="flex gap-4 mb-4">
+            {/* Selector de Sucursal y Botones de Cargar/Descargar */}
+            <div className="flex gap-4 mb-4 items-center">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium">Sucursal:</label>
+                <Select
+                  value={sucursalSeleccionada}
+                  onValueChange={(value: 'sucursal1' | 'sucursal2') => setSucursalSeleccionada(value)}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sucursal1">Sucursal 1</SelectItem>
+                    <SelectItem value="sucursal2">Sucursal 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 onClick={() => handleAbrirModalBuscar('cargar')}
                 className="bg-green-600 hover:bg-green-700 text-white"
               >
-                ➕ Cargar Existencia
+                ➕ Cargar {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}
               </Button>
               <Button
                 onClick={() => handleAbrirModalBuscar('descargar')}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                ➖ Descargar Existencia
+                ➖ Descargar {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}
               </Button>
             </div>
             
             <p>
-              Selecciona un archivo de Excel (.xlsx) con las columnas: `codigo`, `descripcion`, `modelo`, `costo`, `existencia`, `precio`.
+              Selecciona un archivo de Excel (.xlsx) con las columnas: `codigo`, `descripcion`, `modelo`, `costo`, `Sucursal 1`, `Sucursal 2`, `precio`.
             </p>
             <div className="flex items-center gap-4">
               <Input
@@ -347,21 +384,28 @@ const CargarInventarioExcel: React.FC = () => {
                         <TableHead>Descripción</TableHead>
                         <TableHead>Modelo</TableHead>
                         <TableHead>Costo</TableHead>
-                        <TableHead>Existencia</TableHead>
+                        <TableHead>Sucursal 1</TableHead>
+                        <TableHead>Sucursal 2</TableHead>
                         <TableHead>Precio</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.map((item, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{item.codigo}</TableCell>
-                          <TableCell>{item.descripcion}</TableCell>
-                          <TableCell>{item.modelo}</TableCell>
-                          <TableCell>{item.costo}</TableCell>
-                          <TableCell>{item.cantidad}</TableCell>
-                          <TableCell>{item.precio}</TableCell>
-                        </TableRow>
-                      ))}
+                      {items.map((item, index) => {
+                        // Obtener sucursal 2 si existe en el Excel original
+                        const rowData = excelData[index];
+                        const sucursal2 = rowData ? (Number(rowData['Sucursal 2'] || rowData.sucursal2 || 0)) : 0;
+                        return (
+                          <TableRow key={index}>
+                            <TableCell>{item.codigo}</TableCell>
+                            <TableCell>{item.descripcion}</TableCell>
+                            <TableCell>{item.modelo}</TableCell>
+                            <TableCell>{item.costo}</TableCell>
+                            <TableCell>{item.cantidad}</TableCell>
+                            <TableCell>{sucursal2}</TableCell>
+                            <TableCell>{item.precio}</TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>
@@ -422,7 +466,8 @@ const CargarInventarioExcel: React.FC = () => {
                         <TableHead>Descripción</TableHead>
                         <TableHead>Modelo</TableHead>
                         <TableHead>Costo</TableHead>
-                        <TableHead>Existencia</TableHead>
+                        <TableHead>Sucursal 1</TableHead>
+                        <TableHead>Sucursal 2</TableHead>
                         <TableHead>Precio</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -434,6 +479,7 @@ const CargarInventarioExcel: React.FC = () => {
                           <TableCell>{item.modelo}</TableCell>
                           <TableCell>{item.costo}</TableCell>
                           <TableCell>{item.cantidad !== undefined ? item.cantidad : (item.existencia || 0)}</TableCell>
+                          <TableCell>{item.existencia2 !== undefined ? item.existencia2 : 0}</TableCell>
                           <TableCell>{item.precio}</TableCell>
                         </TableRow>
                       ))}
@@ -451,10 +497,10 @@ const CargarInventarioExcel: React.FC = () => {
         <DialogContent className="max-w-4xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle>
-              Buscar Item para {tipoOperacion === 'cargar' ? 'Cargar' : 'Descargar'} Existencia
+              Buscar Item para {tipoOperacion === 'cargar' ? 'Cargar' : 'Descargar'} {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}
             </DialogTitle>
             <DialogDescription>
-              Busca el item en tu inventario y selecciónalo para {tipoOperacion === 'cargar' ? 'cargar' : 'descargar'} existencia
+              Busca el item en tu inventario y selecciónalo para {tipoOperacion === 'cargar' ? 'cargar' : 'descargar'} en {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}
             </DialogDescription>
           </DialogHeader>
           
@@ -489,8 +535,10 @@ const CargarInventarioExcel: React.FC = () => {
                             {item.descripcion && <p className="text-sm text-gray-600">{item.descripcion}</p>}
                           </div>
                           <div className="text-right">
-                            <p className="text-sm font-semibold text-gray-700">Existencia Actual:</p>
+                            <p className="text-sm font-semibold text-gray-700">Sucursal 1:</p>
                             <p className="text-xl font-bold text-blue-600">{item.cantidad !== undefined ? item.cantidad : (item.existencia || 0)}</p>
+                            <p className="text-sm font-semibold text-gray-700 mt-2">Sucursal 2:</p>
+                            <p className="text-xl font-bold text-purple-600">{item.existencia2 !== undefined ? item.existencia2 : 0}</p>
                           </div>
                         </div>
                       </div>
@@ -514,10 +562,10 @@ const CargarInventarioExcel: React.FC = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              Confirmar {tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} de Existencia
+              Confirmar {tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} en {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}
             </DialogTitle>
             <DialogDescription>
-              Revisa los detalles antes de {tipoOperacion === 'cargar' ? 'cargar' : 'descargar'} la existencia
+              Revisa los detalles antes de {tipoOperacion === 'cargar' ? 'cargar' : 'descargar'} en {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}
             </DialogDescription>
           </DialogHeader>
           
@@ -535,23 +583,32 @@ const CargarInventarioExcel: React.FC = () => {
                     </div>
                   )}
                   <div>
-                    <span className="font-semibold">Existencia Actual:</span>{' '}
+                    <span className="font-semibold">{sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} Actual:</span>{' '}
                     <span className="text-blue-600 font-bold text-lg">
-                      {itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0)}
+                      {sucursalSeleccionada === 'sucursal1' 
+                        ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                        : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                      }
                     </span>
                   </div>
                   {tipoOperacion === 'cargar' ? (
                     <div>
-                      <span className="font-semibold">Nueva Existencia:</span>{' '}
+                      <span className="font-semibold">Nueva {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
                       <span className="text-green-600 font-bold text-lg">
-                        {(itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0)) + (parseFloat(cantidadOperacion) || 0)}
+                        {(sucursalSeleccionada === 'sucursal1'
+                          ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                          : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                        ) + (parseFloat(cantidadOperacion) || 0)}
                       </span>
                     </div>
                   ) : (
                     <div>
-                      <span className="font-semibold">Nueva Existencia:</span>{' '}
+                      <span className="font-semibold">Nueva {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
                       <span className="text-red-600 font-bold text-lg">
-                        {(itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0)) - (parseFloat(cantidadOperacion) || 0)}
+                        {(sucursalSeleccionada === 'sucursal1'
+                          ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                          : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                        ) - (parseFloat(cantidadOperacion) || 0)}
                       </span>
                     </div>
                   )}
