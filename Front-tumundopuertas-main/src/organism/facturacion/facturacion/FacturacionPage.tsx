@@ -1727,34 +1727,49 @@ const FacturacionPage: React.FC = () => {
                     <>
                       {/* Mostrar desglose: Subtotal Items, Adicional, Total */}
                       <div className="mb-3 space-y-2">
+                        {/* Subtotal Items - SIEMPRE visible */}
                         <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
                           <div className="flex justify-between items-center">
-                            <p className="text-xs text-gray-600 font-semibold">Subtotal Items:</p>
+                            <p className="text-xs text-gray-600 font-semibold">Subtotal:</p>
                             <p className="text-sm sm:text-base font-bold text-blue-700">${montoItems.toFixed(2)}</p>
                           </div>
+                          <p className="text-xs text-blue-600 mt-1">Total $ de los items</p>
                         </div>
                         
-                        {adicionalesNormalizados.length > 0 && adicionalesNormalizados.map((adicional: any, idx: number) => {
-                          const cantidad = adicional.cantidad || 1;
-                          const precio = adicional.precio || 0;
-                          const montoAdicional = precio * cantidad;
-                          
-                          return (
-                            <div key={idx} className="bg-yellow-50 p-2 sm:p-3 rounded-lg border-2 border-yellow-200">
-                              <div className="flex justify-between items-center">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs text-gray-600 font-semibold">Adicional:</p>
-                                  <p className="text-xs sm:text-sm text-yellow-800 font-medium">
-                                    {adicional.descripcion || 'Sin descripción'}
-                                    {cantidad > 1 && <span className="text-yellow-600 ml-1">(x{cantidad})</span>}
-                                  </p>
+                        {/* Adicionales - Mostrar SIEMPRE, incluso si está vacío para que el usuario vea que no hay */}
+                        {adicionalesNormalizados.length > 0 ? (
+                          adicionalesNormalizados.map((adicional: any, idx: number) => {
+                            const cantidad = adicional.cantidad || 1;
+                            const precio = adicional.precio || 0;
+                            const montoAdicional = precio * cantidad;
+                            
+                            return (
+                              <div key={idx} className="bg-yellow-50 p-2 sm:p-3 rounded-lg border-2 border-yellow-200">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-gray-600 font-semibold">Adicional:</p>
+                                    <p className="text-xs sm:text-sm text-yellow-800 font-medium mt-1">
+                                      {adicional.descripcion || 'Sin descripción'}
+                                      {cantidad > 1 && <span className="text-yellow-600 ml-1">(x{cantidad})</span>}
+                                    </p>
+                                  </div>
+                                  <div className="text-right ml-2">
+                                    <p className="text-sm sm:text-base font-bold text-yellow-700">+${montoAdicional.toFixed(2)}</p>
+                                  </div>
                                 </div>
-                                <p className="text-sm sm:text-base font-bold text-yellow-700 ml-2">+${montoAdicional.toFixed(2)}</p>
                               </div>
+                            );
+                          })
+                        ) : (
+                          <div className="bg-gray-100 p-2 sm:p-3 rounded-lg border border-gray-300">
+                            <div className="flex justify-between items-center">
+                              <p className="text-xs text-gray-500 font-medium">Adicional:</p>
+                              <p className="text-xs text-gray-500">$0.00</p>
                             </div>
-                          );
-                        })}
+                          </div>
+                        )}
                         
+                        {/* Total - SIEMPRE visible */}
                         <div className="bg-gray-50 p-2 sm:p-3 rounded-lg border-2 border-gray-300">
                           <div className="flex justify-between items-center">
                             <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
@@ -1762,6 +1777,7 @@ const FacturacionPage: React.FC = () => {
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-gray-800">${totalConAdicionales.toFixed(2)}</p>
                           </div>
+                          <p className="text-xs text-gray-500 mt-1">Total items + adicional</p>
                         </div>
                       </div>
                       

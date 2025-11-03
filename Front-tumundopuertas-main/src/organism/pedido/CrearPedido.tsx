@@ -538,10 +538,12 @@ const CrearPedido: React.FC = () => {
     };
 
     // Debug: Log del payload completo
-    console.log("DEBUG CREAR PEDIDO: Payload completo -", {
+    console.log("🔍 DEBUG CREAR PEDIDO: Payload completo -", {
       total_items: itemsPedido.length,
       items_con_estado_4: itemsPedido.filter(i => i.estado_item === 4).length,
-      adicionales: adicionales.length,
+      adicionales_count: adicionales.length,
+      adicionales_originales: adicionales, // Ver los adicionales originales
+      adicionales_en_payload: pedidoPayload.adicionales, // Ver qué se envía
       items_con_estado_0: itemsPedido.filter(i => i.estado_item === 0).length,
       items: itemsPedido.map(i => ({
         nombre: i.nombre,
@@ -556,7 +558,30 @@ const CrearPedido: React.FC = () => {
 
     // Debug: Log del JSON serializado para ver exactamente qué se envía
     const payloadSerializado = JSON.stringify(pedidoPayload, null, 2);
-    console.log("DEBUG CREAR PEDIDO: Payload serializado (JSON) -", payloadSerializado);
+    console.log("🔍 DEBUG CREAR PEDIDO: Payload serializado (JSON) -", payloadSerializado);
+    
+    // Debug específico para adicionales
+    if (adicionales.length > 0) {
+      console.log("💰 DEBUG CREAR PEDIDO: Adicionales detallados -", {
+        cantidad_adicionales: adicionales.length,
+        adicionales_originales: adicionales.map(ad => ({
+          descripcion: ad.descripcion,
+          precio: ad.precio,
+          cantidad: ad.cantidad || 1,
+          metodoPago: ad.metodoPago,
+          metodoPagoNombre: ad.metodoPagoNombre
+        })),
+        adicionales_para_enviar: pedidoPayload.adicionales?.map((ad: any) => ({
+          descripcion: ad.descripcion,
+          precio: ad.precio,
+          cantidad: ad.cantidad
+        })),
+        payload_tiene_adicionales: pedidoPayload.adicionales !== undefined,
+        payload_adicionales_count: pedidoPayload.adicionales?.length || 0
+      });
+    } else {
+      console.log("⚠️ DEBUG CREAR PEDIDO: No hay adicionales para enviar");
+    }
     console.log("DEBUG CREAR PEDIDO: Items con estado_item = 4 (deben restarse del inventario):", 
       itemsPedido.filter(i => i.estado_item === 4).map(i => ({
         nombre: i.nombre,
@@ -578,6 +603,17 @@ const CrearPedido: React.FC = () => {
         // Obtener el ID del pedido creado (declarar una sola vez)
         const pedidoData = resultado?.data || resultado;
         const pedidoId = pedidoData?._id || pedidoData?.id || pedidoData?.pedido?._id || pedidoData?.pedido?.id;
+        
+        // Debug: Verificar qué devolvió el backend
+        console.log("✅ DEBUG CREAR PEDIDO: Respuesta del backend -", {
+          success: resultado?.success,
+          pedidoId: pedidoId,
+          pedidoData_completo: pedidoData,
+          adicionales_en_respuesta: pedidoData?.adicionales,
+          tipo_adicionales_respuesta: typeof pedidoData?.adicionales,
+          es_array_adicionales: Array.isArray(pedidoData?.adicionales),
+          cantidad_adicionales_respuesta: Array.isArray(pedidoData?.adicionales) ? pedidoData.adicionales.length : 'N/A'
+        });
         
         // Registrar depósitos en métodos de pago para cada adicional
         if (adicionales.length > 0 && pedidoId) {
