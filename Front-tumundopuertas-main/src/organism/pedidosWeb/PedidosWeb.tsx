@@ -1296,8 +1296,8 @@ const PedidosWeb: React.FC = () => {
           infoPedido={{
             numeroPedido: pedidoChatActual._id.slice(-6),
             total: pedidoChatActual.total || 0,
-            estado: pedidoChatActual.estado || pedidoChatActual.estado_general || "pendiente",
-            fechaCreacion: pedidoChatActual.fecha_creacion || pedidoChatActual.fechaCreacion
+            estado: pedidoChatActual.estado || "pendiente",
+            fechaCreacion: pedidoChatActual.fecha_creacion
           }}
           open={chatAbierto}
           onClose={() => {

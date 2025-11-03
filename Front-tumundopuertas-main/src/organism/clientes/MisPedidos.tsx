@@ -564,7 +564,7 @@ const MisPedidos: React.FC = () => {
             numeroPedido: pedidoChatActual._id.slice(-6),
             total: pedidoChatActual.total || calcularTotalPedido(pedidoChatActual),
             estado: pedidoChatActual.estado_general || pedidoChatActual.estado || "pendiente",
-            fechaCreacion: pedidoChatActual.fecha_creacion || pedidoChatActual.fechaCreacion
+            fechaCreacion: pedidoChatActual.fecha_creacion
           }}
           open={chatAbierto}
           onClose={() => {
