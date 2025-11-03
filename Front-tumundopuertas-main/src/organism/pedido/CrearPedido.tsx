@@ -618,14 +618,13 @@ const CrearPedido: React.FC = () => {
           
           if (fallidos > 0) {
             console.warn(`⚠ ${fallidos} adicional(es) no pudo(eron) registrarse en métodos de pago`);
-            setMensaje(`✅ Pedido creado. ⚠ ${fallidos} adicional(es) no pudo(eron) registrarse en métodos de pago.`);
           } else if (exitosos > 0) {
             console.log(`✓ ${exitosos} adicional(es) registrado(s) en métodos de pago (Total: $${totalDepositado.toFixed(2)})`);
-            setMensaje(`✅ Pedido creado correctamente. ${exitosos} adicional(es) registrado(s) en métodos de pago.`);
-          } else {
-            setMensaje("✅ Pedido creado correctamente.");
           }
         }
+        
+        // Variable para acumular mensajes
+        const mensajesPartes: string[] = [];
         
         // Registrar pagos iniciales del pedido en métodos de pago
         if (pagos.length > 0 && pedidoId) {
@@ -685,23 +684,20 @@ const CrearPedido: React.FC = () => {
           
           if (exitososPagos > 0) {
             console.log(`✓ ${exitososPagos} pago(s) inicial(es) registrado(s) en métodos de pago (Total: $${totalPagosDepositado.toFixed(2)})`);
-            // Actualizar mensaje si no se había establecido uno de adicionales
-            if (!setMensaje.toString().includes('adicional') && !setMensaje.toString().includes('Pago')) {
-              setMensaje(`✅ Pedido creado correctamente. ${exitososPagos} pago(s) inicial(es) registrado(s) en métodos de pago.`);
-            }
+            mensajesPartes.push(`${exitososPagos} pago(s) inicial(es) registrado(s)`);
           }
           if (fallidosPagos > 0) {
             console.warn(`⚠ ${fallidosPagos} pago(s) inicial(es) no pudo(eron) registrarse en métodos de pago`);
-            if (!setMensaje.toString().includes('adicional')) {
-              setMensaje(`✅ Pedido creado. ⚠ ${fallidosPagos} pago(s) inicial(es) no pudo(eron) registrarse en métodos de pago.`);
-            }
+            mensajesPartes.push(`⚠ ${fallidosPagos} pago(s) no registrado(s)`);
           }
         }
         
-        // Solo establecer mensaje si no se ha establecido uno más específico
-        if (!setMensaje.toString().includes('adicional') && !setMensaje.toString().includes('Pago')) {
-          setMensaje("✅ Pedido creado correctamente.");
+        // Construir mensaje final consolidado
+        let mensajeFinal = "✅ Pedido creado correctamente.";
+        if (mensajesPartes.length > 0) {
+          mensajeFinal = `✅ Pedido creado. ${mensajesPartes.join(', ')}.`;
         }
+        setMensaje(mensajeFinal);
         setMensajeTipo("success");
         setClienteId(0);
         setClienteSearch("");
