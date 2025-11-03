@@ -107,15 +107,26 @@ const PedidosWeb: React.FC = () => {
       }
       const token = localStorage.getItem("access_token");
       
-      // Cargar pedidos
-      const resPedidos = await fetch(`${apiUrl}/pedidos/cliente`, {
+      // Cargar todos los pedidos y filtrar los que son pedidos web
+      // Los pedidos web generalmente tienen metodo_pago, numero_referencia y comprobante_url
+      const resPedidos = await fetch(`${apiUrl}/pedidos/all/`, {
         headers: {
           "Authorization": `Bearer ${token}`,
         },
       });
 
       if (resPedidos.ok) {
-        const dataPedidos = await resPedidos.json();
+        const todosPedidos = await resPedidos.json();
+        
+        // Filtrar solo pedidos web (tienen características de pedidos desde cliente web)
+        const dataPedidos = Array.isArray(todosPedidos) 
+          ? todosPedidos.filter((pedido: any) => {
+              // Un pedido web típicamente tiene estos campos
+              return pedido.metodo_pago || pedido.numero_referencia || pedido.comprobante_url || 
+                     (pedido.items && Array.isArray(pedido.items) && pedido.items.length > 0 && 
+                      pedido.items.some((item: any) => item.itemId));
+            })
+          : [];
         
         // Para cada pedido, cargar su factura asociada
         const pedidosConFacturas = await Promise.all(
