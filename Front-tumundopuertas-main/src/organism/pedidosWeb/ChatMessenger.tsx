@@ -67,7 +67,7 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
     scrollToBottom();
   }, [mensajes]);
 
-  const cargarMensajes = async () => {
+  const cargarMensajes = async (preservarTemporales = false) => {
     try {
       const token = localStorage.getItem(
         usuarioActualTipo === "admin" ? "access_token" : "cliente_access_token"
@@ -87,18 +87,61 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
       if (res.ok) {
         const data = await res.json();
         const mensajesData = Array.isArray(data) ? data : [];
-        const mensajesOrdenados = mensajesData.sort((a, b) => 
-          new Date(a.fecha || a.createdAt || 0).getTime() - new Date(b.fecha || b.createdAt || 0).getTime()
-        );
-        setMensajes(mensajesOrdenados);
+        
+        if (preservarTemporales) {
+          // Combinar mensajes del backend con mensajes temporales (sin _id)
+          setMensajes(prev => {
+            // Mantener mensajes temporales (sin _id) que aún no están en el backend
+            const temporales = prev.filter(m => !m._id);
+            
+            // Combinar y eliminar duplicados
+            const todosMensajes = [...mensajesData, ...temporales];
+            
+            // Eliminar duplicados: si un mensaje temporal coincide con uno del backend (mismo texto y remitente en los últimos 5 segundos), mantener solo el del backend
+            const mensajesUnicos = todosMensajes.filter((mensaje, index, arr) => {
+              if (!mensaje._id) return true; // Siempre mantener temporales
+              
+              // Buscar si hay un temporal que coincida
+              const ahora = Date.now();
+              const fechaMensaje = new Date(mensaje.fecha || mensaje.createdAt || 0).getTime();
+              
+              return !arr.some((otro, otroIndex) => {
+                if (otroIndex === index || otro._id) return false;
+                const fechaOtro = new Date(otro.fecha || 0).getTime();
+                const diffTiempo = Math.abs(fechaMensaje - fechaOtro);
+                return (
+                  otro.mensaje === mensaje.mensaje &&
+                  otro.remitente_id === mensaje.remitente_id &&
+                  diffTiempo < 5000 // 5 segundos de tolerancia
+                );
+              });
+            });
+            
+            // Ordenar por fecha
+            return mensajesUnicos.sort((a, b) => 
+              new Date(a.fecha || a.createdAt || 0).getTime() - new Date(b.fecha || b.createdAt || 0).getTime()
+            );
+          });
+        } else {
+          // Actualización normal: reemplazar todo
+          const mensajesOrdenados = mensajesData.sort((a, b) => 
+            new Date(a.fecha || a.createdAt || 0).getTime() - new Date(b.fecha || b.createdAt || 0).getTime()
+          );
+          setMensajes(mensajesOrdenados);
+        }
       } else if (res.status === 404) {
-        // Si no hay mensajes aún, es normal para conversaciones nuevas
-        setMensajes([]);
+        // Si no hay mensajes aún, mantener mensajes temporales si existen
+        if (!preservarTemporales) {
+          setMensajes(prev => prev.filter(m => m._id)); // Solo mantener los que tienen _id del backend
+        }
+        // No hacer nada si preservarTemporales = true, mantiene los mensajes actuales
       } else {
         console.error("Error al cargar mensajes:", res.status, await res.text().catch(() => ""));
+        // En caso de error, mantener los mensajes actuales
       }
     } catch (error) {
       console.error("Error al cargar mensajes:", error);
+      // En caso de error, mantener los mensajes actuales
     } finally {
       setCargando(false);
     }
@@ -156,8 +199,29 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
         const mensajeRespuesta = await res.json();
         console.log("✅ Mensaje enviado exitosamente:", mensajeRespuesta);
         
-        // Recargar mensajes inmediatamente para obtener el ID real del backend
-        await cargarMensajes();
+        // Si el backend retorna el mensaje, actualizarlo en el estado con el _id real
+        if (mensajeRespuesta._id) {
+          setMensajes(prev => {
+            // Reemplazar el mensaje temporal con el mensaje real del backend
+            const mensajeIndex = prev.findIndex(m => 
+              !m._id && 
+              m.mensaje === mensajeTexto && 
+              m.remitente_id === usuarioActualId &&
+              Math.abs(new Date(m.fecha).getTime() - new Date(mensajeRespuesta.fecha || mensajeRespuesta.createdAt || Date.now()).getTime()) < 5000
+            );
+            
+            if (mensajeIndex !== -1) {
+              const nuevos = [...prev];
+              nuevos[mensajeIndex] = mensajeRespuesta;
+              return nuevos;
+            }
+            // Si no se encontró el temporal, agregar el nuevo
+            return [...prev, mensajeRespuesta];
+          });
+        } else {
+          // Si no viene el mensaje completo, recargar pero preservar temporales
+          await cargarMensajes(true);
+        }
         
         // Notificar que hay un nuevo mensaje
         if (onNuevoMensaje) onNuevoMensaje();
@@ -165,8 +229,17 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
         const errorData = await res.json().catch(() => ({ detail: "Error desconocido" }));
         console.error("❌ Error al enviar mensaje:", errorData);
         
-        // Revertir optimistic update
-        setMensajes(prev => prev.filter(m => m !== mensajeTemporal));
+        // Revertir optimistic update - buscar por contenido, no por referencia
+        setMensajes(prev => prev.filter(m => {
+          // Mantener todos excepto el mensaje temporal que coincide con este
+          if (!m._id && 
+              m.mensaje === mensajeTexto && 
+              m.remitente_id === usuarioActualId &&
+              Math.abs(new Date(m.fecha).getTime() - new Date(mensajeTemporal.fecha).getTime()) < 1000) {
+            return false; // Eliminar este mensaje temporal
+          }
+          return true;
+        }));
         setNuevoMensaje(mensajeTexto);
         
         alert(`Error al enviar mensaje: ${errorData.detail || "Error desconocido"}`);
@@ -174,8 +247,16 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
     } catch (error) {
       console.error("❌ Error al enviar mensaje:", error);
       
-      // Revertir optimistic update
-      setMensajes(prev => prev.filter(m => m !== mensajeTemporal));
+      // Revertir optimistic update - buscar por contenido
+      setMensajes(prev => prev.filter(m => {
+        if (!m._id && 
+            m.mensaje === mensajeTexto && 
+            m.remitente_id === usuarioActualId &&
+            Math.abs(new Date(m.fecha).getTime() - new Date(mensajeTemporal.fecha).getTime()) < 1000) {
+          return false;
+        }
+        return true;
+      }));
       setNuevoMensaje(mensajeTexto);
       
       alert(`Error al enviar el mensaje: ${error instanceof Error ? error.message : "Error desconocido"}`);
