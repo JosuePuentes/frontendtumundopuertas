@@ -138,15 +138,37 @@ const PedidosWeb: React.FC = () => {
               // Buscar factura por pedido_id
               let factura = null;
               try {
-                const resFactura = await fetch(`${apiUrl}/facturas/pedido/${pedidoId}`, {
-                  headers: {
-                    "Authorization": `Bearer ${token}`,
-                  },
-                });
+                // Intentar con y sin barra final
+                const endpointsFactura = [
+                  `${apiUrl}/facturas/pedido/${pedidoId}/`,
+                  `${apiUrl}/facturas/pedido/${pedidoId}`,
+                ];
                 
-                if (resFactura.ok) {
-                  const dataFactura = await resFactura.json();
-                  factura = Array.isArray(dataFactura) ? dataFactura[0] : dataFactura;
+                for (const endpoint of endpointsFactura) {
+                  try {
+                    const resFactura = await fetch(endpoint, {
+                      headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                      },
+                    });
+                    
+                    if (resFactura.ok) {
+                      const dataFactura = await resFactura.json();
+                      factura = Array.isArray(dataFactura) ? dataFactura[0] : dataFactura;
+                      break; // Si funcionó, salir del loop
+                    } else if (resFactura.status === 401) {
+                      // Token expirado o inválido - continuar sin factura
+                      console.warn(`Error 401 al cargar factura para pedido ${pedidoId}: Token no válido`);
+                      break;
+                    } else if (resFactura.status === 404) {
+                      // No hay factura para este pedido - es normal
+                      break;
+                    }
+                  } catch (fetchError) {
+                    // Continuar con el siguiente endpoint
+                    continue;
+                  }
                 }
               } catch (error) {
                 console.error("Error al cargar factura:", error);
