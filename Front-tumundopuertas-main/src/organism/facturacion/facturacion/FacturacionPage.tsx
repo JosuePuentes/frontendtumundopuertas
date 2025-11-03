@@ -1885,7 +1885,7 @@ const FacturacionPage: React.FC = () => {
     
     {/* Modal de Confirmación y Nota de Entrega */}
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto w-[95vw]">
         <DialogHeader>
           <DialogTitle>
             {modalAccion === 'cargar_inventario' 
@@ -2053,7 +2053,7 @@ const FacturacionPage: React.FC = () => {
 
     {/* Modal de Preliminar para Facturas Confirmadas */}
     <Dialog open={modalPreliminarOpen} onOpenChange={setModalPreliminarOpen}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto w-[95vw]">
         <DialogHeader>
           <DialogTitle>Preliminar de Nota de Entrega</DialogTitle>
           <DialogDescription>
