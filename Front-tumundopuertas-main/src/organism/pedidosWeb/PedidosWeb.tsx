@@ -728,72 +728,6 @@ const PedidosWeb: React.FC = () => {
         </Button>
       </div>
 
-      {/* Panel de Soporte - Estilo DM */}
-      <div className="mb-6">
-        <Button
-          onClick={() => setSoporteAbierto(!soporteAbierto)}
-          className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold mb-4"
-        >
-          <HelpCircle className="w-5 h-5 mr-2" />
-          Soporte {conversacionesSoporte.length > 0 && (
-            <Badge className="ml-2 bg-white text-purple-600">{conversacionesSoporte.length}</Badge>
-          )}
-        </Button>
-
-        {soporteAbierto && (
-          <Card className="bg-white border-purple-200 shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-600" />
-                Conversaciones de Soporte
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="max-h-96 overflow-y-auto">
-              {conversacionesSoporte.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                  No hay conversaciones de soporte aún
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {conversacionesSoporte.map((conv) => (
-                    <div
-                      key={conv.cliente_id}
-                      onClick={() => abrirChatSoporte(conv.cliente_id, conv.cliente_nombre)}
-                      className={`p-3 rounded-lg cursor-pointer transition-all ${
-                        chatSoporteActual?.cliente_id === conv.cliente_id
-                          ? "bg-purple-100 border-2 border-purple-500"
-                          : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{conv.cliente_nombre}</p>
-                          {conv.ultimoMensaje && (
-                            <p className="text-sm text-gray-600 truncate mt-1">
-                              {conv.ultimoMensaje}
-                            </p>
-                          )}
-                          {conv.ultimaFecha && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {new Date(conv.ultimaFecha).toLocaleDateString()}
-                            </p>
-                          )}
-                        </div>
-                        {conv.noLeidos > 0 && (
-                          <Badge className="bg-red-500 text-white ml-2">
-                            {conv.noLeidos}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
       {/* Buscador */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
@@ -1393,6 +1327,108 @@ const PedidosWeb: React.FC = () => {
           }}
         />
       )}
+
+      {/* Icono Flotante de Soporte - Lado Derecho */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {/* Botón del Icono Flotante */}
+        <button
+          onClick={() => setSoporteAbierto(!soporteAbierto)}
+          className="relative bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+          style={{ width: '56px', height: '56px' }}
+        >
+          <HelpCircle className="w-6 h-6" />
+          {/* Badge de notificación */}
+          {conversacionesSoporte.reduce((total, conv) => total + conv.noLeidos, 0) > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-white">
+              {conversacionesSoporte.reduce((total, conv) => total + conv.noLeidos, 0)}
+            </span>
+          )}
+        </button>
+
+        {/* Panel de Conversaciones - Se abre desde el icono */}
+        {soporteAbierto && (
+          <div className="absolute bottom-20 right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-2xl z-50">
+            <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-purple-500 to-purple-600">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-white" />
+                  <h3 className="text-white font-semibold">Soporte</h3>
+                  {conversacionesSoporte.length > 0 && (
+                    <Badge className="bg-white text-purple-600">{conversacionesSoporte.length}</Badge>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSoporteAbierto(false)}
+                  className="text-white hover:bg-purple-700 h-6 w-6 p-0"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="max-h-96 overflow-y-auto">
+              {conversacionesSoporte.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <HelpCircle className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>No hay conversaciones de soporte aún</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {conversacionesSoporte.map((conv) => {
+                    const totalNoLeidos = conv.noLeidos || 0;
+                    return (
+                      <div
+                        key={conv.cliente_id}
+                        onClick={() => {
+                          abrirChatSoporte(conv.cliente_id, conv.cliente_nombre);
+                          setSoporteAbierto(false); // Cerrar el panel al abrir chat
+                        }}
+                        className={`p-4 cursor-pointer transition-all hover:bg-gray-50 ${
+                          chatSoporteActual?.cliente_id === conv.cliente_id
+                            ? "bg-purple-50 border-l-4 border-purple-500"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-semibold text-gray-900 truncate">
+                                {conv.cliente_nombre}
+                              </p>
+                              {totalNoLeidos > 0 && (
+                                <Badge className="bg-red-500 text-white text-xs flex-shrink-0">
+                                  {totalNoLeidos}
+                                </Badge>
+                              )}
+                            </div>
+                            {conv.ultimoMensaje && (
+                              <p className="text-sm text-gray-600 truncate mt-1">
+                                {conv.ultimoMensaje}
+                              </p>
+                            )}
+                            {conv.ultimaFecha && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {new Date(conv.ultimaFecha).toLocaleString('es-VE', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
