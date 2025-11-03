@@ -24,8 +24,9 @@ interface FacturaConfirmada {
   fechaFacturacion: string;
   items: any[];
   adicionales?: Array<{
-    descripcion: string;
-    monto: number;
+    descripcion?: string;
+    precio: number;
+    cantidad?: number; // default 1
   }>;
 }
 
@@ -85,6 +86,18 @@ const FacturacionPage: React.FC = () => {
         if (!res.ok) throw new Error("Error al obtener pedidos");
         pedidos = await res.json();
           console.log(`📊 Pedidos obtenidos de /pedidos/all/: ${pedidos.length}`);
+          // Debug: Verificar adicionales en los primeros pedidos
+          if (pedidos.length > 0) {
+            const primerPedido = pedidos[0];
+            console.log(`🔍 DEBUG PEDIDO ALL - Primer pedido:`, {
+              pedidoId: primerPedido._id?.slice(-8),
+              tieneAdicionales: 'adicionales' in primerPedido,
+              adicionales: primerPedido.adicionales,
+              tipoAdicionales: typeof primerPedido.adicionales,
+              esArray: Array.isArray(primerPedido.adicionales),
+              keysPedido: Object.keys(primerPedido) // Ver todas las keys del pedido
+            });
+          }
           // IMPORTANTE: Verificar si el pedido específico está en esta lista
           const pedidoEspecificoEnAll = pedidos.find((p: any) => p._id === '69042b91a9a8ebdaf861c3f0');
           if (pedidoEspecificoEnAll) {
@@ -1232,14 +1245,23 @@ const FacturacionPage: React.FC = () => {
       } else {
         // Flujo normal de facturación
         const numeroFactura = generarNumeroFactura();
-        // Calcular monto de items
+        // IMPORTANTE: El backend envía adicionales con estructura: { descripcion?, precio, cantidad? }
+        // El montoTotal del backend YA incluye los adicionales
         // Normalizar adicionales: puede ser null, undefined, o array vacío desde el backend
         const adicionalesNormalizados = (selectedPedido.adicionales && Array.isArray(selectedPedido.adicionales)) ? selectedPedido.adicionales : [];
+        
+        // Calcular monto de items (solo para mostrar, no para el total)
         const montoItems = selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
-        // Calcular monto de adicionales (SIEMPRE incluir si existen)
-        const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
-        // CRÍTICO: El montoTotal SIEMPRE debe incluir adicionales, incluso si el backend no lo calculó correctamente
-        const montoTotalCalculado = montoItems + montoAdicionales;
+        // Calcular monto de adicionales (precio * cantidad, default cantidad = 1)
+        const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+          const cantidad = ad.cantidad || 1;
+          const precio = ad.precio || 0;
+          return acc + (precio * cantidad);
+        }, 0);
+        
+        // CRÍTICO: Usar montoTotal del backend (ya incluye adicionales)
+        // Si no existe, calcular como fallback
+        const montoTotalCalculado = selectedPedido.montoTotal || (montoItems + montoAdicionales);
         
         console.log('💰 DEBUG FACTURACIÓN - Cálculo de total:', {
           pedidoId: selectedPedido._id,
@@ -1406,12 +1428,17 @@ const FacturacionPage: React.FC = () => {
                         <td colspan="4" style="text-align:right; font-weight: bold;">Subtotal Items:</td>
                         <td style="text-align:right;">$${(selectedFactura.items.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0)).toFixed(2)}</td>
                       </tr>
-                      ${selectedFactura.adicionales.map((ad: any) => `
+                      ${selectedFactura.adicionales.map((ad: any) => {
+                        const cantidad = ad.cantidad || 1;
+                        const precio = ad.precio || 0;
+                        const montoAdicional = precio * cantidad;
+                        return `
                         <tr style="background: #fef3c7;">
-                          <td colspan="4" style="text-align:right;">+ ${ad.descripcion}:</td>
-                          <td style="text-align:right;">$${(ad.monto || 0).toFixed(2)}</td>
+                          <td colspan="4" style="text-align:right;">+ ${ad.descripcion || 'Adicional'}:</td>
+                          <td style="text-align:right;">${cantidad > 1 ? `(x${cantidad}) ` : ''}$${montoAdicional.toFixed(2)}</td>
                         </tr>
-                      `).join('')}
+                      `;
+                      }).join('')}
                     ` : ''}
                     <tr class="totales-row">
                       <td colspan="3" style="text-align:right;">Total:</td>
@@ -1639,24 +1666,33 @@ const FacturacionPage: React.FC = () => {
                 </div>
 
                 {(() => {
-                  // CRÍTICO: Calcular total SIEMPRE incluyendo adicionales (no depender del backend)
+                  // IMPORTANTE: El backend envía adicionales con estructura: { descripcion?, precio, cantidad? }
+                  // El montoTotal del backend YA incluye los adicionales, no sumarlos manualmente
                   // Normalizar adicionales: puede ser null, undefined, o array vacío desde el backend
-                  const adicionalesNormalizados = (pedido.adicionales && Array.isArray(pedido.adicionales)) ? pedido.adicionales : [];
-                  const montoItems = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
-                  const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
-                  // SIEMPRE calcular total como items + adicionales (no usar pedido.montoTotal del backend)
-                  const totalConAdicionales = montoItems + montoAdicionales;
+                  const adicionalesRaw = pedido.adicionales;
+                  const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
                   
-                  // Debug: Log para verificar que los adicionales están presentes
+                  // Calcular monto de items (solo para mostrar, no para el total)
+                  const montoItems = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+                  // Calcular monto de adicionales (precio * cantidad, default cantidad = 1)
+                  const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+                    const cantidad = ad.cantidad || 1;
+                    const precio = ad.precio || 0;
+                    return acc + (precio * cantidad);
+                  }, 0);
+                  
+                  // CRÍTICO: Usar montoTotal del backend (ya incluye adicionales)
+                  // Si no existe, calcular como fallback
+                  const totalConAdicionales = pedido.montoTotal || (montoItems + montoAdicionales);
+                  
+                  // Debug: Log para verificar estructura de adicionales
                   if (adicionalesNormalizados.length > 0) {
-                    console.log('💰 DEBUG FACTURACIÓN TARJETA - Pedido tiene adicionales:', {
-                      pedidoId: pedido._id?.slice(-8),
+                    console.log(`🔍 DEBUG TARJETA PEDIDO ${pedido._id?.slice(-8)} - Tiene adicionales:`, {
+                      adicionalesNormalizados,
                       montoItems,
                       montoAdicionales,
-                      totalConAdicionales,
-                      adicionales: adicionalesNormalizados,
-                      adicionalesRaw: pedido.adicionales, // Para debug: ver qué viene del backend
-                      montoTotalBackend: pedido.montoTotal
+                      montoTotalBackend: pedido.montoTotal,
+                      totalConAdicionales
                     });
                   }
                   
@@ -1709,24 +1745,39 @@ const FacturacionPage: React.FC = () => {
                         <div className="mb-3">
                           <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-2">💰 Adicionales</h4>
                           <div className="grid grid-cols-1 gap-2">
-                            {adicionalesNormalizados.map((adicional: any, idx: number) => (
-                              <div key={idx} className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-2 sm:p-3 hover:border-yellow-300 transition-colors">
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-sm sm:text-base text-yellow-800">{adicional.descripcion}</p>
+                            {adicionalesNormalizados.map((adicional: any, idx: number) => {
+                              const cantidad = adicional.cantidad || 1;
+                              const precio = adicional.precio || 0;
+                              const montoAdicional = precio * cantidad;
+                              
+                              return (
+                                <div key={idx} className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-2 sm:p-3 hover:border-yellow-300 transition-colors">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-bold text-sm sm:text-base text-yellow-800">
+                                        {adicional.descripcion || 'Adicional sin descripción'}
+                                      </p>
+                                      {cantidad > 1 && (
+                                        <p className="text-xs text-yellow-600 mt-1">Cantidad: {cantidad}</p>
+                                      )}
+                                    </div>
+                                    <span className="text-base sm:text-lg font-bold text-yellow-700 whitespace-nowrap ml-2">
+                                      +${montoAdicional.toFixed(2)}
+                                    </span>
                                   </div>
-                                  <span className="text-base sm:text-lg font-bold text-yellow-700 whitespace-nowrap ml-2">
-                                    +${(adicional.monto || 0).toFixed(2)}
-                                  </span>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                           <div className="mt-2 pt-2 border-t border-yellow-300 bg-yellow-50 rounded-lg p-2">
                             <div className="flex justify-between items-center">
                               <span className="text-xs text-yellow-800 font-semibold">Total Adicionales:</span>
                               <span className="text-sm font-bold text-yellow-800">
-                                ${adicionalesNormalizados.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0).toFixed(2)}
+                                ${adicionalesNormalizados.reduce((acc: number, ad: any) => {
+                                  const cantidad = ad.cantidad || 1;
+                                  const precio = ad.precio || 0;
+                                  return acc + (precio * cantidad);
+                                }, 0).toFixed(2)}
                               </span>
                             </div>
                           </div>
@@ -2231,12 +2282,21 @@ const FacturacionPage: React.FC = () => {
                   </tbody>
                   <tfoot className="bg-gray-50 font-bold">
                     {(() => {
+                      // IMPORTANTE: El backend envía adicionales con estructura: { descripcion?, precio, cantidad? }
+                      // El montoTotal del backend YA incluye los adicionales
                       // Normalizar adicionales: puede ser null, undefined, o array vacío desde el backend
                       const adicionalesModalNormalizados = (selectedPedido.adicionales && Array.isArray(selectedPedido.adicionales)) ? selectedPedido.adicionales : [];
-                      // Calcular totales correctamente incluyendo adicionales
+                      // Calcular monto de items (solo para mostrar, no para el total)
                       const montoItems = selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
-                      const montoAdicionales = adicionalesModalNormalizados.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
-                      const totalConAdicionales = montoItems + montoAdicionales;
+                      // Calcular monto de adicionales (precio * cantidad, default cantidad = 1)
+                      const montoAdicionales = adicionalesModalNormalizados.reduce((acc: number, ad: any) => {
+                        const cantidad = ad.cantidad || 1;
+                        const precio = ad.precio || 0;
+                        return acc + (precio * cantidad);
+                      }, 0);
+                      // CRÍTICO: Usar montoTotal del backend (ya incluye adicionales)
+                      // Si no existe, calcular como fallback
+                      const totalConAdicionales = selectedPedido.montoTotal || (montoItems + montoAdicionales);
                       
                       return (
                         <>
@@ -2248,19 +2308,26 @@ const FacturacionPage: React.FC = () => {
                                   ${montoItems.toFixed(2)}
                                 </td>
                               </tr>
-                              {adicionalesModalNormalizados.map((adicional: any, idx: number) => (
-                                <tr key={idx} className="bg-yellow-50 border-t border-yellow-200">
-                                  <td colSpan={4} className="p-2 text-right text-sm">
-                                    <span className="font-semibold text-yellow-900">+ Adicional:</span>
-                                  </td>
-                                  <td colSpan={1} className="p-2 text-left text-sm">
-                                    <span className="text-yellow-800 italic">{adicional.descripcion || 'Sin descripción'}</span>
-                                  </td>
-                                  <td className="p-2 text-right text-yellow-800 font-bold">
-                                    ${(adicional.monto || 0).toFixed(2)}
-                                  </td>
-                                </tr>
-                              ))}
+                              {adicionalesModalNormalizados.map((adicional: any, idx: number) => {
+                                const cantidad = adicional.cantidad || 1;
+                                const precio = adicional.precio || 0;
+                                const montoAdicional = precio * cantidad;
+                                
+                                return (
+                                  <tr key={idx} className="bg-yellow-50 border-t border-yellow-200">
+                                    <td colSpan={4} className="p-2 text-right text-sm">
+                                      <span className="font-semibold text-yellow-900">+ Adicional:</span>
+                                    </td>
+                                    <td colSpan={1} className="p-2 text-left text-sm">
+                                      <span className="text-yellow-800 italic">{adicional.descripcion || 'Sin descripción'}</span>
+                                      {cantidad > 1 && <span className="text-xs text-yellow-600 ml-2">(x{cantidad})</span>}
+                                    </td>
+                                    <td className="p-2 text-right text-yellow-800 font-bold">
+                                      ${montoAdicional.toFixed(2)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                               <tr className="bg-yellow-100 border-t-2 border-yellow-300">
                                 <td colSpan={5} className="p-2 text-right font-semibold text-yellow-900">Total Adicionales:</td>
                                 <td className="p-2 text-right text-yellow-900 font-bold">
