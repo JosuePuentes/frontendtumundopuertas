@@ -579,7 +579,7 @@ const CargarInventarioExcel: React.FC = () => {
   const handleCargarInventario = async (pedido: PedidoCargadoInventario) => {
     // Si el pedido viene en formato PedidoCargadoInventario, convertirlo al formato esperado
     let pedidoFormateado: any = pedido;
-    if (pedido.pedidoId && !pedido._id) {
+    if (pedido.pedidoId && !(pedido as any)._id) {
       // Es un PedidoCargadoInventario, necesitamos buscar el pedido original del backend
       try {
         const res = await fetch(`${getApiUrl()}/pedidos/id/${pedido.pedidoId}/`);
