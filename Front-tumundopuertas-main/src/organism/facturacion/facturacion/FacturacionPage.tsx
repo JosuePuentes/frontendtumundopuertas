@@ -1233,9 +1233,11 @@ const FacturacionPage: React.FC = () => {
         // Flujo normal de facturación
         const numeroFactura = generarNumeroFactura();
         // Calcular monto de items
+        // Normalizar adicionales: puede ser null, undefined, o array vacío desde el backend
+        const adicionalesNormalizados = (selectedPedido.adicionales && Array.isArray(selectedPedido.adicionales)) ? selectedPedido.adicionales : [];
         const montoItems = selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
         // Calcular monto de adicionales (SIEMPRE incluir si existen)
-        const montoAdicionales = (selectedPedido.adicionales || []).reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
+        const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
         // CRÍTICO: El montoTotal SIEMPRE debe incluir adicionales, incluso si el backend no lo calculó correctamente
         const montoTotalCalculado = montoItems + montoAdicionales;
         
@@ -1258,7 +1260,7 @@ const FacturacionPage: React.FC = () => {
           fechaCreacion: selectedPedido.fecha_creacion || new Date().toISOString(),
           fechaFacturacion: new Date().toISOString(),
           items: selectedPedido.items || [],
-          adicionales: selectedPedido.adicionales || undefined
+          adicionales: adicionalesNormalizados.length > 0 ? adicionalesNormalizados : undefined
         };
         
         // IMPORTANTE: Actualizar TODOS los estados ANTES de cerrar el modal
@@ -1637,19 +1639,22 @@ const FacturacionPage: React.FC = () => {
 
                 {(() => {
                   // CRÍTICO: Calcular total SIEMPRE incluyendo adicionales (no depender del backend)
+                  // Normalizar adicionales: puede ser null, undefined, o array vacío desde el backend
+                  const adicionalesNormalizados = (pedido.adicionales && Array.isArray(pedido.adicionales)) ? pedido.adicionales : [];
                   const montoItems = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
-                  const montoAdicionales = (pedido.adicionales || []).reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
+                  const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
                   // SIEMPRE calcular total como items + adicionales (no usar pedido.montoTotal del backend)
                   const totalConAdicionales = montoItems + montoAdicionales;
                   
                   // Debug: Log para verificar que los adicionales están presentes
-                  if (Array.isArray(pedido.adicionales) && pedido.adicionales.length > 0) {
+                  if (adicionalesNormalizados.length > 0) {
                     console.log('💰 DEBUG FACTURACIÓN TARJETA - Pedido tiene adicionales:', {
                       pedidoId: pedido._id?.slice(-8),
                       montoItems,
                       montoAdicionales,
                       totalConAdicionales,
-                      adicionales: pedido.adicionales,
+                      adicionales: adicionalesNormalizados,
+                      adicionalesRaw: pedido.adicionales, // Para debug: ver qué viene del backend
                       montoTotalBackend: pedido.montoTotal
                     });
                   }
@@ -1699,11 +1704,11 @@ const FacturacionPage: React.FC = () => {
                       )}
 
                       {/* Mostrar adicionales si existen */}
-                      {Array.isArray(pedido.adicionales) && pedido.adicionales.length > 0 && (
+                      {adicionalesNormalizados.length > 0 && (
                         <div className="mb-3">
                           <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-2">💰 Adicionales</h4>
                           <div className="grid grid-cols-1 gap-2">
-                            {pedido.adicionales.map((adicional: any, idx: number) => (
+                            {adicionalesNormalizados.map((adicional: any, idx: number) => (
                               <div key={idx} className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-2 sm:p-3 hover:border-yellow-300 transition-colors">
                                 <div className="flex items-start justify-between gap-2">
                                   <div className="flex-1 min-w-0">
@@ -1720,7 +1725,7 @@ const FacturacionPage: React.FC = () => {
                             <div className="flex justify-between items-center">
                               <span className="text-xs text-yellow-800 font-semibold">Total Adicionales:</span>
                               <span className="text-sm font-bold text-yellow-800">
-                                ${pedido.adicionales.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0).toFixed(2)}
+                                ${adicionalesNormalizados.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0).toFixed(2)}
                               </span>
                             </div>
                           </div>
@@ -2225,14 +2230,16 @@ const FacturacionPage: React.FC = () => {
                   </tbody>
                   <tfoot className="bg-gray-50 font-bold">
                     {(() => {
+                      // Normalizar adicionales: puede ser null, undefined, o array vacío desde el backend
+                      const adicionalesModalNormalizados = (selectedPedido.adicionales && Array.isArray(selectedPedido.adicionales)) ? selectedPedido.adicionales : [];
                       // Calcular totales correctamente incluyendo adicionales
                       const montoItems = selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
-                      const montoAdicionales = (selectedPedido.adicionales || []).reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
+                      const montoAdicionales = adicionalesModalNormalizados.reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
                       const totalConAdicionales = montoItems + montoAdicionales;
                       
                       return (
                         <>
-                          {(selectedPedido.adicionales && Array.isArray(selectedPedido.adicionales) && selectedPedido.adicionales.length > 0) && (
+                          {adicionalesModalNormalizados.length > 0 && (
                             <>
                               <tr className="bg-yellow-50">
                                 <td colSpan={5} className="p-2 text-right font-semibold">Subtotal Items:</td>
@@ -2240,7 +2247,7 @@ const FacturacionPage: React.FC = () => {
                                   ${montoItems.toFixed(2)}
                                 </td>
                               </tr>
-                              {selectedPedido.adicionales.map((adicional: any, idx: number) => (
+                              {adicionalesModalNormalizados.map((adicional: any, idx: number) => (
                                 <tr key={idx} className="bg-yellow-50 border-t border-yellow-200">
                                   <td colSpan={4} className="p-2 text-right text-sm">
                                     <span className="font-semibold text-yellow-900">+ Adicional:</span>
