@@ -561,7 +561,7 @@ const CrearPedido: React.FC = () => {
       });
 
       if (resultado?.success) {
-        // Obtener el ID del pedido creado
+        // Obtener el ID del pedido creado (declarar una sola vez)
         const pedidoData = resultado?.data || resultado;
         const pedidoId = pedidoData?._id || pedidoData?.id || pedidoData?.pedido?._id || pedidoData?.pedido?.id;
         
@@ -610,11 +610,11 @@ const CrearPedido: React.FC = () => {
           });
           
           const resultadosDepositos = await Promise.all(depositosPromesas);
-          const exitosos = resultadosDepositos.filter(r => r && r.success).length;
-          const fallidos = resultadosDepositos.filter(r => r && !r.success).length;
+          const exitosos = resultadosDepositos.filter(r => r !== null && r.success).length;
+          const fallidos = resultadosDepositos.filter(r => r !== null && !r.success).length;
           const totalDepositado = resultadosDepositos
-            .filter(r => r && r.success)
-            .reduce((acc, r) => acc + (r.monto || 0), 0);
+            .filter(r => r !== null && r.success)
+            .reduce((acc, r) => acc + ((r?.monto || 0) || 0), 0);
           
           if (fallidos > 0) {
             console.warn(`⚠ ${fallidos} adicional(es) no pudo(eron) registrarse en métodos de pago`);
@@ -644,10 +644,7 @@ const CrearPedido: React.FC = () => {
         // Refrescar la lista de items para mostrar las existencias actualizadas
         fetchItems(`${apiUrl}/inventario/all`);
         
-        // Disparar evento personalizado para notificar que se creó un pedido
-        const pedidoData = resultado?.data || resultado;
-        const pedidoId = pedidoData?._id || pedidoData?.id || pedidoData?.pedido?._id || pedidoData?.pedido?.id;
-        
+        // Disparar evento personalizado para notificar que se creó un pedido (reutilizar variables ya declaradas)
         window.dispatchEvent(new CustomEvent('pedidoCreado', {
           detail: {
             pedidoId: pedidoId,
