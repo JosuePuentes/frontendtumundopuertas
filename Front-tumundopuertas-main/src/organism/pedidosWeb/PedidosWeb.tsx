@@ -21,8 +21,10 @@ import {
   CheckCircle2,
   Bell,
   PlayCircle,
-  Loader2
+  Loader2,
+  MessageCircle
 } from "lucide-react";
+import ChatMessenger from "./ChatMessenger";
 
 interface Abono {
   fecha?: string;
@@ -88,6 +90,9 @@ const PedidosWeb: React.FC = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"pedido" | "abono">("pedido");
   const [actualizandoEstado, setActualizandoEstado] = useState(false);
+  const [chatAbierto, setChatAbierto] = useState(false);
+  const [pedidoChatActual, setPedidoChatActual] = useState<PedidoWeb | null>(null);
+  const [mensajesNoLeidos, setMensajesNoLeidos] = useState<Map<string, number>>(new Map());
   
   // Referencias para detectar cambios
   const pedidosAnterioresRef = useRef<Set<string>>(new Set());
@@ -101,10 +106,60 @@ const PedidosWeb: React.FC = () => {
     // Polling cada 10 segundos para detectar nuevos pedidos y abonos
     const intervalId = setInterval(() => {
       cargarPedidos(true); // true = modo silencioso (no mostrar loading)
+      cargarMensajesNoLeidos(); // También verificar mensajes nuevos
     }, 10000);
 
     return () => clearInterval(intervalId);
   }, []);
+
+  const cargarMensajesNoLeidos = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+
+      // Contar mensajes no leídos para cada pedido
+      const contadores: Map<string, number> = new Map();
+      
+      await Promise.all(
+        pedidos.map(async (pedido) => {
+          try {
+            const res = await fetch(`${apiUrl}/mensajes/pedido/${pedido._id}/no-leidos`, {
+              headers: {
+                "Authorization": `Bearer ${token}`,
+              },
+            });
+            
+            if (res.ok) {
+              const data = await res.json();
+              const count = typeof data === 'number' ? data : (data.count || 0);
+              if (count > 0) {
+                contadores.set(pedido._id, count);
+              }
+            }
+          } catch (error) {
+            // Ignorar errores silenciosamente
+          }
+        })
+      );
+      
+      setMensajesNoLeidos(contadores);
+    } catch (error) {
+      // Ignorar errores silenciosamente
+    }
+  };
+
+  const abrirChat = (pedido: PedidoWeb) => {
+    setPedidoChatActual(pedido);
+    setChatAbierto(true);
+    // Marcar mensajes como leídos cuando se abre el chat
+    if (mensajesNoLeidos.has(pedido._id)) {
+      setMensajesNoLeidos(prev => {
+        const nuevo = new Map(prev);
+        nuevo.delete(pedido._id);
+        return nuevo;
+      });
+    }
+  };
 
   const cargarPedidos = async (silencioso = false) => {
     try {
@@ -647,9 +702,24 @@ const PedidosWeb: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Estado</p>
-                      <Badge className={getEstadoBadge(pedidoSeleccionado.estado).color + " border"}>
-                        {getEstadoBadge(pedidoSeleccionado.estado).label}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getEstadoBadge(pedidoSeleccionado.estado).color + " border"}>
+                          {getEstadoBadge(pedidoSeleccionado.estado).label}
+                        </Badge>
+                        <Button
+                          onClick={() => abrirChat(pedidoSeleccionado)}
+                          variant="outline"
+                          size="sm"
+                          className="relative border-blue-500 text-blue-600 hover:bg-blue-50"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          {mensajesNoLeidos.get(pedidoSeleccionado._id) ? (
+                            <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                              {mensajesNoLeidos.get(pedidoSeleccionado._id)}
+                            </Badge>
+                          ) : null}
+                        </Button>
+                      </div>
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Método de Pago</p>
@@ -886,6 +956,27 @@ const PedidosWeb: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Chat Messenger */}
+      {pedidoChatActual && (
+        <ChatMessenger
+          pedidoId={pedidoChatActual._id}
+          clienteId={pedidoChatActual.cliente_id}
+          clienteNombre={pedidoChatActual.cliente_nombre || "Cliente"}
+          usuarioActualId={localStorage.getItem("usuario_id") || ""}
+          usuarioActualTipo="admin"
+          usuarioActualNombre={localStorage.getItem("usuario") || "Administrador"}
+          open={chatAbierto}
+          onClose={() => {
+            setChatAbierto(false);
+            setPedidoChatActual(null);
+            cargarMensajesNoLeidos();
+          }}
+          onNuevoMensaje={() => {
+            cargarMensajesNoLeidos();
+          }}
+        />
+      )}
     </div>
   );
 };
