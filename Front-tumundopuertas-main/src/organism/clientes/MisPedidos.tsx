@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Eye, Package, Receipt, DollarSign, Calendar, User, X, CheckCircle2 } from "lucide-react";
+import { Eye, Package, Receipt, DollarSign, X, CheckCircle2 } from "lucide-react";
 import ModalAbonarFactura from "./ModalAbonarFactura";
 
 interface Factura {
