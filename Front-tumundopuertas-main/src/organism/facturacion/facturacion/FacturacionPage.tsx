@@ -1232,9 +1232,22 @@ const FacturacionPage: React.FC = () => {
       } else {
         // Flujo normal de facturación
         const numeroFactura = generarNumeroFactura();
+        // Calcular monto de items
         const montoItems = selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+        // Calcular monto de adicionales (SIEMPRE incluir si existen)
         const montoAdicionales = (selectedPedido.adicionales || []).reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
-        const montoTotalCalculado = selectedPedido.montoTotal || (montoItems + montoAdicionales);
+        // CRÍTICO: El montoTotal SIEMPRE debe incluir adicionales, incluso si el backend no lo calculó correctamente
+        const montoTotalCalculado = montoItems + montoAdicionales;
+        
+        console.log('💰 DEBUG FACTURACIÓN - Cálculo de total:', {
+          pedidoId: selectedPedido._id,
+          montoItems,
+          montoAdicionales,
+          adicionalesCount: selectedPedido.adicionales?.length || 0,
+          montoTotalBackend: selectedPedido.montoTotal,
+          montoTotalCalculado,
+          diferencia: selectedPedido.montoTotal ? (montoTotalCalculado - selectedPedido.montoTotal) : 0
+        });
         const facturaConfirmada: FacturaConfirmada = {
           id: selectedPedido._id + '-' + Date.now(),
           numeroFactura: numeroFactura,
@@ -2195,27 +2208,51 @@ const FacturacionPage: React.FC = () => {
                     ))}
                   </tbody>
                   <tfoot className="bg-gray-50 font-bold">
-                    {(selectedPedido.adicionales && Array.isArray(selectedPedido.adicionales) && selectedPedido.adicionales.length > 0) && (
-                      <>
-                        <tr className="bg-yellow-50">
-                          <td colSpan={5} className="p-2 text-right">Subtotal Items:</td>
-                          <td className="p-2 text-right text-yellow-700">
-                            ${(selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0).toFixed(2)}
-                          </td>
-                        </tr>
-                        {selectedPedido.adicionales.map((adicional: any, idx: number) => (
-                          <tr key={idx} className="bg-yellow-50">
-                            <td colSpan={5} className="p-2 text-right">+ {adicional.descripcion}:</td>
-                            <td className="p-2 text-right text-yellow-700">${(adicional.monto || 0).toFixed(2)}</td>
+                    {(() => {
+                      // Calcular totales correctamente incluyendo adicionales
+                      const montoItems = selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+                      const montoAdicionales = (selectedPedido.adicionales || []).reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
+                      const totalConAdicionales = montoItems + montoAdicionales;
+                      
+                      return (
+                        <>
+                          {(selectedPedido.adicionales && Array.isArray(selectedPedido.adicionales) && selectedPedido.adicionales.length > 0) && (
+                            <>
+                              <tr className="bg-yellow-50">
+                                <td colSpan={5} className="p-2 text-right font-semibold">Subtotal Items:</td>
+                                <td className="p-2 text-right text-yellow-800 font-bold">
+                                  ${montoItems.toFixed(2)}
+                                </td>
+                              </tr>
+                              {selectedPedido.adicionales.map((adicional: any, idx: number) => (
+                                <tr key={idx} className="bg-yellow-50 border-t border-yellow-200">
+                                  <td colSpan={4} className="p-2 text-right text-sm">
+                                    <span className="font-semibold text-yellow-900">+ Adicional:</span>
+                                  </td>
+                                  <td colSpan={1} className="p-2 text-left text-sm">
+                                    <span className="text-yellow-800 italic">{adicional.descripcion || 'Sin descripción'}</span>
+                                  </td>
+                                  <td className="p-2 text-right text-yellow-800 font-bold">
+                                    ${(adicional.monto || 0).toFixed(2)}
+                                  </td>
+                                </tr>
+                              ))}
+                              <tr className="bg-yellow-100 border-t-2 border-yellow-300">
+                                <td colSpan={5} className="p-2 text-right font-semibold text-yellow-900">Total Adicionales:</td>
+                                <td className="p-2 text-right text-yellow-900 font-bold">
+                                  ${montoAdicionales.toFixed(2)}
+                                </td>
+                              </tr>
+                            </>
+                          )}
+                          <tr className="bg-green-50 border-t-2 border-green-300">
+                            <td colSpan={4} className="p-2 text-right font-bold text-green-900">Total del Pedido:</td>
+                            <td className="p-2 text-center text-green-900">{selectedPedido.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
+                            <td className="p-2 text-right text-lg text-green-700 font-bold">${totalConAdicionales.toFixed(2)}</td>
                           </tr>
-                        ))}
-                      </>
-                    )}
-                    <tr>
-                      <td colSpan={4} className="p-2 text-right">Total del Pedido:</td>
-                      <td className="p-2 text-center">{selectedPedido.items.reduce((acc: number, item: any) => acc + (item.cantidad || 0), 0)}</td>
-                      <td className="p-2 text-right text-lg text-green-700">${(selectedPedido.montoTotal || 0).toFixed(2)}</td>
-                    </tr>
+                        </>
+                      );
+                    })()}
                   </tfoot>
                 </table>
               </div>

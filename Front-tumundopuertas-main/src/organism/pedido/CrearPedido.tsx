@@ -561,12 +561,22 @@ const CrearPedido: React.FC = () => {
       });
 
       if (resultado?.success) {
+        // Obtener el ID del pedido creado
+        const pedidoData = resultado?.data || resultado;
+        const pedidoId = pedidoData?._id || pedidoData?.id || pedidoData?.pedido?._id || pedidoData?.pedido?.id;
+        
         // Registrar depósitos en métodos de pago para cada adicional
-        if (adicionales.length > 0) {
+        if (adicionales.length > 0 && pedidoId) {
           const depositosPromesas = adicionales.map(async (adicional) => {
             if (adicional.metodoPago && adicional.monto > 0) {
               try {
-                const concepto = `Adicional pedido: ${adicional.descripcion}`;
+                // Concepto mejorado con ID del pedido para identificación en historial
+                const concepto = `Pedido ${pedidoId?.slice(-8) || 'N/A'} - Adicional: ${adicional.descripcion}`;
+                
+                console.log(`📝 Registrando depósito: ${adicional.monto} en método ${adicional.metodoPago} (${adicional.metodoPagoNombre})`);
+                console.log(`📝 Concepto: ${concepto}`);
+                console.log(`📝 Pedido ID: ${pedidoId}`);
+                
                 const depositoRes = await fetch(`${apiUrl}/metodos-pago/${adicional.metodoPago}/deposito`, {
                   method: "POST",
                   headers: {
@@ -580,8 +590,10 @@ const CrearPedido: React.FC = () => {
                 });
                 
                 if (depositoRes.ok) {
-                  console.log(`✓ Adicional "${adicional.descripcion}" registrado en método de pago ${adicional.metodoPagoNombre}`);
-                  return { success: true, adicional: adicional.descripcion };
+                  const depositoData = await depositoRes.json();
+                  console.log(`✓ Adicional "${adicional.descripcion}" ($${adicional.monto.toFixed(2)}) registrado en método de pago ${adicional.metodoPagoNombre}`);
+                  console.log(`✓ Respuesta del backend:`, depositoData);
+                  return { success: true, adicional: adicional.descripcion, monto: adicional.monto };
                 } else {
                   const errorText = await depositoRes.text();
                   console.error(`✗ Error al registrar adicional "${adicional.descripcion}" en método de pago:`, depositoRes.status, errorText);
@@ -591,23 +603,31 @@ const CrearPedido: React.FC = () => {
                 console.error(`✗ Error al registrar adicional "${adicional.descripcion}" en método de pago:`, error.message || error);
                 return { success: false, adicional: adicional.descripcion, error: error.message || error };
               }
+            } else {
+              console.warn(`⚠ Adicional "${adicional.descripcion}" no tiene método de pago o monto válido`);
+              return null;
             }
-            return null;
           });
           
           const resultadosDepositos = await Promise.all(depositosPromesas);
           const exitosos = resultadosDepositos.filter(r => r && r.success).length;
           const fallidos = resultadosDepositos.filter(r => r && !r.success).length;
+          const totalDepositado = resultadosDepositos
+            .filter(r => r && r.success)
+            .reduce((acc, r) => acc + (r.monto || 0), 0);
           
-          if (exitosos > 0) {
-            console.log(`✓ ${exitosos} adicional(es) registrado(s) en métodos de pago`);
-          }
           if (fallidos > 0) {
             console.warn(`⚠ ${fallidos} adicional(es) no pudo(eron) registrarse en métodos de pago`);
+            setMensaje(`✅ Pedido creado. ⚠ ${fallidos} adicional(es) no pudo(eron) registrarse en métodos de pago.`);
+          } else if (exitosos > 0) {
+            console.log(`✓ ${exitosos} adicional(es) registrado(s) en métodos de pago (Total: $${totalDepositado.toFixed(2)})`);
+            setMensaje(`✅ Pedido creado correctamente. ${exitosos} adicional(es) registrado(s) en métodos de pago.`);
+          } else {
+            setMensaje("✅ Pedido creado correctamente.");
           }
+        } else {
+          setMensaje("✅ Pedido creado correctamente.");
         }
-        
-        setMensaje("✅ Pedido creado correctamente.");
         setMensajeTipo("success");
         setClienteId(0);
         setClienteSearch("");
