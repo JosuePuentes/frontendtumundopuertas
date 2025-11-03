@@ -163,7 +163,8 @@ const PedidosWeb: React.FC = () => {
               // Si no tenemos datos del cliente y tenemos cliente_id, intentar cargarlos desde el backend
               if (clienteId && (!datosCliente.nombre || datosCliente.nombre === "Sin nombre")) {
                 try {
-                  const resCliente = await fetch(`${apiUrl}/clientes/${clienteId}`, {
+                  // Intentar primero con el endpoint /clientes/id/{cliente_id}/ (para clientes no autenticados)
+                  const resCliente = await fetch(`${apiUrl}/clientes/id/${clienteId}/`, {
                     headers: {
                       "Authorization": `Bearer ${token}`,
                     },
