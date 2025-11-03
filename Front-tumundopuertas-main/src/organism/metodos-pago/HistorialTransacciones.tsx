@@ -39,8 +39,36 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
     setError(null);
     try {
       const data = await getHistorialMetodo(metodo.id!);
-      setTransacciones(data);
+      
+      // Debug: Log para ver qué devuelve el backend
+      console.log(`🔍 DEBUG HISTORIAL - Método ${metodo.id}:`, {
+        metodoId: metodo.id,
+        metodoNombre: metodo.nombre,
+        datosRaw: data,
+        tipoDatos: typeof data,
+        esArray: Array.isArray(data),
+        cantidad: Array.isArray(data) ? data.length : 'N/A',
+        primerItem: Array.isArray(data) && data.length > 0 ? data[0] : null
+      });
+      
+      // Normalizar datos: asegurar que sea un array y que tenga la estructura correcta
+      const transaccionesNormalizadas = Array.isArray(data) ? data.map((t: any) => ({
+        id: t.id || t._id || t.transaccion_id || `trans-${Date.now()}-${Math.random()}`,
+        metodo_pago_id: t.metodo_pago_id || t.metodoPagoId || metodo.id || '',
+        tipo: t.tipo || (t.monto > 0 ? 'deposito' : 'transferir'),
+        monto: t.monto || 0,
+        concepto: t.concepto || t.descripcion || 'Sin concepto',
+        fecha: t.fecha || t.createdAt || t.created_at || new Date().toISOString()
+      })) : [];
+      
+      console.log(`✅ DEBUG HISTORIAL - Transacciones normalizadas:`, {
+        cantidad: transaccionesNormalizadas.length,
+        transacciones: transaccionesNormalizadas
+      });
+      
+      setTransacciones(transaccionesNormalizadas);
     } catch (err: any) {
+      console.error(`❌ ERROR HISTORIAL - Método ${metodo.id}:`, err);
       setError(err.message || "Error al obtener historial");
     } finally {
       setLoading(false);

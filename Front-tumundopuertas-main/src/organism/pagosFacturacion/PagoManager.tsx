@@ -44,9 +44,13 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
 
     setLoading(true);
     try {
+      // Primero actualizar el estado del pago en el pedido
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem('access_token')}`
+        },
         body: JSON.stringify({ pago, monto, metodo: selectedMetodoPago }),
       });
 
@@ -54,12 +58,60 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
 
       const data = await res.json();
       setPago(data.pago);
+      
+      // CRÍTICO: Registrar el depósito en el método de pago para que aparezca en el historial
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL.replace('http://', 'https://');
+        const metodoSeleccionado = metodosPago.find((m: any) => (m._id || m.id) === selectedMetodoPago);
+        const metodoNombre = metodoSeleccionado?.nombre || 'Método de pago';
+        
+        // Obtener información del pedido para el concepto
+        const pedidoRes = await fetch(`${apiUrl}/pedidos/id/${pedidoId}/`, {
+          headers: { "Authorization": `Bearer ${localStorage.getItem('access_token')}` }
+        });
+        const pedidoData = pedidoRes.ok ? await pedidoRes.json() : null;
+        const clienteNombre = pedidoData?.cliente_nombre || pedidoData?.cliente_id || 'Cliente';
+        
+        // Concepto descriptivo para el historial
+        const concepto = `Pedido ${pedidoId.slice(-8)} - Cliente: ${clienteNombre} - Abono desde /pagos`;
+        
+        console.log(`💰 Registrando depósito en método de pago: ${monto} en ${metodoNombre}`);
+        console.log(`💰 Concepto: ${concepto}`);
+        
+        const depositoRes = await fetch(`${apiUrl}/metodos-pago/${selectedMetodoPago}/deposito`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem('access_token')}`,
+          },
+          body: JSON.stringify({
+            monto: monto,
+            concepto: concepto
+          }),
+        });
+        
+        if (depositoRes.ok) {
+          console.log(`✓ Depósito registrado exitosamente en método de pago ${metodoNombre}`);
+        } else {
+          const errorText = await depositoRes.text();
+          console.error(`⚠️ No se pudo registrar el depósito en método de pago:`, depositoRes.status, errorText);
+          // No fallar el proceso si el depósito no se registra, pero advertir
+          alert(`⚠️ Pago actualizado, pero no se pudo registrar en el historial del método de pago. Por favor verifica manualmente.`);
+        }
+      } catch (depositoError: any) {
+        console.error(`⚠️ Error al registrar depósito en método de pago:`, depositoError);
+        // No fallar el proceso si el depósito no se registra, pero advertir
+        alert(`⚠️ Pago actualizado, pero hubo un error al registrar en el historial del método de pago. Por favor verifica manualmente.`);
+      }
+      
       setMonto(0); // reset campo monto
       setSelectedMetodoPago(""); // reset metodo de pago
       
       // Refrescar métodos de pago para actualizar saldos
       const refreshResponse = await api("/metodos-pago");
       setMetodosPago(refreshResponse);
+      
+      alert("✓ Pago registrado exitosamente");
     } catch (err: any) {
       console.error(err);
       alert("No se pudo actualizar el pago");
