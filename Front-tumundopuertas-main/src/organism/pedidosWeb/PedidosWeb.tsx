@@ -24,7 +24,8 @@ import {
   Loader2,
   MessageCircle,
   HelpCircle,
-  Users
+  Users,
+  Trash2
 } from "lucide-react";
 import ChatMessenger from "./ChatMessenger";
 
@@ -187,6 +188,9 @@ const PedidosWeb: React.FC = () => {
   const [chatAbierto, setChatAbierto] = useState(false);
   const [pedidoChatActual, setPedidoChatActual] = useState<PedidoWeb | null>(null);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState<Map<string, number>>(new Map());
+  const [pedidoAEliminar, setPedidoAEliminar] = useState<PedidoWeb | null>(null);
+  const [confirmacionEliminarAbierta, setConfirmacionEliminarAbierta] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
   
   // Estados para soporte
   const [soporteAbierto, setSoporteAbierto] = useState<boolean>(() => {
@@ -896,6 +900,17 @@ const PedidosWeb: React.FC = () => {
                         ) : null}
                       </Button>
                       <Button
+                        onClick={() => {
+                          setPedidoAEliminar(pedido);
+                          setConfirmacionEliminarAbierta(true);
+                        }}
+                        variant="outline"
+                        className="border-red-500 text-red-600 hover:bg-red-50"
+                        size="sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                      <Button
                         onClick={() => verDetalle(pedido)}
                         variant="outline"
                         className="border-blue-600 text-blue-700 hover:bg-blue-50"
@@ -1283,6 +1298,111 @@ const PedidosWeb: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Modal de Confirmación para Eliminar Pedido */}
+      <Dialog open={confirmacionEliminarAbierta} onOpenChange={setConfirmacionEliminarAbierta}>
+        <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-semibold text-red-600 flex items-center gap-2">
+              <Trash2 className="w-6 h-6" />
+              Confirmar Eliminación
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-700 mb-4">
+              ¿Estás seguro de que deseas eliminar este pedido?
+            </p>
+            {pedidoAEliminar && (
+              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-4">
+                <p className="text-sm text-gray-600">
+                  <strong>Cliente:</strong> {pedidoAEliminar.cliente_nombre}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Pedido #:</strong> {pedidoAEliminar._id.slice(-6)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  <strong>Total:</strong> ${pedidoAEliminar.total?.toFixed(2) || '0.00'}
+                </p>
+              </div>
+            )}
+            <p className="text-sm text-red-600 font-semibold">
+              ⚠️ Esta acción no se puede deshacer. El pedido será eliminado permanentemente.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setConfirmacionEliminarAbierta(false);
+                setPedidoAEliminar(null);
+              }}
+              disabled={eliminando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                if (!pedidoAEliminar) return;
+                
+                setEliminando(true);
+                try {
+                  const token = localStorage.getItem("access_token");
+                  const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+                  
+                  const res = await fetch(`${apiUrl}/pedidos/${pedidoAEliminar._id}`, {
+                    method: "DELETE",
+                    headers: {
+                      "Authorization": `Bearer ${token}`,
+                    },
+                  });
+
+                  if (res.ok) {
+                    // Eliminar el pedido del estado local
+                    setPedidos(prev => prev.filter(p => p._id !== pedidoAEliminar._id));
+                    
+                    // Cerrar modal de confirmación
+                    setConfirmacionEliminarAbierta(false);
+                    setPedidoAEliminar(null);
+                    
+                    // Mostrar mensaje de éxito
+                    setToastMessage(`✅ Pedido #${pedidoAEliminar._id.slice(-6)} eliminado exitosamente`);
+                    setToastType("pedido");
+                    setToastVisible(true);
+                    
+                    // Limpiar chat si estaba abierto para este pedido
+                    if (pedidoChatActual && pedidoChatActual._id === pedidoAEliminar._id) {
+                      setChatAbierto(false);
+                      setPedidoChatActual(null);
+                    }
+                  } else {
+                    const errorData = await res.json().catch(() => ({ detail: "Error desconocido" }));
+                    alert(`Error al eliminar pedido: ${errorData.detail || "Error desconocido"}`);
+                  }
+                } catch (error) {
+                  console.error("Error al eliminar pedido:", error);
+                  alert("Error al eliminar el pedido. Por favor, intenta de nuevo.");
+                } finally {
+                  setEliminando(false);
+                }
+              }}
+              disabled={eliminando}
+            >
+              {eliminando ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Eliminando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Eliminar Pedido
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Chat Messenger para Pedidos */}
       {pedidoChatActual && (
