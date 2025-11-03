@@ -520,6 +520,7 @@ const MisPedidos: React.FC = () => {
             cargarPedidos();
           }}
         />
+      )}
 
       {/* Chat Messenger */}
       {pedidoChatActual && (
