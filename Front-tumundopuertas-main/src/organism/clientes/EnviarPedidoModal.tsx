@@ -77,12 +77,62 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
       const token = localStorage.getItem("cliente_access_token");
       const clienteId = localStorage.getItem("cliente_id");
 
-      // Preparar items del pedido según el formato que espera el backend
-      const itemsPedido = items.map(carritoItem => ({
-        itemId: carritoItem.itemId,
-        cantidad: carritoItem.cantidad,
-        precio: carritoItem.item.precio || 0,
-      }));
+      // Cargar datos completos de los items desde el inventario
+      const resInventario = await fetch(`${apiUrl}/inventario/all`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (!resInventario.ok) {
+        throw new Error("Error al cargar datos del inventario");
+      }
+
+      const inventarioData = await resInventario.json();
+
+      // Construir items del pedido con todos los campos requeridos por el backend
+      const itemsPedido = items.map(carritoItem => {
+        // Buscar el item completo en el inventario
+        const itemCompleto = inventarioData.find((it: any) => it._id === carritoItem.itemId);
+        
+        if (!itemCompleto) {
+          // Fallback: usar datos del carrito si no se encuentra en inventario
+          return {
+            id: carritoItem.itemId,
+            _id: carritoItem.itemId,
+            codigo: carritoItem.item.codigo || carritoItem.itemId,
+            nombre: carritoItem.item.nombre || "Item sin nombre",
+            descripcion: carritoItem.item.descripcion || "",
+            categoria: carritoItem.item.categoria || "General",
+            precio: carritoItem.item.precio || 0,
+            costo: carritoItem.item.costo || 0,
+            costoProduccion: carritoItem.item.costoProduccion || carritoItem.item.costo || 0,
+            cantidad: carritoItem.cantidad,
+            activo: true,
+            detalleitem: "",
+            imagenes: carritoItem.item.imagenes || [],
+            estado_item: 0, // Pendiente
+          };
+        }
+
+        // Usar datos completos del inventario
+        return {
+          id: itemCompleto._id || carritoItem.itemId,
+          _id: itemCompleto._id || carritoItem.itemId,
+          codigo: itemCompleto.codigo || carritoItem.itemId,
+          nombre: itemCompleto.nombre || "Item sin nombre",
+          descripcion: itemCompleto.descripcion || "",
+          categoria: itemCompleto.categoria || "General",
+          precio: carritoItem.item.precio || itemCompleto.precio || 0,
+          costo: itemCompleto.costo || 0,
+          costoProduccion: itemCompleto.costoProduccion || itemCompleto.costo || 0,
+          cantidad: carritoItem.cantidad,
+          activo: itemCompleto.activo !== false,
+          detalleitem: "",
+          imagenes: itemCompleto.imagenes || [],
+          estado_item: 0, // Pendiente (sin existencia)
+        };
+      });
 
       // Log del payload para debugging
       console.log("🔍 DEBUG: Items del pedido:", itemsPedido);
