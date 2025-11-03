@@ -22,6 +22,7 @@ interface ChatMessengerProps {
   usuarioActualId: string;
   usuarioActualTipo: "admin" | "cliente";
   usuarioActualNombre?: string;
+  tituloChat?: string; // Título personalizado del chat (opcional)
   open: boolean;
   onClose: () => void;
   onNuevoMensaje?: () => void;
@@ -33,6 +34,7 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
   usuarioActualId,
   usuarioActualTipo,
   usuarioActualNombre,
+  tituloChat,
   open,
   onClose,
   onNuevoMensaje,
@@ -159,7 +161,7 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
             <div className="flex items-center gap-2">
               <MessageCircle className="w-5 h-5 text-blue-600" />
               <DialogTitle className="text-lg font-semibold">
-                Chat - {clienteNombre}
+                {tituloChat || `Chat - ${clienteNombre}`}
               </DialogTitle>
             </div>
             <Button

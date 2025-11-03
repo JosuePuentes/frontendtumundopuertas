@@ -537,6 +537,7 @@ const MisPedidos: React.FC = () => {
           usuarioActualId={localStorage.getItem("cliente_id") || ""}
           usuarioActualTipo="cliente"
           usuarioActualNombre={localStorage.getItem("cliente_nombre") || "Cliente"}
+          tituloChat="Tu Mundo Puertas"
           open={chatAbierto}
           onClose={() => {
             setChatAbierto(false);
