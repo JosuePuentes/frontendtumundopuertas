@@ -25,77 +25,8 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
   const [imagenModal, setImagenModal] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [imagenesFallidas, setImagenesFallidas] = useState<Set<string>>(new Set());
-  const [presignedUrlsCache, setPresignedUrlsCache] = useState<Map<string, string>>(new Map());
   const itemsPorPagina = 10;
   const [cantidades, setCantidades] = useState<Record<string, number>>({});
-
-  // Función para obtener presigned URL si es necesario (para object names de R2)
-  const obtenerUrlImagen = async (imagenRaw: string): Promise<string | null> => {
-    if (!imagenRaw || typeof imagenRaw !== 'string') return null;
-    
-    const imagen = imagenRaw.trim();
-    if (!imagen) return null;
-    
-    // Si ya es una URL completa (http/https), retornarla directamente
-    if (imagen.startsWith('http://') || imagen.startsWith('https://')) {
-      return imagen;
-    }
-    
-    // Si empieza con /, es relativa al dominio actual
-    if (imagen.startsWith('/')) {
-      return imagen;
-    }
-    
-    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-    
-    // Si parece ser un object name de R2 (contiene "items/" o estructura similar)
-    // O si es un nombre de archivo que debería estar en R2
-    if (imagen.includes('items/') || imagen.includes('/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imagen)) {
-      // Verificar si ya tenemos la presigned URL en cache
-      if (presignedUrlsCache.has(imagen)) {
-        return presignedUrlsCache.get(imagen) || null;
-      }
-      
-      // Intentar obtener presigned URL
-      try {
-        const token = localStorage.getItem("cliente_access_token");
-        if (!token) return null;
-        
-        // Determinar el object name
-        const objectName = imagen.includes('items/') ? imagen : `items/${imagen}`;
-        
-        const res = await fetch(`${apiUrl}/files/presigned-url`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            object_name: objectName,
-            operation: "get_object",
-            expires_in: 3600, // 1 hora
-          }),
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          if (data.presigned_url) {
-            // Guardar en cache
-            setPresignedUrlsCache(prev => new Map(prev).set(imagen, data.presigned_url));
-            return data.presigned_url;
-          }
-        }
-      } catch (error) {
-        console.error("Error al obtener presigned URL para imagen:", error);
-      }
-      
-      // Fallback: intentar URL directa (puede fallar con 404, pero no bloquea la UI)
-      return `${apiUrl}/files/${imagen}`;
-    }
-    
-    // Si no parece ser un archivo de imagen o R2, retornar null
-    return null;
-  };
 
   // Función para construir URL de imagen válida (síncrona, para casos donde no necesitamos presigned URL)
   const construirUrlImagen = (imagenRaw: string): string | null => {
@@ -114,8 +45,7 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
       return imagen;
     }
     
-    // Para otros casos, usar la función asíncrona obtenerUrlImagen
-    // Por ahora, retornar null y dejar que el componente maneje la carga asíncrona
+    // Para otros casos, las presigned URLs se obtienen durante cargarInventario
     return null;
   };
 
