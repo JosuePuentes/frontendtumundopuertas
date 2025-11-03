@@ -151,15 +151,47 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
         }
       }
 
-      // Crear el pedido
+      // Obtener datos del cliente desde localStorage
+      const clienteNombre = localStorage.getItem("cliente_nombre") || "Cliente";
+      const now = new Date();
+      const fechaISO = now.toISOString();
+
+      // Construir seguimiento inicial (todos pendientes)
+      const subestados = [
+        "Herreria / soldadura",
+        "Masillar / Pintura",
+        "Preparacion / Verificacion",
+        "Facturacion",
+        "Despacho",
+        "sin definir 1",
+        "sin definir 2",
+      ];
+
+      const seguimiento = subestados.map((nombre, idx) => ({
+        orden: idx + 1,
+        nombre_subestado: nombre,
+        estado: "pendiente",
+        asignado_a: null,
+        fecha_inicio: null,
+        fecha_fin: null,
+      }));
+
+      // Crear el pedido con todos los campos requeridos
       const pedidoData = {
         cliente_id: clienteId,
+        cliente_nombre: clienteNombre,
+        fecha_creacion: fechaISO,
+        fecha_actualizacion: fechaISO,
+        estado_general: "pendiente",
         items: itemsPedido,
+        seguimiento: seguimiento,
+        pago: "sin pago", // Sin pago inicial (solo se envía comprobante)
+        historial_pagos: [],
+        total_abonado: 0.0,
         metodo_pago: metodoPago,
         numero_referencia: numeroReferencia,
         comprobante_url: archivoUrl,
         total: total,
-        estado: "pendiente",
         adicionales: [], // Campo requerido según nuevas especificaciones
       };
 

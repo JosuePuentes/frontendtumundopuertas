@@ -25,10 +25,79 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
   const [imagenModal, setImagenModal] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [imagenesFallidas, setImagenesFallidas] = useState<Set<string>>(new Set());
+  const [presignedUrlsCache, setPresignedUrlsCache] = useState<Map<string, string>>(new Map());
   const itemsPorPagina = 10;
   const [cantidades, setCantidades] = useState<Record<string, number>>({});
 
-  // Función para construir URL de imagen válida
+  // Función para obtener presigned URL si es necesario (para object names de R2)
+  const obtenerUrlImagen = async (imagenRaw: string): Promise<string | null> => {
+    if (!imagenRaw || typeof imagenRaw !== 'string') return null;
+    
+    const imagen = imagenRaw.trim();
+    if (!imagen) return null;
+    
+    // Si ya es una URL completa (http/https), retornarla directamente
+    if (imagen.startsWith('http://') || imagen.startsWith('https://')) {
+      return imagen;
+    }
+    
+    // Si empieza con /, es relativa al dominio actual
+    if (imagen.startsWith('/')) {
+      return imagen;
+    }
+    
+    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+    
+    // Si parece ser un object name de R2 (contiene "items/" o estructura similar)
+    // O si es un nombre de archivo que debería estar en R2
+    if (imagen.includes('items/') || imagen.includes('/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imagen)) {
+      // Verificar si ya tenemos la presigned URL en cache
+      if (presignedUrlsCache.has(imagen)) {
+        return presignedUrlsCache.get(imagen) || null;
+      }
+      
+      // Intentar obtener presigned URL
+      try {
+        const token = localStorage.getItem("cliente_access_token");
+        if (!token) return null;
+        
+        // Determinar el object name
+        const objectName = imagen.includes('items/') ? imagen : `items/${imagen}`;
+        
+        const res = await fetch(`${apiUrl}/files/presigned-url`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            object_name: objectName,
+            operation: "get_object",
+            expires_in: 3600, // 1 hora
+          }),
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.presigned_url) {
+            // Guardar en cache
+            setPresignedUrlsCache(prev => new Map(prev).set(imagen, data.presigned_url));
+            return data.presigned_url;
+          }
+        }
+      } catch (error) {
+        console.error("Error al obtener presigned URL para imagen:", error);
+      }
+      
+      // Fallback: intentar URL directa (puede fallar con 404, pero no bloquea la UI)
+      return `${apiUrl}/files/${imagen}`;
+    }
+    
+    // Si no parece ser un archivo de imagen o R2, retornar null
+    return null;
+  };
+
+  // Función para construir URL de imagen válida (síncrona, para casos donde no necesitamos presigned URL)
   const construirUrlImagen = (imagenRaw: string): string | null => {
     if (!imagenRaw || typeof imagenRaw !== 'string') return null;
     
@@ -45,23 +114,9 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
       return imagen;
     }
     
-    // Si es un nombre de archivo sin ruta, intentar construir URL
-    const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-    
-    // Si tiene extensión de imagen, probablemente es un nombre de archivo
-    if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imagen)) {
-      // Puede ser un nombre de archivo en el almacenamiento
-      return `${apiUrl}/files/${imagen}`;
-    }
-    
-    // Si contiene barras, puede ser una ruta relativa
-    if (imagen.includes('/') || imagen.includes('\\')) {
-      const rutaNormalizada = imagen.replace(/\\/g, '/');
-      return rutaNormalizada.startsWith('/') ? rutaNormalizada : `/${rutaNormalizada}`;
-    }
-    
-    // Último intento: asumir que es un nombre de archivo y construir URL
-    return `${apiUrl}/files/${imagen}`;
+    // Para otros casos, usar la función asíncrona obtenerUrlImagen
+    // Por ahora, retornar null y dejar que el componente maneje la carga asíncrona
+    return null;
   };
 
   // Función para validar si una imagen es válida
@@ -86,6 +141,37 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
     setImagenesFallidas(prev => new Set(prev).add(url));
   };
 
+  // Función auxiliar para obtener presigned URL para una imagen
+  const obtenerPresignedUrl = async (objectName: string): Promise<string | null> => {
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+      const token = localStorage.getItem("cliente_access_token");
+      
+      if (!token) return null;
+      
+      const res = await fetch(`${apiUrl}/files/presigned-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          object_name: objectName,
+          operation: "get_object",
+          expires_in: 3600,
+        }),
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        return data.presigned_url || null;
+      }
+    } catch (error) {
+      console.error("Error al obtener presigned URL:", error);
+    }
+    return null;
+  };
+
   useEffect(() => {
     cargarInventario();
   }, []);
@@ -104,8 +190,8 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
         // Filtrar solo items activos y con precio
         const itemsActivos = data.filter((item: any) => item.activo !== false && item.precio > 0);
         
-        // Normalizar URLs de imágenes y agregar logs para debugging
-        const itemsNormalizados = itemsActivos.map((item: any) => {
+        // Normalizar URLs de imágenes y obtener presigned URLs donde sea necesario
+        const itemsNormalizados = await Promise.all(itemsActivos.map(async (item: any) => {
           // Intentar múltiples campos para encontrar imágenes
           let imagenesRaw = item.imagenes || item.imagen || item.imagenes_item || [];
           
@@ -115,45 +201,57 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
           }
           
           // Normalizar cada URL de imagen
-          const imagenesNormalizadas = imagenesRaw
-            .filter((img: any) => img != null && img !== '')
-            .map((img: any) => {
-              if (typeof img !== 'string') return null;
-              const imgUrl = img.trim();
-              
-              // Si es una URL completa, mantenerla
-              if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
-                return imgUrl;
-              }
-              
-              // Si empieza con /, es relativa al dominio
-              if (imgUrl.startsWith('/')) {
-                return imgUrl;
-              }
-              
-              // Si parece ser un nombre de archivo o ruta, intentar construir URL
-              const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-              
-              // Si tiene extensión de imagen, probablemente es un nombre de archivo
-              if (/\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imgUrl)) {
-                // Puede ser un nombre de archivo en el almacenamiento
+          const imagenesNormalizadas = await Promise.all(
+            imagenesRaw
+              .filter((img: any) => img != null && img !== '')
+              .map(async (img: any) => {
+                if (typeof img !== 'string') return null;
+                const imgUrl = img.trim();
+                
+                // Si es una URL completa, mantenerla
+                if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+                  return imgUrl;
+                }
+                
+                // Si empieza con /, es relativa al dominio
+                if (imgUrl.startsWith('/')) {
+                  return imgUrl;
+                }
+                
+                // Si parece ser un object name de R2 (contiene "items/" o es un filename con extensión)
+                if (imgUrl.includes('items/') || /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(imgUrl)) {
+                  const objectName = imgUrl.includes('items/') ? imgUrl : `items/${imgUrl}`;
+                  const presignedUrl = await obtenerPresignedUrl(objectName);
+                  if (presignedUrl) {
+                    return presignedUrl;
+                  }
+                  // Fallback: intentar URL directa (puede dar 404, pero no bloquea)
+                  return `${apiUrl}/files/${imgUrl}`;
+                }
+                
+                // Si contiene barras pero no es items/, puede ser una ruta relativa
+                if (imgUrl.includes('/') || imgUrl.includes('\\')) {
+                  const rutaNormalizada = imgUrl.replace(/\\/g, '/');
+                  return rutaNormalizada.startsWith('/') ? rutaNormalizada : `/${rutaNormalizada}`;
+                }
+                
+                // Último intento: asumir que es un nombre de archivo y necesita presigned URL
+                const objectName = `items/${imgUrl}`;
+                const presignedUrl = await obtenerPresignedUrl(objectName);
+                if (presignedUrl) {
+                  return presignedUrl;
+                }
+                
+                // Fallback final
                 return `${apiUrl}/files/${imgUrl}`;
-              }
-              
-              // Si contiene barras, puede ser una ruta relativa
-              if (imgUrl.includes('/') || imgUrl.includes('\\')) {
-                const rutaNormalizada = imgUrl.replace(/\\/g, '/');
-                return rutaNormalizada.startsWith('/') ? rutaNormalizada : `/${rutaNormalizada}`;
-              }
-              
-              // Último intento: asumir que es un nombre de archivo
-              return `${apiUrl}/files/${imgUrl}`;
-            })
-            .filter((img: any) => img !== null);
+              })
+          );
+          
+          const imagenesFiltradas = imagenesNormalizadas.filter((img: any) => img !== null);
           
           // Si hay imágenes normalizadas, usarlas
-          if (imagenesNormalizadas.length > 0) {
-            item.imagenes = imagenesNormalizadas;
+          if (imagenesFiltradas.length > 0) {
+            item.imagenes = imagenesFiltradas;
           } else {
             // Si no hay imágenes, dejar array vacío
             item.imagenes = [];
@@ -168,7 +266,7 @@ const Catalogo: React.FC<CatalogoProps> = ({ onAddToCart }) => {
           }
           
           return item;
-        });
+        }));
         
         setItems(itemsNormalizados);
       }
