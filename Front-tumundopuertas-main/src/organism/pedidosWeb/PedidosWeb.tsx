@@ -77,6 +77,21 @@ interface PedidoWeb {
   numero_referencia?: string;
   comprobante_url?: string;
   total: number;
+  total_abonado?: number;
+  historial_pagos?: Array<{
+    monto: number;
+    cantidad?: number;
+    fecha?: string;
+    estado?: string;
+    metodo_pago?: string;
+    numero_referencia?: string;
+    comprobante_url?: string;
+  }>;
+  adicionales?: Array<{
+    descripcion?: string;
+    precio: number;
+    cantidad?: number;
+  }>;
   estado: string;
   fecha_creacion?: string;
   createdAt?: string;
@@ -441,6 +456,31 @@ const PedidosWeb: React.FC = () => {
             const pedidoId = pedido._id || pedido.id;
             const clienteId = pedido.cliente_id || pedido.clienteId;
             
+            // Calcular total del pedido (suma de items + adicionales)
+            let totalCalculado = pedido.total || 0;
+            if (!totalCalculado && pedido.items && Array.isArray(pedido.items)) {
+              totalCalculado = pedido.items.reduce((sum: number, item: any) => {
+                return sum + ((item.precio || 0) * (item.cantidad || 0));
+              }, 0);
+            }
+            // Sumar adicionales si existen
+            if (pedido.adicionales && Array.isArray(pedido.adicionales)) {
+              const totalAdicionales = pedido.adicionales.reduce((sum: number, adic: any) => {
+                return sum + ((adic.precio || 0) * (adic.cantidad || 1));
+              }, 0);
+              totalCalculado += totalAdicionales;
+            }
+            
+            // Calcular monto abonado desde historial_pagos
+            let totalAbonado = pedido.total_abonado || 0;
+            if (!totalAbonado && pedido.historial_pagos && Array.isArray(pedido.historial_pagos)) {
+              totalAbonado = pedido.historial_pagos
+                .filter((pago: any) => pago.estado === "aprobado" || pago.estado === "confirmado")
+                .reduce((sum: number, pago: any) => {
+                  return sum + (pago.monto || pago.cantidad || 0);
+                }, 0);
+            }
+            
             // Usar directamente los datos que vienen del backend (ya incluye cliente_cedula y cliente_telefono)
             return {
               _id: pedidoId,
@@ -453,7 +493,10 @@ const PedidosWeb: React.FC = () => {
               metodo_pago: pedido.metodo_pago || pedido.metodoPago || "No especificado",
               numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
               comprobante_url: pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "",
-              total: pedido.total || 0,
+              total: totalCalculado,
+              total_abonado: totalAbonado,
+              historial_pagos: pedido.historial_pagos || [],
+              adicionales: pedido.adicionales || [],
               estado: pedido.estado || pedido.estado_general || "pendiente",
               fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || pedido.createdAt || new Date().toISOString(),
               factura: undefined, // Se cargará cuando se abra el modal de detalle
@@ -746,9 +789,46 @@ const PedidosWeb: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-2 text-blue-600 font-bold">
                       <Package className="w-4 h-4" />
-                      <span>${pedido.total.toFixed(2)}</span>
+                      <span>${(pedido.total || 0).toFixed(2)}</span>
                     </div>
                   </div>
+                  
+                  {/* Información de Pago Inicial */}
+                  {(pedido.total_abonado || (pedido.historial_pagos && pedido.historial_pagos.length > 0)) && (
+                    <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <DollarSign className="w-5 h-5 text-green-600" />
+                        <h4 className="text-gray-900 font-semibold">Información de Pago</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-gray-600 text-sm mb-1">Total del Pedido</p>
+                          <p className="text-gray-900 font-bold text-lg">${(pedido.total || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-sm mb-1">Monto Abonado</p>
+                          <p className="text-green-600 font-bold text-lg">${(pedido.total_abonado || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-sm mb-1">Saldo Pendiente</p>
+                          <p className={`font-bold text-lg ${(pedido.total || 0) - (pedido.total_abonado || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            ${((pedido.total || 0) - (pedido.total_abonado || 0)).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Comprobante de Pago */}
+                  {pedido.comprobante_url && (
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ImageIcon className="w-5 h-5 text-blue-600" />
+                        <h4 className="text-gray-900 font-semibold">Comprobante de Pago</h4>
+                      </div>
+                      <ComprobanteImage comprobanteUrl={pedido.comprobante_url} />
+                    </div>
+                  )}
 
                   {/* Información de Factura */}
                   {factura && (
