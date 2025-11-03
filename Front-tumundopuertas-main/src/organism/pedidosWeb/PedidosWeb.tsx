@@ -414,12 +414,13 @@ const PedidosWeb: React.FC = () => {
       }
       const token = localStorage.getItem("access_token");
       
-      // OPTIMIZACIÓN: Cargar todos los pedidos con timeout para evitar esperas largas
+      // OPTIMIZACIÓN: Usar el nuevo endpoint optimizado GET /pedidos/web/
+      // Este endpoint solo retorna pedidos web con proyección optimizada
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos máximo
       
       try {
-        const resPedidos = await fetch(`${apiUrl}/pedidos/all/`, {
+        const resPedidos = await fetch(`${apiUrl}/pedidos/web/`, {
           headers: {
             "Authorization": `Bearer ${token}`,
           },
@@ -429,25 +430,14 @@ const PedidosWeb: React.FC = () => {
         clearTimeout(timeoutId);
 
         if (resPedidos.ok) {
-          const todosPedidos = await resPedidos.json();
+          const data = await resPedidos.json();
           
-          // OPTIMIZACIÓN: Filtrar solo pedidos web de forma más eficiente
-          // Un pedido web típicamente tiene estos campos
-          const dataPedidos = Array.isArray(todosPedidos) 
-            ? todosPedidos.filter((pedido: any) => {
-                // Verificar primero los campos más comunes para evitar evaluaciones innecesarias
-                return pedido.metodo_pago || 
-                       pedido.numero_referencia || 
-                       pedido.comprobante_url || 
-                       pedido.tipo_pedido === "web" ||
-                       (pedido.items && Array.isArray(pedido.items) && pedido.items.length > 0 && 
-                        pedido.items.some((item: any) => item.itemId));
-              })
-            : [];
+          // El nuevo endpoint retorna {pedidos: [], total: number, success: boolean}
+          const todosPedidos = data.success && Array.isArray(data.pedidos) ? data.pedidos : [];
           
           // OPTIMIZACIÓN: Procesar pedidos de forma síncrona (sin llamadas async innecesarias)
           // El backend ya incluye cliente_cedula y cliente_telefono, así que no necesitamos hacer llamadas adicionales
-          const pedidosConFacturas: PedidoWeb[] = dataPedidos.map((pedido: any) => {
+          const pedidosConFacturas: PedidoWeb[] = todosPedidos.map((pedido: any) => {
             const pedidoId = pedido._id || pedido.id;
             const clienteId = pedido.cliente_id || pedido.clienteId;
             
