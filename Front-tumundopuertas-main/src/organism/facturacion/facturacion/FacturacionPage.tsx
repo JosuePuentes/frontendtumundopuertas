@@ -1709,8 +1709,8 @@ const FacturacionPage: React.FC = () => {
                             <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Total
                           </p>
                           <p className="text-lg sm:text-xl font-bold text-gray-800">${totalConAdicionales.toFixed(2)}</p>
-                          {montoAdicionales > 0 && (
-                            <p className="text-xs text-gray-500 mt-1">(Items: ${montoItems.toFixed(2)} + Adicionales: ${montoAdicionales.toFixed(2)})</p>
+                          {adicionalesNormalizados.length > 0 && (
+                            <p className="text-xs text-gray-500 mt-1">Incluye {adicionalesNormalizados.length} adicional(es)</p>
                           )}
                         </div>
                         <div className="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
