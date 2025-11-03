@@ -916,8 +916,10 @@ const CrearPedido: React.FC = () => {
 
           <Separator />
 
-          {/* Items - Ocupa todo el ancho */}
-          <div className="space-y-4">
+          {/* Items y Resumen en layout de columnas */}
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Items - Ocupa 3 columnas como hoja Excel */}
+            <div className="lg:col-span-3 space-y-4">
           {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -1122,81 +1124,16 @@ const CrearPedido: React.FC = () => {
                 </p>
               )}
             </div>
-          </div> {/* Cierre de space-y-4 dentro del contenedor de items */}
-          </div> {/* Cierre del contenedor de items */}
-          
-          <Separator />
+            </div>
+            </div> {/* Cierre de items (col-span-3) */}
 
-          {/* Resumen del pedido - Movido abajo */}
-          <div className="w-full">
-            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg">
+            {/* Resumen del pedido - Ocupa 1 columna */}
+            <div className="lg:col-span-1">
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg sticky top-4">
                 <CardHeader>
                   <CardTitle className="text-lg font-bold text-gray-800">Resumen del Pedido</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {selectedItems.length > 0 && (
-                    <>
-                    {/* Totales */}
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <p className="text-gray-600 text-sm font-medium mb-2">Total de Artículos</p>
-                      <p className="text-3xl font-bold text-gray-900">
-                        {totalItems}
-                      </p>
-                    </div>
-                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                      <p className="text-gray-600 text-sm font-medium mb-2">Total Items</p>
-                      <p className="text-2xl font-bold text-gray-700">
-                        ${totalMontoItems.toLocaleString("es-AR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                    </div>
-                    {totalAdicionales > 0 && (
-                      <div className="bg-yellow-50 rounded-lg p-4 shadow-sm border-2 border-yellow-200">
-                        <p className="text-gray-600 text-sm font-medium mb-2">Adicionales</p>
-                        <p className="text-2xl font-bold text-yellow-700">
-                          +${totalAdicionales.toLocaleString("es-AR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </p>
-                      </div>
-                    )}
-                    <div className="bg-white rounded-lg p-4 shadow-sm border-2 border-blue-300">
-                      <p className="text-gray-600 text-sm font-medium mb-2">Total del Pedido</p>
-                      <p className="text-3xl font-bold text-blue-700">
-                        ${totalMonto.toLocaleString("es-AR", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                    </div>
-                    {pagos.length > 0 && (
-                      <div className="bg-white rounded-lg p-4 shadow-sm border-2 border-green-200">
-                        <p className="text-gray-600 text-sm font-medium mb-2">Total Abonado</p>
-                        <p className="text-3xl font-bold text-green-700">
-                          ${pagos.reduce((acc, p) => acc + p.monto, 0).toLocaleString("es-AR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </p>
-                        <div className="mt-2">
-                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-green-500 transition-all duration-300"
-                              style={{ width: `${Math.min((pagos.reduce((acc, p) => acc + p.monto, 0) / totalMonto) * 100, 100)}%` }}
-                            />
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {((pagos.reduce((acc, p) => acc + p.monto, 0) / totalMonto) * 100).toFixed(0)}% pagado
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                    </>
-                  )}
-
                   {/* Sección de Pagos */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -1445,6 +1382,70 @@ const CrearPedido: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Totales */}
+                  {selectedItems.length > 0 && (
+                    <>
+                      <Separator className="my-4" />
+                      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                        <p className="text-gray-600 text-sm font-medium mb-2">Total de Artículos</p>
+                        <p className="text-3xl font-bold text-gray-900">
+                          {totalItems}
+                        </p>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                        <p className="text-gray-600 text-sm font-medium mb-2">Total Items</p>
+                        <p className="text-2xl font-bold text-gray-700">
+                          ${totalMontoItems.toLocaleString("es-AR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                      </div>
+                      {totalAdicionales > 0 && (
+                        <div className="bg-yellow-50 rounded-lg p-4 shadow-sm border-2 border-yellow-200">
+                          <p className="text-gray-600 text-sm font-medium mb-2">Adicionales</p>
+                          <p className="text-2xl font-bold text-yellow-700">
+                            +${totalAdicionales.toLocaleString("es-AR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
+                        </div>
+                      )}
+                      <div className="bg-white rounded-lg p-4 shadow-sm border-2 border-blue-300">
+                        <p className="text-gray-600 text-sm font-medium mb-2">Total del Pedido</p>
+                        <p className="text-3xl font-bold text-blue-700">
+                          ${totalMonto.toLocaleString("es-AR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                      </div>
+                      {pagos.length > 0 && (
+                        <div className="bg-white rounded-lg p-4 shadow-sm border-2 border-green-200">
+                          <p className="text-gray-600 text-sm font-medium mb-2">Total Abonado</p>
+                          <p className="text-3xl font-bold text-green-700">
+                            ${pagos.reduce((acc, p) => acc + p.monto, 0).toLocaleString("es-AR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
+                          <div className="mt-2">
+                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-green-500 transition-all duration-300"
+                                style={{ width: `${Math.min((pagos.reduce((acc, p) => acc + p.monto, 0) / totalMonto) * 100, 100)}%` }}
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {((pagos.reduce((acc, p) => acc + p.monto, 0) / totalMonto) * 100).toFixed(0)}% pagado
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   {/* Lista de items agregados */}
                   {selectedItems.filter(item => item.confirmed).length > 0 && (
                     <div className="space-y-2 mt-4">
@@ -1496,6 +1497,7 @@ const CrearPedido: React.FC = () => {
                 </CardContent>
               </Card>
           </div> {/* Cierre de resumen */}
+          </div> {/* Cierre del grid principal */}
           </div> {/* Cierre de space-y-6 del formulario */}
         </form>
       </CardContent>
