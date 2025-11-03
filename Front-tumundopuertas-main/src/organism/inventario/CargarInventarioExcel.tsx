@@ -89,12 +89,14 @@ const CargarInventarioExcel: React.FC = () => {
   // Estados para cargar/descargar existencias
   const [modalBuscarOpen, setModalBuscarOpen] = useState(false);
   const [modalConfirmarOpen, setModalConfirmarOpen] = useState(false);
-  const [tipoOperacion, setTipoOperacion] = useState<'cargar' | 'descargar' | null>(null);
+  const [tipoOperacion, setTipoOperacion] = useState<'cargar' | 'descargar' | 'transferir' | null>(null);
   const [busquedaItem, setBusquedaItem] = useState('');
   const [itemSeleccionado, setItemSeleccionado] = useState<any>(null);
   const [cantidadOperacion, setCantidadOperacion] = useState<string>('');
   const [procesando, setProcesando] = useState(false);
   const [sucursalSeleccionada, setSucursalSeleccionada] = useState<'sucursal1' | 'sucursal2'>('sucursal1');
+  const [sucursalOrigen, setSucursalOrigen] = useState<'sucursal1' | 'sucursal2'>('sucursal1');
+  const [sucursalDestino, setSucursalDestino] = useState<'sucursal1' | 'sucursal2'>('sucursal2');
 
   // Estados para módulos de Tu Mundo Puerta
   const [pedidosCargadosInventario, setPedidosCargadosInventario] = useState<PedidoCargadoInventario[]>([]);
@@ -263,11 +265,15 @@ const CargarInventarioExcel: React.FC = () => {
   }, [currentInventory, busquedaItem]);
 
   // Funciones para cargar/descargar existencias
-  const handleAbrirModalBuscar = (tipo: 'cargar' | 'descargar') => {
+  const handleAbrirModalBuscar = (tipo: 'cargar' | 'descargar' | 'transferir') => {
     setTipoOperacion(tipo);
     setBusquedaItem('');
     setItemSeleccionado(null);
     setCantidadOperacion('');
+    if (tipo === 'transferir') {
+      setSucursalOrigen('sucursal1');
+      setSucursalDestino('sucursal2');
+    }
     fetchItems(`${apiUrl}/inventario/all`);
     setModalBuscarOpen(true);
   };
@@ -292,38 +298,107 @@ const CargarInventarioExcel: React.FC = () => {
       return;
     }
 
-    const campoExistencia = sucursalSeleccionada === 'sucursal1' ? 'existencia' : 'existencia2';
-    const existenciaActual = itemSeleccionado[sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2'] !== undefined 
-      ? itemSeleccionado[sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2'] 
-      : (itemSeleccionado[campoExistencia] || itemSeleccionado.existencia || 0);
-    
-    if (tipoOperacion === 'descargar' && cantidad > existenciaActual) {
-      setMensaje(`No puedes descargar más de lo disponible. ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} actual: ${existenciaActual}`);
-      return;
+    // Validación para transferencias
+    if (tipoOperacion === 'transferir') {
+      if (sucursalOrigen === sucursalDestino) {
+        setMensaje('Las sucursales de origen y destino deben ser diferentes.');
+        return;
+      }
+      
+      const existenciaOrigen = sucursalOrigen === 'sucursal1' 
+        ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+        : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0);
+      
+      if (cantidad > existenciaOrigen) {
+        setMensaje(`No puedes transferir más de lo disponible. ${sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} actual: ${existenciaOrigen}`);
+        return;
+      }
+    } else {
+      const campoExistencia = sucursalSeleccionada === 'sucursal1' ? 'existencia' : 'existencia2';
+      const existenciaActual = itemSeleccionado[sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2'] !== undefined 
+        ? itemSeleccionado[sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2'] 
+        : (itemSeleccionado[campoExistencia] || itemSeleccionado.existencia || 0);
+      
+      if (tipoOperacion === 'descargar' && cantidad > existenciaActual) {
+        setMensaje(`No puedes descargar más de lo disponible. ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} actual: ${existenciaActual}`);
+        return;
+      }
     }
 
     setProcesando(true);
     try {
-      const url = `${apiUrl}/inventario/${itemSeleccionado._id}/existencia`;
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cantidad: cantidad,
-          tipo: tipoOperacion, // 'cargar' o 'descargar'
-          sucursal: sucursalSeleccionada, // 'sucursal1' o 'sucursal2'
-        }),
-      });
+      if (tipoOperacion === 'transferir') {
+        // Transferencia: descargar de origen y cargar en destino
+        // Primero descargar de la sucursal origen
+        const urlDescarga = `${apiUrl}/inventario/${itemSeleccionado._id}/existencia`;
+        const responseDescarga = await fetch(urlDescarga, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cantidad: cantidad,
+            tipo: 'descargar',
+            sucursal: sucursalOrigen,
+          }),
+        });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Error en la operación' }));
-        throw new Error(errorData.detail || 'Error en la operación');
+        if (!responseDescarga.ok) {
+          const errorData = await responseDescarga.json().catch(() => ({ detail: 'Error al descargar de la sucursal origen' }));
+          throw new Error(errorData.detail || 'Error al descargar de la sucursal origen');
+        }
+
+        // Luego cargar en la sucursal destino
+        const responseCarga = await fetch(urlDescarga, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cantidad: cantidad,
+            tipo: 'cargar',
+            sucursal: sucursalDestino,
+          }),
+        });
+
+        if (!responseCarga.ok) {
+          const errorData = await responseCarga.json().catch(() => ({ detail: 'Error al cargar en la sucursal destino' }));
+          // Intentar revertir la descarga si la carga falla
+          await fetch(urlDescarga, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              cantidad: cantidad,
+              tipo: 'cargar',
+              sucursal: sucursalOrigen,
+            }),
+          }).catch(() => {});
+          throw new Error(errorData.detail || 'Error al cargar en la sucursal destino');
+        }
+
+        const result = await responseCarga.json();
+        const existenciaOrigen = sucursalOrigen === 'sucursal1' ? result.cantidad : result.existencia2;
+        const existenciaDestino = sucursalDestino === 'sucursal1' ? result.cantidad : result.existencia2;
+        
+        setMensaje(`✅ Transferencia realizada exitosamente. ${sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}: ${existenciaOrigen}, ${sucursalDestino === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}: ${existenciaDestino}`);
+      } else {
+        const url = `${apiUrl}/inventario/${itemSeleccionado._id}/existencia`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cantidad: cantidad,
+            tipo: tipoOperacion, // 'cargar' o 'descargar'
+            sucursal: sucursalSeleccionada, // 'sucursal1' o 'sucursal2'
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ detail: 'Error en la operación' }));
+          throw new Error(errorData.detail || 'Error en la operación');
+        }
+
+        const result = await response.json();
+        const campoRespuesta = sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2';
+        const nuevaExistencia = result[campoRespuesta] !== undefined ? result[campoRespuesta] : (result.existencia || result.existencia2 || 0);
+        setMensaje(`✅ ${tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} realizada exitosamente en ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}. Nueva existencia: ${nuevaExistencia}`);
       }
-
-      const result = await response.json();
-      const campoRespuesta = sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2';
-      const nuevaExistencia = result[campoRespuesta] !== undefined ? result[campoRespuesta] : (result.existencia || result.existencia2 || 0);
-      setMensaje(`✅ ${tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} realizada exitosamente en ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}. Nueva existencia: ${nuevaExistencia}`);
       
       // Recargar inventario
       await fetchItems(`${apiUrl}/inventario/all`);
@@ -349,6 +424,8 @@ const CargarInventarioExcel: React.FC = () => {
     setTipoOperacion(null);
     setBusquedaItem('');
     setSucursalSeleccionada('sucursal1'); // Reset a sucursal 1
+    setSucursalOrigen('sucursal1');
+    setSucursalDestino('sucursal2');
   };
 
   // ============ FUNCIONES PARA MÓDULOS DE TU MUNDO PUERTA ============
@@ -843,6 +920,12 @@ const CargarInventarioExcel: React.FC = () => {
               >
                 ➖ Descargar {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}
               </Button>
+              <Button
+                onClick={() => handleAbrirModalBuscar('transferir')}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                🔄 Transferencia
+              </Button>
             </div>
             
             <p>
@@ -1281,10 +1364,16 @@ const CargarInventarioExcel: React.FC = () => {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              Confirmar {tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} en {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}
+              {tipoOperacion === 'transferir' 
+                ? `Transferir de ${sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} a ${sucursalDestino === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}`
+                : `Confirmar ${tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} en ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}`
+              }
             </DialogTitle>
             <DialogDescription>
-              Revisa los detalles antes de {tipoOperacion === 'cargar' ? 'cargar' : 'descargar'} en {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}
+              {tipoOperacion === 'transferir'
+                ? `Revisa los detalles antes de transferir de ${sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} a ${sucursalDestino === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}`
+                : `Revisa los detalles antes de ${tipoOperacion === 'cargar' ? 'cargar' : 'descargar'} en ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}`
+              }
             </DialogDescription>
           </DialogHeader>
           
@@ -1301,42 +1390,133 @@ const CargarInventarioExcel: React.FC = () => {
                       <span className="font-semibold">Modelo:</span> {itemSeleccionado.modelo}
                     </div>
                   )}
-                  <div>
-                    <span className="font-semibold">{sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} Actual:</span>{' '}
-                    <span className="text-blue-600 font-bold text-lg">
-                      {sucursalSeleccionada === 'sucursal1' 
-                        ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                        : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
-                      }
-                    </span>
-                  </div>
-                  {tipoOperacion === 'cargar' ? (
-                    <div>
-                      <span className="font-semibold">Nueva {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
-                      <span className="text-green-600 font-bold text-lg">
-                        {(sucursalSeleccionada === 'sucursal1'
-                          ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                          : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
-                        ) + (parseFloat(cantidadOperacion) || 0)}
-                      </span>
-                    </div>
+                  
+                  {tipoOperacion === 'transferir' ? (
+                    <>
+                      <div>
+                        <span className="font-semibold">{sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} Actual:</span>{' '}
+                        <span className="text-blue-600 font-bold text-lg">
+                          {sucursalOrigen === 'sucursal1' 
+                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                          }
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-semibold">{sucursalDestino === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} Actual:</span>{' '}
+                        <span className="text-purple-600 font-bold text-lg">
+                          {sucursalDestino === 'sucursal1' 
+                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                          }
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-semibold">Nueva {sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
+                        <span className="text-red-600 font-bold text-lg">
+                          {(sucursalOrigen === 'sucursal1'
+                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                          ) - (parseFloat(cantidadOperacion) || 0)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="font-semibold">Nueva {sucursalDestino === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
+                        <span className="text-green-600 font-bold text-lg">
+                          {(sucursalDestino === 'sucursal1'
+                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                          ) + (parseFloat(cantidadOperacion) || 0)}
+                        </span>
+                      </div>
+                    </>
                   ) : (
-                    <div>
-                      <span className="font-semibold">Nueva {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
-                      <span className="text-red-600 font-bold text-lg">
-                        {(sucursalSeleccionada === 'sucursal1'
-                          ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                          : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
-                        ) - (parseFloat(cantidadOperacion) || 0)}
-                      </span>
-                    </div>
+                    <>
+                      <div>
+                        <span className="font-semibold">{sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} Actual:</span>{' '}
+                        <span className="text-blue-600 font-bold text-lg">
+                          {sucursalSeleccionada === 'sucursal1' 
+                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                          }
+                        </span>
+                      </div>
+                      {tipoOperacion === 'cargar' ? (
+                        <div>
+                          <span className="font-semibold">Nueva {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
+                          <span className="text-green-600 font-bold text-lg">
+                            {(sucursalSeleccionada === 'sucursal1'
+                              ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                              : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                            ) + (parseFloat(cantidadOperacion) || 0)}
+                          </span>
+                        </div>
+                      ) : (
+                        <div>
+                          <span className="font-semibold">Nueva {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
+                          <span className="text-red-600 font-bold text-lg">
+                            {(sucursalSeleccionada === 'sucursal1'
+                              ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
+                              : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                            ) - (parseFloat(cantidadOperacion) || 0)}
+                          </span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
               
+              {tipoOperacion === 'transferir' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">
+                      Sucursal Origen:
+                    </label>
+                    <Select
+                      value={sucursalOrigen}
+                      onValueChange={(value: 'sucursal1' | 'sucursal2') => {
+                        setSucursalOrigen(value);
+                        // Cambiar automáticamente el destino al opuesto
+                        setSucursalDestino(value === 'sucursal1' ? 'sucursal2' : 'sucursal1');
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sucursal1">Sucursal 1</SelectItem>
+                        <SelectItem value="sucursal2">Sucursal 2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">
+                      Sucursal Destino:
+                    </label>
+                    <Select
+                      value={sucursalDestino}
+                      onValueChange={(value: 'sucursal1' | 'sucursal2') => {
+                        setSucursalDestino(value);
+                        // Cambiar automáticamente el origen al opuesto
+                        setSucursalOrigen(value === 'sucursal1' ? 'sucursal2' : 'sucursal1');
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sucursal1">Sucursal 1</SelectItem>
+                        <SelectItem value="sucursal2">Sucursal 2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+              
               <div>
                 <label className="block text-sm font-semibold mb-2">
-                  Cantidad a {tipoOperacion === 'cargar' ? 'Cargar' : 'Descargar'}:
+                  Cantidad a {tipoOperacion === 'transferir' ? 'Transferir' : tipoOperacion === 'cargar' ? 'Cargar' : 'Descargar'}:
                 </label>
                 <Input
                   type="number"
@@ -1357,9 +1537,11 @@ const CargarInventarioExcel: React.FC = () => {
             </Button>
             <Button
               onClick={handleConfirmarOperacion}
-              disabled={procesando || !cantidadOperacion}
+              disabled={procesando || !cantidadOperacion || (tipoOperacion === 'transferir' && sucursalOrigen === sucursalDestino)}
               className={
-                tipoOperacion === 'cargar'
+                tipoOperacion === 'transferir'
+                  ? 'bg-blue-600 hover:bg-blue-700'
+                  : tipoOperacion === 'cargar'
                   ? 'bg-green-600 hover:bg-green-700'
                   : 'bg-red-600 hover:bg-red-700'
               }
@@ -1370,7 +1552,7 @@ const CargarInventarioExcel: React.FC = () => {
                   Procesando...
                 </>
               ) : (
-                `Confirmar ${tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'}`
+                `Confirmar ${tipoOperacion === 'transferir' ? 'Transferencia' : tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'}`
               )}
             </Button>
           </DialogFooter>
