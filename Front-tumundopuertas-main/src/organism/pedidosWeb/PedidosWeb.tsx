@@ -128,36 +128,74 @@ const PedidosWeb: React.FC = () => {
             })
           : [];
         
-        // Para cada pedido, cargar su factura asociada
+        // Para cada pedido, cargar su factura asociada y datos del cliente
         const pedidosConFacturas = await Promise.all(
           (Array.isArray(dataPedidos) ? dataPedidos : []).map(async (pedido: any) => {
             try {
-              // Buscar factura por pedido_id
-              const resFactura = await fetch(`${apiUrl}/facturas/pedido/${pedido._id || pedido.id}`, {
-                headers: {
-                  "Authorization": `Bearer ${token}`,
-                },
-              });
+              const pedidoId = pedido._id || pedido.id;
+              const clienteId = pedido.cliente_id || pedido.clienteId;
               
+              // Buscar factura por pedido_id
               let factura = null;
-              if (resFactura.ok) {
-                const dataFactura = await resFactura.json();
-                factura = Array.isArray(dataFactura) ? dataFactura[0] : dataFactura;
+              try {
+                const resFactura = await fetch(`${apiUrl}/facturas/pedido/${pedidoId}`, {
+                  headers: {
+                    "Authorization": `Bearer ${token}`,
+                  },
+                });
+                
+                if (resFactura.ok) {
+                  const dataFactura = await resFactura.json();
+                  factura = Array.isArray(dataFactura) ? dataFactura[0] : dataFactura;
+                }
+              } catch (error) {
+                console.error("Error al cargar factura:", error);
+              }
+              
+              // Buscar datos del cliente
+              let datosCliente: any = {
+                nombre: pedido.cliente_nombre || pedido.clienteNombre || pedido.cliente?.nombre,
+                cedula: pedido.cliente_cedula || pedido.clienteCedula || pedido.cliente?.cedula,
+                direccion: pedido.cliente_direccion || pedido.clienteDireccion || pedido.cliente?.direccion,
+                telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono,
+              };
+              
+              // Si no tenemos datos del cliente y tenemos cliente_id, intentar cargarlos desde el backend
+              if (clienteId && (!datosCliente.nombre || datosCliente.nombre === "Sin nombre")) {
+                try {
+                  const resCliente = await fetch(`${apiUrl}/clientes/${clienteId}`, {
+                    headers: {
+                      "Authorization": `Bearer ${token}`,
+                    },
+                  });
+                  
+                  if (resCliente.ok) {
+                    const clienteData = await resCliente.json();
+                    datosCliente = {
+                      nombre: clienteData.nombre || clienteData.nombres || datosCliente.nombre || "Sin nombre",
+                      cedula: clienteData.cedula || clienteData.rif || datosCliente.cedula || "",
+                      direccion: clienteData.direccion || datosCliente.direccion || "",
+                      telefono: clienteData.telefono || clienteData.telefono_contacto || datosCliente.telefono || "",
+                    };
+                  }
+                } catch (error) {
+                  console.error("Error al cargar datos del cliente:", error);
+                }
               }
               
               return {
-                _id: pedido._id || pedido.id,
-                cliente_id: pedido.cliente_id || pedido.clienteId,
-                cliente_nombre: pedido.cliente_nombre || pedido.clienteNombre || pedido.cliente?.nombre || "Sin nombre",
-                cliente_cedula: pedido.cliente_cedula || pedido.clienteCedula || pedido.cliente?.cedula || "Sin cédula",
-                cliente_direccion: pedido.cliente_direccion || pedido.clienteDireccion || pedido.cliente?.direccion || "Sin dirección",
-                cliente_telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono || "Sin teléfono",
+                _id: pedidoId,
+                cliente_id: clienteId,
+                cliente_nombre: datosCliente.nombre || "Sin nombre",
+                cliente_cedula: datosCliente.cedula || "Sin cédula",
+                cliente_direccion: datosCliente.direccion || "Sin dirección",
+                cliente_telefono: datosCliente.telefono || "Sin teléfono",
                 items: pedido.items || [],
                 metodo_pago: pedido.metodo_pago || pedido.metodoPago || "No especificado",
                 numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
                 comprobante_url: pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "",
                 total: pedido.total || 0,
-                estado: pedido.estado || "pendiente",
+                estado: pedido.estado || pedido.estado_general || "pendiente",
                 fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || pedido.createdAt || new Date().toISOString(),
                 factura: factura ? {
                   _id: factura._id || factura.id,
@@ -170,7 +208,7 @@ const PedidosWeb: React.FC = () => {
                 } : undefined,
               };
             } catch (error) {
-              console.error("Error al cargar factura para pedido:", error);
+              console.error("Error al procesar pedido:", error);
               return {
                 _id: pedido._id || pedido.id,
                 cliente_id: pedido.cliente_id || pedido.clienteId,
@@ -716,7 +754,17 @@ const PedidosWeb: React.FC = () => {
                         alt="Comprobante de pago"
                         className="max-w-full max-h-96 rounded-lg border border-gray-300"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/placeholder.png";
+                          // Ocultar la imagen si falla en lugar de cargar un placeholder inexistente
+                          (e.target as HTMLImageElement).style.display = "none";
+                          const parent = (e.target as HTMLImageElement).parentElement;
+                          if (parent) {
+                            parent.innerHTML = `
+                              <div class="flex flex-col items-center justify-center p-8 text-gray-500">
+                                <ImageIcon class="w-12 h-12 mb-2 opacity-50" />
+                                <p class="text-sm">No se pudo cargar el comprobante</p>
+                              </div>
+                            `;
+                          }
                         }}
                       />
                     </div>
