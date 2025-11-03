@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Card,
   CardHeader,
@@ -15,7 +15,10 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, Download, FileText } from "lucide-react";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 import {
   Dialog,
   DialogContent,
@@ -170,6 +173,200 @@ const MisPagos: React.FC = () => {
     return (pedido.items || []).reduce((sum, item) => sum + ((item.precio || 0) * (item.cantidad || 0)), 0);
   };
 
+  // Calcular datos filtrados y totales
+  const pedidosFiltrados = useMemo(() => {
+    return pagos.filter((pedido) =>
+      clienteFiltro.trim() === ""
+        ? true
+        : (pedido.cliente_nombre || "").toLowerCase().includes(clienteFiltro.trim().toLowerCase())
+    );
+  }, [pagos, clienteFiltro]);
+
+  // Calcular totales generales
+  const totales = useMemo(() => {
+    const totalPedido = pedidosFiltrados.reduce((sum, pedido) => sum + calculateTotalPedido(pedido), 0);
+    const totalAbonado = pedidosFiltrados.reduce((sum, pedido) => sum + (pedido.total_abonado || 0), 0);
+    const totalPendiente = totalPedido - totalAbonado;
+    return { totalPedido, totalAbonado, totalPendiente };
+  }, [pedidosFiltrados]);
+
+  const handleExportPdf = () => {
+    if (!pedidosFiltrados || pedidosFiltrados.length === 0) {
+      setError('No hay datos para exportar.');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      
+      // Título del documento
+      doc.setFontSize(18);
+      doc.text('Mis Pagos - Reporte de Pagos', 14, 22);
+      
+      // Información del reporte
+      doc.setFontSize(10);
+      doc.text(`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`, 14, 30);
+      
+      if (fechaInicio && fechaFin) {
+        doc.text(`Período: ${fechaInicio} - ${fechaFin}`, 14, 36);
+      }
+      
+      if (clienteFiltro) {
+        doc.text(`Filtrado por cliente: "${clienteFiltro}"`, 14, fechaInicio && fechaFin ? 42 : 36);
+      }
+      
+      doc.text(`Total de Registros: ${pedidosFiltrados.length}`, 14, fechaInicio && fechaFin ? (clienteFiltro ? 48 : 42) : (clienteFiltro ? 42 : 36));
+      
+      // Preparar datos para la tabla
+      const tableData = pedidosFiltrados.map((pedido) => {
+        const totalPedido = calculateTotalPedido(pedido);
+        const montoAbonado = pedido.total_abonado || 0;
+        const montoPendiente = totalPedido - montoAbonado;
+        const fecha = pedido.historial_pagos?.[0]?.fecha
+          ? new Date(pedido.historial_pagos[0].fecha).toLocaleDateString('es-ES')
+          : pedido.fecha_creacion 
+          ? new Date(pedido.fecha_creacion).toLocaleDateString('es-ES')
+          : 'N/A';
+        
+        return [
+          pedido.cliente_id || 'N/A',
+          pedido.cliente_nombre || 'Sin nombre',
+          fecha,
+          `$${totalPedido.toFixed(2)}`,
+          `$${montoAbonado.toFixed(2)}`,
+          `$${montoPendiente.toFixed(2)}`,
+          pedido.pago || 'pendiente'
+        ];
+      });
+      
+      // Crear tabla
+      const startY = fechaInicio && fechaFin ? (clienteFiltro ? 54 : 48) : (clienteFiltro ? 48 : 42);
+      autoTable(doc, {
+        head: [['ID Cliente', 'Cliente', 'Fecha', 'Total Pedido', 'Monto Abonado', 'Monto Pendiente', 'Estado']],
+        body: tableData,
+        startY: startY,
+        styles: {
+          fontSize: 7,
+          cellPadding: 2,
+        },
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: 'bold',
+        },
+        alternateRowStyles: {
+          fillColor: [245, 245, 245],
+        },
+        columnStyles: {
+          3: { halign: 'right' }, // Total Pedido
+          4: { halign: 'right' }, // Monto Abonado
+          5: { halign: 'right' }, // Monto Pendiente
+        },
+      });
+      
+      // Agregar totales al final
+      const finalY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'bold');
+      doc.text('TOTALES GENERALES', 14, finalY);
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Total Pedido: $${totales.totalPedido.toFixed(2)}`, 14, finalY + 8);
+      doc.text(`Total Abonado: $${totales.totalAbonado.toFixed(2)}`, 14, finalY + 14);
+      doc.text(`Total Pendiente: $${totales.totalPendiente.toFixed(2)}`, 14, finalY + 20);
+      
+      // Guardar archivo
+      const nombreArchivo = `mis_pagos_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(nombreArchivo);
+      
+      setError(null);
+    } catch (error: any) {
+      console.error('Error al exportar a PDF:', error);
+      setError(`Error al exportar a PDF: ${error.message}`);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!pedidosFiltrados || pedidosFiltrados.length === 0) {
+      setError('No hay datos para exportar.');
+      return;
+    }
+
+    try {
+      // Preparar datos para Excel
+      const excelData = pedidosFiltrados.map((pedido) => {
+        const totalPedido = calculateTotalPedido(pedido);
+        const montoAbonado = pedido.total_abonado || 0;
+        const montoPendiente = totalPedido - montoAbonado;
+        const fecha = pedido.historial_pagos?.[0]?.fecha
+          ? new Date(pedido.historial_pagos[0].fecha).toLocaleDateString('es-ES')
+          : pedido.fecha_creacion 
+          ? new Date(pedido.fecha_creacion).toLocaleDateString('es-ES')
+          : 'N/A';
+        
+        return {
+          'ID Cliente': pedido.cliente_id || 'N/A',
+          'Cliente': pedido.cliente_nombre || 'Sin nombre',
+          'Fecha': fecha,
+          'Total Pedido': totalPedido,
+          'Monto Abonado': montoAbonado,
+          'Monto Pendiente': montoPendiente,
+          'Estado': pedido.pago || 'pendiente'
+        };
+      });
+      
+      // Crear workbook
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      const wb = XLSX.utils.book_new();
+      
+      // Agregar información del reporte como primeras filas
+      const infoData = [
+        ['Mis Pagos - Reporte de Pagos'],
+        [`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`],
+        fechaInicio && fechaFin ? [`Período: ${fechaInicio} - ${fechaFin}`] : [''],
+        clienteFiltro ? [`Filtrado por cliente: "${clienteFiltro}"`] : [''],
+        [`Total de Registros: ${pedidosFiltrados.length}`],
+        [''], // Fila vacía
+      ];
+      
+      // Insertar información al inicio
+      XLSX.utils.sheet_add_aoa(ws, infoData, { origin: 'A1' });
+      
+      // Agregar totales al final
+      const totalesRow = pedidosFiltrados.length + 8; // Después de los datos y fila vacía
+      XLSX.utils.sheet_add_aoa(ws, [
+        [''],
+        ['TOTALES GENERALES'],
+        [`Total Pedido: $${totales.totalPedido.toFixed(2)}`],
+        [`Total Abonado: $${totales.totalAbonado.toFixed(2)}`],
+        [`Total Pendiente: $${totales.totalPendiente.toFixed(2)}`],
+      ], { origin: `A${totalesRow}` });
+      
+      // Ajustar ancho de columnas
+      ws['!cols'] = [
+        { wch: 15 }, // ID Cliente
+        { wch: 25 }, // Cliente
+        { wch: 12 }, // Fecha
+        { wch: 15 }, // Total Pedido
+        { wch: 15 }, // Monto Abonado
+        { wch: 15 }, // Monto Pendiente
+        { wch: 12 }, // Estado
+      ];
+      
+      XLSX.utils.book_append_sheet(wb, ws, 'Mis Pagos');
+      
+      // Guardar archivo
+      const nombreArchivo = `mis_pagos_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, nombreArchivo);
+      
+      setError(null);
+    } catch (error: any) {
+      console.error('Error al exportar a Excel:', error);
+      setError(`Error al exportar a Excel: ${error.message}`);
+    }
+  };
+
   return (
     <Card className="w-full shadow-md rounded-2xl">
       <CardHeader>
@@ -209,6 +406,51 @@ const MisPagos: React.FC = () => {
           </Button>
         </div>
 
+        {/* Botones de Exportación */}
+        {pagos.length > 0 && (
+          <div className="flex gap-2 mb-4 justify-end">
+            <Button 
+              onClick={handleExportPdf} 
+              variant="outline" 
+              className="flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              Exportar a PDF
+            </Button>
+            <Button 
+              onClick={handleExportExcel} 
+              variant="outline" 
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Exportar a Excel
+            </Button>
+          </div>
+        )}
+
+        {/* Totales Generales */}
+        {pagos.length > 0 && (
+          <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Totales Generales</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-gray-600 text-sm mb-1">Total Pedido</p>
+                <p className="text-gray-900 font-bold text-xl">${totales.totalPedido.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-sm mb-1">Total Abonado</p>
+                <p className="text-blue-600 font-bold text-xl">${totales.totalAbonado.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-gray-600 text-sm mb-1">Total Pendiente</p>
+                <p className={`font-bold text-xl ${totales.totalPendiente > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  ${totales.totalPendiente.toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Estados de carga */}
         {loading ? (
           <div className="flex justify-center items-center py-8 text-gray-600">
@@ -240,12 +482,7 @@ const MisPagos: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pagos
-                  .filter((pedido) =>
-                    clienteFiltro.trim() === ""
-                      ? true
-                      : (pedido.cliente_nombre || "").toLowerCase().includes(clienteFiltro.trim().toLowerCase())
-                  )
+                {pedidosFiltrados
                   .sort((a, b) => {
                     // Función auxiliar para obtener fecha más reciente
                     const getFechaMasReciente = (pedido: PedidoConPagos): number => {
