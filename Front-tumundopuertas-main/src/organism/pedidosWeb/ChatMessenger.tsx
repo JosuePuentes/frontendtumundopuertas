@@ -202,34 +202,50 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
         // o directamente como el objeto mensaje
         const mensajeRespuesta = respuestaBackend.mensaje || respuestaBackend;
         
-        // Si el backend retorna el mensaje, actualizarlo en el estado con el _id real
-        if (mensajeRespuesta && (mensajeRespuesta._id || mensajeRespuesta.id)) {
-          const mensajeConId = {
-            ...mensajeRespuesta,
-            _id: mensajeRespuesta._id || mensajeRespuesta.id
-          };
+        console.log("📝 Mensaje extraído del backend:", mensajeRespuesta);
+        
+        // Actualizar el mensaje temporal con los datos del backend
+        setMensajes(prev => {
+          // Buscar el mensaje temporal que coincide
+          const mensajeIndex = prev.findIndex(m => 
+            !m._id && 
+            m.mensaje === mensajeTexto && 
+            m.remitente_id === usuarioActualId &&
+            Math.abs(new Date(m.fecha).getTime() - Date.now()) < 10000 // 10 segundos de tolerancia
+          );
           
-          setMensajes(prev => {
+          if (mensajeIndex !== -1 && mensajeRespuesta) {
             // Reemplazar el mensaje temporal con el mensaje real del backend
-            const mensajeIndex = prev.findIndex(m => 
-              !m._id && 
-              m.mensaje === mensajeTexto && 
-              m.remitente_id === usuarioActualId &&
-              Math.abs(new Date(m.fecha).getTime() - new Date(mensajeConId.fecha || mensajeConId.createdAt || Date.now()).getTime()) < 5000
-            );
+            const mensajeConId = {
+              ...mensajeRespuesta,
+              _id: mensajeRespuesta._id || mensajeRespuesta.id,
+              fecha: mensajeRespuesta.fecha || mensajeRespuesta.createdAt || mensajeTemporal.fecha
+            };
             
-            if (mensajeIndex !== -1) {
-              const nuevos = [...prev];
-              nuevos[mensajeIndex] = mensajeConId;
-              return nuevos;
-            }
-            // Si no se encontró el temporal, agregar el nuevo
+            const nuevos = [...prev];
+            nuevos[mensajeIndex] = mensajeConId;
+            console.log("🔄 Mensaje temporal reemplazado con datos del backend:", mensajeConId);
+            return nuevos;
+          } else if (mensajeRespuesta && (mensajeRespuesta._id || mensajeRespuesta.id)) {
+            // Si no se encontró el temporal pero hay mensaje del backend, agregarlo
+            const mensajeConId = {
+              ...mensajeRespuesta,
+              _id: mensajeRespuesta._id || mensajeRespuesta.id
+            };
+            console.log("➕ Agregando mensaje del backend:", mensajeConId);
             return [...prev, mensajeConId];
-          });
-        } else {
-          // Si no viene el mensaje completo, recargar pero preservar temporales
-          await cargarMensajes(true);
-        }
+          } else {
+            // Si no hay datos del backend, mantener los mensajes actuales (incluyendo el temporal)
+            console.log("⚠️ No se pudo extraer mensaje del backend, manteniendo mensajes actuales");
+            return prev;
+          }
+        });
+        
+        // Recargar mensajes para sincronizar (pero preservando temporales ya manejados arriba)
+        // Solo hacer esto después de un pequeño delay para dar tiempo al backend
+        setTimeout(() => {
+          cargarMensajes(true);
+        }, 500);
         
         // Notificar que hay un nuevo mensaje
         if (onNuevoMensaje) onNuevoMensaje();
