@@ -1544,12 +1544,17 @@ const FacturacionPage: React.FC = () => {
                         <td colspan="4" style="text-align:right; font-weight: bold;">Subtotal Items:</td>
                         <td style="text-align:right;">$${(selectedPedido.items.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0)).toFixed(2)}</td>
                       </tr>
-                      ${selectedPedido.adicionales.map((ad: any) => `
+                      ${selectedPedido.adicionales.map((ad: any) => {
+                        const cantidad = ad.cantidad || 1;
+                        const precio = ad.precio || 0;
+                        const montoAdicional = precio * cantidad;
+                        return `
                         <tr style="background: #fef3c7;">
-                          <td colspan="4" style="text-align:right;">+ ${ad.descripcion}:</td>
-                          <td style="text-align:right;">$${(ad.monto || 0).toFixed(2)}</td>
+                          <td colspan="4" style="text-align:right;">+ ${ad.descripcion || 'Adicional'}:</td>
+                          <td style="text-align:right;">${cantidad > 1 ? `(x${cantidad}) ` : ''}$${montoAdicional.toFixed(2)}</td>
                         </tr>
-                      `).join('')}
+                      `;
+                      }).join('')}
                     ` : ''}
                     <tr class="totales-row">
                       <td colspan="3" style="text-align:right;">Total:</td>
