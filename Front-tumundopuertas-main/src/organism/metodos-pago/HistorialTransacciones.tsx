@@ -30,9 +30,24 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
 
   useEffect(() => {
     if (isOpen && metodo.id) {
+      // CRÍTICO: Siempre refrescar el historial cuando se abre el modal
+      // Esto asegura que muestre los depósitos más recientes
       fetchHistorial();
     }
   }, [isOpen, metodo.id]);
+
+  // También refrescar cuando el modal cambia de estado (se abre)
+  useEffect(() => {
+    if (isOpen) {
+      // Pequeño delay para asegurar que el modal esté completamente abierto
+      const timeoutId = setTimeout(() => {
+        if (metodo.id) {
+          fetchHistorial();
+        }
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOpen]);
 
   const fetchHistorial = async () => {
     setLoading(true);
@@ -186,6 +201,14 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
           <div className="flex justify-between items-center">
             <DialogTitle>Historial de Transacciones - {metodo.nombre}</DialogTitle>
             <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={fetchHistorial}
+                disabled={loading}
+              >
+                {loading ? "Cargando..." : "🔄 Refrescar"}
+              </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
