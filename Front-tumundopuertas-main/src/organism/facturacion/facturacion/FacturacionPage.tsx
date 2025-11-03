@@ -1892,7 +1892,20 @@ const FacturacionPage: React.FC = () => {
                           <div className="flex items-center justify-center gap-2">
                             <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                             <span className="text-center leading-tight">
-                              {pedido.puedeFacturar ? '✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO' : `⚠️ Pendiente pago ($${((pedido.montoTotal || 0) - (pedido.montoAbonado || 0)).toFixed(2)})`}
+                              {(() => {
+                                // Calcular el total incluyendo adicionales (mismo cálculo que Saldo Pendiente)
+                                const adicionalesRawBtn = pedido.adicionales;
+                                const adicionalesNormalizadosBtn = (adicionalesRawBtn && Array.isArray(adicionalesRawBtn)) ? adicionalesRawBtn : [];
+                                const montoItemsBtn = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+                                const montoAdicionalesBtn = adicionalesNormalizadosBtn.reduce((acc: number, ad: any) => {
+                                  const cantidad = ad.cantidad || 1;
+                                  const precio = ad.precio || 0;
+                                  return acc + (precio * cantidad);
+                                }, 0);
+                                const totalConAdicionalesBtn = montoItemsBtn + montoAdicionalesBtn;
+                                const saldoPendienteBtn = totalConAdicionalesBtn - (pedido.montoAbonado || 0);
+                                return pedido.puedeFacturar ? '✓ LISTO PARA CARGAR EXISTENCIAS AL INVENTARIO' : `⚠️ Pendiente pago ($${saldoPendienteBtn.toFixed(2)})`;
+                              })()}
                             </span>
                           </div>
                         </Button>
@@ -1911,7 +1924,20 @@ const FacturacionPage: React.FC = () => {
                     <div className="flex items-center justify-center gap-2">
                       <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                       <span className="text-center leading-tight">
-                        {pedido.puedeFacturar ? '✓ LISTO PARA FACTURAR' : `⚠️ Pendiente pago ($${((pedido.montoTotal || 0) - (pedido.montoAbonado || 0)).toFixed(2)})`}
+                        {(() => {
+                          // Calcular el total incluyendo adicionales (mismo cálculo que Saldo Pendiente)
+                          const adicionalesRawBtn = pedido.adicionales;
+                          const adicionalesNormalizadosBtn = (adicionalesRawBtn && Array.isArray(adicionalesRawBtn)) ? adicionalesRawBtn : [];
+                          const montoItemsBtn = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+                          const montoAdicionalesBtn = adicionalesNormalizadosBtn.reduce((acc: number, ad: any) => {
+                            const cantidad = ad.cantidad || 1;
+                            const precio = ad.precio || 0;
+                            return acc + (precio * cantidad);
+                          }, 0);
+                          const totalConAdicionalesBtn = montoItemsBtn + montoAdicionalesBtn;
+                          const saldoPendienteBtn = totalConAdicionalesBtn - (pedido.montoAbonado || 0);
+                          return pedido.puedeFacturar ? '✓ LISTO PARA FACTURAR' : `⚠️ Pendiente pago ($${saldoPendienteBtn.toFixed(2)})`;
+                        })()}
                       </span>
                     </div>
                   </Button>
