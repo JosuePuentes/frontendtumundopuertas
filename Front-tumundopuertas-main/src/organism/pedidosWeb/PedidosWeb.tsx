@@ -1293,6 +1293,12 @@ const PedidosWeb: React.FC = () => {
           usuarioActualId={localStorage.getItem("usuario_id") || ""}
           usuarioActualTipo="admin"
           usuarioActualNombre={localStorage.getItem("usuario") || "Administrador"}
+          infoPedido={{
+            numeroPedido: pedidoChatActual._id.slice(-6),
+            total: pedidoChatActual.total || 0,
+            estado: pedidoChatActual.estado || pedidoChatActual.estado_general || "pendiente",
+            fechaCreacion: pedidoChatActual.fecha_creacion || pedidoChatActual.fechaCreacion
+          }}
           open={chatAbierto}
           onClose={() => {
             // NO eliminar pedidoChatActual, solo cerrar el modal

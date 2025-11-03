@@ -560,6 +560,12 @@ const MisPedidos: React.FC = () => {
           usuarioActualTipo="cliente"
           usuarioActualNombre={localStorage.getItem("cliente_nombre") || "Cliente"}
           tituloChat="Tu Mundo Puertas"
+          infoPedido={{
+            numeroPedido: pedidoChatActual._id.slice(-6),
+            total: pedidoChatActual.total || calcularTotalPedido(pedidoChatActual),
+            estado: pedidoChatActual.estado_general || pedidoChatActual.estado || "pendiente",
+            fechaCreacion: pedidoChatActual.fecha_creacion || pedidoChatActual.fechaCreacion
+          }}
           open={chatAbierto}
           onClose={() => {
             // NO eliminar pedidoChatActual, solo cerrar el modal

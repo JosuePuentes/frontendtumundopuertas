@@ -251,7 +251,7 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
         pago: montoPagoInicial > 0 ? "con pago inicial" : "sin pago",
         historial_pagos: montoPagoInicial > 0 ? [{
           fecha: fechaISO,
-          cantidad: montoPagoInicial,
+          monto: montoPagoInicial,
           metodo_pago: metodoPago,
           numero_referencia: numeroReferencia,
           comprobante_url: archivoUrl,

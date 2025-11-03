@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MessageCircle, Send, X, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MessageCircle, Send, X, Loader2, Package, DollarSign } from "lucide-react";
 
 interface Mensaje {
   _id?: string;
@@ -15,6 +16,13 @@ interface Mensaje {
   leido?: boolean;
 }
 
+interface InfoPedido {
+  numeroPedido?: string;
+  total?: number;
+  estado?: string;
+  fechaCreacion?: string;
+}
+
 interface ChatMessengerProps {
   pedidoId: string;
   clienteId?: string;
@@ -23,6 +31,7 @@ interface ChatMessengerProps {
   usuarioActualTipo: "admin" | "cliente";
   usuarioActualNombre?: string;
   tituloChat?: string; // Título personalizado del chat (opcional)
+  infoPedido?: InfoPedido; // Información del pedido para mostrar anclada (opcional)
   open: boolean;
   onClose: () => void;
   onNuevoMensaje?: () => void;
@@ -35,6 +44,7 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
   usuarioActualTipo,
   usuarioActualNombre,
   tituloChat,
+  infoPedido,
   open,
   onClose,
   onNuevoMensaje,
@@ -345,6 +355,46 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
             </Button>
           </div>
         </DialogHeader>
+
+        {/* Información del Pedido Anclada (solo si se proporciona infoPedido y no es chat de soporte) */}
+        {infoPedido && !pedidoId.startsWith('soporte_') && (
+          <div className="px-4 py-2 bg-blue-50 border-b border-blue-200">
+            <div className="flex items-center gap-3 text-sm">
+              <Package className="w-4 h-4 text-blue-600" />
+              <div className="flex-1">
+                {infoPedido.numeroPedido && (
+                  <span className="font-semibold text-blue-900">
+                    Pedido #{infoPedido.numeroPedido}
+                  </span>
+                )}
+                {infoPedido.total !== undefined && (
+                  <span className="ml-2 text-blue-700">
+                    • ${infoPedido.total.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                )}
+                {infoPedido.estado && (
+                  <Badge 
+                    variant="outline" 
+                    className="ml-2 text-xs"
+                    style={{
+                      backgroundColor: infoPedido.estado === 'pendiente' ? '#FEF3C7' :
+                                     infoPedido.estado === 'en proceso' ? '#DBEAFE' :
+                                     infoPedido.estado === 'completado' ? '#D1FAE5' : '#F3F4F6',
+                      borderColor: infoPedido.estado === 'pendiente' ? '#F59E0B' :
+                                  infoPedido.estado === 'en proceso' ? '#3B82F6' :
+                                  infoPedido.estado === 'completado' ? '#10B981' : '#6B7280',
+                      color: infoPedido.estado === 'pendiente' ? '#92400E' :
+                            infoPedido.estado === 'en proceso' ? '#1E40AF' :
+                            infoPedido.estado === 'completado' ? '#065F46' : '#374151'
+                    }}
+                  >
+                    {infoPedido.estado}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Área de mensajes */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 bg-gray-50">
