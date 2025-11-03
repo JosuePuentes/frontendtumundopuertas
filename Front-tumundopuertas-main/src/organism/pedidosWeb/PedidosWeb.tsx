@@ -436,17 +436,14 @@ const PedidosWeb: React.FC = () => {
           : [];
         
         // Para cada pedido, cargar su factura asociada y datos del cliente
-        const pedidosConFacturas = await Promise.all(
-          (Array.isArray(dataPedidos) ? dataPedidos : []).map(async (pedido: any) => {
+        const pedidosConFacturas: PedidoWeb[] = await Promise.all(
+          (Array.isArray(dataPedidos) ? dataPedidos : []).map(async (pedido: any): Promise<PedidoWeb> => {
             try {
               const pedidoId = pedido._id || pedido.id;
               const clienteId = pedido.cliente_id || pedido.clienteId;
               
-              // OPTIMIZACIÓN: NO cargar facturas aquí - solo cuando se abra el modal de detalle
-              // Esto reduce significativamente la carga inicial de la página
-              // Las facturas se cargarán solo cuando se necesiten (al abrir el modal)
-              
-              // Buscar datos del cliente
+              // OPTIMIZACIÓN: El backend ahora incluye cliente_cedula y cliente_telefono directamente
+              // Solo cargar datos del cliente si faltan campos críticos
               let datosCliente: any = {
                 nombre: pedido.cliente_nombre || pedido.clienteNombre || pedido.cliente?.nombre,
                 cedula: pedido.cliente_cedula || pedido.clienteCedula || pedido.cliente?.cedula,
@@ -454,8 +451,8 @@ const PedidosWeb: React.FC = () => {
                 telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono,
               };
               
-              // OPTIMIZACIÓN: Solo cargar datos del cliente si realmente faltan datos críticos
-              // Evitar llamadas innecesarias que causan lentitud
+              // Solo cargar datos del cliente si realmente faltan datos críticos (nombre o cédula)
+              // El backend ya provee cliente_cedula y cliente_telefono, así que esto solo se ejecuta raramente
               const necesitaCargarCliente = clienteId && (
                 !datosCliente.nombre || 
                 datosCliente.nombre === "Sin nombre" || 
@@ -557,7 +554,7 @@ const PedidosWeb: React.FC = () => {
         }
 
         // Actualizar referencias de pedidos (sin facturas por ahora)
-        pedidosAnterioresRef.current = new Set(pedidosConFacturas.map((p) => p._id));
+        pedidosAnterioresRef.current = new Set(pedidosConFacturas.map((p: PedidoWeb) => p._id));
         // Nota: No actualizamos referencias de abonos aquí porque las facturas no se cargan en la carga inicial
 
         setPedidos(pedidosConFacturas);
