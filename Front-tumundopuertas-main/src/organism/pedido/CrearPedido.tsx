@@ -625,7 +625,81 @@ const CrearPedido: React.FC = () => {
           } else {
             setMensaje("✅ Pedido creado correctamente.");
           }
-        } else {
+        }
+        
+        // Registrar pagos iniciales del pedido en métodos de pago
+        if (pagos.length > 0 && pedidoId) {
+          const clienteObj = Array.isArray(clientesData)
+            ? (clientesData as any[]).find((c: any) => c.rif === clienteId)
+            : null;
+          const clienteNombre = clienteObj?.nombre || pedidoPayload.cliente_nombre || clienteId || 'Cliente sin nombre';
+          
+          const depositosPagosPromesas = pagos.map(async (pago: RegistroPago) => {
+            if (pago.metodo && pago.monto > 0) {
+              try {
+                // Concepto con nombre del cliente y ID del pedido
+                const concepto = `Pedido ${pedidoId?.slice(-8) || 'N/A'} - Cliente: ${clienteNombre} - Pago inicial`;
+                
+                console.log(`💰 Registrando pago inicial: ${pago.monto} en método ${pago.metodo}`);
+                console.log(`💰 Concepto: ${concepto}`);
+                console.log(`💰 Cliente: ${clienteNombre}`);
+                
+                const depositoRes = await fetch(`${apiUrl}/metodos-pago/${pago.metodo}/deposito`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+                  },
+                  body: JSON.stringify({
+                    monto: pago.monto,
+                    concepto: concepto
+                  }),
+                });
+                
+                if (depositoRes.ok) {
+                  const depositoData = await depositoRes.json();
+                  console.log(`✓ Pago inicial de $${pago.monto.toFixed(2)} registrado en método de pago`);
+                  console.log(`✓ Respuesta del backend:`, depositoData);
+                  return { success: true, monto: pago.monto, clienteNombre };
+                } else {
+                  const errorText = await depositoRes.text();
+                  console.error(`✗ Error al registrar pago inicial en método de pago:`, depositoRes.status, errorText);
+                  return { success: false, monto: pago.monto, error: errorText };
+                }
+              } catch (error: any) {
+                console.error(`✗ Error al registrar pago inicial en método de pago:`, error.message || error);
+                return { success: false, monto: pago.monto, error: error.message || error };
+              }
+            } else {
+              console.warn(`⚠ Pago no tiene método de pago o monto válido`);
+              return null;
+            }
+          });
+          
+          const resultadosPagos = await Promise.all(depositosPagosPromesas);
+          const exitososPagos = resultadosPagos.filter(r => r !== null && r.success).length;
+          const fallidosPagos = resultadosPagos.filter(r => r !== null && !r.success).length;
+          const totalPagosDepositado = resultadosPagos
+            .filter(r => r !== null && r.success)
+            .reduce((acc, r) => acc + ((r?.monto || 0) || 0), 0);
+          
+          if (exitososPagos > 0) {
+            console.log(`✓ ${exitososPagos} pago(s) inicial(es) registrado(s) en métodos de pago (Total: $${totalPagosDepositado.toFixed(2)})`);
+            // Actualizar mensaje si no se había establecido uno de adicionales
+            if (!setMensaje.toString().includes('adicional') && !setMensaje.toString().includes('Pago')) {
+              setMensaje(`✅ Pedido creado correctamente. ${exitososPagos} pago(s) inicial(es) registrado(s) en métodos de pago.`);
+            }
+          }
+          if (fallidosPagos > 0) {
+            console.warn(`⚠ ${fallidosPagos} pago(s) inicial(es) no pudo(eron) registrarse en métodos de pago`);
+            if (!setMensaje.toString().includes('adicional')) {
+              setMensaje(`✅ Pedido creado. ⚠ ${fallidosPagos} pago(s) inicial(es) no pudo(eron) registrarse en métodos de pago.`);
+            }
+          }
+        }
+        
+        // Solo establecer mensaje si no se ha establecido uno más específico
+        if (!setMensaje.toString().includes('adicional') && !setMensaje.toString().includes('Pago')) {
           setMensaje("✅ Pedido creado correctamente.");
         }
         setMensajeTipo("success");
