@@ -106,11 +106,20 @@ const PedidosWeb: React.FC = () => {
     // Polling cada 10 segundos para detectar nuevos pedidos y abonos
     const intervalId = setInterval(() => {
       cargarPedidos(true); // true = modo silencioso (no mostrar loading)
-      cargarMensajesNoLeidos(); // También verificar mensajes nuevos
     }, 10000);
 
     return () => clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    // Cargar mensajes no leídos cuando hay pedidos
+    if (pedidos.length > 0) {
+      cargarMensajesNoLeidos();
+      // Polling cada 10 segundos para mensajes nuevos
+      const intervalId = setInterval(cargarMensajesNoLeidos, 10000);
+      return () => clearInterval(intervalId);
+    }
+  }, [pedidos]);
 
   const cargarMensajesNoLeidos = async () => {
     try {
