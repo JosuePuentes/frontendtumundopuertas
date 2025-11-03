@@ -267,8 +267,8 @@ const PedidosWeb: React.FC = () => {
     // Cargar mensajes no leídos cuando hay pedidos
     if (pedidos.length > 0) {
       cargarMensajesNoLeidos();
-      // Polling cada 3 segundos para mensajes nuevos (más frecuente para notificaciones rápidas)
-      const intervalId = setInterval(cargarMensajesNoLeidos, 3000);
+      // Polling cada 2 segundos para mensajes nuevos (más frecuente para notificaciones rápidas)
+      const intervalId = setInterval(cargarMensajesNoLeidos, 2000);
       return () => clearInterval(intervalId);
     }
   }, [pedidos]);
@@ -373,12 +373,13 @@ const PedidosWeb: React.FC = () => {
   const cargarMensajesNoLeidos = async () => {
     try {
       const token = localStorage.getItem("access_token");
-      if (!token) return;
+      if (!token || pedidos.length === 0) return;
 
       // Contar mensajes no leídos para cada pedido
       const contadores: Map<string, number> = new Map();
       
-      await Promise.all(
+      // Usar Promise.allSettled para que una falla no detenga las demás
+      const resultados = await Promise.allSettled(
         pedidos.map(async (pedido) => {
           try {
             const res = await fetch(`${apiUrl}/mensajes/pedido/${pedido._id}/no-leidos`, {
@@ -389,18 +390,32 @@ const PedidosWeb: React.FC = () => {
             
             if (res.ok) {
               const data = await res.json();
-              const count = typeof data === 'number' ? data : (data.count || 0);
+              const count = typeof data === 'number' ? data : (data.count || data.total || 0);
               if (count > 0) {
-                contadores.set(pedido._id, count);
+                return { pedidoId: pedido._id, count };
               }
             }
+            return null;
           } catch (error) {
             // Ignorar errores silenciosamente
+            return null;
           }
         })
       );
       
-      setMensajesNoLeidos(contadores);
+      // Procesar resultados exitosos
+      resultados.forEach((resultado) => {
+        if (resultado.status === 'fulfilled' && resultado.value) {
+          contadores.set(resultado.value.pedidoId, resultado.value.count);
+        }
+      });
+      
+      // Actualizar estado solo si hay cambios para evitar re-renders innecesarios
+      setMensajesNoLeidos(prev => {
+        const hasChanges = contadores.size !== prev.size || 
+          Array.from(contadores.entries()).some(([id, count]) => prev.get(id) !== count);
+        return hasChanges ? contadores : prev;
+      });
     } catch (error) {
       // Ignorar errores silenciosamente
     }
@@ -912,10 +927,16 @@ const PedidosWeb: React.FC = () => {
                       >
                         <MessageCircle className="w-4 h-4" />
                         {mensajesNoLeidos.get(pedido._id) ? (
-                          <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                          <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse shadow-lg border-2 border-white">
                             {mensajesNoLeidos.get(pedido._id)}
                           </Badge>
                         ) : null}
+                        {mensajesNoLeidos.get(pedido._id) && (
+                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                          </span>
+                        )}
                       </Button>
                       <Button
                         onClick={() => {
@@ -1023,10 +1044,16 @@ const PedidosWeb: React.FC = () => {
                         >
                           <MessageCircle className="w-4 h-4" />
                           {mensajesNoLeidos.get(pedidoSeleccionado._id) ? (
-                            <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                            <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse shadow-lg border-2 border-white">
                               {mensajesNoLeidos.get(pedidoSeleccionado._id)}
                             </Badge>
                           ) : null}
+                          {mensajesNoLeidos.get(pedidoSeleccionado._id) && (
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            </span>
+                          )}
                         </Button>
                       </div>
                     </div>
