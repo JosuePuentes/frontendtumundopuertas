@@ -102,7 +102,6 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
               if (!mensaje._id) return true; // Siempre mantener temporales
               
               // Buscar si hay un temporal que coincida
-              const ahora = Date.now();
               const fechaMensaje = new Date(mensaje.fecha || mensaje.createdAt || 0).getTime();
               
               return !arr.some((otro, otroIndex) => {
