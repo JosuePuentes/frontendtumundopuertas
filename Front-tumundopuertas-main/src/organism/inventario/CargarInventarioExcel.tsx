@@ -312,19 +312,20 @@ const CargarInventarioExcel: React.FC = () => {
         return;
       }
       
+      // Para sucursal1 usar 'cantidad', para sucursal2 usar 'existencia2'
       const existenciaOrigen = sucursalOrigen === 'sucursal1' 
-        ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-        : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0);
+        ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+        : (itemSeleccionado.existencia2 || 0); // Sucursal 2 usa 'existencia2'
       
       if (cantidad > existenciaOrigen) {
         setMensaje(`No puedes transferir más de lo disponible. ${sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} actual: ${existenciaOrigen}`);
         return;
       }
     } else {
-      const campoExistencia = sucursalSeleccionada === 'sucursal1' ? 'existencia' : 'existencia2';
-      const existenciaActual = itemSeleccionado[sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2'] !== undefined 
-        ? itemSeleccionado[sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2'] 
-        : (itemSeleccionado[campoExistencia] || itemSeleccionado.existencia || 0);
+      // Para sucursal1 usar 'cantidad', para sucursal2 usar 'existencia2'
+      const existenciaActual = sucursalSeleccionada === 'sucursal1'
+        ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+        : (itemSeleccionado.existencia2 || 0); // Sucursal 2 usa 'existencia2'
       
       if (tipoOperacion === 'descargar' && cantidad > existenciaActual) {
         setMensaje(`No puedes descargar más de lo disponible. ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} actual: ${existenciaActual}`);
@@ -372,13 +373,14 @@ const CargarInventarioExcel: React.FC = () => {
         console.log('✅ Descarga completada. Resultado:', resultDescarga);
         
         // Verificar que la descarga realmente se hizo
+        // Para sucursal1 usar 'cantidad', para sucursal2 usar 'existencia2'
         const existenciaOrigenDespues = sucursalOrigen === 'sucursal1' 
-          ? (resultDescarga.cantidad !== undefined ? resultDescarga.cantidad : (resultDescarga.existencia || 0))
-          : (resultDescarga.existencia2 !== undefined ? resultDescarga.existencia2 : 0);
+          ? (resultDescarga.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+          : (resultDescarga.existencia2 || 0); // Sucursal 2 usa 'existencia2'
         
         const existenciaOrigenEsperada = sucursalOrigen === 'sucursal1'
-          ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-          : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0);
+          ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+          : (itemSeleccionado.existencia2 || 0); // Sucursal 2 usa 'existencia2'
         
         console.log('📊 Existencia origen esperada después de descarga:', existenciaOrigenEsperada - cantidad);
         console.log('📊 Existencia origen actual después de descarga:', existenciaOrigenDespues);
@@ -424,15 +426,15 @@ const CargarInventarioExcel: React.FC = () => {
         console.log('✅ Carga completada. Resultado:', resultCarga);
         
         // Obtener existencias finales: usar el resultado de la descarga para origen y el de la carga para destino
-        // El resultado de la descarga debería tener la existencia de origen ya actualizada
+        // Para sucursal1 usar 'cantidad', para sucursal2 usar 'existencia2'
         const existenciaOrigenFinal = sucursalOrigen === 'sucursal1' 
-          ? (resultDescarga.cantidad !== undefined ? resultDescarga.cantidad : (resultDescarga.existencia || 0))
-          : (resultDescarga.existencia2 !== undefined ? resultDescarga.existencia2 : 0);
+          ? (resultDescarga.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+          : (resultDescarga.existencia2 || 0); // Sucursal 2 usa 'existencia2'
         
         // El resultado de la carga debería tener la existencia de destino actualizada
         const existenciaDestinoFinal = sucursalDestino === 'sucursal1' 
-          ? (resultCarga.cantidad !== undefined ? resultCarga.cantidad : (resultCarga.existencia || 0))
-          : (resultCarga.existencia2 !== undefined ? resultCarga.existencia2 : 0);
+          ? (resultCarga.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+          : (resultCarga.existencia2 || 0); // Sucursal 2 usa 'existencia2'
         
         console.log('📊 Existencia origen final (desde resultado descarga):', existenciaOrigenFinal);
         console.log('📊 Existencia destino final (desde resultado carga):', existenciaDestinoFinal);
@@ -466,8 +468,10 @@ const CargarInventarioExcel: React.FC = () => {
         }
 
         const result = await response.json();
-        const campoRespuesta = sucursalSeleccionada === 'sucursal1' ? 'cantidad' : 'existencia2';
-        const nuevaExistencia = result[campoRespuesta] !== undefined ? result[campoRespuesta] : (result.existencia || result.existencia2 || 0);
+        // Para sucursal1 usar 'cantidad', para sucursal2 usar 'existencia2'
+        const nuevaExistencia = sucursalSeleccionada === 'sucursal1'
+          ? (result.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+          : (result.existencia2 || 0); // Sucursal 2 usa 'existencia2'
         setMensaje(`✅ ${tipoOperacion === 'cargar' ? 'Carga' : 'Descarga'} realizada exitosamente en ${sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}. Nueva existencia: ${nuevaExistencia}`);
       }
       
@@ -1542,8 +1546,8 @@ const CargarInventarioExcel: React.FC = () => {
                         <span className="font-semibold">{sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} Actual:</span>{' '}
                         <span className="text-blue-600 font-bold text-lg">
                           {sucursalOrigen === 'sucursal1' 
-                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                            ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+                            : (itemSeleccionado.existencia2 || 0) // Sucursal 2 usa 'existencia2'
                           }
                         </span>
                       </div>
@@ -1551,8 +1555,8 @@ const CargarInventarioExcel: React.FC = () => {
                         <span className="font-semibold">{sucursalDestino === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} Actual:</span>{' '}
                         <span className="text-purple-600 font-bold text-lg">
                           {sucursalDestino === 'sucursal1' 
-                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                            ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+                            : (itemSeleccionado.existencia2 || 0) // Sucursal 2 usa 'existencia2'
                           }
                         </span>
                       </div>
@@ -1560,8 +1564,8 @@ const CargarInventarioExcel: React.FC = () => {
                         <span className="font-semibold">Nueva {sucursalOrigen === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
                         <span className="text-red-600 font-bold text-lg">
                           {(sucursalOrigen === 'sucursal1'
-                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                            ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+                            : (itemSeleccionado.existencia2 || 0) // Sucursal 2 usa 'existencia2'
                           ) - (parseFloat(cantidadOperacion) || 0)}
                         </span>
                       </div>
@@ -1569,8 +1573,8 @@ const CargarInventarioExcel: React.FC = () => {
                         <span className="font-semibold">Nueva {sucursalDestino === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
                         <span className="text-green-600 font-bold text-lg">
                           {(sucursalDestino === 'sucursal1'
-                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                            ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+                            : (itemSeleccionado.existencia2 || 0) // Sucursal 2 usa 'existencia2'
                           ) + (parseFloat(cantidadOperacion) || 0)}
                         </span>
                       </div>
@@ -1581,8 +1585,8 @@ const CargarInventarioExcel: React.FC = () => {
                         <span className="font-semibold">{sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'} Actual:</span>{' '}
                         <span className="text-blue-600 font-bold text-lg">
                           {sucursalSeleccionada === 'sucursal1' 
-                            ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                            : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                            ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+                            : (itemSeleccionado.existencia2 || 0) // Sucursal 2 usa 'existencia2'
                           }
                         </span>
                       </div>
@@ -1591,8 +1595,8 @@ const CargarInventarioExcel: React.FC = () => {
                           <span className="font-semibold">Nueva {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
                           <span className="text-green-600 font-bold text-lg">
                             {(sucursalSeleccionada === 'sucursal1'
-                              ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                              : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                              ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+                              : (itemSeleccionado.existencia2 || 0) // Sucursal 2 usa 'existencia2'
                             ) + (parseFloat(cantidadOperacion) || 0)}
                           </span>
                         </div>
@@ -1601,8 +1605,8 @@ const CargarInventarioExcel: React.FC = () => {
                           <span className="font-semibold">Nueva {sucursalSeleccionada === 'sucursal1' ? 'Sucursal 1' : 'Sucursal 2'}:</span>{' '}
                           <span className="text-red-600 font-bold text-lg">
                             {(sucursalSeleccionada === 'sucursal1'
-                              ? (itemSeleccionado.cantidad !== undefined ? itemSeleccionado.cantidad : (itemSeleccionado.existencia || 0))
-                              : (itemSeleccionado.existencia2 !== undefined ? itemSeleccionado.existencia2 : 0)
+                              ? (itemSeleccionado.cantidad || 0)  // Sucursal 1 usa 'cantidad'
+                              : (itemSeleccionado.existencia2 || 0) // Sucursal 2 usa 'existencia2'
                             ) - (parseFloat(cantidadOperacion) || 0)}
                           </span>
                         </div>
