@@ -680,70 +680,10 @@ const CrearPedido: React.FC = () => {
         // Variable para acumular mensajes
         const mensajesPartes: string[] = [];
         
-        // Registrar pagos iniciales del pedido en métodos de pago
-        if (pagos.length > 0 && pedidoId) {
-          const clienteObj = Array.isArray(clientesData)
-            ? (clientesData as any[]).find((c: any) => c.rif === clienteId)
-            : null;
-          const clienteNombre = clienteObj?.nombre || pedidoPayload.cliente_nombre || clienteId || 'Cliente sin nombre';
-          
-          const depositosPagosPromesas = pagos.map(async (pago: RegistroPago) => {
-            if (pago.metodo && pago.monto > 0) {
-              try {
-                // Concepto con nombre del cliente y ID del pedido
-                const concepto = `Pedido ${pedidoId?.slice(-8) || 'N/A'} - Cliente: ${clienteNombre} - Pago inicial`;
-                
-                console.log(`💰 Registrando pago inicial: ${pago.monto} en método ${pago.metodo}`);
-                console.log(`💰 Concepto: ${concepto}`);
-                console.log(`💰 Cliente: ${clienteNombre}`);
-                
-                const depositoRes = await fetch(`${apiUrl}/metodos-pago/${pago.metodo}/deposito`, {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
-                  },
-                  body: JSON.stringify({
-                    monto: pago.monto,
-                    concepto: concepto
-                  }),
-                });
-                
-                if (depositoRes.ok) {
-                  const depositoData = await depositoRes.json();
-                  console.log(`✓ Pago inicial de $${pago.monto.toFixed(2)} registrado en método de pago`);
-                  console.log(`✓ Respuesta del backend:`, depositoData);
-                  return { success: true, monto: pago.monto, clienteNombre };
-                } else {
-                  const errorText = await depositoRes.text();
-                  console.error(`✗ Error al registrar pago inicial en método de pago:`, depositoRes.status, errorText);
-                  return { success: false, monto: pago.monto, error: errorText };
-                }
-              } catch (error: any) {
-                console.error(`✗ Error al registrar pago inicial en método de pago:`, error.message || error);
-                return { success: false, monto: pago.monto, error: error.message || error };
-              }
-            } else {
-              console.warn(`⚠ Pago no tiene método de pago o monto válido`);
-              return null;
-            }
-          });
-          
-          const resultadosPagos = await Promise.all(depositosPagosPromesas);
-          const exitososPagos = resultadosPagos.filter(r => r !== null && r.success).length;
-          const fallidosPagos = resultadosPagos.filter(r => r !== null && !r.success).length;
-          const totalPagosDepositado = resultadosPagos
-            .filter(r => r !== null && r.success)
-            .reduce((acc, r) => acc + ((r?.monto || 0) || 0), 0);
-          
-          if (exitososPagos > 0) {
-            console.log(`✓ ${exitososPagos} pago(s) inicial(es) registrado(s) en métodos de pago (Total: $${totalPagosDepositado.toFixed(2)})`);
-            mensajesPartes.push(`${exitososPagos} pago(s) inicial(es) registrado(s)`);
-          }
-          if (fallidosPagos > 0) {
-            console.warn(`⚠ ${fallidosPagos} pago(s) inicial(es) no pudo(eron) registrarse en métodos de pago`);
-            mensajesPartes.push(`⚠ ${fallidosPagos} pago(s) no registrado(s)`);
-          }
+        // Nota: El backend ahora registra automáticamente los pagos iniciales en el historial
+        // cuando se crea el pedido, por lo que no es necesario hacerlo manualmente aquí
+        if (pagos.length > 0) {
+          console.log(`✓ ${pagos.length} pago(s) inicial(es) procesado(s) por el backend`);
         }
         
         // Construir mensaje final consolidado

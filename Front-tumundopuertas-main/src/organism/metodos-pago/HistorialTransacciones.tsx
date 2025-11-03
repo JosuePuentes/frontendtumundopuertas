@@ -11,10 +11,11 @@ import * as XLSX from 'xlsx';
 interface Transaccion {
   id: string;
   metodo_pago_id: string;
-  tipo: "deposito" | "transferir";
+  tipo: "deposito" | "transferir" | "transferencia";
   monto: number;
   concepto: string;
   fecha: string;
+  saldo_despues?: number; // Saldo después de esta transacción
 }
 
 interface HistorialTransaccionesProps {
@@ -73,7 +74,8 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
         tipo: t.tipo || (t.monto > 0 ? 'deposito' : 'transferir'),
         monto: t.monto || 0,
         concepto: t.concepto || t.descripcion || 'Sin concepto',
-        fecha: t.fecha || t.createdAt || t.created_at || new Date().toISOString()
+        fecha: t.fecha || t.createdAt || t.created_at || new Date().toISOString(),
+        saldo_despues: t.saldo_despues !== undefined ? t.saldo_despues : null
       })) : [];
       
       console.log(`✅ DEBUG HISTORIAL - Transacciones normalizadas:`, {
@@ -109,6 +111,12 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
     return tipo === "deposito" ? "text-green-600" : "text-red-600";
   };
 
+  const getTipoLabel = (tipo: string) => {
+    if (tipo === "deposito") return "Depósito";
+    if (tipo === "transferencia" || tipo === "transferir") return "Transferencia";
+    return tipo.charAt(0).toUpperCase() + tipo.slice(1);
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF();
     
@@ -121,21 +129,23 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
     doc.text(`Banco: ${metodo.banco}`, 14, 30);
     doc.text(`Titular: ${metodo.titular}`, 14, 35);
     doc.text(`Número de Cuenta: ${metodo.numero_cuenta}`, 14, 40);
-    doc.text(`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`, 14, 45);
+    doc.text(`Saldo Disponible: ${metodo.moneda === 'USD' ? '$' : 'Bs.'} ${metodo.saldo.toFixed(2)}`, 14, 45);
+    doc.text(`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`, 14, 50);
     
     // Preparar datos para la tabla
     const tableData = transacciones.map(transaccion => [
       formatFecha(transaccion.fecha),
       transaccion.tipo.charAt(0).toUpperCase() + transaccion.tipo.slice(1),
       formatMonto(transaccion.monto, transaccion.tipo),
+      `${metodo.moneda === 'USD' ? '$' : 'Bs.'} ${(transaccion.saldo_despues ?? 0).toFixed(2)}`,
       transaccion.concepto
     ]);
     
     // Crear tabla
     autoTable(doc, {
-      head: [['Fecha', 'Tipo', 'Monto', 'Concepto']],
+      head: [['Fecha', 'Tipo', 'Monto', 'Saldo después', 'Concepto']],
       body: tableData,
-      startY: 55,
+      startY: 60,
       styles: {
         fontSize: 8,
         cellPadding: 3,
@@ -160,6 +170,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
       'Fecha': formatFecha(transaccion.fecha),
       'Tipo': transaccion.tipo.charAt(0).toUpperCase() + transaccion.tipo.slice(1),
       'Monto': formatMonto(transaccion.monto, transaccion.tipo),
+      'Saldo después': `${metodo.moneda === 'USD' ? '$' : 'Bs.'} ${(transaccion.saldo_despues ?? 0).toFixed(2)}`,
       'Concepto': transaccion.concepto
     }));
     
@@ -173,6 +184,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
       [`Banco: ${metodo.banco}`],
       [`Titular: ${metodo.titular}`],
       [`Número de Cuenta: ${metodo.numero_cuenta}`],
+      [`Saldo Disponible: ${metodo.moneda === 'USD' ? '$' : 'Bs.'} ${metodo.saldo.toFixed(2)}`],
       [`Fecha de Reporte: ${new Date().toLocaleDateString('es-ES')}`],
       [''], // Fila vacía
     ];
@@ -185,6 +197,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
       { wch: 20 }, // Fecha
       { wch: 12 }, // Tipo
       { wch: 15 }, // Monto
+      { wch: 15 }, // Saldo después
       { wch: 30 }, // Concepto
     ];
     
@@ -199,7 +212,14 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
       <DialogContent className="bg-white max-w-4xl max-h-[80vh] overflow-hidden">
         <DialogHeader>
           <div className="flex justify-between items-center">
-            <DialogTitle>Historial de Transacciones - {metodo.nombre}</DialogTitle>
+            <div>
+              <DialogTitle>Historial de Transacciones - {metodo.nombre}</DialogTitle>
+              <p className="text-sm text-gray-600 mt-1">
+                Saldo disponible: <span className="font-semibold text-lg text-blue-600">
+                  {metodo.moneda === 'USD' ? '$' : 'Bs.'} {metodo.saldo.toFixed(2)}
+                </span>
+              </p>
+            </div>
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
@@ -244,6 +264,7 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
                       <TableHead>Fecha</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Monto</TableHead>
+                      <TableHead>Saldo después</TableHead>
                       <TableHead>Concepto</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -259,6 +280,11 @@ const HistorialTransacciones = ({ isOpen, onClose, metodo }: HistorialTransaccio
                         <TableCell>
                           <span className={`font-medium ${getTipoColor(transaccion.tipo)}`}>
                             {formatMonto(transaccion.monto, transaccion.tipo)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-semibold text-blue-600">
+                            {metodo.moneda === 'USD' ? '$' : 'Bs.'} {(transaccion.saldo_despues ?? 0).toFixed(2)}
                           </span>
                         </TableCell>
                         <TableCell>{transaccion.concepto}</TableCell>
