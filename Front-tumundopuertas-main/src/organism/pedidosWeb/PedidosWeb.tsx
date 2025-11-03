@@ -19,7 +19,9 @@ import {
   Receipt,
   DollarSign,
   CheckCircle2,
-  Bell
+  Bell,
+  PlayCircle,
+  Loader2
 } from "lucide-react";
 
 interface Abono {
@@ -57,6 +59,9 @@ interface PedidoWeb {
     itemId: string;
     cantidad: number;
     precio: number;
+    nombre?: string;
+    codigo?: string;
+    descripcion?: string;
     item?: {
       nombre?: string;
       codigo?: string;
@@ -82,6 +87,7 @@ const PedidosWeb: React.FC = () => {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"pedido" | "abono">("pedido");
+  const [actualizandoEstado, setActualizandoEstado] = useState(false);
   
   // Referencias para detectar cambios
   const pedidosAnterioresRef = useRef<Set<string>>(new Set());
@@ -315,6 +321,43 @@ const PedidosWeb: React.FC = () => {
   const verDetalle = (pedido: PedidoWeb) => {
     setPedidoSeleccionado(pedido);
     setModalDetalleAbierto(true);
+  };
+
+  const cambiarEstadoPedido = async (nuevoEstado: string) => {
+    if (!pedidoSeleccionado) return;
+    
+    setActualizandoEstado(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(`${apiUrl}/pedidos/${pedidoSeleccionado._id}/estado`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ nuevo_estado_general: nuevoEstado }),
+      });
+
+      if (res.ok) {
+        // Actualizar el estado local del pedido
+        setPedidoSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : null);
+        // Actualizar también en la lista de pedidos
+        setPedidos(prev => prev.map(p => 
+          p._id === pedidoSeleccionado._id ? { ...p, estado: nuevoEstado } : p
+        ));
+        setToastMessage(`✓ Estado del pedido actualizado a: ${getEstadoBadge(nuevoEstado).label}`);
+        setToastType("pedido");
+        setToastVisible(true);
+      } else {
+        const errorData = await res.json();
+        alert(`Error al actualizar estado: ${errorData.detail || "Error desconocido"}`);
+      }
+    } catch (error) {
+      console.error("Error al cambiar estado:", error);
+      alert("Error al actualizar el estado del pedido");
+    } finally {
+      setActualizandoEstado(false);
+    }
   };
 
   const formatearFecha = (fecha?: string) => {
@@ -625,24 +668,26 @@ const PedidosWeb: React.FC = () => {
                       {pedidoSeleccionado.items.map((item, index) => (
                         <div
                           key={index}
-                          className="bg-gray-50 rounded-lg p-3 flex justify-between items-center border border-gray-200"
+                          className="bg-gray-50 rounded-lg p-3 flex justify-between items-start border border-gray-200"
                         >
-                          <div>
-                            <p className="text-gray-900 font-semibold">
-                              {item.item?.nombre || `Item ${index + 1}`}
+                          <div className="flex-1">
+                            <p className="text-gray-900 font-semibold text-base">
+                              {item.item?.nombre || item.nombre || `Item ${index + 1}`}
                             </p>
-                            {item.item?.codigo && (
-                              <p className="text-gray-600 text-sm">Código: {item.item.codigo}</p>
+                            {(item.item?.codigo || item.codigo) && (
+                              <p className="text-gray-600 text-sm mt-1">
+                                Código: {item.item?.codigo || item.codigo}
+                              </p>
                             )}
                             {item.item?.descripcion && (
                               <p className="text-gray-600 text-sm mt-1">{item.item.descripcion}</p>
                             )}
-                          </div>
-                          <div className="text-right">
-                            <p className="text-gray-900 font-semibold">
+                            <p className="text-gray-500 text-sm mt-2">
                               Cantidad: {item.cantidad}
                             </p>
-                            <p className="text-blue-600 font-semibold">
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="text-blue-600 font-semibold text-lg">
                               ${(item.precio * item.cantidad).toFixed(2)}
                             </p>
                             <p className="text-gray-500 text-xs">
@@ -658,6 +703,36 @@ const PedidosWeb: React.FC = () => {
                         ${pedidoSeleccionado.total.toFixed(2)}
                       </span>
                     </div>
+                  </div>
+
+                  {/* Botón para cambiar estado */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    {pedidoSeleccionado.estado === "pendiente" && (
+                      <Button
+                        onClick={() => cambiarEstadoPedido("procesando")}
+                        disabled={actualizandoEstado}
+                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                      >
+                        {actualizandoEstado ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Actualizando...
+                          </>
+                        ) : (
+                          <>
+                            <PlayCircle className="w-4 h-4 mr-2" />
+                            Cambiar a "En Proceso"
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    {pedidoSeleccionado.estado === "procesando" && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-blue-800 text-sm font-semibold">
+                          Este pedido está en proceso
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
