@@ -195,27 +195,36 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
       });
 
       if (res.ok) {
-        const mensajeRespuesta = await res.json();
-        console.log("✅ Mensaje enviado exitosamente:", mensajeRespuesta);
+        const respuestaBackend = await res.json();
+        console.log("✅ Mensaje enviado exitosamente:", respuestaBackend);
+        
+        // El backend puede retornar el mensaje en formato { message: "...", mensaje: {...} }
+        // o directamente como el objeto mensaje
+        const mensajeRespuesta = respuestaBackend.mensaje || respuestaBackend;
         
         // Si el backend retorna el mensaje, actualizarlo en el estado con el _id real
-        if (mensajeRespuesta._id) {
+        if (mensajeRespuesta && (mensajeRespuesta._id || mensajeRespuesta.id)) {
+          const mensajeConId = {
+            ...mensajeRespuesta,
+            _id: mensajeRespuesta._id || mensajeRespuesta.id
+          };
+          
           setMensajes(prev => {
             // Reemplazar el mensaje temporal con el mensaje real del backend
             const mensajeIndex = prev.findIndex(m => 
               !m._id && 
               m.mensaje === mensajeTexto && 
               m.remitente_id === usuarioActualId &&
-              Math.abs(new Date(m.fecha).getTime() - new Date(mensajeRespuesta.fecha || mensajeRespuesta.createdAt || Date.now()).getTime()) < 5000
+              Math.abs(new Date(m.fecha).getTime() - new Date(mensajeConId.fecha || mensajeConId.createdAt || Date.now()).getTime()) < 5000
             );
             
             if (mensajeIndex !== -1) {
               const nuevos = [...prev];
-              nuevos[mensajeIndex] = mensajeRespuesta;
+              nuevos[mensajeIndex] = mensajeConId;
               return nuevos;
             }
             // Si no se encontró el temporal, agregar el nuevo
-            return [...prev, mensajeRespuesta];
+            return [...prev, mensajeConId];
           });
         } else {
           // Si no viene el mensaje completo, recargar pero preservar temporales
