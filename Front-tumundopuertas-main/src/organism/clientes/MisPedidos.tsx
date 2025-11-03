@@ -361,8 +361,12 @@ const MisPedidos: React.FC = () => {
                       {pedidoSeleccionado.items.map((item, index) => (
                         <div
                           key={index}
-                          className="bg-gray-50 rounded-lg p-4 flex justify-between items-center border border-gray-200"
+                          className="bg-gray-50 rounded-lg p-4 flex gap-4 items-center border border-gray-200"
                         >
+                          {/* Imagen del item */}
+                          {item.item?.imagenes && item.item.imagenes.length > 0 && (
+                            <ItemImage imagenUrl={item.item.imagenes[0]} />
+                          )}
                           <div className="flex-1">
                             <p className="text-gray-900 font-semibold">
                               {item.nombre || item.item?.nombre || `Item ${index + 1}`}
@@ -543,6 +547,103 @@ const MisPedidos: React.FC = () => {
         />
       )}
     </div>
+  );
+};
+
+// Componente para mostrar imagen del item con presigned URL
+const ItemImage: React.FC<{ imagenUrl: string }> = ({ imagenUrl }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const cargarImagen = async () => {
+      setLoading(true);
+      setError(false);
+      
+      // Si ya es una URL completa HTTP/HTTPS, usarla directamente
+      if (imagenUrl.startsWith('http://') || imagenUrl.startsWith('https://')) {
+        setImageUrl(imagenUrl);
+        setLoading(false);
+        return;
+      }
+
+      // Si parece ser un object name de R2, obtener presigned URL
+      try {
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        const token = localStorage.getItem("cliente_access_token");
+        
+        if (!token) {
+          setImageUrl(imagenUrl);
+          setLoading(false);
+          return;
+        }
+        
+        // Normalizar el object name
+        let objectName = imagenUrl;
+        if (!objectName.includes('/')) {
+          // Si no tiene ruta, asumir que está en items/
+          objectName = `items/${objectName}`;
+        } else if (!objectName.startsWith('items/')) {
+          objectName = `items/${objectName}`;
+        }
+        
+        const res = await fetch(`${apiUrl}/files/presigned-url`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            object_name: objectName,
+            operation: "get_object",
+            expires_in: 3600,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setImageUrl(data.presigned_url || imagenUrl);
+        } else {
+          // Si falla, intentar con la URL original
+          setImageUrl(imagenUrl);
+        }
+      } catch (err) {
+        console.error("Error al obtener presigned URL para imagen:", err);
+        setImageUrl(imagenUrl);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (imagenUrl) {
+      cargarImagen();
+    }
+  }, [imagenUrl]);
+
+  if (loading) {
+    return (
+      <div className="w-20 h-20 flex items-center justify-center bg-gray-100 rounded-lg">
+        <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error || !imageUrl) {
+    return (
+      <div className="w-20 h-20 flex items-center justify-center bg-gray-100 rounded-lg">
+        <Package className="w-8 h-8 text-gray-400" />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt="Item"
+      className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+      onError={() => setError(true)}
+    />
   );
 };
 

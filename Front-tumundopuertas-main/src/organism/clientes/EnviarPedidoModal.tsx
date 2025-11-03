@@ -26,6 +26,7 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
 }) => {
   const [metodoPago, setMetodoPago] = useState("");
   const [numeroReferencia, setNumeroReferencia] = useState("");
+  const [montoPago, setMontoPago] = useState<string>("");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [previewArchivo, setPreviewArchivo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,14 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
     // Validaciones
     if (!metodoPago) {
       setError("Debes seleccionar un método de pago");
+      return;
+    }
+    if (!montoPago || parseFloat(montoPago) <= 0) {
+      setError("Debes ingresar un monto de pago inicial válido");
+      return;
+    }
+    if (parseFloat(montoPago) > total) {
+      setError("El monto del pago no puede ser mayor al total del pedido");
       return;
     }
     if (!numeroReferencia) {
@@ -230,6 +239,7 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
       }));
 
       // Crear el pedido con todos los campos requeridos
+      const montoPagoInicial = parseFloat(montoPago) || 0;
       const pedidoData = {
         cliente_id: clienteId,
         cliente_nombre: clienteNombre,
@@ -238,9 +248,17 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
         estado_general: "pendiente",
         items: itemsPedido,
         seguimiento: seguimiento,
-        pago: "sin pago", // Sin pago inicial (solo se envía comprobante)
-        historial_pagos: [],
-        total_abonado: 0.0,
+        pago: montoPagoInicial > 0 ? "con pago inicial" : "sin pago",
+        historial_pagos: montoPagoInicial > 0 ? [{
+          fecha: fechaISO,
+          cantidad: montoPagoInicial,
+          metodo_pago: metodoPago,
+          numero_referencia: numeroReferencia,
+          comprobante_url: archivoUrl,
+          estado: "pendiente", // El abono inicial está pendiente hasta que se apruebe
+        }] : [],
+        total_abonado: 0.0, // Inicialmente 0, se actualizará cuando se apruebe el pago inicial
+        monto_pago_inicial: montoPagoInicial, // Nuevo campo para el monto del pago inicial
         metodo_pago: metodoPago,
         numero_referencia: numeroReferencia,
         comprobante_url: archivoUrl,
@@ -345,6 +363,33 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
               <option value="efectivo">Efectivo</option>
               <option value="otro">Otro</option>
             </select>
+          </div>
+
+          {/* Monto del pago inicial */}
+          <div>
+            <Label htmlFor="monto-pago" className="text-gray-200">
+              Monto del Pago Inicial <span className="text-red-400">*</span>
+            </Label>
+            <Input
+              id="monto-pago"
+              type="number"
+              step="0.01"
+              min="0"
+              max={total}
+              value={montoPago}
+              onChange={(e) => {
+                const valor = e.target.value;
+                if (valor === "" || (parseFloat(valor) >= 0 && parseFloat(valor) <= total)) {
+                  setMontoPago(valor);
+                }
+              }}
+              placeholder="0.00"
+              className="bg-gray-700 border-gray-600 text-white"
+              required
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              Total del pedido: ${total.toFixed(2)}
+            </p>
           </div>
 
           {/* Número de referencia */}

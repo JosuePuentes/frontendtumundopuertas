@@ -80,6 +80,98 @@ interface PedidoWeb {
   factura?: Factura | null;
 }
 
+// Componente para mostrar comprobante con presigned URL
+const ComprobanteImage: React.FC<{ comprobanteUrl: string }> = ({ comprobanteUrl }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const cargarComprobante = async () => {
+      setLoading(true);
+      setError(false);
+      
+      // Si ya es una URL completa HTTP/HTTPS, usarla directamente
+      if (comprobanteUrl.startsWith('http://') || comprobanteUrl.startsWith('https://')) {
+        setImageUrl(comprobanteUrl);
+        setLoading(false);
+        return;
+      }
+
+      // Si parece ser un object name de R2, obtener presigned URL
+      try {
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        const token = localStorage.getItem("access_token");
+        
+        // Normalizar el object name
+        let objectName = comprobanteUrl;
+        if (!objectName.includes('/')) {
+          // Si no tiene ruta, asumir que está en comprobantes_pago/
+          objectName = `comprobantes_pago/${objectName}`;
+        }
+        
+        const res = await fetch(`${apiUrl}/files/presigned-url`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            object_name: objectName,
+            operation: "get_object",
+            expires_in: 3600,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setImageUrl(data.presigned_url || comprobanteUrl);
+        } else {
+          // Si falla, intentar con la URL original
+          setImageUrl(comprobanteUrl);
+        }
+      } catch (err) {
+        console.error("Error al obtener presigned URL para comprobante:", err);
+        setImageUrl(comprobanteUrl);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (comprobanteUrl) {
+      cargarComprobante();
+    }
+  }, [comprobanteUrl]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+      </div>
+    );
+  }
+
+  if (error || !imageUrl) {
+    return (
+      <div className="flex flex-col items-center justify-center p-8 text-gray-500">
+        <ImageIcon className="w-12 h-12 mb-2 opacity-50" />
+        <p className="text-sm">No se pudo cargar el comprobante</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-center">
+      <img
+        src={imageUrl}
+        alt="Comprobante de pago"
+        className="max-w-full max-h-96 rounded-lg border border-gray-300"
+        onError={() => setError(true)}
+      />
+    </div>
+  );
+};
+
 const PedidosWeb: React.FC = () => {
   const [pedidos, setPedidos] = useState<PedidoWeb[]>([]);
   const [loading, setLoading] = useState(true);
@@ -242,7 +334,7 @@ const PedidosWeb: React.FC = () => {
               };
               
               // Si no tenemos datos del cliente y tenemos cliente_id, intentar cargarlos desde el backend
-              if (clienteId && (!datosCliente.nombre || datosCliente.nombre === "Sin nombre")) {
+              if (clienteId && (!datosCliente.nombre || datosCliente.nombre === "Sin nombre" || !datosCliente.cedula || datosCliente.cedula === "Sin cédula")) {
                 try {
                   // Intentar primero con el endpoint /clientes/id/{cliente_id}/ (para clientes no autenticados)
                   const resCliente = await fetch(`${apiUrl}/clientes/id/${clienteId}/`, {
@@ -259,6 +351,28 @@ const PedidosWeb: React.FC = () => {
                       direccion: clienteData.direccion || datosCliente.direccion || "",
                       telefono: clienteData.telefono || clienteData.telefono_contacto || datosCliente.telefono || "",
                     };
+                  } else {
+                    // Si el primer endpoint falla, intentar con /clientes/{clienteId} (para clientes autenticados)
+                    // Nota: esto requiere un token válido de cliente, pero podemos intentarlo
+                    try {
+                      const resClienteAlt = await fetch(`${apiUrl}/clientes/${clienteId}`, {
+                        headers: {
+                          "Authorization": `Bearer ${token}`,
+                        },
+                      });
+                      
+                      if (resClienteAlt.ok) {
+                        const clienteDataAlt = await resClienteAlt.json();
+                        datosCliente = {
+                          nombre: clienteDataAlt.nombre || clienteDataAlt.nombres || datosCliente.nombre || "Sin nombre",
+                          cedula: clienteDataAlt.cedula || clienteDataAlt.rif || datosCliente.cedula || "",
+                          direccion: clienteDataAlt.direccion || datosCliente.direccion || "",
+                          telefono: clienteDataAlt.telefono || clienteDataAlt.telefono_contacto || datosCliente.telefono || "",
+                        };
+                      }
+                    } catch (errorAlt) {
+                      // Silenciar error del segundo intento
+                    }
                   }
                 } catch (error) {
                   console.error("Error al cargar datos del cliente:", error);
@@ -863,56 +977,130 @@ const PedidosWeb: React.FC = () => {
                       </p>
                     </div>
 
+                    {/* Botón para agregar abono si hay saldo pendiente */}
+                    {(pedidoSeleccionado.factura?.saldo_pendiente || 0) > 0 && (
+                      <div className="mt-4 pt-4 border-t border-blue-200">
+                        <Button
+                          onClick={() => {
+                            // TODO: Abrir modal para agregar abono
+                            alert("Funcionalidad para agregar abono - pendiente de implementación completa");
+                          }}
+                          className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                        >
+                          <DollarSign className="w-4 h-4 mr-2" />
+                          Agregar Abono
+                        </Button>
+                      </div>
+                    )}
+
                     {/* Historial de Abonos en Modal */}
                     {(pedidoSeleccionado.factura?.historial_abonos || []).length > 0 && (
                       <div className="mt-4 pt-4 border-t border-blue-200">
                         <p className="text-gray-700 text-sm mb-3 font-semibold">Historial de Abonos:</p>
                         <div className="space-y-3">
-                          {(pedidoSeleccionado.factura?.historial_abonos || []).map((abono, index) => (
-                            <div
-                              key={index}
-                              className="bg-white rounded-lg p-4 border border-gray-200"
-                            >
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <DollarSign className="w-5 h-5 text-blue-600" />
-                                    <span className="text-gray-900 font-bold text-lg">${abono.cantidad.toFixed(2)}</span>
-                                    <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-                                      {abono.metodo_pago || "Sin método"}
-                                    </Badge>
+                          {(pedidoSeleccionado.factura?.historial_abonos || []).map((abono, index) => {
+                            const esPendiente = abono.estado === "pendiente" || !abono.estado;
+                            return (
+                              <div
+                                key={index}
+                                className={`bg-white rounded-lg p-4 border ${
+                                  esPendiente ? "border-yellow-300 bg-yellow-50" : "border-gray-200"
+                                }`}
+                              >
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <DollarSign className="w-5 h-5 text-blue-600" />
+                                      <span className="text-gray-900 font-bold text-lg">${abono.cantidad.toFixed(2)}</span>
+                                      <Badge className={esPendiente ? "bg-yellow-100 text-yellow-800 border-yellow-300" : "bg-blue-100 text-blue-800 border-blue-300"}>
+                                        {abono.metodo_pago || "Sin método"}
+                                      </Badge>
+                                      {esPendiente && (
+                                        <Badge className="bg-red-100 text-red-800 border-red-300">
+                                          Pendiente
+                                        </Badge>
+                                      )}
+                                      {!esPendiente && (
+                                        <Badge className="bg-green-100 text-green-800 border-green-300">
+                                          Aprobado
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <div className="space-y-1 text-sm text-gray-600">
+                                      <p>Referencia: {abono.numero_referencia || "Sin referencia"}</p>
+                                      {abono.fecha && <p>Fecha: {formatearFecha(abono.fecha)}</p>}
+                                      {abono.comprobante_url && (
+                                        <div className="mt-2">
+                                          <a
+                                            href={abono.comprobante_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-blue-600 hover:underline flex items-center gap-1"
+                                          >
+                                            <ImageIcon className="w-4 h-4" />
+                                            Ver comprobante
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
                                   </div>
-                                  <div className="space-y-1 text-sm text-gray-600">
-                                    <p>Referencia: {abono.numero_referencia || "Sin referencia"}</p>
-                                    {abono.fecha && <p>Fecha: {formatearFecha(abono.fecha)}</p>}
-                                    {abono.comprobante_url && (
-                                      <div className="mt-2">
-                                        <a
-                                          href={abono.comprobante_url}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-blue-600 hover:underline flex items-center gap-1"
-                                        >
-                                          <ImageIcon className="w-4 h-4" />
-                                          Ver comprobante
-                                        </a>
-                                      </div>
-                                    )}
-                                  </div>
+                                  {esPendiente && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-green-500 text-green-600 hover:bg-green-50"
+                                      onClick={async () => {
+                                        // Aprobar abono
+                                        try {
+                                          const token = localStorage.getItem("access_token");
+                                          const res = await fetch(`${apiUrl}/pedidos/${pedidoSeleccionado._id}/abono/${index}/aprobar`, {
+                                            method: "POST",
+                                            headers: {
+                                              "Content-Type": "application/json",
+                                              "Authorization": `Bearer ${token}`,
+                                            },
+                                          });
+
+                                          if (res.ok) {
+                                            setToastMessage("✅ Abono aprobado exitosamente");
+                                            setToastType("abono");
+                                            setToastVisible(true);
+                                            // Recargar pedidos
+                                            cargarPedidos(false);
+                                            // Recargar detalles del pedido
+                                            const updatedPedido = pedidos.find(p => p._id === pedidoSeleccionado._id);
+                                            if (updatedPedido) {
+                                              setPedidoSeleccionado(updatedPedido);
+                                            }
+                                          } else {
+                                            const errorData = await res.json();
+                                            alert(`Error al aprobar abono: ${errorData.detail || "Error desconocido"}`);
+                                          }
+                                        } catch (err) {
+                                          console.error("Error al aprobar abono:", err);
+                                          alert("Error al aprobar abono. Por favor, intente de nuevo.");
+                                        }
+                                      }}
+                                    >
+                                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                                      Aprobar
+                                    </Button>
+                                  )}
+                                  {!esPendiente && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="border-green-500 text-green-600 bg-green-50"
+                                      disabled
+                                    >
+                                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                                      Aprobado
+                                    </Button>
+                                  )}
                                 </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="border-green-500 text-green-600 hover:bg-green-50"
-                                  disabled
-                                  title="Botón visual - No modifica nada"
-                                >
-                                  <CheckCircle2 className="w-4 h-4 mr-1" />
-                                  Validar
-                                </Button>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -930,30 +1118,7 @@ const PedidosWeb: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex items-center justify-center">
-                      <img
-                        src={pedidoSeleccionado.comprobante_url}
-                        alt="Comprobante de pago"
-                        className="max-w-full max-h-96 rounded-lg border border-gray-300"
-                        onError={(e) => {
-                          // Ocultar la imagen si falla y mostrar mensaje
-                          const img = e.target as HTMLImageElement;
-                          img.style.display = "none";
-                          const parent = img.parentElement;
-                          if (parent && !parent.querySelector(".error-message")) {
-                            const errorDiv = document.createElement("div");
-                            errorDiv.className = "flex flex-col items-center justify-center p-8 text-gray-500";
-                            errorDiv.innerHTML = `
-                              <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <p class="text-sm">No se pudo cargar el comprobante</p>
-                            `;
-                            parent.appendChild(errorDiv);
-                          }
-                        }}
-                      />
-                    </div>
+                    <ComprobanteImage comprobanteUrl={pedidoSeleccionado.comprobante_url} />
                   </CardContent>
                 </Card>
               )}
