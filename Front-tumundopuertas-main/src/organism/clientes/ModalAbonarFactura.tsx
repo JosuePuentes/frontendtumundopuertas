@@ -93,24 +93,70 @@ const ModalAbonarFactura: React.FC<ModalAbonarFacturaProps> = ({
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       const token = localStorage.getItem("cliente_access_token");
 
-      // Subir el archivo primero
+      // Subir el archivo usando Cloudflare R2 con presigned URLs
       let archivoUrl = "";
       if (archivo) {
-        const formData = new FormData();
-        formData.append("file", archivo);
-        formData.append("folder", "comprobantes_abonos");
-        
-        const uploadRes = await fetch(`${apiUrl}/files/upload`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-          body: formData,
-        });
-        
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          archivoUrl = uploadData.url || uploadData.file_url || "";
+        try {
+          // 1. Obtener presigned URL para PUT (subir el archivo)
+          const objectName = `comprobantes_abonos/${Date.now()}_${archivo.name}`;
+          const presignedUrlPut = await fetch(`${apiUrl}/files/presigned-url`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              object_name: objectName,
+              operation: "put_object",
+              content_type: archivo.type,
+            }),
+          });
+
+          if (!presignedUrlPut.ok) {
+            throw new Error("Error al obtener URL para subir archivo");
+          }
+
+          const presignedData = await presignedUrlPut.json();
+          const putUrl = presignedData.presigned_url;
+
+          // 2. Subir el archivo directamente a Cloudflare R2
+          const uploadRes = await fetch(putUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": archivo.type,
+            },
+            body: archivo,
+          });
+
+          if (!uploadRes.ok) {
+            throw new Error("Error al subir el archivo");
+          }
+
+          // 3. Registrar el archivo en el backend
+          const fileName = archivo.name;
+          const registerRes = await fetch(`${apiUrl}/files/upload`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              file_url: objectName, // El object name en R2
+              file_name: fileName,
+              pedido_id: "", // No aplica para abonos
+            }),
+          });
+
+          if (registerRes.ok) {
+            const registerData = await registerRes.json();
+            archivoUrl = registerData.file_url || objectName;
+          } else {
+            // Si falla el registro, usar el object name directamente
+            archivoUrl = objectName;
+          }
+        } catch (uploadError: any) {
+          console.error("Error al subir archivo:", uploadError);
+          throw new Error(`Error al subir el comprobante: ${uploadError.message}`);
         }
       }
 

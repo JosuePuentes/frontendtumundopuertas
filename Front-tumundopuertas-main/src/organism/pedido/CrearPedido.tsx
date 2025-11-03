@@ -530,11 +530,12 @@ const CrearPedido: React.FC = () => {
       todos_items_disponibles: todosTienenExistencia && !forzarProduccion, // Flag para el backend
       // Enviar adicionales al backend con estructura: { descripcion?, precio, cantidad? }
       // NO incluir metodoPago ni metodoPagoNombre (son solo para UI)
+      // Siempre incluir el campo adicionales, aunque sea un array vacío
       adicionales: adicionales.length > 0 ? adicionales.map(ad => ({
         descripcion: ad.descripcion,
         precio: ad.precio,
         cantidad: ad.cantidad || 1
-      })) : undefined,
+      })) : [],
     };
 
     // Debug: Log del payload completo

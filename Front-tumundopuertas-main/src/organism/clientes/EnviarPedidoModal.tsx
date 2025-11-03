@@ -84,24 +84,70 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
         precio: carritoItem.item.precio,
       }));
 
-      // Subir el archivo primero si es necesario
+      // Subir el archivo usando Cloudflare R2 con presigned URLs
       let archivoUrl = "";
       if (archivo) {
-        const formData = new FormData();
-        formData.append("file", archivo);
-        formData.append("folder", "comprobantes_pago");
-        
-        const uploadRes = await fetch(`${apiUrl}/files/upload`, {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-          body: formData,
-        });
-        
-        if (uploadRes.ok) {
-          const uploadData = await uploadRes.json();
-          archivoUrl = uploadData.url || uploadData.file_url || "";
+        try {
+          // 1. Obtener presigned URL para PUT (subir el archivo)
+          const objectName = `comprobantes_pago/${Date.now()}_${archivo.name}`;
+          const presignedUrlPut = await fetch(`${apiUrl}/files/presigned-url`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              object_name: objectName,
+              operation: "put_object",
+              content_type: archivo.type,
+            }),
+          });
+
+          if (!presignedUrlPut.ok) {
+            throw new Error("Error al obtener URL para subir archivo");
+          }
+
+          const presignedData = await presignedUrlPut.json();
+          const putUrl = presignedData.presigned_url;
+
+          // 2. Subir el archivo directamente a Cloudflare R2
+          const uploadRes = await fetch(putUrl, {
+            method: "PUT",
+            headers: {
+              "Content-Type": archivo.type,
+            },
+            body: archivo,
+          });
+
+          if (!uploadRes.ok) {
+            throw new Error("Error al subir el archivo");
+          }
+
+          // 3. Registrar el archivo en el backend
+          const fileName = archivo.name;
+          const registerRes = await fetch(`${apiUrl}/files/upload`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              file_url: objectName, // El object name en R2
+              file_name: fileName,
+              pedido_id: "", // Se asignará después al crear el pedido
+            }),
+          });
+
+          if (registerRes.ok) {
+            const registerData = await registerRes.json();
+            archivoUrl = registerData.file_url || objectName;
+          } else {
+            // Si falla el registro, usar el object name directamente
+            archivoUrl = objectName;
+          }
+        } catch (uploadError: any) {
+          console.error("Error al subir archivo:", uploadError);
+          throw new Error(`Error al subir el comprobante: ${uploadError.message}`);
         }
       }
 
@@ -114,6 +160,7 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
         comprobante_url: archivoUrl,
         total: total,
         estado: "pendiente",
+        adicionales: [], // Campo requerido según nuevas especificaciones
       };
 
       const res = await fetch(`${apiUrl}/pedidos/cliente`, {
@@ -126,7 +173,20 @@ const EnviarPedidoModal: React.FC<EnviarPedidoModalProps> = ({
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({ detail: "Error al enviar el pedido" }));
+        console.error("❌ Error del backend (422):", errorData);
+        // Mostrar detalles específicos del error 422
+        if (res.status === 422 && errorData.detail) {
+          const errorMessage = Array.isArray(errorData.detail)
+            ? errorData.detail.map((e: any) => {
+                if (typeof e === 'string') return e;
+                const loc = e.loc ? e.loc.join('.') : '';
+                const msg = e.msg || e.message || JSON.stringify(e);
+                return loc ? `${loc}: ${msg}` : msg;
+              }).join(', ')
+            : errorData.detail;
+          throw new Error(errorMessage);
+        }
         throw new Error(errorData.detail || "Error al enviar el pedido");
       }
 
