@@ -71,10 +71,11 @@ interface RegistroPago {
 }
 
 interface Adicional {
-  descripcion: string;
-  monto: number;
-  metodoPago?: string; // ID del método de pago seleccionado
-  metodoPagoNombre?: string; // Nombre del método de pago (para mostrar)
+  descripcion?: string;
+  precio: number;
+  cantidad?: number; // default 1
+  metodoPago?: string; // ID del método de pago seleccionado (no se envía al backend)
+  metodoPagoNombre?: string; // Nombre del método de pago (no se envía al backend, solo para UI)
 }
 
 interface PedidoPayload {
@@ -169,7 +170,11 @@ const CrearPedido: React.FC = () => {
     0
   );
   const totalAdicionales = adicionales.reduce(
-    (acc, adicional) => acc + (adicional.monto || 0),
+    (acc, adicional) => {
+      const cantidad = adicional.cantidad || 1;
+      const precio = adicional.precio || 0;
+      return acc + (precio * cantidad);
+    },
     0
   );
   const totalMonto = totalMontoItems + totalAdicionales;
@@ -332,11 +337,14 @@ const CrearPedido: React.FC = () => {
     const metodoPagoSeleccionado = metodosPago.find((m: any) => (m._id || m.id) === nuevoAdicionalMetodoPago);
     const metodoPagoNombre = metodoPagoSeleccionado?.nombre || 'Sin nombre';
     
+    // Guardar adicional con estructura: { descripcion?, precio, cantidad? }
+    // cantidad default es 1
     setAdicionales([...adicionales, {
       descripcion: descripcionGuardada,
-      monto: nuevoAdicionalMonto,
-      metodoPago: nuevoAdicionalMetodoPago,
-      metodoPagoNombre: metodoPagoNombre
+      precio: nuevoAdicionalMonto, // El monto ingresado se guarda como precio
+      cantidad: 1, // Por defecto cantidad es 1
+      metodoPago: nuevoAdicionalMetodoPago, // Solo para UI y registro de depósito
+      metodoPagoNombre: metodoPagoNombre // Solo para UI
     }]);
     
     setMensaje(`✓ Adicional "${descripcionGuardada}" agregado exitosamente. Se registrará en ${metodoPagoNombre}.`);
@@ -520,7 +528,13 @@ const CrearPedido: React.FC = () => {
       historial_pagos: pagos.length > 0 ? pagos : [],
       total_abonado: pagos.reduce((acc, p) => acc + p.monto, 0),
       todos_items_disponibles: todosTienenExistencia && !forzarProduccion, // Flag para el backend
-      adicionales: adicionales.length > 0 ? adicionales : undefined,
+      // Enviar adicionales al backend con estructura: { descripcion?, precio, cantidad? }
+      // NO incluir metodoPago ni metodoPagoNombre (son solo para UI)
+      adicionales: adicionales.length > 0 ? adicionales.map(ad => ({
+        descripcion: ad.descripcion,
+        precio: ad.precio,
+        cantidad: ad.cantidad || 1
+      })) : undefined,
     };
 
     // Debug: Log del payload completo
@@ -568,12 +582,16 @@ const CrearPedido: React.FC = () => {
         // Registrar depósitos en métodos de pago para cada adicional
         if (adicionales.length > 0 && pedidoId) {
           const depositosPromesas = adicionales.map(async (adicional) => {
-            if (adicional.metodoPago && adicional.monto > 0) {
+            // Calcular monto del adicional: precio * cantidad
+            const cantidad = adicional.cantidad || 1;
+            const montoAdicional = adicional.precio * cantidad;
+            
+            if (adicional.metodoPago && montoAdicional > 0) {
               try {
                 // Concepto mejorado con ID del pedido para identificación en historial
-                const concepto = `Pedido ${pedidoId?.slice(-8) || 'N/A'} - Adicional: ${adicional.descripcion}`;
+                const concepto = `Pedido ${pedidoId?.slice(-8) || 'N/A'} - Adicional: ${adicional.descripcion || 'Sin descripción'}`;
                 
-                console.log(`📝 Registrando depósito: ${adicional.monto} en método ${adicional.metodoPago} (${adicional.metodoPagoNombre})`);
+                console.log(`📝 Registrando depósito: $${montoAdicional.toFixed(2)} (precio: $${adicional.precio.toFixed(2)} x cantidad: ${cantidad}) en método ${adicional.metodoPago} (${adicional.metodoPagoNombre})`);
                 console.log(`📝 Concepto: ${concepto}`);
                 console.log(`📝 Pedido ID: ${pedidoId}`);
                 
@@ -584,27 +602,27 @@ const CrearPedido: React.FC = () => {
                     "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
                   },
                   body: JSON.stringify({
-                    monto: adicional.monto,
+                    monto: montoAdicional,
                     concepto: concepto
                   }),
                 });
                 
                 if (depositoRes.ok) {
                   const depositoData = await depositoRes.json();
-                  console.log(`✓ Adicional "${adicional.descripcion}" ($${adicional.monto.toFixed(2)}) registrado en método de pago ${adicional.metodoPagoNombre}`);
+                  console.log(`✓ Adicional "${adicional.descripcion || 'Sin descripción'}" ($${montoAdicional.toFixed(2)}) registrado en método de pago ${adicional.metodoPagoNombre}`);
                   console.log(`✓ Respuesta del backend:`, depositoData);
-                  return { success: true, adicional: adicional.descripcion, monto: adicional.monto };
+                  return { success: true, adicional: adicional.descripcion || 'Sin descripción', monto: montoAdicional };
                 } else {
                   const errorText = await depositoRes.text();
-                  console.error(`✗ Error al registrar adicional "${adicional.descripcion}" en método de pago:`, depositoRes.status, errorText);
-                  return { success: false, adicional: adicional.descripcion, error: errorText };
+                  console.error(`✗ Error al registrar adicional "${adicional.descripcion || 'Sin descripción'}" en método de pago:`, depositoRes.status, errorText);
+                  return { success: false, adicional: adicional.descripcion || 'Sin descripción', error: errorText };
                 }
               } catch (error: any) {
-                console.error(`✗ Error al registrar adicional "${adicional.descripcion}" en método de pago:`, error.message || error);
-                return { success: false, adicional: adicional.descripcion, error: error.message || error };
+                console.error(`✗ Error al registrar adicional "${adicional.descripcion || 'Sin descripción'}" en método de pago:`, error.message || error);
+                return { success: false, adicional: adicional.descripcion || 'Sin descripción', error: error.message || error };
               }
             } else {
-              console.warn(`⚠ Adicional "${adicional.descripcion}" no tiene método de pago o monto válido`);
+              console.warn(`⚠ Adicional "${adicional.descripcion || 'Sin descripción'}" no tiene método de pago o monto válido`);
               return null;
             }
           });
@@ -1408,7 +1426,12 @@ const CrearPedido: React.FC = () => {
                     {/* Lista de adicionales agregados */}
                     {adicionales.length > 0 && (
                       <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {adicionales.map((adicional, idx) => (
+                        {adicionales.map((adicional, idx) => {
+                          const cantidad = adicional.cantidad || 1;
+                          const precio = adicional.precio || 0;
+                          const montoAdicional = precio * cantidad;
+                          
+                          return (
                           <div key={idx} className="bg-yellow-50 rounded-lg p-3 shadow-sm border-2 border-yellow-200 hover:border-yellow-300 transition">
                             <div className="flex justify-between items-center mb-2">
                               <div className="flex-1">
@@ -1418,7 +1441,10 @@ const CrearPedido: React.FC = () => {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-bold text-yellow-700">${adicional.monto.toFixed(2)}</p>
+                                <p className="text-sm font-bold text-yellow-700">
+                                  ${montoAdicional.toFixed(2)}
+                                  {cantidad > 1 && <span className="text-xs text-yellow-600 ml-1">(x{cantidad})</span>}
+                                </p>
                                 <Button
                                   type="button"
                                   variant="destructive"
@@ -1431,7 +1457,8 @@ const CrearPedido: React.FC = () => {
                               </div>
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
