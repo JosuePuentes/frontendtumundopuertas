@@ -414,112 +414,61 @@ const PedidosWeb: React.FC = () => {
       }
       const token = localStorage.getItem("access_token");
       
-      // Cargar todos los pedidos y filtrar los que son pedidos web
-      // Los pedidos web generalmente tienen metodo_pago, numero_referencia y comprobante_url
-      const resPedidos = await fetch(`${apiUrl}/pedidos/all/`, {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
+      // OPTIMIZACIÓN: Cargar todos los pedidos con timeout para evitar esperas largas
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos máximo
+      
+      try {
+        const resPedidos = await fetch(`${apiUrl}/pedidos/all/`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+          signal: controller.signal,
+        });
+        
+        clearTimeout(timeoutId);
 
-      if (resPedidos.ok) {
-        const todosPedidos = await resPedidos.json();
-        
-        // Filtrar solo pedidos web (tienen características de pedidos desde cliente web)
-        const dataPedidos = Array.isArray(todosPedidos) 
-          ? todosPedidos.filter((pedido: any) => {
-              // Un pedido web típicamente tiene estos campos
-              return pedido.metodo_pago || pedido.numero_referencia || pedido.comprobante_url || 
-                     (pedido.items && Array.isArray(pedido.items) && pedido.items.length > 0 && 
-                      pedido.items.some((item: any) => item.itemId));
-            })
-          : [];
-        
-        // Para cada pedido, cargar su factura asociada y datos del cliente
-        const pedidosConFacturas: PedidoWeb[] = await Promise.all(
-          (Array.isArray(dataPedidos) ? dataPedidos : []).map(async (pedido: any): Promise<PedidoWeb> => {
-            try {
-              const pedidoId = pedido._id || pedido.id;
-              const clienteId = pedido.cliente_id || pedido.clienteId;
-              
-              // OPTIMIZACIÓN: El backend ahora incluye cliente_cedula y cliente_telefono directamente
-              // Solo cargar datos del cliente si faltan campos críticos
-              let datosCliente: any = {
-                nombre: pedido.cliente_nombre || pedido.clienteNombre || pedido.cliente?.nombre,
-                cedula: pedido.cliente_cedula || pedido.clienteCedula || pedido.cliente?.cedula,
-                direccion: pedido.cliente_direccion || pedido.clienteDireccion || pedido.cliente?.direccion,
-                telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono,
-              };
-              
-              // Solo cargar datos del cliente si realmente faltan datos críticos (nombre o cédula)
-              // El backend ya provee cliente_cedula y cliente_telefono, así que esto solo se ejecuta raramente
-              const necesitaCargarCliente = clienteId && (
-                !datosCliente.nombre || 
-                datosCliente.nombre === "Sin nombre" || 
-                (!datosCliente.cedula || datosCliente.cedula === "Sin cédula")
-              );
-              
-              if (necesitaCargarCliente) {
-                try {
-                  // Intentar primero con el endpoint /clientes/id/{cliente_id}/ (para clientes no autenticados)
-                  const resCliente = await fetch(`${apiUrl}/clientes/id/${clienteId}/`, {
-                    headers: {
-                      "Authorization": `Bearer ${token}`,
-                    },
-                  });
-                  
-                  if (resCliente.ok) {
-                    const clienteData = await resCliente.json();
-                    datosCliente = {
-                      nombre: clienteData.nombre || clienteData.nombres || datosCliente.nombre || "Sin nombre",
-                      cedula: clienteData.cedula || clienteData.rif || datosCliente.cedula || "",
-                      direccion: clienteData.direccion || datosCliente.direccion || "",
-                      telefono: clienteData.telefono || clienteData.telefono_contacto || datosCliente.telefono || "",
-                    };
-                  }
-                  // No intentar segundo endpoint si el primero falla (evitar múltiples llamadas)
-                } catch (error) {
-                  // Silenciar errores para evitar spam en consola
-                }
-              }
-              
-              return {
-                _id: pedidoId,
-                cliente_id: clienteId,
-                cliente_nombre: datosCliente.nombre || "Sin nombre",
-                cliente_cedula: datosCliente.cedula || "Sin cédula",
-                cliente_direccion: datosCliente.direccion || "Sin dirección",
-                cliente_telefono: datosCliente.telefono || "Sin teléfono",
-                items: pedido.items || [],
-                metodo_pago: pedido.metodo_pago || pedido.metodoPago || "No especificado",
-                numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
-                comprobante_url: pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "",
-                total: pedido.total || 0,
-                estado: pedido.estado || pedido.estado_general || "pendiente",
-                fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || pedido.createdAt || new Date().toISOString(),
-                factura: undefined, // Se cargará cuando se abra el modal de detalle
-              };
-            } catch (error) {
-              console.error("Error al procesar pedido:", error);
-              return {
-                _id: pedido._id || pedido.id,
-                cliente_id: pedido.cliente_id || pedido.clienteId,
-                cliente_nombre: pedido.cliente_nombre || pedido.clienteNombre || "Sin nombre",
-                cliente_cedula: pedido.cliente_cedula || pedido.clienteCedula || "Sin cédula",
-                cliente_direccion: pedido.cliente_direccion || pedido.clienteDireccion || "Sin dirección",
-                cliente_telefono: pedido.cliente_telefono || pedido.clienteTelefono || "Sin teléfono",
-                items: pedido.items || [],
-                metodo_pago: pedido.metodo_pago || pedido.metodoPago || "No especificado",
-                numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
-                comprobante_url: pedido.comprobante_url || pedido.comprobanteUrl || "",
-                total: pedido.total || 0,
-                estado: pedido.estado || "pendiente",
-                fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || new Date().toISOString(),
-                factura: null,
-              };
-            }
-          })
-        );
+        if (resPedidos.ok) {
+          const todosPedidos = await resPedidos.json();
+          
+          // OPTIMIZACIÓN: Filtrar solo pedidos web de forma más eficiente
+          // Un pedido web típicamente tiene estos campos
+          const dataPedidos = Array.isArray(todosPedidos) 
+            ? todosPedidos.filter((pedido: any) => {
+                // Verificar primero los campos más comunes para evitar evaluaciones innecesarias
+                return pedido.metodo_pago || 
+                       pedido.numero_referencia || 
+                       pedido.comprobante_url || 
+                       pedido.tipo_pedido === "web" ||
+                       (pedido.items && Array.isArray(pedido.items) && pedido.items.length > 0 && 
+                        pedido.items.some((item: any) => item.itemId));
+              })
+            : [];
+          
+          // OPTIMIZACIÓN: Procesar pedidos de forma síncrona (sin llamadas async innecesarias)
+          // El backend ya incluye cliente_cedula y cliente_telefono, así que no necesitamos hacer llamadas adicionales
+          const pedidosConFacturas: PedidoWeb[] = dataPedidos.map((pedido: any) => {
+            const pedidoId = pedido._id || pedido.id;
+            const clienteId = pedido.cliente_id || pedido.clienteId;
+            
+            // Usar directamente los datos que vienen del backend (ya incluye cliente_cedula y cliente_telefono)
+            return {
+              _id: pedidoId,
+              cliente_id: clienteId,
+              cliente_nombre: pedido.cliente_nombre || pedido.clienteNombre || pedido.cliente?.nombre || "Sin nombre",
+              cliente_cedula: pedido.cliente_cedula || pedido.clienteCedula || pedido.cliente?.cedula || "Sin cédula",
+              cliente_direccion: pedido.cliente_direccion || pedido.clienteDireccion || pedido.cliente?.direccion || "Sin dirección",
+              cliente_telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono || "Sin teléfono",
+              items: pedido.items || [],
+              metodo_pago: pedido.metodo_pago || pedido.metodoPago || "No especificado",
+              numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
+              comprobante_url: pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "",
+              total: pedido.total || 0,
+              estado: pedido.estado || pedido.estado_general || "pendiente",
+              fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || pedido.createdAt || new Date().toISOString(),
+              factura: undefined, // Se cargará cuando se abra el modal de detalle
+            };
+          });
 
         // Detectar nuevos pedidos
         if (silencioso && pedidosAnterioresRef.current.size > 0) {
@@ -557,15 +506,30 @@ const PedidosWeb: React.FC = () => {
         pedidosAnterioresRef.current = new Set(pedidosConFacturas.map((p: PedidoWeb) => p._id));
         // Nota: No actualizamos referencias de abonos aquí porque las facturas no se cargan en la carga inicial
 
-        setPedidos(pedidosConFacturas);
-      } else {
-        console.error("Error al cargar pedidos:", resPedidos.statusText);
-        if (!silencioso) {
-          setPedidos([]);
+          setPedidos(pedidosConFacturas);
+        } else {
+          console.error("Error al cargar pedidos:", resPedidos.statusText);
+          if (!silencioso) {
+            setPedidos([]);
+          }
+        }
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          console.error("⏱️ Timeout al cargar pedidos (más de 30 segundos)");
+          if (!silencioso) {
+            setPedidos([]);
+            alert("La carga de pedidos está tardando demasiado. Por favor, intenta recargar la página.");
+          }
+        } else {
+          console.error("Error al cargar pedidos:", fetchError);
+          if (!silencioso) {
+            setPedidos([]);
+          }
         }
       }
     } catch (error) {
-      console.error("Error al cargar pedidos:", error);
+      console.error("Error general al cargar pedidos:", error);
       if (!silencioso) {
         setPedidos([]);
       }
