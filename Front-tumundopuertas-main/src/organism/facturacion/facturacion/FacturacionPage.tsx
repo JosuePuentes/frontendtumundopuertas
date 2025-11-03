@@ -1636,10 +1636,23 @@ const FacturacionPage: React.FC = () => {
                 </div>
 
                 {(() => {
-                  // Calcular total incluyendo adicionales
+                  // CRÍTICO: Calcular total SIEMPRE incluyendo adicionales (no depender del backend)
                   const montoItems = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
                   const montoAdicionales = (pedido.adicionales || []).reduce((acc: number, ad: any) => acc + (ad.monto || 0), 0);
-                  const totalConAdicionales = pedido.montoTotal || (montoItems + montoAdicionales);
+                  // SIEMPRE calcular total como items + adicionales (no usar pedido.montoTotal del backend)
+                  const totalConAdicionales = montoItems + montoAdicionales;
+                  
+                  // Debug: Log para verificar que los adicionales están presentes
+                  if (Array.isArray(pedido.adicionales) && pedido.adicionales.length > 0) {
+                    console.log('💰 DEBUG FACTURACIÓN TARJETA - Pedido tiene adicionales:', {
+                      pedidoId: pedido._id?.slice(-8),
+                      montoItems,
+                      montoAdicionales,
+                      totalConAdicionales,
+                      adicionales: pedido.adicionales,
+                      montoTotalBackend: pedido.montoTotal
+                    });
+                  }
                   
                   return (
                     <>
@@ -1649,6 +1662,9 @@ const FacturacionPage: React.FC = () => {
                             <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Total
                           </p>
                           <p className="text-lg sm:text-xl font-bold text-gray-800">${totalConAdicionales.toFixed(2)}</p>
+                          {montoAdicionales > 0 && (
+                            <p className="text-xs text-gray-500 mt-1">(Items: ${montoItems.toFixed(2)} + Adicionales: ${montoAdicionales.toFixed(2)})</p>
+                          )}
                         </div>
                         <div className="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
                           <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
