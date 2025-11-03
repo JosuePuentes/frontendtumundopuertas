@@ -785,7 +785,7 @@ const CrearPedido: React.FC = () => {
         <CardContent className="p-3 sm:p-4 md:p-6">
           <form onSubmit={handleSubmit}>
           <div className="space-y-6">
-          {/* Layout principal: Cliente/Fecha arriba, Items y Resumen abajo */}
+          {/* Layout principal: Cliente/Fecha arriba */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Cliente */}
             <div className="space-y-2">
@@ -912,14 +912,12 @@ const CrearPedido: React.FC = () => {
                 className="focus:ring-2 focus:ring-blue-400"
               />
             </div>
-          </div>
+          </div> {/* Cierre del grid de Cliente/Fecha */}
 
           <Separator />
 
-          {/* Items y Resumen en layout de columnas */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Items - Ocupa 3 columnas como hoja Excel */}
-            <div className="lg:col-span-3 space-y-4">
+          {/* Items - Ocupa todo el ancho */}
+          <div className="space-y-4">
           {/* Items */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -1004,9 +1002,15 @@ const CrearPedido: React.FC = () => {
                                       </div>
                                     </div>
                                     <div className="col-span-1 text-right">
-                                      <div className={`inline-block px-3 py-1 rounded-lg mb-2 ${f.cantidad > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                        <p className="text-xs font-semibold">DISPONIBLE</p>
-                                        <p className="text-lg font-bold">{f.cantidad || 0}</p>
+                                      <div className="space-y-2 mb-2">
+                                        <div className={`inline-block px-3 py-1 rounded-lg ${(f.cantidad !== undefined ? f.cantidad : (f.existencia || 0)) > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                                          <p className="text-xs font-semibold">Sucursal 1</p>
+                                          <p className="text-lg font-bold">{f.cantidad !== undefined ? f.cantidad : (f.existencia || 0)}</p>
+                                        </div>
+                                        <div className={`inline-block px-3 py-1 rounded-lg ${(f.existencia2 || 0) > 0 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                                          <p className="text-xs font-semibold">Sucursal 2</p>
+                                          <p className="text-lg font-bold">{f.existencia2 !== undefined ? f.existencia2 : 0}</p>
+                                        </div>
                                       </div>
                                       <p className="text-xl font-bold text-blue-600">${f.precio}</p>
                                     </div>
@@ -1118,12 +1122,14 @@ const CrearPedido: React.FC = () => {
                 </p>
               )}
             </div>
-            </div>
-            </div> {/* Cierre de items (col-span-3) */}
+          </div> {/* Cierre de space-y-4 dentro del contenedor de items */}
+          </div> {/* Cierre del contenedor de items */}
+          
+          <Separator />
 
-            {/* Resumen del pedido - Ocupa 1 columna */}
-            <div className="lg:col-span-1">
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg sticky top-4">
+          {/* Resumen del pedido - Movido abajo */}
+          <div className="w-full">
+            <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-lg font-bold text-gray-800">Resumen del Pedido</CardTitle>
                 </CardHeader>
@@ -1489,8 +1495,7 @@ const CrearPedido: React.FC = () => {
                   </div>
                 </CardContent>
               </Card>
-            </div> {/* Cierre de resumen (col-span-1) */}
-          </div> {/* Cierre del grid de items y resumen */}
+          </div> {/* Cierre de resumen */}
           </div> {/* Cierre de space-y-6 del formulario */}
         </form>
       </CardContent>
