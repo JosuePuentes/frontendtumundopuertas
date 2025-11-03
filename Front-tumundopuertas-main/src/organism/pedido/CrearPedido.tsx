@@ -73,6 +73,8 @@ interface RegistroPago {
 interface Adicional {
   descripcion: string;
   monto: number;
+  metodoPago?: string; // ID del método de pago seleccionado
+  metodoPagoNombre?: string; // Nombre del método de pago (para mostrar)
 }
 
 interface PedidoPayload {
@@ -120,6 +122,7 @@ const CrearPedido: React.FC = () => {
   const [adicionales, setAdicionales] = useState<Adicional[]>([]);
   const [nuevoAdicionalDescripcion, setNuevoAdicionalDescripcion] = useState<string>("");
   const [nuevoAdicionalMonto, setNuevoAdicionalMonto] = useState<number>(0);
+  const [nuevoAdicionalMetodoPago, setNuevoAdicionalMetodoPago] = useState<string>("");
 
   const { fetchPedido } = usePedido();
   const {
@@ -319,22 +322,32 @@ const CrearPedido: React.FC = () => {
       setMensajeTipo("error");
       return;
     }
+    if (!nuevoAdicionalMetodoPago) {
+      setMensaje("Debes seleccionar un método de pago para el adicional.");
+      setMensajeTipo("error");
+      return;
+    }
     
     const descripcionGuardada = nuevoAdicionalDescripcion.trim();
+    const metodoPagoSeleccionado = metodosPago.find((m: any) => (m._id || m.id) === nuevoAdicionalMetodoPago);
+    const metodoPagoNombre = metodoPagoSeleccionado?.nombre || 'Sin nombre';
     
     setAdicionales([...adicionales, {
       descripcion: descripcionGuardada,
-      monto: nuevoAdicionalMonto
+      monto: nuevoAdicionalMonto,
+      metodoPago: nuevoAdicionalMetodoPago,
+      metodoPagoNombre: metodoPagoNombre
     }]);
     
-    setMensaje(`✓ Adicional "${descripcionGuardada}" agregado exitosamente.`);
+    setMensaje(`✓ Adicional "${descripcionGuardada}" agregado exitosamente. Se registrará en ${metodoPagoNombre}.`);
     setMensajeTipo("success");
     setNuevoAdicionalDescripcion("");
     setNuevoAdicionalMonto(0);
+    setNuevoAdicionalMetodoPago("");
     setTimeout(() => {
       setMensaje("");
       setMensajeTipo("");
-    }, 2000);
+    }, 3000);
   };
 
   const handleEliminarAdicional = (index: number) => {
@@ -514,6 +527,7 @@ const CrearPedido: React.FC = () => {
     console.log("DEBUG CREAR PEDIDO: Payload completo -", {
       total_items: itemsPedido.length,
       items_con_estado_4: itemsPedido.filter(i => i.estado_item === 4).length,
+      adicionales: adicionales.length,
       items_con_estado_0: itemsPedido.filter(i => i.estado_item === 0).length,
       items: itemsPedido.map(i => ({
         nombre: i.nombre,
@@ -547,6 +561,52 @@ const CrearPedido: React.FC = () => {
       });
 
       if (resultado?.success) {
+        // Registrar depósitos en métodos de pago para cada adicional
+        if (adicionales.length > 0) {
+          const depositosPromesas = adicionales.map(async (adicional) => {
+            if (adicional.metodoPago && adicional.monto > 0) {
+              try {
+                const concepto = `Adicional pedido: ${adicional.descripcion}`;
+                const depositoRes = await fetch(`${apiUrl}/metodos-pago/${adicional.metodoPago}/deposito`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+                  },
+                  body: JSON.stringify({
+                    monto: adicional.monto,
+                    concepto: concepto
+                  }),
+                });
+                
+                if (depositoRes.ok) {
+                  console.log(`✓ Adicional "${adicional.descripcion}" registrado en método de pago ${adicional.metodoPagoNombre}`);
+                  return { success: true, adicional: adicional.descripcion };
+                } else {
+                  const errorText = await depositoRes.text();
+                  console.error(`✗ Error al registrar adicional "${adicional.descripcion}" en método de pago:`, depositoRes.status, errorText);
+                  return { success: false, adicional: adicional.descripcion, error: errorText };
+                }
+              } catch (error: any) {
+                console.error(`✗ Error al registrar adicional "${adicional.descripcion}" en método de pago:`, error.message || error);
+                return { success: false, adicional: adicional.descripcion, error: error.message || error };
+              }
+            }
+            return null;
+          });
+          
+          const resultadosDepositos = await Promise.all(depositosPromesas);
+          const exitosos = resultadosDepositos.filter(r => r && r.success).length;
+          const fallidos = resultadosDepositos.filter(r => r && !r.success).length;
+          
+          if (exitosos > 0) {
+            console.log(`✓ ${exitosos} adicional(es) registrado(s) en métodos de pago`);
+          }
+          if (fallidos > 0) {
+            console.warn(`⚠ ${fallidos} adicional(es) no pudo(eron) registrarse en métodos de pago`);
+          }
+        }
+        
         setMensaje("✅ Pedido creado correctamente.");
         setMensajeTipo("success");
         setClienteId(0);
@@ -560,6 +620,7 @@ const CrearPedido: React.FC = () => {
         setAdicionales([]);
         setNuevoAdicionalDescripcion("");
         setNuevoAdicionalMonto(0);
+        setNuevoAdicionalMetodoPago("");
         // Refrescar la lista de items para mostrar las existencias actualizadas
         fetchItems(`${apiUrl}/inventario/all`);
         
@@ -1213,10 +1274,43 @@ const CrearPedido: React.FC = () => {
                           className="text-sm focus:ring-2 focus:ring-yellow-400 border-2"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="adicionalMetodoPago" className="text-xs font-medium text-gray-600">
+                          Método de Pago
+                        </Label>
+                        <Select 
+                          value={nuevoAdicionalMetodoPago} 
+                          onValueChange={setNuevoAdicionalMetodoPago}
+                        >
+                          <SelectTrigger className="text-sm focus:ring-2 focus:ring-yellow-400 border-2 bg-white">
+                            <SelectValue placeholder="Seleccionar método de pago" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-white border-2 border-gray-200 shadow-lg max-h-60">
+                            {metodosPago.length === 0 ? (
+                              <SelectItem value="no-methods" disabled className="text-gray-500 bg-gray-50">
+                                No hay métodos disponibles
+                              </SelectItem>
+                            ) : (
+                              metodosPago.map((metodo: any, index: number) => {
+                                const metodoId = metodo._id || metodo.id || metodo.nombre || `metodo-${index}`;
+                                return (
+                                  <SelectItem 
+                                    key={metodoId} 
+                                    value={metodoId}
+                                    className="bg-white hover:bg-yellow-50 focus:bg-yellow-50 text-gray-800 font-medium cursor-pointer border-b border-gray-100 last:border-b-0"
+                                  >
+                                    {metodo.nombre || 'Sin nombre'}
+                                  </SelectItem>
+                                );
+                              })
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <Button
                         type="button"
                         onClick={handleAgregarAdicional}
-                        disabled={!nuevoAdicionalDescripcion.trim() || nuevoAdicionalMonto <= 0}
+                        disabled={!nuevoAdicionalDescripcion.trim() || nuevoAdicionalMonto <= 0 || !nuevoAdicionalMetodoPago}
                         className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold text-sm"
                       >
                         <FaPlus className="mr-2" />
@@ -1229,9 +1323,12 @@ const CrearPedido: React.FC = () => {
                       <div className="space-y-2 max-h-40 overflow-y-auto">
                         {adicionales.map((adicional, idx) => (
                           <div key={idx} className="bg-yellow-50 rounded-lg p-3 shadow-sm border-2 border-yellow-200 hover:border-yellow-300 transition">
-                            <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center mb-2">
                               <div className="flex-1">
                                 <p className="text-sm font-semibold text-gray-800">{adicional.descripcion}</p>
+                                {adicional.metodoPagoNombre && (
+                                  <p className="text-xs text-gray-600 mt-1">Método: {adicional.metodoPagoNombre}</p>
+                                )}
                               </div>
                               <div className="flex items-center gap-2">
                                 <p className="text-sm font-bold text-yellow-700">${adicional.monto.toFixed(2)}</p>
