@@ -1672,12 +1672,11 @@ const FacturacionPage: React.FC = () => {
 
                 {(() => {
                   // IMPORTANTE: El backend envía adicionales con estructura: { descripcion?, precio, cantidad? }
-                  // El montoTotal del backend YA incluye los adicionales, no sumarlos manualmente
                   // Normalizar adicionales: puede ser null, undefined, o array vacío desde el backend
                   const adicionalesRaw = pedido.adicionales;
                   const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
                   
-                  // Calcular monto de items (solo para mostrar, no para el total)
+                  // Calcular monto de items
                   const montoItems = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
                   // Calcular monto de adicionales (precio * cantidad, default cantidad = 1)
                   const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
@@ -1686,38 +1685,73 @@ const FacturacionPage: React.FC = () => {
                     return acc + (precio * cantidad);
                   }, 0);
                   
-                  // CRÍTICO: Usar montoTotal del backend (ya incluye adicionales)
-                  // Si no existe, calcular como fallback
-                  const totalConAdicionales = pedido.montoTotal || (montoItems + montoAdicionales);
+                  // CRÍTICO: Calcular total como Items + Adicionales (suma manual)
+                  const totalConAdicionales = montoItems + montoAdicionales;
                   
                   // Debug: Log para verificar estructura de adicionales
-                  if (adicionalesNormalizados.length > 0) {
-                    console.log(`🔍 DEBUG TARJETA PEDIDO ${pedido._id?.slice(-8)} - Tiene adicionales:`, {
-                      adicionalesNormalizados,
-                      montoItems,
-                      montoAdicionales,
-                      montoTotalBackend: pedido.montoTotal,
-                      totalConAdicionales
-                    });
-                  }
+                  console.log(`🔍 DEBUG TARJETA PEDIDO ${pedido._id?.slice(-8)}:`, {
+                    adicionalesRaw,
+                    adicionalesNormalizados,
+                    montoItems,
+                    montoAdicionales,
+                    totalConAdicionales,
+                    montoTotalBackend: pedido.montoTotal
+                  });
                   
                   return (
                     <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                        <div className="bg-gray-50 p-2 sm:p-3 rounded-lg border border-gray-200">
-                          <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
-                            <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Total
-                          </p>
-                          <p className="text-lg sm:text-xl font-bold text-gray-800">${totalConAdicionales.toFixed(2)}</p>
-                          {adicionalesNormalizados.length > 0 && (
-                            <p className="text-xs text-gray-500 mt-1">Incluye {adicionalesNormalizados.length} adicional(es)</p>
-                          )}
+                      {/* Mostrar desglose: Subtotal Items, Adicional, Total */}
+                      <div className="mb-3 space-y-2">
+                        <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-gray-600 font-semibold">Subtotal Items:</p>
+                            <p className="text-sm sm:text-base font-bold text-blue-700">${montoItems.toFixed(2)}</p>
+                          </div>
                         </div>
+                        
+                        {adicionalesNormalizados.length > 0 && adicionalesNormalizados.map((adicional: any, idx: number) => {
+                          const cantidad = adicional.cantidad || 1;
+                          const precio = adicional.precio || 0;
+                          const montoAdicional = precio * cantidad;
+                          
+                          return (
+                            <div key={idx} className="bg-yellow-50 p-2 sm:p-3 rounded-lg border-2 border-yellow-200">
+                              <div className="flex justify-between items-center">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-gray-600 font-semibold">Adicional:</p>
+                                  <p className="text-xs sm:text-sm text-yellow-800 font-medium">
+                                    {adicional.descripcion || 'Sin descripción'}
+                                    {cantidad > 1 && <span className="text-yellow-600 ml-1">(x{cantidad})</span>}
+                                  </p>
+                                </div>
+                                <p className="text-sm sm:text-base font-bold text-yellow-700 ml-2">+${montoAdicional.toFixed(2)}</p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        
+                        <div className="bg-gray-50 p-2 sm:p-3 rounded-lg border-2 border-gray-300">
+                          <div className="flex justify-between items-center">
+                            <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                              <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Total
+                            </p>
+                            <p className="text-lg sm:text-xl font-bold text-gray-800">${totalConAdicionales.toFixed(2)}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                         <div className="bg-green-50 p-2 sm:p-3 rounded-lg border border-green-200">
                           <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
                             <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Abonado
                           </p>
                           <p className="text-lg sm:text-xl font-bold text-green-700">${(pedido.montoAbonado || 0).toFixed(2)}</p>
+                        </div>
+                        <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
+                          <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
+                            <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Saldo Pendiente
+                          </p>
+                          <p className="text-lg sm:text-xl font-bold text-blue-700">${(totalConAdicionales - (pedido.montoAbonado || 0)).toFixed(2)}</p>
                         </div>
                       </div>
 
@@ -1741,50 +1775,6 @@ const FacturacionPage: React.FC = () => {
                                 </div>
                               </div>
                             ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Mostrar adicionales si existen */}
-                      {adicionalesNormalizados.length > 0 && (
-                        <div className="mb-3">
-                          <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-2">💰 Adicionales</h4>
-                          <div className="grid grid-cols-1 gap-2">
-                            {adicionalesNormalizados.map((adicional: any, idx: number) => {
-                              const cantidad = adicional.cantidad || 1;
-                              const precio = adicional.precio || 0;
-                              const montoAdicional = precio * cantidad;
-                              
-                              return (
-                                <div key={idx} className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-2 sm:p-3 hover:border-yellow-300 transition-colors">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-bold text-sm sm:text-base text-yellow-800">
-                                        {adicional.descripcion || 'Adicional sin descripción'}
-                                      </p>
-                                      {cantidad > 1 && (
-                                        <p className="text-xs text-yellow-600 mt-1">Cantidad: {cantidad}</p>
-                                      )}
-                                    </div>
-                                    <span className="text-base sm:text-lg font-bold text-yellow-700 whitespace-nowrap ml-2">
-                                      +${montoAdicional.toFixed(2)}
-                                    </span>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-yellow-300 bg-yellow-50 rounded-lg p-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs text-yellow-800 font-semibold">Total Adicionales:</span>
-                              <span className="text-sm font-bold text-yellow-800">
-                                ${adicionalesNormalizados.reduce((acc: number, ad: any) => {
-                                  const cantidad = ad.cantidad || 1;
-                                  const precio = ad.precio || 0;
-                                  return acc + (precio * cantidad);
-                                }, 0).toFixed(2)}
-                              </span>
-                            </div>
                           </div>
                         </div>
                       )}
