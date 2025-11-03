@@ -82,6 +82,24 @@ const MisPedidos: React.FC = () => {
 
   useEffect(() => {
     cargarPedidos();
+    
+    // Restaurar chat persistido
+    const clienteId = localStorage.getItem("cliente_id");
+    if (clienteId) {
+      const chatAbierto = localStorage.getItem(`chat_pedido_cliente_${clienteId}_abierto`) === "true";
+      const pedidoData = localStorage.getItem(`chat_pedido_cliente_${clienteId}_data`);
+      
+      if (chatAbierto && pedidoData) {
+        try {
+          const pedido = JSON.parse(pedidoData);
+          setPedidoChatActual(pedido);
+          setChatAbierto(true);
+        } catch (e) {
+          console.error("Error al restaurar chat:", e);
+        }
+      }
+    }
+    
     // Polling cada 10 segundos para verificar mensajes nuevos
     const intervalId = setInterval(() => {
       cargarMensajesNoLeidos();
@@ -280,7 +298,24 @@ const MisPedidos: React.FC = () => {
                         Ver Detalle
                       </Button>
                       <Button
-                        onClick={() => abrirChat(pedido)}
+                        onClick={() => {
+                          setPedidoChatActual(pedido);
+                          setChatAbierto(true);
+                          // Persistir estado del chat
+                          const clienteId = localStorage.getItem("cliente_id");
+                          if (clienteId) {
+                            localStorage.setItem(`chat_pedido_cliente_${clienteId}_abierto`, "true");
+                            localStorage.setItem(`chat_pedido_cliente_${clienteId}_data`, JSON.stringify(pedido));
+                          }
+                          // Marcar mensajes como leídos
+                          if (mensajesNoLeidos.has(pedido._id)) {
+                            setMensajesNoLeidos(prev => {
+                              const nuevo = new Map(prev);
+                              nuevo.delete(pedido._id);
+                              return nuevo;
+                            });
+                          }
+                        }}
                         variant="outline"
                         className="relative border-green-400 text-green-400 hover:bg-green-400/10"
                       >
@@ -540,8 +575,14 @@ const MisPedidos: React.FC = () => {
           tituloChat="Tu Mundo Puertas"
           open={chatAbierto}
           onClose={() => {
+            // NO eliminar pedidoChatActual, solo cerrar el modal
             setChatAbierto(false);
-            setPedidoChatActual(null);
+            // Persistir estado (cerrado pero mantener datos)
+            const clienteId = localStorage.getItem("cliente_id");
+            if (clienteId && pedidoChatActual) {
+              localStorage.setItem(`chat_pedido_cliente_${clienteId}_abierto`, "false");
+              localStorage.setItem(`chat_pedido_cliente_${clienteId}_data`, JSON.stringify(pedidoChatActual));
+            }
             cargarMensajesNoLeidos();
           }}
           onNuevoMensaje={() => {

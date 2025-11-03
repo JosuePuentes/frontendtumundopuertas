@@ -22,7 +22,9 @@ import {
   Bell,
   PlayCircle,
   Loader2,
-  MessageCircle
+  MessageCircle,
+  HelpCircle,
+  Users
 } from "lucide-react";
 import ChatMessenger from "./ChatMessenger";
 
@@ -186,6 +188,27 @@ const PedidosWeb: React.FC = () => {
   const [pedidoChatActual, setPedidoChatActual] = useState<PedidoWeb | null>(null);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState<Map<string, number>>(new Map());
   
+  // Estados para soporte
+  const [soporteAbierto, setSoporteAbierto] = useState<boolean>(() => {
+    const saved = localStorage.getItem("soporte_lista_abierta");
+    return saved === "true";
+  });
+  const [conversacionesSoporte, setConversacionesSoporte] = useState<Array<{
+    cliente_id: string;
+    cliente_nombre: string;
+    ultimoMensaje?: string;
+    ultimaFecha?: string;
+    noLeidos: number;
+  }>>([]);
+  const [chatSoporteActual, setChatSoporteActual] = useState<{
+    cliente_id: string;
+    cliente_nombre: string;
+  } | null>(null);
+  const [chatSoporteAbierto, setChatSoporteAbierto] = useState<boolean>(() => {
+    const saved = localStorage.getItem("chat_soporte_actual");
+    return saved !== null;
+  });
+  
   // Referencias para detectar cambios
   const pedidosAnterioresRef = useRef<Set<string>>(new Set());
   const abonosAnterioresRef = useRef<Map<string, number>>(new Map());
@@ -194,6 +217,24 @@ const PedidosWeb: React.FC = () => {
 
   useEffect(() => {
     cargarPedidos();
+    
+    // Restaurar chat de pedido persistido
+    const pedidosKeys = Object.keys(localStorage).filter(key => key.startsWith("chat_pedido_") && key.endsWith("_abierto"));
+    pedidosKeys.forEach(key => {
+      const pedidoId = key.replace("chat_pedido_", "").replace("_abierto", "");
+      const chatAbierto = localStorage.getItem(key) === "true";
+      const pedidoData = localStorage.getItem(`chat_pedido_${pedidoId}_data`);
+      
+      if (chatAbierto && pedidoData) {
+        try {
+          const pedido = JSON.parse(pedidoData);
+          setPedidoChatActual(pedido);
+          setChatAbierto(true);
+        } catch (e) {
+          console.error("Error al restaurar chat de pedido:", e);
+        }
+      }
+    });
     
     // Polling cada 10 segundos para detectar nuevos pedidos y abonos
     const intervalId = setInterval(() => {
@@ -212,6 +253,89 @@ const PedidosWeb: React.FC = () => {
       return () => clearInterval(intervalId);
     }
   }, [pedidos]);
+
+  // Cargar conversaciones de soporte
+  useEffect(() => {
+    cargarConversacionesSoporte();
+    // Polling cada 5 segundos para conversaciones de soporte
+    const intervalId = setInterval(cargarConversacionesSoporte, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Cargar estado persistido del chat de soporte
+  useEffect(() => {
+    const savedChat = localStorage.getItem("chat_soporte_actual");
+    if (savedChat) {
+      try {
+        const chatData = JSON.parse(savedChat);
+        setChatSoporteActual(chatData);
+        setChatSoporteAbierto(true);
+      } catch (e) {
+        console.error("Error al cargar chat de soporte guardado:", e);
+      }
+    }
+  }, []);
+
+  // Persistir estado del chat de soporte
+  useEffect(() => {
+    if (chatSoporteActual) {
+      localStorage.setItem("chat_soporte_actual", JSON.stringify(chatSoporteActual));
+      localStorage.setItem("chat_soporte_abierto", "true");
+    } else {
+      localStorage.removeItem("chat_soporte_actual");
+      localStorage.removeItem("chat_soporte_abierto");
+    }
+  }, [chatSoporteActual]);
+
+  // Persistir estado de lista de soporte
+  useEffect(() => {
+    localStorage.setItem("soporte_lista_abierta", soporteAbierto.toString());
+  }, [soporteAbierto]);
+
+  const cargarConversacionesSoporte = async () => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) return;
+
+      // Obtener todos los mensajes de soporte (pedido_id que empiezan con "soporte_")
+      // Necesitamos un endpoint que retorne mensajes agrupados por cliente
+      // Por ahora, vamos a buscar mensajes que tengan pedido_id que empiece con "soporte_"
+      const res = await fetch(`${apiUrl}/mensajes/soporte`, {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // El backend debe retornar un array de conversaciones con:
+        // [{ cliente_id, cliente_nombre, ultimoMensaje, ultimaFecha, noLeidos }]
+        setConversacionesSoporte(data);
+      } else if (res.status === 404) {
+        // Si el endpoint no existe, construir la lista manualmente
+        // Buscar mensajes con pedido_id que empiece con "soporte_"
+        // Por ahora, dejamos el array vacío y el backend debe implementar el endpoint
+        setConversacionesSoporte([]);
+      }
+    } catch (error) {
+      console.error("Error al cargar conversaciones de soporte:", error);
+    }
+  };
+
+  const abrirChatSoporte = (cliente_id: string, cliente_nombre: string) => {
+    setChatSoporteActual({ cliente_id, cliente_nombre });
+    setChatSoporteAbierto(true);
+    // Persistir
+    localStorage.setItem("chat_soporte_actual", JSON.stringify({ cliente_id, cliente_nombre }));
+    localStorage.setItem("chat_soporte_abierto", "true");
+  };
+
+  const cerrarChatSoporte = () => {
+    // NO eliminar completamente, solo marcar como cerrado pero mantener los datos
+    setChatSoporteAbierto(false);
+    localStorage.setItem("chat_soporte_abierto", "false");
+    // NO eliminar chat_soporte_actual para que persista
+  };
 
   const cargarMensajesNoLeidos = async () => {
     try {
@@ -252,6 +376,9 @@ const PedidosWeb: React.FC = () => {
   const abrirChat = (pedido: PedidoWeb) => {
     setPedidoChatActual(pedido);
     setChatAbierto(true);
+    // Persistir estado del chat abierto
+    localStorage.setItem(`chat_pedido_${pedido._id}_abierto`, "true");
+    localStorage.setItem(`chat_pedido_${pedido._id}_data`, JSON.stringify(pedido));
     // Marcar mensajes como leídos cuando se abre el chat
     if (mensajesNoLeidos.has(pedido._id)) {
       setMensajesNoLeidos(prev => {
@@ -589,6 +716,72 @@ const PedidosWeb: React.FC = () => {
         >
           Actualizar
         </Button>
+      </div>
+
+      {/* Panel de Soporte - Estilo DM */}
+      <div className="mb-6">
+        <Button
+          onClick={() => setSoporteAbierto(!soporteAbierto)}
+          className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold mb-4"
+        >
+          <HelpCircle className="w-5 h-5 mr-2" />
+          Soporte {conversacionesSoporte.length > 0 && (
+            <Badge className="ml-2 bg-white text-purple-600">{conversacionesSoporte.length}</Badge>
+          )}
+        </Button>
+
+        {soporteAbierto && (
+          <Card className="bg-white border-purple-200 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Users className="w-5 h-5 text-purple-600" />
+                Conversaciones de Soporte
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="max-h-96 overflow-y-auto">
+              {conversacionesSoporte.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  No hay conversaciones de soporte aún
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {conversacionesSoporte.map((conv) => (
+                    <div
+                      key={conv.cliente_id}
+                      onClick={() => abrirChatSoporte(conv.cliente_id, conv.cliente_nombre)}
+                      className={`p-3 rounded-lg cursor-pointer transition-all ${
+                        chatSoporteActual?.cliente_id === conv.cliente_id
+                          ? "bg-purple-100 border-2 border-purple-500"
+                          : "bg-gray-50 hover:bg-gray-100 border border-gray-200"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">{conv.cliente_nombre}</p>
+                          {conv.ultimoMensaje && (
+                            <p className="text-sm text-gray-600 truncate mt-1">
+                              {conv.ultimoMensaje}
+                            </p>
+                          )}
+                          {conv.ultimaFecha && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(conv.ultimaFecha).toLocaleDateString()}
+                            </p>
+                          )}
+                        </div>
+                        {conv.noLeidos > 0 && (
+                          <Badge className="bg-red-500 text-white ml-2">
+                            {conv.noLeidos}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Buscador */}
@@ -1147,7 +1340,7 @@ const PedidosWeb: React.FC = () => {
         </div>
       </div>
 
-      {/* Chat Messenger */}
+      {/* Chat Messenger para Pedidos */}
       {pedidoChatActual && (
         <ChatMessenger
           pedidoId={pedidoChatActual._id}
@@ -1158,12 +1351,35 @@ const PedidosWeb: React.FC = () => {
           usuarioActualNombre={localStorage.getItem("usuario") || "Administrador"}
           open={chatAbierto}
           onClose={() => {
+            // NO eliminar pedidoChatActual, solo cerrar el modal
             setChatAbierto(false);
-            setPedidoChatActual(null);
+            // Persistir estado
+            localStorage.setItem(`chat_pedido_${pedidoChatActual._id}_abierto`, "false");
             cargarMensajesNoLeidos();
           }}
           onNuevoMensaje={() => {
             cargarMensajesNoLeidos();
+          }}
+        />
+      )}
+
+      {/* Chat Messenger para Soporte */}
+      {chatSoporteActual && (
+        <ChatMessenger
+          pedidoId={`soporte_${chatSoporteActual.cliente_id}`}
+          clienteId={chatSoporteActual.cliente_id}
+          clienteNombre={chatSoporteActual.cliente_nombre}
+          usuarioActualId={localStorage.getItem("usuario_id") || ""}
+          usuarioActualTipo="admin"
+          usuarioActualNombre={localStorage.getItem("usuario") || "Administrador"}
+          tituloChat={chatSoporteActual.cliente_nombre}
+          open={chatSoporteAbierto}
+          onClose={() => {
+            cerrarChatSoporte();
+            cargarConversacionesSoporte();
+          }}
+          onNuevoMensaje={() => {
+            cargarConversacionesSoporte();
           }}
         />
       )}
