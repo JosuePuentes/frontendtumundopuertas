@@ -754,16 +754,20 @@ const PedidosWeb: React.FC = () => {
                         alt="Comprobante de pago"
                         className="max-w-full max-h-96 rounded-lg border border-gray-300"
                         onError={(e) => {
-                          // Ocultar la imagen si falla en lugar de cargar un placeholder inexistente
-                          (e.target as HTMLImageElement).style.display = "none";
-                          const parent = (e.target as HTMLImageElement).parentElement;
-                          if (parent) {
-                            parent.innerHTML = `
-                              <div class="flex flex-col items-center justify-center p-8 text-gray-500">
-                                <ImageIcon class="w-12 h-12 mb-2 opacity-50" />
-                                <p class="text-sm">No se pudo cargar el comprobante</p>
-                              </div>
+                          // Ocultar la imagen si falla y mostrar mensaje
+                          const img = e.target as HTMLImageElement;
+                          img.style.display = "none";
+                          const parent = img.parentElement;
+                          if (parent && !parent.querySelector(".error-message")) {
+                            const errorDiv = document.createElement("div");
+                            errorDiv.className = "flex flex-col items-center justify-center p-8 text-gray-500";
+                            errorDiv.innerHTML = `
+                              <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <p class="text-sm">No se pudo cargar el comprobante</p>
                             `;
+                            parent.appendChild(errorDiv);
                           }
                         }}
                       />
