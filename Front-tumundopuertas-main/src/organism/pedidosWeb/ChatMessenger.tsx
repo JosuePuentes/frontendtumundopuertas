@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { MessageCircle, Send, X, Loader2 } from "lucide-react";
 
 interface Mensaje {
@@ -18,7 +17,7 @@ interface Mensaje {
 
 interface ChatMessengerProps {
   pedidoId: string;
-  clienteId: string;
+  clienteId?: string;
   clienteNombre: string;
   usuarioActualId: string;
   usuarioActualTipo: "admin" | "cliente";
@@ -30,7 +29,6 @@ interface ChatMessengerProps {
 
 const ChatMessenger: React.FC<ChatMessengerProps> = ({
   pedidoId,
-  clienteId,
   clienteNombre,
   usuarioActualId,
   usuarioActualTipo,
