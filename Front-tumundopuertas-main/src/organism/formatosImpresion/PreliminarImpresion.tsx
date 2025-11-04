@@ -445,7 +445,12 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
     `;
   };
 
-  const generarContenidoHTML = (config: ConfiguracionFormato, clienteData: typeof clienteData) => {
+  const generarContenidoHTML = (config: ConfiguracionFormato, clienteData: {
+    nombre?: string;
+    cedula?: string;
+    direccion?: string;
+    telefono?: string;
+  } | null) => {
     let html = '';
 
     // Header con empresa y logo
