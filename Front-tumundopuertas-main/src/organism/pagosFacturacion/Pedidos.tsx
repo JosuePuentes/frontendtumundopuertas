@@ -130,6 +130,7 @@ interface Pedido {
   pago?: string; // "sin pago" | "abonado" | "pagado"
   items?: PedidoItem[];
   historial_pagos?: RegistroPago[];
+  total_abonado?: number; // Total abonado del pedido
 }
 
 // Removido el filtro de estados - ahora muestra TODOS los pedidos
@@ -279,11 +280,30 @@ const Pedidos: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {pedidos
-                  .filter((pedido) =>
-                    clienteFiltro.trim() === ""
+                  .filter((pedido) => {
+                    // Filtro por cliente
+                    const pasaFiltroCliente = clienteFiltro.trim() === ""
                       ? true
-                      : (pedido.cliente_nombre || "").toLowerCase().includes(clienteFiltro.trim().toLowerCase())
-                  )
+                      : (pedido.cliente_nombre || "").toLowerCase().includes(clienteFiltro.trim().toLowerCase());
+                    
+                    if (!pasaFiltroCliente) return false;
+                    
+                    // Filtrar pedidos completamente pagados
+                    // Calcular el total del pedido
+                    const totalPedido = (pedido.items || []).reduce(
+                      (acc, item) => acc + (item.precio || 0) * (item.cantidad || 0),
+                      0
+                    );
+                    
+                    // Calcular el monto abonado
+                    const montoAbonado = pedido.total_abonado || (pedido.historial_pagos || []).reduce(
+                      (acc, pago) => acc + (pago.monto || 0),
+                      0
+                    );
+                    
+                    // Excluir pedidos completamente pagados (monto abonado >= total del pedido)
+                    return !(totalPedido > 0 && montoAbonado >= totalPedido);
+                  })
                   .map((pedido) => {
                   // Calcular el total del pedido
                   const total = (pedido.items || []).reduce(
