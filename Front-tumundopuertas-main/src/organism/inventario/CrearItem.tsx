@@ -74,23 +74,44 @@ const CrearItem: React.FC = () => {
       return;
     }
     const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-    await fetchItems(`${apiUrl}/inventario`, {
-      method: "POST",
-      body: {
-        codigo: item.codigo,
-        nombre: item.nombre,
-        descripcion: item.descripcion,
-        categoria: item.categoria,
-        precio: parseFloat(item.precio),
-        costo: parseFloat(item.costo),
-        costoProduccion: parseFloat(item.costoProduccion),
-        cantidad: parseInt(item.cantidad, 10),
-        activo: item.activo,
-        imagenes: item.imagenes ?? [],
-      },
-    });
-    if (!error) {
-      setMensaje("Item creado correctamente ✅");
+    
+    try {
+      const res = await fetch(`${apiUrl}/inventario/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
+        },
+        body: JSON.stringify({
+          codigo: item.codigo || "", // Si está vacío, el backend generará uno automático
+          nombre: item.nombre,
+          descripcion: item.descripcion,
+          categoria: item.categoria,
+          precio: parseFloat(item.precio),
+          costo: parseFloat(item.costo),
+          costoProduccion: parseFloat(item.costoProduccion),
+          cantidad: parseInt(item.cantidad, 10),
+          activo: item.activo,
+          imagenes: item.imagenes ?? [],
+        }),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: "Error desconocido" }));
+        setMensaje(`Error: ${errorData.detail || "No se pudo crear el item"}`);
+        return;
+      }
+      
+      const result = await res.json();
+      const codigoUsado = result.codigo || item.codigo || "generado automáticamente";
+      
+      // Mostrar mensaje con el código usado
+      if (!item.codigo || item.codigo.trim() === "") {
+        setMensaje(`Item creado correctamente ✅\nCódigo asignado: ${codigoUsado}`);
+      } else {
+        setMensaje("Item creado correctamente ✅");
+      }
+      
       setItem({
         codigo: "",
         nombre: "",
@@ -103,8 +124,8 @@ const CrearItem: React.FC = () => {
         activo: true,
         imagenes: [],
       });
-    } else {
-      setMensaje(error);
+    } catch (err: any) {
+      setMensaje(`Error: ${err.message || "Error al crear el item"}`);
     }
   };
 
@@ -116,13 +137,13 @@ const CrearItem: React.FC = () => {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <Label htmlFor="codigo">Código</Label>
+            <Label htmlFor="codigo">Código (opcional - se generará automáticamente si se deja vacío)</Label>
             <Input
               id="codigo"
               name="codigo"
               value={item.codigo}
               onChange={handleChange}
-              placeholder="Código del item"
+              placeholder="Dejar vacío para código automático (ITEM-0001, ITEM-0002, etc.)"
               className="mt-1"
             />
           </div>
