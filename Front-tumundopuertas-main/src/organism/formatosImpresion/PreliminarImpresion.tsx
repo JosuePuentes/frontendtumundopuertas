@@ -159,8 +159,8 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
     doc.text(`Fecha: ${config.documento.fecha}`, 150, yPosition);
     yPosition += 15;
 
-    // Cliente
-    if (config.cliente.mostrar && clienteData) {
+    // Cliente - Siempre mostrar si hay datos del cliente
+    if (clienteData) {
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('DATOS DEL CLIENTE:', 20, yPosition);
@@ -472,22 +472,14 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
     html += `<strong>Fecha:</strong> ${config.documento.fecha}`;
     html += '</div>';
 
-    // Información del cliente
-    if (config.cliente.mostrar && clienteData) {
+    // Información del cliente - Siempre mostrar si hay datos del cliente
+    if (clienteData) {
       html += '<div class="client-info">';
       html += '<h3>Cliente</h3>';
-      if (config.cliente.incluirNombre) {
-        html += `<strong>Nombre:</strong> ${clienteData.nombre || 'N/A'}<br>`;
-      }
-      if (config.cliente.incluirCedula) {
-        html += `<strong>Cédula:</strong> ${clienteData.cedula || 'N/A'}<br>`;
-      }
-      if (config.cliente.incluirDireccion) {
-        html += `<strong>Dirección:</strong> ${clienteData.direccion || 'N/A'}<br>`;
-      }
-      if (config.cliente.incluirTelefono) {
-        html += `<strong>Teléfono:</strong> ${clienteData.telefono || 'N/A'}<br>`;
-      }
+      html += `<strong>Nombre:</strong> ${clienteData.nombre || 'N/A'}<br>`;
+      html += `<strong>Cédula:</strong> ${clienteData.cedula || 'N/A'}<br>`;
+      html += `<strong>Dirección:</strong> ${clienteData.direccion || 'N/A'}<br>`;
+      html += `<strong>Teléfono:</strong> ${clienteData.telefono || 'N/A'}<br>`;
       html += '</div>';
     }
 
@@ -616,23 +608,15 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
           </div>
         </div>
 
-        {/* Cliente */}
-        {config.cliente.mostrar && clienteData && (
+        {/* Cliente - Siempre mostrar si hay datos del cliente */}
+        {clienteData && (
           <div className="bg-gray-50 p-3 rounded">
             <h3 className="font-medium mb-2">Información del Cliente</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
-              {config.cliente.incluirNombre && (
-                <div><strong>Nombre:</strong> {clienteData.nombre || 'N/A'}</div>
-              )}
-              {config.cliente.incluirCedula && (
-                <div><strong>Cédula:</strong> {clienteData.cedula || 'N/A'}</div>
-              )}
-              {config.cliente.incluirDireccion && (
-                <div className="col-span-2"><strong>Dirección:</strong> {clienteData.direccion || 'N/A'}</div>
-              )}
-              {config.cliente.incluirTelefono && (
-                <div><strong>Teléfono:</strong> {clienteData.telefono || 'N/A'}</div>
-              )}
+              <div><strong>Nombre:</strong> {clienteData.nombre || 'N/A'}</div>
+              <div><strong>Cédula:</strong> {clienteData.cedula || 'N/A'}</div>
+              <div className="col-span-2"><strong>Dirección:</strong> {clienteData.direccion || 'N/A'}</div>
+              <div><strong>Teléfono:</strong> {clienteData.telefono || 'N/A'}</div>
             </div>
           </div>
         )}
