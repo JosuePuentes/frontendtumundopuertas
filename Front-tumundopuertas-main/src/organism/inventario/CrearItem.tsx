@@ -105,25 +105,55 @@ const CrearItem: React.FC = () => {
       const result = await res.json();
       const codigoUsado = result.codigo || item.codigo || "generado automáticamente";
       
-      // Mostrar mensaje con el código usado
+      // Si se generó un código automático, mostrarlo en el campo código
       if (!item.codigo || item.codigo.trim() === "") {
         setMensaje(`Item creado correctamente ✅\nCódigo asignado: ${codigoUsado}`);
+        
+        // Mostrar el código generado en el campo código por unos segundos
+        setItem({
+          codigo: codigoUsado, // Mostrar el código generado
+          nombre: "",
+          descripcion: "",
+          categoria: "",
+          precio: "",
+          costo: "",
+          costoProduccion: "",
+          cantidad: "",
+          activo: true,
+          imagenes: [],
+        });
+        
+        // Después de 3 segundos, limpiar el formulario
+        setTimeout(() => {
+          setItem({
+            codigo: "",
+            nombre: "",
+            descripcion: "",
+            categoria: "",
+            precio: "",
+            costo: "",
+            costoProduccion: "",
+            cantidad: "",
+            activo: true,
+            imagenes: [],
+          });
+          setMensaje("");
+        }, 3000);
       } else {
         setMensaje("Item creado correctamente ✅");
+        setItem({
+          codigo: "",
+          nombre: "",
+          descripcion: "",
+          categoria: "",
+          precio: "",
+          costo: "",
+          costoProduccion: "",
+          cantidad: "",
+          activo: true,
+          imagenes: [],
+        });
       }
-      
-      setItem({
-        codigo: "",
-        nombre: "",
-        descripcion: "",
-        categoria: "",
-        precio: "",
-        costo: "",
-        costoProduccion: "",
-        cantidad: "",
-        activo: true,
-        imagenes: [],
-      });
     } catch (err: any) {
       setMensaje(`Error: ${err.message || "Error al crear el item"}`);
     }
@@ -143,9 +173,13 @@ const CrearItem: React.FC = () => {
               name="codigo"
               value={item.codigo}
               onChange={handleChange}
-              placeholder="Dejar vacío para código automático (ITEM-0001, ITEM-0002, etc.)"
-              className="mt-1"
+              placeholder="Dejar vacío para código automático (ITEM-0271, ITEM-0272, etc.)"
+              className={`mt-1 ${item.codigo && item.codigo.startsWith('ITEM-') ? 'bg-green-50 border-green-300 font-semibold' : ''}`}
+              readOnly={item.codigo && item.codigo.startsWith('ITEM-') && !item.nombre}
             />
+            {item.codigo && item.codigo.startsWith('ITEM-') && !item.nombre && (
+              <p className="text-xs text-green-600 mt-1">✓ Código generado automáticamente</p>
+            )}
           </div>
           <div>
             <Label htmlFor="nombre">Nombre</Label>
@@ -297,13 +331,17 @@ const CrearItem: React.FC = () => {
           </Button>
         </form>
         {mensaje && (
-          <div className="mt-4 text-center text-green-600 font-semibold">
-            {mensaje}
+          <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="text-center text-green-700 font-semibold whitespace-pre-line">
+              {mensaje}
+            </div>
           </div>
         )}
         {error && (
-          <div className="mt-4 text-center text-red-600 font-semibold">
-            {error}
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="text-center text-red-700 font-semibold">
+              {error}
+            </div>
           </div>
         )}
       </CardContent>
