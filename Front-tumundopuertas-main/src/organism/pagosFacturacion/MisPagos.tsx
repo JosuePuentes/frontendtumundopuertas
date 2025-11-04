@@ -62,7 +62,7 @@ const MisPagos: React.FC = () => {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [clienteFiltro, setClienteFiltro] = useState<string>(""); // Added state for client filter
-  const [filtroEstadoPago, setFiltroEstadoPago] = useState<string>("todos"); // Filtro por estado de pago
+  const [filtroEstadoPago, setFiltroEstadoPago] = useState<string>("todos"); // Filtro por estado de pago (todos, pagado, abonado, sin pago)
   const [showConfirmationModal, setShowConfirmationModal] = useState(false); // New state for confirmation
   const [selectedPedidoForInvoice, setSelectedPedidoForInvoice] = useState<PedidoConPagos | null>(null);
   const [showPreliminarModal, setShowPreliminarModal] = useState(false);
@@ -191,22 +191,25 @@ const MisPagos: React.FC = () => {
       
       if (!pasaFiltroCliente) return false;
       
-      // Filtro por estado de pago
+      // Filtro por estado de pago (basado en comparación de totalPedido vs montoAbonado)
+      if (filtroEstadoPago === "todos") {
+        return true;
+      }
+      
       const totalPedido = calculateTotalPedido(pedido);
       const montoAbonado = pedido.total_abonado || 0;
       
       if (filtroEstadoPago === "pagado") {
-        // Pagado: totalPedido === montoAbonado o pago === "pagado"
-        return totalPedido > 0 && montoAbonado >= totalPedido || pedido.pago === "pagado";
+        // Pagado: totalPedido === montoAbonado
+        return totalPedido > 0 && montoAbonado >= totalPedido;
       } else if (filtroEstadoPago === "abonado") {
-        // Abonado: tiene pagos pero no está completamente pagado
-        return montoAbonado > 0 && montoAbonado < totalPedido && pedido.pago !== "pagado";
+        // Abonado: montoAbonado > 0 pero < totalPedido
+        return montoAbonado > 0 && montoAbonado < totalPedido;
       } else if (filtroEstadoPago === "sin_pago") {
-        // Sin pago: no tiene abonos
-        return montoAbonado === 0 || (!pedido.historial_pagos || pedido.historial_pagos.length === 0);
+        // Sin pago: montoAbonado === 0
+        return montoAbonado === 0;
       }
       
-      // "todos" - mostrar todos
       return true;
     });
   }, [pagos, clienteFiltro, filtroEstadoPago]);
