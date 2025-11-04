@@ -173,7 +173,7 @@ const CrearItem: React.FC = () => {
               name="codigo"
               value={item.codigo}
               onChange={handleChange}
-              placeholder="Dejar vacío para código automático (ITEM-0271, ITEM-0272, etc.)"
+              placeholder="Dejar vacío para código automático (271, 272, 273...)"
               className={`mt-1 ${item.codigo && item.codigo.startsWith('ITEM-') ? 'bg-green-50 border-green-300 font-semibold' : ''}`}
               readOnly={!!(item.codigo && item.codigo.startsWith('ITEM-') && !item.nombre)}
             />
