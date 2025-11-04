@@ -776,11 +776,6 @@ const PedidosWeb: React.FC = () => {
         <div className="grid grid-cols-1 gap-4">
           {pedidosFiltrados.map((pedido) => {
             const estadoInfo = getEstadoBadge(pedido.estado);
-            const factura = pedido.factura;
-            const montoTotalFactura = factura?.monto_total || pedido.total || 0;
-            const montoAbonado = factura?.monto_abonado || 0;
-            const saldoPendiente = factura?.saldo_pendiente || (montoTotalFactura - montoAbonado);
-            const historialAbonos = factura?.historial_abonos || [];
             
             return (
               <Card
@@ -830,32 +825,6 @@ const PedidosWeb: React.FC = () => {
                     </div>
                   </div>
                   
-                  {/* Información de Pago Inicial */}
-                  {(pedido.total_abonado || (pedido.historial_pagos && pedido.historial_pagos.length > 0)) && (
-                    <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                      <div className="flex items-center gap-2 mb-2">
-                        <DollarSign className="w-5 h-5 text-green-600" />
-                        <h4 className="text-gray-900 font-semibold">Información de Pago</h4>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-gray-600 text-sm mb-1">Total del Pedido</p>
-                          <p className="text-gray-900 font-bold text-lg">${(pedido.total || 0).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600 text-sm mb-1">Monto Abonado</p>
-                          <p className="text-green-600 font-bold text-lg">${(pedido.total_abonado || 0).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600 text-sm mb-1">Saldo Pendiente</p>
-                          <p className={`font-bold text-lg ${(pedido.total || 0) - (pedido.total_abonado || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            ${((pedido.total || 0) - (pedido.total_abonado || 0)).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
                   {/* Comprobante de Pago */}
                   {pedido.comprobante_url && (
                     <div className="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -866,67 +835,6 @@ const PedidosWeb: React.FC = () => {
                       <ComprobanteImage comprobanteUrl={pedido.comprobante_url} />
                     </div>
                   )}
-
-                  {/* Información de Factura */}
-                  {factura && (
-                    <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Receipt className="w-5 h-5 text-blue-600" />
-                        <h4 className="text-gray-900 font-semibold">Factura: {factura.numero_factura}</h4>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
-                        <div>
-                          <p className="text-gray-600 text-sm mb-1">Monto Total Factura</p>
-                          <p className="text-gray-900 font-bold text-lg">${montoTotalFactura.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600 text-sm mb-1">Monto Total Abonado</p>
-                          <p className="text-blue-600 font-bold text-lg">${montoAbonado.toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600 text-sm mb-1">Saldo Pendiente</p>
-                          <p className={`font-bold text-lg ${saldoPendiente > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            ${saldoPendiente.toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Historial de Abonos */}
-                      {historialAbonos.length > 0 && (
-                        <div className="mt-4 pt-4 border-t border-blue-200">
-                          <p className="text-gray-700 text-sm mb-2 font-semibold">Historial de Abonos:</p>
-                          <div className="space-y-2 max-h-40 overflow-y-auto">
-                            {historialAbonos.map((abono, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-between p-2 bg-white rounded border border-gray-200"
-                              >
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 text-gray-900 text-sm">
-                                    <DollarSign className="w-4 h-4 text-blue-600" />
-                                    <span className="font-semibold">${abono.cantidad.toFixed(2)}</span>
-                                    <span className="text-gray-400">-</span>
-                                    <span className="text-gray-600">{abono.metodo_pago || "Sin método"}</span>
-                                    <span className="text-gray-400">-</span>
-                                    <span className="text-gray-500 text-xs">
-                                      Ref: {abono.numero_referencia || "Sin referencia"}
-                                    </span>
-                                  </div>
-                                  {abono.fecha && (
-                                    <p className="text-gray-500 text-xs mt-1">
-                                      {formatearFecha(abono.fecha)}
-                                    </p>
-                                  )}
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className="border-green-500 text-green-600 hover:bg-green-50 ml-2"
-                                  disabled
-                                  title="Botón visual - No modifica nada"
-                                >
-                                  <CheckCircle2 className="w-4 h-4 mr-1" />
-                                  Validar
                                 </Button>
                               </div>
                             ))}
