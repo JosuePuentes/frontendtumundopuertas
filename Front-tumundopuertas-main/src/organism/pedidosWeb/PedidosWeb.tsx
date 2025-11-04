@@ -1004,6 +1004,9 @@ const PedidosWeb: React.FC = () => {
                 <X className="w-5 h-5" />
               </Button>
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Detalles completos del pedido incluyendo información del cliente, items, pagos y estado
+            </DialogDescription>
           </DialogHeader>
 
           {pedidoSeleccionado && (
