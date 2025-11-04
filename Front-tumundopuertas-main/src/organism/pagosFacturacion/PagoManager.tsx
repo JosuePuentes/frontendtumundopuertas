@@ -18,7 +18,6 @@ interface PagoManagerProps {
 }
 
 const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
-  const [pago, setPago] = useState<string>(pagoInicial || "sin pago");
   const [monto, setMonto] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [metodosPago, setMetodosPago] = useState<any[]>([]);
@@ -38,29 +37,25 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
   }, []);
 
   const actualizarPago = async () => {
-    if (!pago) return alert("Selecciona un estado de pago");
     if (monto <= 0) return alert("Ingresa un monto válido");
     if (!selectedMetodoPago) return alert("Selecciona un método de pago");
 
     setLoading(true);
     try {
-      // Primero actualizar el estado del pago en el pedido
+      // Registrar el abono (solo monto y método, el estado se calcula automáticamente)
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem('access_token')}`
         },
-        body: JSON.stringify({ pago, monto, metodo: selectedMetodoPago }),
+        body: JSON.stringify({ monto, metodo: selectedMetodoPago }),
       });
 
-      if (!res.ok) throw new Error("Error actualizando pago");
+      if (!res.ok) throw new Error("Error registrando pago");
 
-      const data = await res.json();
-      setPago(data.pago);
-      
       // Nota: El backend ahora registra automáticamente la transacción en el historial
-      // cuando se actualiza el pago, por lo que no es necesario hacerlo manualmente aquí
+      // y calcula el estado automáticamente basado en totalPedido vs montoAbonado
       
       setMonto(0); // reset campo monto
       setSelectedMetodoPago(""); // reset metodo de pago
@@ -72,7 +67,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
       alert("✓ Pago registrado exitosamente");
     } catch (err: any) {
       console.error(err);
-      alert("No se pudo actualizar el pago");
+      alert("No se pudo registrar el pago");
     } finally {
       setLoading(false);
     }
@@ -80,19 +75,6 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
 
   return (
     <div className="flex flex-col gap-2 w-64 border p-3 rounded-xl shadow-sm">
-      <div className="flex items-center gap-2">
-        <Select value={pago} onValueChange={setPago} disabled={loading}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Seleccionar pago" />
-          </SelectTrigger>
-          <SelectContent className="bg-white">
-            <SelectItem value="sin pago">Sin Pago</SelectItem>
-            <SelectItem value="abonado">Abonado</SelectItem>
-            <SelectItem value="pagado">Pagado</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
       <Input
         type="number"
         placeholder="Monto"
