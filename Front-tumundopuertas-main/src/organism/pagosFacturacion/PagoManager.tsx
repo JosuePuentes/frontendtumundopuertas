@@ -13,11 +13,10 @@ import api from "@/lib/api";
 
 interface PagoManagerProps {
   pedidoId: string;
-  pagoInicial?: string; // "sin pago" | "abonado" | "pagado"
   pedidoData?: any; // Datos completos del pedido para el preliminar
 }
 
-const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId, pagoInicial }) => {
+const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId }) => {
   const [monto, setMonto] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [metodosPago, setMetodosPago] = useState<any[]>([]);
