@@ -835,14 +835,6 @@ const PedidosWeb: React.FC = () => {
                       <ComprobanteImage comprobanteUrl={pedido.comprobante_url} />
                     </div>
                   )}
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
 
                   <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                     <div className="text-sm text-gray-600">
