@@ -26,16 +26,7 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import PreliminarImpresion from "@/organism/formatosImpresion/PreliminarImpresion";
-import NotaEntregaImpresion from "@/organism/formatosImpresion/NotaEntregaImpresion";
 
 interface Pago {
   fecha: string;
@@ -63,11 +54,8 @@ const MisPagos: React.FC = () => {
   const [fechaFin, setFechaFin] = useState("");
   const [clienteFiltro, setClienteFiltro] = useState<string>(""); // Added state for client filter
   const [filtroEstadoPago, setFiltroEstadoPago] = useState<string>("todos"); // Filtro por estado de pago (todos, pagado, abonado, sin pago)
-  const [showConfirmationModal, setShowConfirmationModal] = useState(false); // New state for confirmation
-  const [selectedPedidoForInvoice, setSelectedPedidoForInvoice] = useState<PedidoConPagos | null>(null);
   const [showPreliminarModal, setShowPreliminarModal] = useState(false);
   const [selectedPedidoForPreliminar, setSelectedPedidoForPreliminar] = useState<PedidoConPagos | null>(null);
-  const [showNotaEntregaModal, setShowNotaEntregaModal] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL.replace('http://', 'https://');
 
@@ -149,31 +137,9 @@ const MisPagos: React.FC = () => {
     fetchPagos();
   }, []);
 
-  const handleTotalizarClick = (pedido: PedidoConPagos) => {
-    setSelectedPedidoForInvoice(pedido);
-    setShowConfirmationModal(true); // Show confirmation modal first
-  };
-
   const handlePreliminarClick = (pedido: PedidoConPagos) => {
     setSelectedPedidoForPreliminar(pedido);
     setShowPreliminarModal(true);
-  };
-
-  const handleConfirmTotalizar = async () => {
-    if (!selectedPedidoForInvoice) return;
-
-    try {
-      const res = await fetch(`${apiUrl}/pedidos/${selectedPedidoForInvoice._id}/totalizar-pago`, {
-        method: "PUT",
-      });
-      if (!res.ok) throw new Error("Error al totalizar el pago");
-
-      await fetchPagos(); // Refresh payments
-      setShowConfirmationModal(false); // Close confirmation modal
-      setShowNotaEntregaModal(true); // Show nota de entrega modal
-    } catch (err: any) {
-      setError(err.message || "Error desconocido al totalizar");
-    }
   };
 
 
@@ -623,14 +589,6 @@ const MisPagos: React.FC = () => {
                       </TableCell>
                       <TableCell className="flex gap-2">
                           <Button
-                            onClick={() => handleTotalizarClick(pedido)}
-                            size="sm"
-                            variant="outline"
-                            className="bg-blue-500 hover:bg-blue-600 text-white"
-                          >
-                            Totalizar
-                          </Button>
-                          <Button
                             onClick={() => handlePreliminarClick(pedido)}
                             size="sm"
                             variant="outline"
@@ -647,18 +605,6 @@ const MisPagos: React.FC = () => {
           </div>
         )}
 
-        {/* Nota de Entrega Modal */}
-        {selectedPedidoForInvoice && (
-          <NotaEntregaImpresion
-            isOpen={showNotaEntregaModal}
-            onClose={() => {
-              setShowNotaEntregaModal(false);
-              setSelectedPedidoForInvoice(null);
-            }}
-            pedido={selectedPedidoForInvoice}
-          />
-        )}
-
         {/* Preliminar Modal */}
         {selectedPedidoForPreliminar && (
           <PreliminarImpresion
@@ -670,24 +616,6 @@ const MisPagos: React.FC = () => {
             pedido={selectedPedidoForPreliminar}
           />
         )}
-
-        {/* Confirmation Modal */}
-        <Dialog open={showConfirmationModal} onOpenChange={setShowConfirmationModal}>
-          <DialogContent className="bg-white p-6 rounded-lg shadow-lg">
-            <DialogHeader>
-              <DialogTitle>Confirmar Totalización</DialogTitle>
-              <DialogDescription>
-                {selectedPedidoForInvoice?.pago === "pagado"
-                  ? "Este pedido ya está marcado como completamente pagado. ¿Deseas continuar con la totalización?"
-                  : `Este pedido ${selectedPedidoForInvoice?.pago === "abonado" ? "ha sido abonado parcialmente" : "no ha recibido abonos"}. Al confirmar, se marcará como completamente pagado. ¿Deseas continuar?`}
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter className="flex justify-end space-x-2 mt-4">
-              <Button className="bg-red-500 hover:bg-red-600 text-white" onClick={() => setShowConfirmationModal(false)}>Cancelar</Button>
-              <Button className="bg-green-500 hover:bg-green-600 text-white" onClick={handleConfirmTotalizar}>Confirmar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </CardContent>
     </Card>
   );
