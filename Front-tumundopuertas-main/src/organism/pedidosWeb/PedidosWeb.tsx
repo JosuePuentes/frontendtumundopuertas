@@ -589,47 +589,8 @@ const PedidosWeb: React.FC = () => {
               totalCalculado += totalAdicionales;
             }
             
-            // Calcular monto abonado desde historial_pagos
-            let totalAbonado = pedido.total_abonado || 0;
-            if (!totalAbonado && pedido.historial_pagos && Array.isArray(pedido.historial_pagos)) {
-              totalAbonado = pedido.historial_pagos
-                .filter((pago: any) => pago.estado === "aprobado" || pago.estado === "confirmado" || pago.estado === "pendiente")
-                .reduce((sum: number, pago: any) => {
-                  return sum + (pago.monto || pago.cantidad || 0);
-                }, 0);
-            }
-            
-            // Obtener comprobante_url del historial_pagos si no está en el nivel del pedido
+            // Solo usar el comprobante_url del pedido web
             let comprobanteUrl = pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "";
-            
-            // Si no hay comprobante en el nivel del pedido, buscar en historial_pagos
-            if (!comprobanteUrl && pedido.historial_pagos && Array.isArray(pedido.historial_pagos)) {
-              // Buscar el primer pago con comprobante (ordenar por fecha más reciente primero)
-              const pagosConComprobante = pedido.historial_pagos
-                .filter((pago: any) => pago.comprobante_url || pago.comprobanteUrl || pago.comprobante)
-                .sort((a: any, b: any) => {
-                  const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
-                  const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
-                  return fechaB - fechaA; // Más reciente primero
-                });
-              
-              if (pagosConComprobante.length > 0) {
-                comprobanteUrl = pagosConComprobante[0].comprobante_url || 
-                                 pagosConComprobante[0].comprobanteUrl || 
-                                 pagosConComprobante[0].comprobante || "";
-              }
-            }
-            
-            // Debug: Log para ver qué comprobante se encontró
-            if (comprobanteUrl) {
-              console.log(`📸 Comprobante encontrado para pedido ${pedidoId}:`, comprobanteUrl);
-            } else {
-              console.warn(`⚠️ No se encontró comprobante para pedido ${pedidoId}`, {
-                tieneComprobanteEnPedido: !!(pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante),
-                historialPagos: pedido.historial_pagos?.length || 0,
-                historialConComprobantes: pedido.historial_pagos?.filter((p: any) => p.comprobante_url || p.comprobanteUrl || p.comprobante).length || 0
-              });
-            }
             
             // Obtener cliente_direccion - intentar desde múltiples fuentes
             let clienteDireccion = pedido.cliente_direccion || pedido.clienteDireccion || pedido.cliente?.direccion;
@@ -654,12 +615,9 @@ const PedidosWeb: React.FC = () => {
               numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
               comprobante_url: comprobanteUrl,
               total: totalCalculado,
-              total_abonado: totalAbonado,
-              historial_pagos: pedido.historial_pagos || [],
               adicionales: pedido.adicionales || [],
               estado: pedido.estado || pedido.estado_general || "pendiente",
               fecha_creacion: pedido.fecha_creacion || pedido.fechaCreacion || pedido.createdAt || new Date().toISOString(),
-              factura: undefined, // Se cargará cuando se abra el modal de detalle
             };
           });
 
@@ -1215,80 +1173,6 @@ const PedidosWeb: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Información de Pago Inicial (si hay abono) */}
-                  {(pedidoSeleccionado.total_abonado && pedidoSeleccionado.total_abonado > 0) && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-gray-600 text-sm mb-1">Total del Pedido</p>
-                          <p className="text-gray-900 font-bold text-lg">${(pedidoSeleccionado.total || 0).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600 text-sm mb-1">Monto Abonado</p>
-                          <p className="text-green-600 font-bold text-lg">${(pedidoSeleccionado.total_abonado || 0).toFixed(2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600 text-sm mb-1">Saldo Pendiente</p>
-                          <p className={`font-bold text-lg ${((pedidoSeleccionado.total || 0) - (pedidoSeleccionado.total_abonado || 0)) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            ${((pedidoSeleccionado.total || 0) - (pedidoSeleccionado.total_abonado || 0)).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Historial de Pagos Iniciales (si no hay factura) */}
-                  {pedidoSeleccionado.historial_pagos && pedidoSeleccionado.historial_pagos.length > 0 && !pedidoSeleccionado.factura && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                      <p className="text-gray-700 text-sm mb-3 font-semibold">Historial de Pagos:</p>
-                      <div className="space-y-2">
-                        {pedidoSeleccionado.historial_pagos.map((pago: any, index: number) => (
-                          <div
-                            key={index}
-                            className="bg-gray-50 rounded-lg p-3 border border-gray-200"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 text-gray-900 text-sm">
-                                  <DollarSign className="w-4 h-4 text-blue-600" />
-                                  <span className="font-semibold">${(pago.monto || pago.cantidad || 0).toFixed(2)}</span>
-                                  {pago.metodo_pago && (
-                                    <>
-                                      <span className="text-gray-400">-</span>
-                                      <span className="text-gray-600">{pago.metodo_pago}</span>
-                                    </>
-                                  )}
-                                  {pago.numero_referencia && (
-                                    <>
-                                      <span className="text-gray-400">-</span>
-                                      <span className="text-gray-500 text-xs">Ref: {pago.numero_referencia}</span>
-                                    </>
-                                  )}
-                                </div>
-                                {pago.fecha && (
-                                  <p className="text-gray-500 text-xs mt-1">
-                                    {formatearFecha(pago.fecha)}
-                                  </p>
-                                )}
-                                {pago.estado && (
-                                  <Badge className={`mt-1 text-xs ${
-                                    pago.estado === "aprobado" || pago.estado === "confirmado" 
-                                      ? "bg-green-100 text-green-800" 
-                                      : pago.estado === "pendiente"
-                                      ? "bg-yellow-100 text-yellow-800"
-                                      : "bg-gray-100 text-gray-800"
-                                  }`}>
-                                    {pago.estado}
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   {/* Items del Pedido */}
                   <div className="mt-4">
                     <p className="text-gray-700 text-sm mb-2 font-semibold">Items del Pedido</p>
@@ -1365,171 +1249,8 @@ const PedidosWeb: React.FC = () => {
                 </CardContent>
               </Card>
 
-              {/* Información de Factura y Abonos */}
-              {pedidoSeleccionado.factura && (
-                <Card className="bg-blue-50 border-blue-200">
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Receipt className="w-5 h-5 text-blue-600" />
-                      Factura y Abonos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-gray-600 text-sm">Número de Factura</p>
-                        <p className="text-gray-900 font-semibold">{pedidoSeleccionado.factura?.numero_factura}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-sm">Monto Total Factura</p>
-                        <p className="text-gray-900 font-bold text-lg">${(pedidoSeleccionado.factura?.monto_total || 0).toFixed(2)}</p>
-                      </div>
-                      <div>
-                        <p className="text-gray-600 text-sm">Monto Total Abonado</p>
-                        <p className="text-blue-600 font-bold text-lg">${(pedidoSeleccionado.factura?.monto_abonado || 0).toFixed(2)}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-gray-600 text-sm">Saldo Pendiente</p>
-                      <p className={`font-bold text-xl ${(pedidoSeleccionado.factura?.saldo_pendiente || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        ${(pedidoSeleccionado.factura?.saldo_pendiente || 0).toFixed(2)}
-                      </p>
-                    </div>
-
-                    {/* Botón para agregar abono si hay saldo pendiente */}
-                    {(pedidoSeleccionado.factura?.saldo_pendiente || 0) > 0 && (
-                      <div className="mt-4 pt-4 border-t border-blue-200">
-                        <Button
-                          onClick={() => {
-                            // TODO: Abrir modal para agregar abono
-                            alert("Funcionalidad para agregar abono - pendiente de implementación completa");
-                          }}
-                          className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                        >
-                          <DollarSign className="w-4 h-4 mr-2" />
-                          Agregar Abono
-                        </Button>
-                      </div>
-                    )}
-
-                    {/* Historial de Abonos en Modal */}
-                    {(pedidoSeleccionado.factura?.historial_abonos || []).length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-blue-200">
-                        <p className="text-gray-700 text-sm mb-3 font-semibold">Historial de Abonos:</p>
-                        <div className="space-y-3">
-                          {(pedidoSeleccionado.factura?.historial_abonos || []).map((abono, index) => {
-                            const esPendiente = abono.estado === "pendiente" || !abono.estado;
-                            return (
-                              <div
-                                key={index}
-                                className={`bg-white rounded-lg p-4 border ${
-                                  esPendiente ? "border-yellow-300 bg-yellow-50" : "border-gray-200"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <DollarSign className="w-5 h-5 text-blue-600" />
-                                      <span className="text-gray-900 font-bold text-lg">${abono.cantidad.toFixed(2)}</span>
-                                      <Badge className={esPendiente ? "bg-yellow-100 text-yellow-800 border-yellow-300" : "bg-blue-100 text-blue-800 border-blue-300"}>
-                                        {abono.metodo_pago || "Sin método"}
-                                      </Badge>
-                                      {esPendiente && (
-                                        <Badge className="bg-red-100 text-red-800 border-red-300">
-                                          Pendiente
-                                        </Badge>
-                                      )}
-                                      {!esPendiente && (
-                                        <Badge className="bg-green-100 text-green-800 border-green-300">
-                                          Aprobado
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <div className="space-y-1 text-sm text-gray-600">
-                                      <p>Referencia: {abono.numero_referencia || "Sin referencia"}</p>
-                                      {abono.fecha && <p>Fecha: {formatearFecha(abono.fecha)}</p>}
-                                      {abono.comprobante_url && (
-                                        <div className="mt-2">
-                                          <a
-                                            href={abono.comprobante_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-blue-600 hover:underline flex items-center gap-1"
-                                          >
-                                            <ImageIcon className="w-4 h-4" />
-                                            Ver comprobante
-                                          </a>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {esPendiente && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="border-green-500 text-green-600 hover:bg-green-50"
-                                      onClick={async () => {
-                                        // Aprobar abono
-                                        try {
-                                          const token = localStorage.getItem("access_token");
-                                          const res = await fetch(`${apiUrl}/pedidos/${pedidoSeleccionado._id}/abono/${index}/aprobar`, {
-                                            method: "POST",
-                                            headers: {
-                                              "Content-Type": "application/json",
-                                              "Authorization": `Bearer ${token}`,
-                                            },
-                                          });
-
-                                          if (res.ok) {
-                                            setToastMessage("✅ Abono aprobado exitosamente");
-                                            setToastType("abono");
-                                            setToastVisible(true);
-                                            // Recargar pedidos
-                                            cargarPedidos(false);
-                                            // Recargar detalles del pedido
-                                            const updatedPedido = pedidos.find(p => p._id === pedidoSeleccionado._id);
-                                            if (updatedPedido) {
-                                              setPedidoSeleccionado(updatedPedido);
-                                            }
-                                          } else {
-                                            const errorData = await res.json();
-                                            alert(`Error al aprobar abono: ${errorData.detail || "Error desconocido"}`);
-                                          }
-                                        } catch (err) {
-                                          console.error("Error al aprobar abono:", err);
-                                          alert("Error al aprobar abono. Por favor, intente de nuevo.");
-                                        }
-                                      }}
-                                    >
-                                      <CheckCircle2 className="w-4 h-4 mr-1" />
-                                      Aprobar
-                                    </Button>
-                                  )}
-                                  {!esPendiente && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="border-green-500 text-green-600 bg-green-50"
-                                      disabled
-                                    >
-                                      <CheckCircle2 className="w-4 h-4 mr-1" />
-                                      Aprobado
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Comprobante de Pago del Pedido */}
-              {(pedidoSeleccionado.comprobante_url || 
-                (pedidoSeleccionado.historial_pagos && pedidoSeleccionado.historial_pagos.some((p: any) => p.comprobante_url))) && (
+              {/* Comprobante de Pago del Pedido (solo el inicial del pedido web) */}
+              {pedidoSeleccionado.comprobante_url && (
                 <Card className="bg-white border-gray-200">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -1538,19 +1259,7 @@ const PedidosWeb: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {pedidoSeleccionado.comprobante_url ? (
-                      <ComprobanteImage comprobanteUrl={pedidoSeleccionado.comprobante_url} />
-                    ) : (
-                      // Si no hay comprobante en el nivel del pedido, buscar en historial_pagos
-                      (() => {
-                        const pagoConComprobante = pedidoSeleccionado.historial_pagos?.find((p: any) => 
-                          p.comprobante_url
-                        );
-                        return pagoConComprobante && pagoConComprobante.comprobante_url ? (
-                          <ComprobanteImage comprobanteUrl={pagoConComprobante.comprobante_url} />
-                        ) : null;
-                      })()
-                    )}
+                    <ComprobanteImage comprobanteUrl={pedidoSeleccionado.comprobante_url} />
                   </CardContent>
                 </Card>
               )}
