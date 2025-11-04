@@ -233,6 +233,7 @@ const PedidosWeb: React.FC = () => {
   const [chatAbierto, setChatAbierto] = useState(false);
   const [pedidoChatActual, setPedidoChatActual] = useState<PedidoWeb | null>(null);
   const [mensajesNoLeidos, setMensajesNoLeidos] = useState<Map<string, number>>(new Map());
+  const mensajesAnterioresRef = useRef<Map<string, number>>(new Map()); // Para detectar nuevos mensajes
   const [pedidoAEliminar, setPedidoAEliminar] = useState<PedidoWeb | null>(null);
   const [confirmacionEliminarAbierta, setConfirmacionEliminarAbierta] = useState(false);
   const [eliminando, setEliminando] = useState(false);
@@ -440,10 +441,40 @@ const PedidosWeb: React.FC = () => {
         }
       });
       
+      // Detectar nuevos mensajes comparando con el estado anterior
+      const mensajesAnteriores = mensajesAnterioresRef.current;
+      let hayNuevoMensaje = false;
+      
+      // Verificar si hay nuevos mensajes (aumento en el contador)
+      contadores.forEach((count, pedidoId) => {
+        const countAnterior = mensajesAnteriores.get(pedidoId) || 0;
+        if (count > countAnterior && countAnterior > 0) {
+          // Solo reproducir sonido si ya había mensajes anteriores (evitar sonido inicial)
+          hayNuevoMensaje = true;
+        }
+      });
+      
+      // También verificar si un pedido que no tenía mensajes ahora tiene
+      contadores.forEach((count, pedidoId) => {
+        const countAnterior = mensajesAnteriores.get(pedidoId) || 0;
+        if (count > 0 && countAnterior === 0) {
+          hayNuevoMensaje = true;
+        }
+      });
+      
+      // Reproducir sonido si hay nuevos mensajes
+      if (hayNuevoMensaje) {
+        reproducirSonidoNotificacion();
+      }
+      
       // Actualizar estado solo si hay cambios para evitar re-renders innecesarios
       setMensajesNoLeidos(prev => {
         const hasChanges = contadores.size !== prev.size || 
           Array.from(contadores.entries()).some(([id, count]) => prev.get(id) !== count);
+        if (hasChanges) {
+          // Actualizar referencia para la próxima vez
+          mensajesAnterioresRef.current = new Map(contadores);
+        }
         return hasChanges ? contadores : prev;
       });
     } catch (error) {
@@ -999,16 +1030,16 @@ const PedidosWeb: React.FC = () => {
                       >
                         <MessageCircle className="w-4 h-4" />
                         {mensajesNoLeidos.get(pedido._id) ? (
-                          <Badge className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full animate-pulse shadow-lg border-2 border-white">
-                            {mensajesNoLeidos.get(pedido._id)}
-                          </Badge>
+                          <>
+                            <Badge className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse shadow-lg border-2 border-white z-10 min-w-[20px] flex items-center justify-center">
+                              {mensajesNoLeidos.get(pedido._id) > 99 ? '99+' : mensajesNoLeidos.get(pedido._id)}
+                            </Badge>
+                            <span className="absolute -top-1 -right-1 flex h-3 w-3 z-0">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                            </span>
+                          </>
                         ) : null}
-                        {mensajesNoLeidos.get(pedido._id) && (
-                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                          </span>
-                        )}
                       </Button>
                       <Button
                         onClick={() => {
@@ -1134,13 +1165,87 @@ const PedidosWeb: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Método de Pago</p>
-                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.metodo_pago}</p>
+                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.metodo_pago || "No especificado"}</p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Número de Referencia</p>
-                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.numero_referencia}</p>
+                      <p className="text-gray-900 font-semibold">{pedidoSeleccionado.numero_referencia || "Sin referencia"}</p>
                     </div>
                   </div>
+
+                  {/* Información de Pago Inicial (si hay abono) */}
+                  {(pedidoSeleccionado.total_abonado && pedidoSeleccionado.total_abonado > 0) && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <p className="text-gray-600 text-sm mb-1">Total del Pedido</p>
+                          <p className="text-gray-900 font-bold text-lg">${(pedidoSeleccionado.total || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-sm mb-1">Monto Abonado</p>
+                          <p className="text-green-600 font-bold text-lg">${(pedidoSeleccionado.total_abonado || 0).toFixed(2)}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-sm mb-1">Saldo Pendiente</p>
+                          <p className={`font-bold text-lg ${((pedidoSeleccionado.total || 0) - (pedidoSeleccionado.total_abonado || 0)) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                            ${((pedidoSeleccionado.total || 0) - (pedidoSeleccionado.total_abonado || 0)).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Historial de Pagos Iniciales (si no hay factura) */}
+                  {pedidoSeleccionado.historial_pagos && pedidoSeleccionado.historial_pagos.length > 0 && !pedidoSeleccionado.factura && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <p className="text-gray-700 text-sm mb-3 font-semibold">Historial de Pagos:</p>
+                      <div className="space-y-2">
+                        {pedidoSeleccionado.historial_pagos.map((pago: any, index: number) => (
+                          <div
+                            key={index}
+                            className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 text-gray-900 text-sm">
+                                  <DollarSign className="w-4 h-4 text-blue-600" />
+                                  <span className="font-semibold">${(pago.monto || pago.cantidad || 0).toFixed(2)}</span>
+                                  {pago.metodo_pago && (
+                                    <>
+                                      <span className="text-gray-400">-</span>
+                                      <span className="text-gray-600">{pago.metodo_pago}</span>
+                                    </>
+                                  )}
+                                  {pago.numero_referencia && (
+                                    <>
+                                      <span className="text-gray-400">-</span>
+                                      <span className="text-gray-500 text-xs">Ref: {pago.numero_referencia}</span>
+                                    </>
+                                  )}
+                                </div>
+                                {pago.fecha && (
+                                  <p className="text-gray-500 text-xs mt-1">
+                                    {formatearFecha(pago.fecha)}
+                                  </p>
+                                )}
+                                {pago.estado && (
+                                  <Badge className={`mt-1 text-xs ${
+                                    pago.estado === "aprobado" || pago.estado === "confirmado" 
+                                      ? "bg-green-100 text-green-800" 
+                                      : pago.estado === "pendiente"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : "bg-gray-100 text-gray-800"
+                                  }`}>
+                                    {pago.estado}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Items del Pedido */}
                   <div className="mt-4">
@@ -1381,7 +1486,8 @@ const PedidosWeb: React.FC = () => {
               )}
 
               {/* Comprobante de Pago del Pedido */}
-              {pedidoSeleccionado.comprobante_url && (
+              {(pedidoSeleccionado.comprobante_url || 
+                (pedidoSeleccionado.historial_pagos && pedidoSeleccionado.historial_pagos.some((p: any) => p.comprobante_url))) && (
                 <Card className="bg-white border-gray-200">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -1390,7 +1496,23 @@ const PedidosWeb: React.FC = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ComprobanteImage comprobanteUrl={pedidoSeleccionado.comprobante_url} />
+                    {pedidoSeleccionado.comprobante_url ? (
+                      <ComprobanteImage comprobanteUrl={pedidoSeleccionado.comprobante_url} />
+                    ) : (
+                      // Si no hay comprobante en el nivel del pedido, buscar en historial_pagos
+                      (() => {
+                        const pagoConComprobante = pedidoSeleccionado.historial_pagos?.find((p: any) => 
+                          p.comprobante_url || p.comprobanteUrl || p.comprobante
+                        );
+                        return pagoConComprobante ? (
+                          <ComprobanteImage comprobanteUrl={
+                            pagoConComprobante.comprobante_url || 
+                            pagoConComprobante.comprobanteUrl || 
+                            pagoConComprobante.comprobante || ""
+                          } />
+                        ) : null;
+                      })()
+                    )}
                   </CardContent>
                 </Card>
               )}
