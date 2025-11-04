@@ -22,7 +22,7 @@ interface ItemForm {
 
 const CrearItem: React.FC = () => {
   const [item, setItem] = useState<ItemForm>({
-    codigo: "",
+    codigo: "271", // Mostrar 271 por defecto
     nombre: "",
     descripcion: "",
     categoria: "",
@@ -76,6 +76,9 @@ const CrearItem: React.FC = () => {
     const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
     
     try {
+      // Si el código es solo números (como "271"), enviarlo como vacío para que el backend genere automáticamente
+      const codigoEnviar = item.codigo && /^\d+$/.test(item.codigo.trim()) ? "" : (item.codigo || "");
+      
       const res = await fetch(`${apiUrl}/inventario/`, {
         method: "POST",
         headers: {
@@ -83,7 +86,7 @@ const CrearItem: React.FC = () => {
           "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
         },
         body: JSON.stringify({
-          codigo: item.codigo || "", // Si está vacío, el backend generará uno automático
+          codigo: codigoEnviar, // Si es solo números, enviar vacío para generación automática
           nombre: item.nombre,
           descripcion: item.descripcion,
           categoria: item.categoria,
@@ -106,12 +109,17 @@ const CrearItem: React.FC = () => {
       const codigoUsado = result.codigo || item.codigo || "generado automáticamente";
       
       // Si se generó un código automático, mostrarlo en el campo código
-      if (!item.codigo || item.codigo.trim() === "") {
+      // También si el código era solo números (como "271")
+      if (!item.codigo || item.codigo.trim() === "" || /^\d+$/.test(item.codigo.trim())) {
         setMensaje(`Item creado correctamente ✅\nCódigo asignado: ${codigoUsado}`);
         
-        // Mostrar el código generado en el campo código por unos segundos
+        // Extraer el número del código generado y calcular el siguiente
+        const numeroMatch = codigoUsado.match(/ITEM-(\d+)/);
+        const siguienteNumero = numeroMatch ? (parseInt(numeroMatch[1]) + 1).toString() : "272";
+        
+        // Inmediatamente mostrar el siguiente número en la secuencia
         setItem({
-          codigo: codigoUsado, // Mostrar el código generado
+          codigo: siguienteNumero, // Mostrar el siguiente número inmediatamente
           nombre: "",
           descripcion: "",
           categoria: "",
@@ -123,26 +131,18 @@ const CrearItem: React.FC = () => {
           imagenes: [],
         });
         
-        // Después de 3 segundos, limpiar el formulario
+        // Limpiar el mensaje después de 3 segundos
         setTimeout(() => {
-          setItem({
-            codigo: "",
-            nombre: "",
-            descripcion: "",
-            categoria: "",
-            precio: "",
-            costo: "",
-            costoProduccion: "",
-            cantidad: "",
-            activo: true,
-            imagenes: [],
-          });
           setMensaje("");
         }, 3000);
       } else {
         setMensaje("Item creado correctamente ✅");
+        // Si se usó un código personalizado, mostrar el siguiente número de la secuencia
+        const numeroMatch = codigoUsado.match(/ITEM-(\d+)/);
+        const siguienteNumero = numeroMatch ? (parseInt(numeroMatch[1]) + 1).toString() : "271";
+        
         setItem({
-          codigo: "",
+          codigo: siguienteNumero, // Mostrar el siguiente número
           nombre: "",
           descripcion: "",
           categoria: "",
@@ -173,7 +173,7 @@ const CrearItem: React.FC = () => {
               name="codigo"
               value={item.codigo}
               onChange={handleChange}
-              placeholder="Dejar vacío para código automático (271, 272, 273...)"
+              placeholder="271, 272, 273..."
               className={`mt-1 ${item.codigo && item.codigo.startsWith('ITEM-') ? 'bg-green-50 border-green-300 font-semibold' : ''}`}
               readOnly={!!(item.codigo && item.codigo.startsWith('ITEM-') && !item.nombre)}
             />
