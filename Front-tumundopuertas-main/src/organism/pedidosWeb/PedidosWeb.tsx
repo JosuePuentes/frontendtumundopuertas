@@ -29,30 +29,6 @@ import {
 } from "lucide-react";
 import ChatMessenger from "./ChatMessenger";
 
-interface Abono {
-  fecha?: string;
-  cantidad: number;
-  metodo_pago?: string;
-  numero_referencia?: string;
-  comprobante_url?: string;
-  estado?: string;
-}
-
-interface Factura {
-  _id: string;
-  numero_factura?: string;
-  numeroFactura?: string;
-  monto_total?: number;
-  montoTotal?: number;
-  monto_abonado?: number;
-  montoAbonado?: number;
-  saldo_pendiente?: number;
-  saldoPendiente?: number;
-  historial_abonos?: Abono[];
-  historialAbonos?: Abono[];
-  estado?: string;
-}
-
 interface PedidoWeb {
   _id: string;
   cliente_id: string;
@@ -95,7 +71,6 @@ interface PedidoWeb {
   estado: string;
   fecha_creacion?: string;
   createdAt?: string;
-  factura?: Factura | null;
 }
 
 // Componente para mostrar comprobante con presigned URL
