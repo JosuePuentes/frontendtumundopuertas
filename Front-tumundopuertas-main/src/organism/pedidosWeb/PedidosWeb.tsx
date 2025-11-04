@@ -633,29 +633,9 @@ const PedidosWeb: React.FC = () => {
           }
         }
 
-        // Detectar nuevos abonos (solo si hay facturas cargadas)
-        // Nota: Como ya no cargamos facturas en la carga inicial, esta lógica solo funciona
-        // cuando se cargan facturas manualmente (al abrir modales, etc.)
-        if (silencioso) {
-          pedidosConFacturas.forEach((pedido) => {
-            if (pedido.factura) {
-              const cantidadAbonosActual = (pedido.factura.historial_abonos || []).length;
-              const cantidadAbonosAnterior = abonosAnterioresRef.current.get(pedido._id) || 0;
-              
-              if (cantidadAbonosActual > cantidadAbonosAnterior && cantidadAbonosAnterior > 0) {
-                setToastMessage(`💰 Nuevo abono de ${pedido.cliente_nombre} - ${pedido.factura.numero_factura}`);
-                setToastType("abono");
-                setToastVisible(true);
-              }
-              
-              abonosAnterioresRef.current.set(pedido._id, cantidadAbonosActual);
-            }
-          });
-        }
 
-        // Actualizar referencias de pedidos (sin facturas por ahora)
+        // Actualizar referencias de pedidos
         pedidosAnterioresRef.current = new Set(pedidosConFacturas.map((p: PedidoWeb) => p._id));
-        // Nota: No actualizamos referencias de abonos aquí porque las facturas no se cargan en la carga inicial
 
           setPedidos(pedidosConFacturas);
         } else {
