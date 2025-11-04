@@ -261,7 +261,6 @@ const PedidosWeb: React.FC = () => {
   
   // Referencias para detectar cambios
   const pedidosAnterioresRef = useRef<Set<string>>(new Set());
-  const abonosAnterioresRef = useRef<Map<string, number>>(new Map());
   
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 
