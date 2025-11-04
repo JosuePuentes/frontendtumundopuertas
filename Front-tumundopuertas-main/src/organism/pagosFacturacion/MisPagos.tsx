@@ -181,6 +181,20 @@ const MisPagos: React.FC = () => {
     return (pedido.items || []).reduce((sum, item) => sum + ((item.precio || 0) * (item.cantidad || 0)), 0);
   };
 
+  // Calcular el estado del pedido basado en totalPedido vs montoAbonado
+  const calcularEstadoPago = (pedido: PedidoConPagos): string => {
+    const totalPedido = calculateTotalPedido(pedido);
+    const montoAbonado = pedido.total_abonado || 0;
+    
+    if (totalPedido > 0 && montoAbonado >= totalPedido) {
+      return "pagado";
+    } else if (montoAbonado > 0 && montoAbonado < totalPedido) {
+      return "abonado";
+    } else {
+      return "sin_pago";
+    }
+  };
+
   // Calcular datos filtrados y totales
   const pedidosFiltrados = useMemo(() => {
     return pagos.filter((pedido) => {
@@ -590,17 +604,22 @@ const MisPagos: React.FC = () => {
                       <TableCell>${montoAbonado.toFixed(2)}</TableCell>
                       <TableCell>${montoPendiente.toFixed(2)}</TableCell>
                       <TableCell>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                            pedido.pago === "pagado"
-                              ? "bg-green-200 text-green-800"
-                              : pedido.pago === "abonado"
-                              ? "bg-yellow-200 text-yellow-800"
-                              : "bg-gray-200 text-gray-700"
-                          }`}
-                        >
-                          {pedido.pago}
-                        </span>
+                        {(() => {
+                          const estadoCalculado = calcularEstadoPago(pedido);
+                          return (
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                estadoCalculado === "pagado"
+                                  ? "bg-green-200 text-green-800"
+                                  : estadoCalculado === "abonado"
+                                  ? "bg-yellow-200 text-yellow-800"
+                                  : "bg-gray-200 text-gray-700"
+                              }`}
+                            >
+                              {estadoCalculado === "pagado" ? "pagado" : estadoCalculado === "abonado" ? "abonado" : "sin pago"}
+                            </span>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="flex gap-2">
                           <Button
