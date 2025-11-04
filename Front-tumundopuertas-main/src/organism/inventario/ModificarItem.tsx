@@ -60,10 +60,27 @@ const ModificarItem: React.FC<{ itemId: string; modalClose: () => void }> = ({
   // Fetch del item
   useEffect(() => {
     const fetchItem = async () => {
+      // Validar que itemId sea válido (no vacío y con formato de ObjectId)
+      if (!itemId || itemId.trim() === "") {
+        setMensaje("ID de item inválido");
+        return;
+      }
+
+      // Validar formato básico de ObjectId (24 caracteres hexadecimales)
+      const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+      if (!objectIdPattern.test(itemId.trim())) {
+        setMensaje("ID de item no tiene formato válido");
+        console.error("ID inválido recibido:", itemId);
+        return;
+      }
+
       const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
       try {
-        const res = await fetch(`${apiUrl}/inventario/id/${itemId}/`);
-        if (!res.ok) throw new Error("No se pudo cargar el item");
+        const res = await fetch(`${apiUrl}/inventario/id/${itemId.trim()}/`);
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ detail: "Error desconocido" }));
+          throw new Error(errorData.detail || "No se pudo cargar el item");
+        }
 
         const data = await res.json();
         setItem({
@@ -135,6 +152,20 @@ const ModificarItem: React.FC<{ itemId: string; modalClose: () => void }> = ({
     e.preventDefault();
     if (!item) return;
 
+    // Validar que _id sea válido
+    if (!item._id || item._id.trim() === "") {
+      setMensaje("Error: ID de item inválido");
+      return;
+    }
+
+    // Validar formato de ObjectId
+    const objectIdPattern = /^[0-9a-fA-F]{24}$/;
+    if (!objectIdPattern.test(item._id.trim())) {
+      setMensaje("Error: ID de item no tiene formato válido");
+      console.error("ID inválido al guardar:", item._id);
+      return;
+    }
+
     // Validación mínima
     if (
       !item.nombre ||
@@ -149,7 +180,7 @@ const ModificarItem: React.FC<{ itemId: string; modalClose: () => void }> = ({
     }
 
     const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-    await fetchItems(`${apiUrl}/inventario/id/${item._id}/`, {
+    await fetchItems(`${apiUrl}/inventario/id/${item._id.trim()}/`, {
       method: "PUT",
       body: {
         ...item,
