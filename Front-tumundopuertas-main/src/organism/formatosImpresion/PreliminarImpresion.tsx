@@ -6,6 +6,7 @@ import { Card, CardContent } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Printer, Download } from 'lucide-react';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import type { FormatoImpresion, ConfiguracionFormato } from './FormatosImpresion';
 import { useFormatos } from '../../context/FormatosContext';
 
@@ -22,6 +23,12 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
 }) => {
   const { formatos, obtenerFormatoPorTipo } = useFormatos();
   const [formatoSeleccionado, setFormatoSeleccionado] = useState<FormatoImpresion | null>(null);
+  const [clienteData, setClienteData] = useState<{
+    nombre?: string;
+    cedula?: string;
+    direccion?: string;
+    telefono?: string;
+  } | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,21 +43,84 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
           setFormatoSeleccionado(formatosPreliminares[0]);
         }
       }
+
+      // Cargar datos del cliente si existe cliente_id
+      if (pedido?.cliente_id) {
+        const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
+        fetch(`${apiUrl}/clientes/id/${pedido.cliente_id}/`)
+          .then(res => {
+            if (res.ok) {
+              return res.json();
+            }
+            return null;
+          })
+          .then(data => {
+            if (data) {
+              setClienteData({
+                nombre: data.nombre || pedido.cliente_nombre || 'N/A',
+                cedula: data.cedula || data.rif || 'N/A',
+                direccion: data.direccion || 'N/A',
+                telefono: data.telefono || data.telefono_contacto || 'N/A'
+              });
+            } else {
+              // Si no se encuentra, usar los datos que ya están en el pedido
+              setClienteData({
+                nombre: pedido.cliente_nombre || 'N/A',
+                cedula: pedido.cliente_cedula || 'N/A',
+                direccion: pedido.cliente_direccion || 'N/A',
+                telefono: pedido.cliente_telefono || 'N/A'
+              });
+            }
+          })
+          .catch(err => {
+            console.error('Error al cargar datos del cliente:', err);
+            // Usar datos del pedido como fallback
+            setClienteData({
+              nombre: pedido.cliente_nombre || 'N/A',
+              cedula: pedido.cliente_cedula || 'N/A',
+              direccion: pedido.cliente_direccion || 'N/A',
+              telefono: pedido.cliente_telefono || 'N/A'
+            });
+          });
+      } else {
+        // Si no hay cliente_id, usar datos del pedido
+        setClienteData({
+          nombre: pedido?.cliente_nombre || 'N/A',
+          cedula: pedido?.cliente_cedula || 'N/A',
+          direccion: pedido?.cliente_direccion || 'N/A',
+          telefono: pedido?.cliente_telefono || 'N/A'
+        });
+      }
     }
-  }, [isOpen, formatos, obtenerFormatoPorTipo]);
+  }, [isOpen, formatos, obtenerFormatoPorTipo, pedido]);
 
   const handleImprimir = () => {
     if (!formatoSeleccionado || !pedido) return;
     
-    // Crear ventana de impresión con el mismo HTML que se muestra en la vista previa
-    const ventanaImpresion = window.open('', '_blank');
-    if (ventanaImpresion) {
-      const htmlCompleto = generarHTMLImpresion();
-      ventanaImpresion.document.write(htmlCompleto);
-      ventanaImpresion.document.close();
-      ventanaImpresion.focus();
-      ventanaImpresion.print();
-      ventanaImpresion.close();
+    try {
+      // Crear ventana de impresión con el mismo HTML que se muestra en la vista previa
+      const ventanaImpresion = window.open('', '_blank');
+      if (ventanaImpresion) {
+        const htmlCompleto = generarHTMLImpresion();
+        if (!htmlCompleto) {
+          alert('Error al generar el contenido para imprimir');
+          return;
+        }
+        ventanaImpresion.document.write(htmlCompleto);
+        ventanaImpresion.document.close();
+        
+        // Esperar a que la ventana cargue completamente antes de imprimir
+        setTimeout(() => {
+          ventanaImpresion.focus();
+          ventanaImpresion.print();
+          // No cerrar la ventana inmediatamente, permitir que el usuario la cierre
+        }, 250);
+      } else {
+        alert('No se pudo abrir la ventana de impresión. Por favor, verifica que no estés bloqueando ventanas emergentes.');
+      }
+    } catch (error) {
+      console.error('Error al imprimir:', error);
+      alert('Error al abrir la ventana de impresión');
     }
   };
 
@@ -74,8 +144,6 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.text(`RIF: ${config.empresa.rif}`, 105, yPosition, { align: 'center' });
-      yPosition += 6;
-      doc.text(config.empresa.direccion, 105, yPosition, { align: 'center' });
       yPosition += 15;
     }
 
@@ -92,7 +160,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
     yPosition += 15;
 
     // Cliente
-    if (config.cliente.mostrar) {
+    if (config.cliente.mostrar && clienteData) {
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('DATOS DEL CLIENTE:', 20, yPosition);
@@ -100,67 +168,74 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Nombre: ${pedido.cliente?.nombre || 'N/A'}`, 20, yPosition);
+      doc.text(`Nombre: ${clienteData.nombre || 'N/A'}`, 20, yPosition);
       yPosition += 6;
-      doc.text(`Cédula: ${pedido.cliente?.cedula || 'N/A'}`, 20, yPosition);
+      doc.text(`Cédula: ${clienteData.cedula || 'N/A'}`, 20, yPosition);
       yPosition += 6;
-      doc.text(`Dirección: ${pedido.cliente?.direccion || 'N/A'}`, 20, yPosition);
+      doc.text(`Dirección: ${clienteData.direccion || 'N/A'}`, 20, yPosition);
       yPosition += 6;
-      doc.text(`Teléfono: ${pedido.cliente?.telefono || 'N/A'}`, 20, yPosition);
+      doc.text(`Teléfono: ${clienteData.telefono || 'N/A'}`, 20, yPosition);
       yPosition += 15;
     }
 
-    // Items
+    // Items - Usar autoTable para mejor formato
     if (config.items.mostrar && pedido.items && pedido.items.length > 0) {
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.text('ITEMS:', 20, yPosition);
       yPosition += 8;
 
-      // Headers de la tabla
-      let xPosition = 20;
-      if (config.items.columnas.includes('descripcion')) {
-        doc.text('Descripción', xPosition, yPosition);
-        xPosition += 80;
-      }
-      if (config.items.columnas.includes('cantidad')) {
-        doc.text('Cant.', xPosition, yPosition);
-        xPosition += 20;
-      }
-      if (config.items.columnas.includes('precio')) {
-        doc.text('Precio Unit.', xPosition, yPosition);
-        xPosition += 30;
-      }
-      if (config.items.columnas.includes('subtotal')) {
-        doc.text('Subtotal', xPosition, yPosition);
-      }
-      yPosition += 8;
-
-      // Línea separadora
-      doc.line(20, yPosition, 190, yPosition);
-      yPosition += 5;
-
-      // Items
-      pedido.items.forEach((item: any) => {
-        xPosition = 20;
+      // Preparar datos para la tabla
+      const tableData = pedido.items.map((item: any) => {
+        const row: any[] = [];
         if (config.items.columnas.includes('descripcion')) {
-          doc.text(item.descripcion || item.nombre || 'N/A', xPosition, yPosition);
-          xPosition += 80;
+          row.push(item.descripcion || item.nombre || 'N/A');
         }
         if (config.items.columnas.includes('cantidad')) {
-          doc.text((item.cantidad || 1).toString(), xPosition, yPosition);
-          xPosition += 20;
+          row.push((item.cantidad || 1).toString());
         }
         if (config.items.columnas.includes('precio')) {
-          doc.text(`$ ${(item.precio || 0).toLocaleString()}`, xPosition, yPosition);
-          xPosition += 30;
+          row.push(`$ ${(item.precio || 0).toLocaleString()}`);
         }
         if (config.items.columnas.includes('subtotal')) {
-          doc.text(`$ ${((item.precio || 0) * (item.cantidad || 1)).toLocaleString()}`, xPosition, yPosition);
+          row.push(`$ ${((item.precio || 0) * (item.cantidad || 1)).toLocaleString()}`);
         }
-        yPosition += 6;
+        return row;
       });
-      yPosition += 10;
+
+      // Preparar headers
+      const headers: string[] = [];
+      if (config.items.columnas.includes('descripcion')) {
+        headers.push('Descripción');
+      }
+      if (config.items.columnas.includes('cantidad')) {
+        headers.push('Cant.');
+      }
+      if (config.items.columnas.includes('precio')) {
+        headers.push('Precio Unit.');
+      }
+      if (config.items.columnas.includes('subtotal')) {
+        headers.push('Subtotal');
+      }
+
+      // Generar tabla con autoTable
+      autoTable(doc, {
+        head: [headers],
+        body: tableData,
+        startY: yPosition,
+        margin: { left: 20, right: 20 },
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [242, 242, 242], fontStyle: 'bold' },
+        columnStyles: {
+          0: { cellWidth: 80 }, // Descripción
+          1: { cellWidth: 20, halign: 'center' }, // Cantidad
+          2: { cellWidth: 30, halign: 'right' }, // Precio
+          3: { cellWidth: 30, halign: 'right' } // Subtotal
+        }
+      });
+
+      // Obtener la posición Y después de la tabla
+      yPosition = (doc as any).lastAutoTable.finalY + 10;
       
       // Historial de abonos - Debajo de los items
       if (pedido.historial_pagos && Array.isArray(pedido.historial_pagos) && pedido.historial_pagos.length > 0) {
@@ -364,13 +439,13 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         </style>
       </head>
       <body>
-        ${generarContenidoHTML(config)}
+        ${generarContenidoHTML(config, clienteData)}
       </body>
       </html>
     `;
   };
 
-  const generarContenidoHTML = (config: ConfiguracionFormato) => {
+  const generarContenidoHTML = (config: ConfiguracionFormato, clienteData: typeof clienteData) => {
     let html = '';
 
     // Header con empresa y logo
@@ -381,7 +456,6 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       }
       html += `<h1>${config.empresa.nombre}</h1>`;
       html += `<p>RIF: ${config.empresa.rif}</p>`;
-      html += `<p>${config.empresa.direccion}</p>`;
       html += `<p>Tel: ${config.empresa.telefono} | Email: ${config.empresa.email}</p>`;
       html += '</div>';
     }
@@ -394,20 +468,20 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
     html += '</div>';
 
     // Información del cliente
-    if (config.cliente.mostrar) {
+    if (config.cliente.mostrar && clienteData) {
       html += '<div class="client-info">';
       html += '<h3>Cliente</h3>';
       if (config.cliente.incluirNombre) {
-        html += `<strong>Nombre:</strong> ${pedido.cliente_nombre || 'N/A'}<br>`;
+        html += `<strong>Nombre:</strong> ${clienteData.nombre || 'N/A'}<br>`;
       }
       if (config.cliente.incluirCedula) {
-        html += `<strong>Cédula:</strong> ${pedido.cliente_cedula || 'N/A'}<br>`;
+        html += `<strong>Cédula:</strong> ${clienteData.cedula || 'N/A'}<br>`;
       }
       if (config.cliente.incluirDireccion) {
-        html += `<strong>Dirección:</strong> ${pedido.cliente_direccion || 'N/A'}<br>`;
+        html += `<strong>Dirección:</strong> ${clienteData.direccion || 'N/A'}<br>`;
       }
       if (config.cliente.incluirTelefono) {
-        html += `<strong>Teléfono:</strong> ${pedido.cliente_telefono || 'N/A'}<br>`;
+        html += `<strong>Teléfono:</strong> ${clienteData.telefono || 'N/A'}<br>`;
       }
       html += '</div>';
     }
@@ -525,7 +599,6 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
             )}
             <h1 className="text-xl font-bold">{config.empresa.nombre}</h1>
             <p className="text-sm text-gray-600">RIF: {config.empresa.rif}</p>
-            <p className="text-sm text-gray-600">{config.empresa.direccion}</p>
           </div>
         )}
 
@@ -539,18 +612,21 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         </div>
 
         {/* Cliente */}
-        {config.cliente.mostrar && (
+        {config.cliente.mostrar && clienteData && (
           <div className="bg-gray-50 p-3 rounded">
             <h3 className="font-medium mb-2">Información del Cliente</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               {config.cliente.incluirNombre && (
-                <div><strong>Nombre:</strong> {pedido.cliente_nombre || 'N/A'}</div>
+                <div><strong>Nombre:</strong> {clienteData.nombre || 'N/A'}</div>
               )}
               {config.cliente.incluirCedula && (
-                <div><strong>Cédula:</strong> {pedido.cliente_cedula || 'N/A'}</div>
+                <div><strong>Cédula:</strong> {clienteData.cedula || 'N/A'}</div>
               )}
               {config.cliente.incluirDireccion && (
-                <div className="col-span-2"><strong>Dirección:</strong> {pedido.cliente_direccion || 'N/A'}</div>
+                <div className="col-span-2"><strong>Dirección:</strong> {clienteData.direccion || 'N/A'}</div>
+              )}
+              {config.cliente.incluirTelefono && (
+                <div><strong>Teléfono:</strong> {clienteData.telefono || 'N/A'}</div>
               )}
             </div>
           </div>
