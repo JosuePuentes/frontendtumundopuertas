@@ -166,17 +166,17 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
         id="mobile-menu"
         style={{ backgroundColor: "#000000", opacity: 1, backdropFilter: "none", WebkitBackdropFilter: "none", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3)" }}
       >
-        <div className="px-3 pt-3 pb-3 space-y-1 sm:px-4 border-t border-gray-700">
+        <div className="px-3 pt-3 pb-3 space-y-1.5 sm:px-4 border-t border-gray-700">
           {filteredLinks.map((link) => (
             <NavLink
               key={link.href}
               to={link.href}
               onClick={() => setIsOpen(false)} // Cierra el menú al hacer clic
               className={({ isActive }) =>
-                `block px-3 py-2 rounded-md text-base font-medium transition-all duration-200 ${
+                `block px-3 py-2.5 rounded-md text-base sm:text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? "bg-cyan-500 text-white shadow-sm"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-white"
+                    : "text-white hover:bg-gray-800 hover:text-cyan-400"
                 }`
               }
             >
@@ -188,10 +188,10 @@ const Navbar: React.FC<NavbarProps> = ({ links = defaultLinks }) => {
         </div>
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center px-4 py-2 rounded-md font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 mx-3 mb-3 rounded-md font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow"
             >
-              <LogOutIcon />
-              Cerrar Sesión
+              <LogOutIcon className="w-5 h-5" />
+              <span>Cerrar Sesión</span>
             </button>
       </div>
     </nav>

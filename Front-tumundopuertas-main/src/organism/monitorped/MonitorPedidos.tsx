@@ -110,11 +110,16 @@ const MonitorPedidos: React.FC = () => {
 
   const pedidosFiltrados = pedidos
     .filter((p) => {
-      // Filtro por búsqueda de texto
+      // Filtro por búsqueda de texto (incluye nombre de items)
+      const searchLower = search.toLowerCase();
       const coincideBusqueda = 
-        (p.cliente_nombre?.toLowerCase?.().includes(search.toLowerCase()) || "") ||
-        (p.estado_general?.toLowerCase?.().includes(search.toLowerCase()) || "") ||
-        (p._id?.includes(search) || "");
+        (p.cliente_nombre?.toLowerCase?.().includes(searchLower) || false) ||
+        (p.estado_general?.toLowerCase?.().includes(searchLower) || false) ||
+        (p._id?.includes(search) || false) ||
+        // Buscar en nombres de items
+        (p.items?.some(item => 
+          item.nombre?.toLowerCase?.().includes(searchLower) || false
+        ) || false);
 
       // Filtro por estado específico si está seleccionado
       const coincideEstado = ordenFilter === "" || p.estado_general === ordenFilter;
@@ -142,7 +147,7 @@ const MonitorPedidos: React.FC = () => {
       <h2 className="text-2xl font-bold mb-6">Monitor de Pedidos</h2>
       <div className="flex gap-4 mb-6">
         <Input
-          placeholder="Buscar por cliente, estado o ID..."
+          placeholder="Buscar por cliente, estado, ID o nombre de item..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-1/3"
