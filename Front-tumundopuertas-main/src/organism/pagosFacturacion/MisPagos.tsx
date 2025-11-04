@@ -16,6 +16,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, Download, FileText } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -55,6 +62,7 @@ const MisPagos: React.FC = () => {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaFin, setFechaFin] = useState("");
   const [clienteFiltro, setClienteFiltro] = useState<string>(""); // Added state for client filter
+  const [filtroEstadoPago, setFiltroEstadoPago] = useState<string>("todos"); // Filtro por estado de pago
   const [showConfirmationModal, setShowConfirmationModal] = useState(false); // New state for confirmation
   const [selectedPedidoForInvoice, setSelectedPedidoForInvoice] = useState<PedidoConPagos | null>(null);
   const [showPreliminarModal, setShowPreliminarModal] = useState(false);
@@ -175,12 +183,33 @@ const MisPagos: React.FC = () => {
 
   // Calcular datos filtrados y totales
   const pedidosFiltrados = useMemo(() => {
-    return pagos.filter((pedido) =>
-      clienteFiltro.trim() === ""
+    return pagos.filter((pedido) => {
+      // Filtro por cliente
+      const pasaFiltroCliente = clienteFiltro.trim() === ""
         ? true
-        : (pedido.cliente_nombre || "").toLowerCase().includes(clienteFiltro.trim().toLowerCase())
-    );
-  }, [pagos, clienteFiltro]);
+        : (pedido.cliente_nombre || "").toLowerCase().includes(clienteFiltro.trim().toLowerCase());
+      
+      if (!pasaFiltroCliente) return false;
+      
+      // Filtro por estado de pago
+      const totalPedido = calculateTotalPedido(pedido);
+      const montoAbonado = pedido.total_abonado || 0;
+      
+      if (filtroEstadoPago === "pagado") {
+        // Pagado: totalPedido === montoAbonado o pago === "pagado"
+        return totalPedido > 0 && montoAbonado >= totalPedido || pedido.pago === "pagado";
+      } else if (filtroEstadoPago === "abonado") {
+        // Abonado: tiene pagos pero no está completamente pagado
+        return montoAbonado > 0 && montoAbonado < totalPedido && pedido.pago !== "pagado";
+      } else if (filtroEstadoPago === "sin_pago") {
+        // Sin pago: no tiene abonos
+        return montoAbonado === 0 || (!pedido.historial_pagos || pedido.historial_pagos.length === 0);
+      }
+      
+      // "todos" - mostrar todos
+      return true;
+    });
+  }, [pagos, clienteFiltro, filtroEstadoPago]);
 
   // Calcular totales generales
   const totales = useMemo(() => {
@@ -378,29 +407,40 @@ const MisPagos: React.FC = () => {
         </p>
       </CardHeader>
       <CardContent>
-        {/* Filtros de fecha y cliente */}
+        {/* Filtros de fecha, cliente y estado de pago */}
         <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
           <Input
             type="date"
             value={fechaInicio}
             onChange={(e) => setFechaInicio(e.target.value)}
-            className="sm:w-1/3"
+            className="sm:w-1/4"
             placeholder="Fecha inicio"
           />
           <Input
             type="date"
             value={fechaFin}
             onChange={(e) => setFechaFin(e.target.value)}
-            className="sm:w-1/3"
+            className="sm:w-1/4"
             placeholder="Fecha fin"
           />
           <Input
             type="text"
             value={clienteFiltro}
             onChange={(e) => setClienteFiltro(e.target.value)}
-            className="sm:w-1/3"
+            className="sm:w-1/4"
             placeholder="Buscar por nombre de cliente..."
           />
+          <Select value={filtroEstadoPago} onValueChange={setFiltroEstadoPago}>
+            <SelectTrigger className="sm:w-1/4">
+              <SelectValue placeholder="Estado de pago" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="pagado">Pagado</SelectItem>
+              <SelectItem value="abonado">Abonado</SelectItem>
+              <SelectItem value="sin_pago">Sin pago</SelectItem>
+            </SelectContent>
+          </Select>
           <Button onClick={fetchPagos} className="sm:w-auto w-full">
             Buscar
           </Button>
