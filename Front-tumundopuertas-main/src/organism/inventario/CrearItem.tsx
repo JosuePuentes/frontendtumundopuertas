@@ -34,7 +34,7 @@ const CrearItem: React.FC = () => {
     imagenes: [],
   });
   const [mensaje, setMensaje] = useState<string>("");
-  const { fetchItems, loading, error } = useItems();
+  const { loading, error } = useItems();
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -175,7 +175,7 @@ const CrearItem: React.FC = () => {
               onChange={handleChange}
               placeholder="Dejar vacío para código automático (ITEM-0271, ITEM-0272, etc.)"
               className={`mt-1 ${item.codigo && item.codigo.startsWith('ITEM-') ? 'bg-green-50 border-green-300 font-semibold' : ''}`}
-              readOnly={item.codigo && item.codigo.startsWith('ITEM-') && !item.nombre}
+              readOnly={!!(item.codigo && item.codigo.startsWith('ITEM-') && !item.nombre)}
             />
             {item.codigo && item.codigo.startsWith('ITEM-') && !item.nombre && (
               <p className="text-xs text-green-600 mt-1">✓ Código generado automáticamente</p>
