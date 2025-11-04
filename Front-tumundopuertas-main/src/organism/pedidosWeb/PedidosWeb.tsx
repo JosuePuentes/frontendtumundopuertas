@@ -401,6 +401,48 @@ const PedidosWeb: React.FC = () => {
     // NO eliminar chat_soporte_actual para que persista
   };
 
+  // Función para reproducir sonido de notificación
+  const reproducirSonidoNotificacion = () => {
+    try {
+      // Crear un contexto de audio
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      // Configurar el sonido (tipo "ping" de mensaje)
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Frecuencia del sonido (tipo notificación)
+      oscillator.frequency.value = 800; // Hz
+      oscillator.type = 'sine';
+      
+      // Envolvente del sonido (fade out)
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      // Reproducir sonido
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+      
+      // Reproducir un segundo "ping" más suave
+      setTimeout(() => {
+        const oscillator2 = audioContext.createOscillator();
+        const gainNode2 = audioContext.createGain();
+        oscillator2.connect(gainNode2);
+        gainNode2.connect(audioContext.destination);
+        oscillator2.frequency.value = 1000;
+        oscillator2.type = 'sine';
+        gainNode2.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        oscillator2.start(audioContext.currentTime);
+        oscillator2.stop(audioContext.currentTime + 0.2);
+      }, 150);
+    } catch (error) {
+      console.warn("No se pudo reproducir el sonido de notificación:", error);
+    }
+  };
+
   const cargarMensajesNoLeidos = async () => {
     try {
       const token = localStorage.getItem("access_token");
@@ -1032,7 +1074,7 @@ const PedidosWeb: React.FC = () => {
                         {mensajesNoLeidos.get(pedido._id) ? (
                           <>
                             <Badge className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse shadow-lg border-2 border-white z-10 min-w-[20px] flex items-center justify-center">
-                              {mensajesNoLeidos.get(pedido._id) > 99 ? '99+' : mensajesNoLeidos.get(pedido._id)}
+                              {(mensajesNoLeidos.get(pedido._id) || 0) > 99 ? '99+' : (mensajesNoLeidos.get(pedido._id) || 0)}
                             </Badge>
                             <span className="absolute -top-1 -right-1 flex h-3 w-3 z-0">
                               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
@@ -1502,14 +1544,10 @@ const PedidosWeb: React.FC = () => {
                       // Si no hay comprobante en el nivel del pedido, buscar en historial_pagos
                       (() => {
                         const pagoConComprobante = pedidoSeleccionado.historial_pagos?.find((p: any) => 
-                          p.comprobante_url || p.comprobanteUrl || p.comprobante
+                          p.comprobante_url
                         );
-                        return pagoConComprobante ? (
-                          <ComprobanteImage comprobanteUrl={
-                            pagoConComprobante.comprobante_url || 
-                            pagoConComprobante.comprobanteUrl || 
-                            pagoConComprobante.comprobante || ""
-                          } />
+                        return pagoConComprobante && pagoConComprobante.comprobante_url ? (
+                          <ComprobanteImage comprobanteUrl={pagoConComprobante.comprobante_url} />
                         ) : null;
                       })()
                     )}
