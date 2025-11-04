@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -352,6 +352,9 @@ const ChatMessenger: React.FC<ChatMessengerProps> = ({
               <X className="w-5 h-5" />
             </Button>
           </div>
+          <DialogDescription className="sr-only">
+            Chat de mensajería para comunicación entre cliente y administrador sobre el pedido
+          </DialogDescription>
         </DialogHeader>
 
         {/* Información del Pedido Anclada (solo si se proporciona infoPedido y no es chat de soporte) */}
