@@ -697,48 +697,13 @@ const PedidosWeb: React.FC = () => {
       (pedido.cliente_nombre || "").toLowerCase().includes(searchLower) ||
       (pedido.cliente_cedula || "").toLowerCase().includes(searchLower) ||
       (pedido.numero_referencia || "").toLowerCase().includes(searchLower) ||
-      (pedido._id || "").toLowerCase().includes(searchLower) ||
-      (pedido.factura?.numero_factura || "").toLowerCase().includes(searchLower)
+      (pedido._id || "").toLowerCase().includes(searchLower)
     );
   });
 
-  const verDetalle = async (pedido: PedidoWeb) => {
+  const verDetalle = (pedido: PedidoWeb) => {
     setPedidoSeleccionado(pedido);
     setModalDetalleAbierto(true);
-    
-    // Cargar factura solo cuando se abre el modal (optimización)
-    if (pedido._id) {
-      try {
-        const token = localStorage.getItem("access_token");
-        const resFactura = await fetch(`${apiUrl}/facturas/pedido/${pedido._id}`, {
-          headers: {
-            "Authorization": `Bearer ${token}`,
-          },
-        });
-        
-        if (resFactura.ok) {
-          const facturaData = await resFactura.json();
-          const factura = Array.isArray(facturaData) ? facturaData[0] : facturaData;
-          if (factura) {
-            // Actualizar el pedido con la factura
-            setPedidoSeleccionado(prev => prev ? {
-              ...prev,
-              factura: {
-                _id: factura._id || factura.id,
-                numero_factura: factura.numero_factura || factura.numeroFactura || "Sin número",
-                monto_total: factura.monto_total || factura.montoTotal || 0,
-                monto_abonado: factura.monto_abonado || factura.montoAbonado || 0,
-                saldo_pendiente: factura.saldo_pendiente || factura.saldoPendiente || (factura.monto_total || factura.montoTotal || 0) - (factura.monto_abonado || factura.montoAbonado || 0),
-                historial_abonos: factura.historial_abonos || factura.historialAbonos || [],
-                estado: factura.estado || "pendiente",
-              }
-            } : null);
-          }
-        }
-      } catch (error) {
-        // Silenciar errores 404 (es normal que no todos los pedidos tengan factura)
-      }
-    }
   };
 
   const cambiarEstadoPedido = async (nuevoEstado: string) => {
@@ -836,7 +801,7 @@ const PedidosWeb: React.FC = () => {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 w-5 h-5" />
         <Input
           type="text"
-          placeholder="Buscar por nombre, cédula, referencia, ID de pedido o número de factura..."
+          placeholder="Buscar por nombre, cédula, referencia o ID de pedido..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-10 bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
