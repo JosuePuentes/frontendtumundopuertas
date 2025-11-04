@@ -106,11 +106,20 @@ const ComprobanteImage: React.FC<{ comprobanteUrl: string }> = ({ comprobanteUrl
 
   useEffect(() => {
     const cargarComprobante = async () => {
+      if (!comprobanteUrl || comprobanteUrl.trim() === "") {
+        setLoading(false);
+        setError(true);
+        console.warn("⚠️ ComprobanteImage: URL vacía o inválida");
+        return;
+      }
+
       setLoading(true);
       setError(false);
+      console.log("🖼️ ComprobanteImage: Cargando comprobante:", comprobanteUrl);
       
       // Si ya es una URL completa HTTP/HTTPS, usarla directamente
       if (comprobanteUrl.startsWith('http://') || comprobanteUrl.startsWith('https://')) {
+        console.log("✅ ComprobanteImage: URL completa detectada, usando directamente");
         setImageUrl(comprobanteUrl);
         setLoading(false);
         return;
@@ -121,12 +130,23 @@ const ComprobanteImage: React.FC<{ comprobanteUrl: string }> = ({ comprobanteUrl
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
         const token = localStorage.getItem("access_token");
         
-        // Normalizar el object name
-        let objectName = comprobanteUrl;
+        if (!token) {
+          console.warn("⚠️ ComprobanteImage: No hay token de autenticación");
+          setImageUrl(comprobanteUrl);
+          setLoading(false);
+          return;
+        }
+        
+        // Normalizar el object name - intentar diferentes rutas
+        let objectName = comprobanteUrl.trim();
+        
+        // Si no tiene ruta, probar diferentes ubicaciones posibles
         if (!objectName.includes('/')) {
-          // Si no tiene ruta, asumir que está en comprobantes_pago/
+          // Primero intentar con comprobantes_pago/
           objectName = `comprobantes_pago/${objectName}`;
         }
+        
+        console.log("🔍 ComprobanteImage: Intentando obtener presigned URL para:", objectName);
         
         const res = await fetch(`${apiUrl}/files/presigned-url`, {
           method: "POST",
@@ -143,13 +163,20 @@ const ComprobanteImage: React.FC<{ comprobanteUrl: string }> = ({ comprobanteUrl
 
         if (res.ok) {
           const data = await res.json();
-          setImageUrl(data.presigned_url || comprobanteUrl);
+          const presignedUrl = data.presigned_url || data.url || comprobanteUrl;
+          console.log("✅ ComprobanteImage: Presigned URL obtenida:", presignedUrl);
+          setImageUrl(presignedUrl);
         } else {
+          const errorText = await res.text().catch(() => '');
+          console.warn("⚠️ ComprobanteImage: Error al obtener presigned URL:", res.status, errorText);
+          
           // Si falla, intentar con la URL original
+          console.log("🔄 ComprobanteImage: Intentando usar URL original como fallback");
           setImageUrl(comprobanteUrl);
         }
       } catch (err) {
-        console.error("Error al obtener presigned URL para comprobante:", err);
+        console.error("❌ ComprobanteImage: Error al obtener presigned URL:", err);
+        // Como último recurso, intentar con la URL original
         setImageUrl(comprobanteUrl);
       } finally {
         setLoading(false);
@@ -158,6 +185,9 @@ const ComprobanteImage: React.FC<{ comprobanteUrl: string }> = ({ comprobanteUrl
 
     if (comprobanteUrl) {
       cargarComprobante();
+    } else {
+      setLoading(false);
+      setError(true);
     }
   }, [comprobanteUrl]);
 
@@ -498,14 +528,34 @@ const PedidosWeb: React.FC = () => {
             
             // Obtener comprobante_url del historial_pagos si no está en el nivel del pedido
             let comprobanteUrl = pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "";
+            
+            // Si no hay comprobante en el nivel del pedido, buscar en historial_pagos
             if (!comprobanteUrl && pedido.historial_pagos && Array.isArray(pedido.historial_pagos)) {
-              // Buscar el primer pago con comprobante
-              const pagoConComprobante = pedido.historial_pagos.find((pago: any) => 
-                pago.comprobante_url || pago.comprobanteUrl || pago.comprobante
-              );
-              if (pagoConComprobante) {
-                comprobanteUrl = pagoConComprobante.comprobante_url || pagoConComprobante.comprobanteUrl || pagoConComprobante.comprobante || "";
+              // Buscar el primer pago con comprobante (ordenar por fecha más reciente primero)
+              const pagosConComprobante = pedido.historial_pagos
+                .filter((pago: any) => pago.comprobante_url || pago.comprobanteUrl || pago.comprobante)
+                .sort((a: any, b: any) => {
+                  const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
+                  const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
+                  return fechaB - fechaA; // Más reciente primero
+                });
+              
+              if (pagosConComprobante.length > 0) {
+                comprobanteUrl = pagosConComprobante[0].comprobante_url || 
+                                 pagosConComprobante[0].comprobanteUrl || 
+                                 pagosConComprobante[0].comprobante || "";
               }
+            }
+            
+            // Debug: Log para ver qué comprobante se encontró
+            if (comprobanteUrl) {
+              console.log(`📸 Comprobante encontrado para pedido ${pedidoId}:`, comprobanteUrl);
+            } else {
+              console.warn(`⚠️ No se encontró comprobante para pedido ${pedidoId}`, {
+                tieneComprobanteEnPedido: !!(pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante),
+                historialPagos: pedido.historial_pagos?.length || 0,
+                historialConComprobantes: pedido.historial_pagos?.filter((p: any) => p.comprobante_url || p.comprobanteUrl || p.comprobante).length || 0
+              });
             }
             
             // Obtener cliente_direccion - intentar desde múltiples fuentes
