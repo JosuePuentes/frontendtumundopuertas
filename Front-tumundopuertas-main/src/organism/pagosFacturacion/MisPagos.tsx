@@ -267,11 +267,11 @@ const MisPagos: React.FC = () => {
       // Agregar totales al final
       const finalY = (doc as any).lastAutoTable.finalY + 10;
       doc.setFontSize(12);
-      doc.setFont(undefined, 'bold');
+      doc.setFont('helvetica', 'bold');
       doc.text('TOTALES GENERALES', 14, finalY);
       
       doc.setFontSize(10);
-      doc.setFont(undefined, 'normal');
+      doc.setFont('helvetica', 'normal');
       doc.text(`Total Pedido: $${totales.totalPedido.toFixed(2)}`, 14, finalY + 8);
       doc.text(`Total Abonado: $${totales.totalAbonado.toFixed(2)}`, 14, finalY + 14);
       doc.text(`Total Pendiente: $${totales.totalPendiente.toFixed(2)}`, 14, finalY + 20);
