@@ -17,38 +17,14 @@ import { useMetodosPago } from "@/hooks/useMetodosPago";
 // Componente para gestionar pagos y abonos
 const PagoManager: React.FC<{
   pedidoId: string;
-  pagoInicial?: string;
   onSuccess?: () => void;
   metodosPago: any[];
-}> = ({ pedidoId, pagoInicial, onSuccess, metodosPago }) => {
+}> = ({ pedidoId, onSuccess, metodosPago }) => {
   const [monto, setMonto] = useState("");
-  const [estado, setEstado] = useState(pagoInicial || "sin pago");
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  // Actualizar solo el estado del pago
-  const actualizarEstado = async (nuevoEstado: string) => {
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pago: nuevoEstado }),
-      });
-      if (!res.ok) throw new Error("Error al actualizar estado");
-      setEstado(nuevoEstado);
-      setSuccess("Estado actualizado");
-      if (onSuccess) onSuccess();
-    } catch (err: any) {
-      setError(err.message || "Error desconocido");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Registrar abono (actualiza estado y agrega al historial)
   const registrarAbono = async () => {
@@ -59,7 +35,7 @@ const PagoManager: React.FC<{
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pago: estado, monto: parseFloat(monto), metodo: selectedMetodoPago }),
+        body: JSON.stringify({ monto: parseFloat(monto), metodo: selectedMetodoPago }),
       });
       if (!res.ok) throw new Error("Error al registrar abono");
       setSuccess("Abono registrado");
@@ -78,16 +54,6 @@ const PagoManager: React.FC<{
 
   return (
     <div className="flex flex-col gap-1">
-      <select
-        value={estado}
-        onChange={e => actualizarEstado(e.target.value)}
-        className="text-xs border rounded px-1 py-0.5"
-        disabled={loading}
-      >
-        <option value="sin pago">Sin pago</option>
-        <option value="abonado">Abonado</option>
-        <option value="pagado">Pagado</option>
-      </select>
       <div className="flex gap-1 mt-1">
         <Input
           type="number"
@@ -327,7 +293,6 @@ const Pedidos: React.FC = () => {
                         <div className="flex flex-col gap-1">
                           <PagoManager
                             pedidoId={pedido._id}
-                            pagoInicial={pedido.pago}
                             onSuccess={refreshData}
                             metodosPago={metodosPago}
                           />
