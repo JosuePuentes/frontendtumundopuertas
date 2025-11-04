@@ -32,14 +32,31 @@ const PagoManager: React.FC<{
     setError(null);
     setSuccess(null);
     try {
+      const montoNumero = parseFloat(monto);
+      if (isNaN(montoNumero) || montoNumero <= 0) {
+        setError("El monto debe ser mayor a cero");
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ monto: parseFloat(monto), metodo: selectedMetodoPago }),
+        body: JSON.stringify({ 
+          pago: "abonado", // Campo requerido por el backend
+          monto: montoNumero, 
+          metodo: selectedMetodoPago 
+        }),
       });
-      if (!res.ok) throw new Error("Error al registrar abono");
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ detail: "Error al registrar abono" }));
+        throw new Error(errorData.detail || "Error al registrar abono");
+      }
+      
       setSuccess("Abono registrado");
       setMonto("");
+      setSelectedMetodoPago("");
       
       // Refrescar métodos de pago para actualizar saldos
       // Nota: Los métodos de pago se refrescan desde el componente padre
