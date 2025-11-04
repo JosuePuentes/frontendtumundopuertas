@@ -490,24 +490,46 @@ const PedidosWeb: React.FC = () => {
             let totalAbonado = pedido.total_abonado || 0;
             if (!totalAbonado && pedido.historial_pagos && Array.isArray(pedido.historial_pagos)) {
               totalAbonado = pedido.historial_pagos
-                .filter((pago: any) => pago.estado === "aprobado" || pago.estado === "confirmado")
+                .filter((pago: any) => pago.estado === "aprobado" || pago.estado === "confirmado" || pago.estado === "pendiente")
                 .reduce((sum: number, pago: any) => {
                   return sum + (pago.monto || pago.cantidad || 0);
                 }, 0);
             }
+            
+            // Obtener comprobante_url del historial_pagos si no está en el nivel del pedido
+            let comprobanteUrl = pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "";
+            if (!comprobanteUrl && pedido.historial_pagos && Array.isArray(pedido.historial_pagos)) {
+              // Buscar el primer pago con comprobante
+              const pagoConComprobante = pedido.historial_pagos.find((pago: any) => 
+                pago.comprobante_url || pago.comprobanteUrl || pago.comprobante
+              );
+              if (pagoConComprobante) {
+                comprobanteUrl = pagoConComprobante.comprobante_url || pagoConComprobante.comprobanteUrl || pagoConComprobante.comprobante || "";
+              }
+            }
+            
+            // Obtener cliente_direccion - intentar desde múltiples fuentes
+            let clienteDireccion = pedido.cliente_direccion || pedido.clienteDireccion || pedido.cliente?.direccion;
+            if (!clienteDireccion || clienteDireccion === "Sin dirección") {
+              // Intentar obtener desde el objeto cliente si existe
+              if (pedido.cliente && typeof pedido.cliente === 'object') {
+                clienteDireccion = pedido.cliente.direccion || pedido.cliente.direccion_entrega || "";
+              }
+            }
+            clienteDireccion = clienteDireccion || "Sin dirección";
             
             // Usar directamente los datos que vienen del backend (ya incluye cliente_cedula y cliente_telefono)
             return {
               _id: pedidoId,
               cliente_id: clienteId,
               cliente_nombre: pedido.cliente_nombre || pedido.clienteNombre || pedido.cliente?.nombre || "Sin nombre",
-              cliente_cedula: pedido.cliente_cedula || pedido.clienteCedula || pedido.cliente?.cedula || "Sin cédula",
-              cliente_direccion: pedido.cliente_direccion || pedido.clienteDireccion || pedido.cliente?.direccion || "Sin dirección",
-              cliente_telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono || "Sin teléfono",
+              cliente_cedula: pedido.cliente_cedula || pedido.clienteCedula || pedido.cliente?.cedula || pedido.cliente?.rif || "Sin cédula",
+              cliente_direccion: clienteDireccion,
+              cliente_telefono: pedido.cliente_telefono || pedido.clienteTelefono || pedido.cliente?.telefono || pedido.cliente?.telefono_contacto || "Sin teléfono",
               items: pedido.items || [],
               metodo_pago: pedido.metodo_pago || pedido.metodoPago || "No especificado",
               numero_referencia: pedido.numero_referencia || pedido.numeroReferencia || "Sin referencia",
-              comprobante_url: pedido.comprobante_url || pedido.comprobanteUrl || pedido.comprobante || "",
+              comprobante_url: comprobanteUrl,
               total: totalCalculado,
               total_abonado: totalAbonado,
               historial_pagos: pedido.historial_pagos || [],
