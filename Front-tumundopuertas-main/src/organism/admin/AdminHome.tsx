@@ -666,6 +666,34 @@ const AdminHome: React.FC = () => {
           data.config.logo.image = configToSave.logo.image;
           data.config.logo.url = configToSave.logo.image;
         }
+        
+        // Normalizar imágenes de productos: preservar las enviadas si el backend no las retornó
+        if (data.config.products && Array.isArray(data.config.products.items)) {
+          const productosEnviados = configToSave.products.items || [];
+          const productosEnviadosMap = new Map();
+          productosEnviados.forEach((item: any) => {
+            if (item.id && item.image && item.image.length > 100) {
+              productosEnviadosMap.set(item.id, item.image);
+            }
+          });
+          
+          // Normalizar cada producto: usar url si existe, sino image, y preservar la enviada si el backend no la retornó
+          data.config.products.items = data.config.products.items.map((item: any) => {
+            const backendImage = item.url || item.image || '';
+            const enviadaImage = productosEnviadosMap.get(item.id) || '';
+            
+            // Si el backend no retornó imagen válida, usar la enviada
+            const finalImage = (backendImage && backendImage.length > 100) 
+              ? backendImage 
+              : (enviadaImage && enviadaImage.length > 100 ? enviadaImage : '');
+            
+            return {
+              ...item,
+              image: finalImage,
+              url: finalImage || item.url || item.image || '' // Mantener url para compatibilidad
+            };
+          });
+        }
       }
       
       // Actualizar el estado local con la configuración guardada (usar la respuesta del backend)
@@ -759,22 +787,39 @@ const AdminHome: React.FC = () => {
               ? configToSave.products
               : { title: 'Productos', items: [] };
             
+            // Hacer merge inteligente: usar items del backend pero preservar imágenes enviadas si el backend no las retornó
+            const backendItems = Array.isArray(backendProducts?.items) ? backendProducts.items : [];
+            const savedItems = Array.isArray(savedProducts.items) ? savedProducts.items : [];
+            
+            // Crear un mapa de items guardados por id para buscar imágenes fácilmente
+            const savedItemsMap = new Map();
+            savedItems.forEach((item: any) => {
+              if (item.id && item.image && item.image.length > 100) {
+                savedItemsMap.set(item.id, item.image);
+              }
+            });
+            
+            // Mapear items del backend, preservando imágenes enviadas si el backend no las retornó
+            const mergedItems = backendItems.length > 0 
+              ? backendItems.map((item: any) => {
+                  const backendImage = item.image || item.url || '';
+                  const savedImage = savedItemsMap.get(item.id) || '';
+                  
+                  // Priorizar imagen del backend si es válida, sino usar la enviada
+                  const finalImage = (backendImage && backendImage.length > 100) 
+                    ? backendImage 
+                    : (savedImage && savedImage.length > 100 ? savedImage : '');
+                  
+                  return {
+                    ...item,
+                    image: finalImage
+                  };
+                })
+              : savedItems; // Si no hay items del backend, usar los guardados
+            
             return {
               title: backendProducts?.title || savedProducts.title || 'Productos',
-              items: (Array.isArray(backendProducts?.items) ? backendProducts.items : (Array.isArray(savedProducts.items) ? savedProducts.items : [])).map((item: any, index: number) => ({
-                ...item,
-                // Priorizar imagen del backend (ya que ahora las retorna correctamente)
-                // El backend puede usar 'url' o 'image', normalizamos a 'image'
-                image: (() => {
-                  const productImage = item.image || item.url || '';
-                  // Priorizar la imagen del backend si es válida
-                  if (productImage && productImage.length > 100) return productImage;
-                  // Fallback: usar la imagen que enviamos si el backend no la retornó
-                  const savedImage = savedProducts.items[index]?.image || '';
-                  if (savedImage && savedImage.length > 100) return savedImage;
-                  return '';
-                })()
-              }))
+              items: mergedItems
             };
           })(),
           // Asegurar que todos los campos requeridos estén presentes con validación defensiva
