@@ -20,6 +20,7 @@ import CargarInventarioExcel from "@/organism/inventario/CargarInventarioExcel";
 import ModificarUsuario from "@/organism/usuarios/ModificarUsuario";
 import DashboardAsignaciones from "@/organism/dashboard/DashboardAsignaciones";
 import DashboardItems from "@/organism/dashboard/DashboardItems";
+import PanelControlLogistico from "@/organism/panelControlLogistico/PanelControlLogistico";
 import ModificarCliente from "@/organism/clientes/ModificarCliente";
 import TerminarAsignacion from "@/organism/teminarasignacion/TerminarAsignacion";
 import MonitorPedidos from "@/organism/monitorped/MonitorPedidos";
@@ -117,6 +118,14 @@ function AppRouter() {
           element={
             <ProtectedRoute permiso="dashboard-asignaciones">
               <DashboardAsignaciones />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="panel-control-logistico"
+          element={
+            <ProtectedRoute permiso="dashboard-asignaciones">
+              <PanelControlLogistico />
             </ProtectedRoute>
           }
         />
