@@ -73,16 +73,16 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
       ? {
           title: config.banner.title || '',
           subtitle: config.banner.subtitle || '',
-          image: safeConfig.banner.image || '',
+          image: config.banner.image || '',
           enabled: config.banner.enabled !== undefined ? config.banner.enabled : true
         }
       : { title: '', subtitle: '', image: '', enabled: true },
-    logo: safeConfig.logo && typeof safeConfig.logo === 'object' && !Array.isArray(safeConfig.logo)
+    logo: config.logo && typeof config.logo === 'object' && !Array.isArray(config.logo)
       ? {
-          text: safeConfig.logo.text || '',
-          slogan: safeConfig.logo.slogan || '',
-          image: safeConfig.logo.image || '',
-          enabled: safeConfig.logo.enabled !== undefined ? safeConfig.logo.enabled : true
+          text: config.logo.text || '',
+          slogan: config.logo.slogan || '',
+          image: config.logo.image || '',
+          enabled: config.logo.enabled !== undefined ? config.logo.enabled : true
         }
       : { text: '', slogan: '', image: '', enabled: true },
     values: config.values && typeof config.values === 'object' && !Array.isArray(config.values)
