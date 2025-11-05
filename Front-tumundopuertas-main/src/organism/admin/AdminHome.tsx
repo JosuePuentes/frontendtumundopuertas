@@ -330,7 +330,8 @@ const AdminHome: React.FC = () => {
                 ? {
                     title: data.config.banner.title ?? config.banner.title,
                     subtitle: data.config.banner.subtitle ?? config.banner.subtitle,
-                    image: data.config.banner.image ?? config.banner.image,
+                    // El backend puede usar 'url' o 'image', normalizamos a 'image'
+                    image: data.config.banner.url || data.config.banner.image || config.banner.image || '',
                     enabled: data.config.banner.enabled !== undefined ? data.config.banner.enabled : config.banner.enabled,
                     width: data.config.banner.width ?? config.banner.width ?? "100%",
                     height: data.config.banner.height ?? config.banner.height ?? "400px"
@@ -340,7 +341,8 @@ const AdminHome: React.FC = () => {
                 ? {
                     text: data.config.logo.text ?? config.logo.text,
                     slogan: data.config.logo.slogan ?? config.logo.slogan,
-                    image: data.config.logo.image ?? config.logo.image,
+                    // El backend puede usar 'url' o 'image', normalizamos a 'image'
+                    image: data.config.logo.url || data.config.logo.image || config.logo.image || '',
                     enabled: data.config.logo.enabled !== undefined ? data.config.logo.enabled : config.logo.enabled,
                     width: data.config.logo.width ?? config.logo.width ?? "200px",
                     height: data.config.logo.height ?? config.logo.height ?? "auto"
@@ -581,26 +583,59 @@ const AdminHome: React.FC = () => {
       }
       
       // Verificar que las imágenes se guardaron correctamente
+      // IMPORTANTE: El backend puede usar 'url' o 'image' como nombre del campo
       if (data && data.config) {
-        const savedBannerImage = data.config.banner?.image?.length || 0;
-        const savedLogoImage = data.config.logo?.image?.length || 0;
-        const savedProductImages = data.config.products?.items?.filter((p: any) => p.image && p.image.length > 100).length || 0;
+        // Verificar banner: usar 'url' si existe, sino 'image'
+        const bannerUrl = data.config.banner?.url || data.config.banner?.image || '';
+        const savedBannerImage = bannerUrl.length || 0;
+        
+        // Verificar logo: usar 'url' si existe, sino 'image'
+        const logoUrl = data.config.logo?.url || data.config.logo?.image || '';
+        const savedLogoImage = logoUrl.length || 0;
+        
+        const savedProductImages = data.config.products?.items?.filter((p: any) => {
+          const productImage = p.image || p.url || '';
+          return productImage && productImage.length > 100;
+        }).length || 0;
         
         console.log('📋 Configuración guardada en backend:');
-        console.log('  Banner image:', savedBannerImage > 100 ? `✅ Guardada (${savedBannerImage} chars)` : `❌ No guardada (${savedBannerImage} chars)`);
-        console.log('  Logo image:', savedLogoImage > 100 ? `✅ Guardada (${savedLogoImage} chars)` : `❌ No guardada (${savedLogoImage} chars)`);
+        console.log('  Banner:', {
+          tieneUrl: !!data.config.banner?.url,
+          tieneImage: !!data.config.banner?.image,
+          longitud: savedBannerImage,
+          estado: savedBannerImage > 100 ? `✅ Guardada (${savedBannerImage} chars)` : `❌ No guardada (${savedBannerImage} chars)`
+        });
+        console.log('  Logo:', {
+          tieneUrl: !!data.config.logo?.url,
+          tieneImage: !!data.config.logo?.image,
+          longitud: savedLogoImage,
+          estado: savedLogoImage > 100 ? `✅ Guardada (${savedLogoImage} chars)` : `❌ No guardada (${savedLogoImage} chars)`
+        });
         console.log('  Productos con imagen:', savedProductImages);
         
         // Si las imágenes no están en la respuesta, usar las que enviamos
+        // Normalizar: usar 'image' internamente, pero aceptar 'url' del backend
         if (savedBannerImage < 100 && configToSave.banner.image && configToSave.banner.image.length > 100) {
           console.warn('⚠️ Banner image no está en la respuesta del backend, usando la enviada');
           if (!data.config.banner) data.config.banner = {};
+          // El backend puede usar 'url', pero nosotros usamos 'image' internamente
           data.config.banner.image = configToSave.banner.image;
+          data.config.banner.url = configToSave.banner.image; // También establecer 'url' para compatibilidad
+        } else if (savedBannerImage > 100 && bannerUrl) {
+          // Si el backend retornó 'url', copiarlo a 'image' para consistencia
+          if (!data.config.banner) data.config.banner = {};
+          data.config.banner.image = bannerUrl;
         }
+        
         if (savedLogoImage < 100 && configToSave.logo.image && configToSave.logo.image.length > 100) {
           console.warn('⚠️ Logo image no está en la respuesta del backend, usando la enviada');
           if (!data.config.logo) data.config.logo = {};
           data.config.logo.image = configToSave.logo.image;
+          data.config.logo.url = configToSave.logo.image; // También establecer 'url' para compatibilidad
+        } else if (savedLogoImage > 100 && logoUrl) {
+          // Si el backend retornó 'url', copiarlo a 'image' para consistencia
+          if (!data.config.logo) data.config.logo = {};
+          data.config.logo.image = logoUrl;
         }
       }
       
@@ -618,26 +653,39 @@ const AdminHome: React.FC = () => {
             ...configToSave.banner,
             ...(data.config.banner || {}),
             // Preservar imagen si la respuesta no la tiene pero la enviamos
-            image: (data.config.banner?.image && data.config.banner.image.length > 100) 
-              ? data.config.banner.image 
-              : (configToSave.banner.image || '')
+            // El backend puede usar 'url' o 'image', normalizamos a 'image'
+            image: (() => {
+              const bannerUrl = data.config.banner?.url || data.config.banner?.image || '';
+              if (bannerUrl && bannerUrl.length > 100) return bannerUrl;
+              if (configToSave.banner.image && configToSave.banner.image.length > 100) return configToSave.banner.image;
+              return '';
+            })()
           },
           logo: {
             ...configToSave.logo,
             ...(data.config.logo || {}),
             // Preservar imagen si la respuesta no la tiene pero la enviamos
-            image: (data.config.logo?.image && data.config.logo.image.length > 100) 
-              ? data.config.logo.image 
-              : (configToSave.logo.image || '')
+            // El backend puede usar 'url' o 'image', normalizamos a 'image'
+            image: (() => {
+              const logoUrl = data.config.logo?.url || data.config.logo?.image || '';
+              if (logoUrl && logoUrl.length > 100) return logoUrl;
+              if (configToSave.logo.image && configToSave.logo.image.length > 100) return configToSave.logo.image;
+              return '';
+            })()
           },
           products: {
             title: data.config.products?.title || configToSave.products.title || 'Productos',
             items: (data.config.products?.items || configToSave.products.items || []).map((item: any, index: number) => ({
               ...item,
               // Preservar imagen si la respuesta no la tiene pero la enviamos
-              image: (item.image && item.image.length > 100) 
-                ? item.image 
-                : (configToSave.products.items[index]?.image || '')
+              // El backend puede usar 'url' o 'image', normalizamos a 'image'
+              image: (() => {
+                const productImage = item.image || item.url || '';
+                if (productImage && productImage.length > 100) return productImage;
+                const savedImage = configToSave.products.items[index]?.image || '';
+                if (savedImage && savedImage.length > 100) return savedImage;
+                return '';
+              })()
             }))
           },
           // Asegurar que todos los campos requeridos estén presentes
