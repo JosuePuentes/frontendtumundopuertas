@@ -243,19 +243,61 @@ const HomePage: React.FC = () => {
     // Usar configuración guardada o por defecto
     const currentConfig: HomeConfig = config || defaultConfig;
     
-    // Validar y asegurar que todos los campos requeridos existan
+    // Validar y asegurar que todos los campos requeridos existan con validación profunda
     const safeConfig: HomeConfig = {
-        banner: currentConfig.banner || defaultConfig.banner,
-        logo: currentConfig.logo || defaultConfig.logo,
-        values: currentConfig.values || defaultConfig.values,
-        products: {
-            title: currentConfig.products?.title || defaultConfig.products.title,
-            items: Array.isArray(currentConfig.products?.items) 
-                ? currentConfig.products.items 
-                : defaultConfig.products.items
-        },
-        contact: currentConfig.contact || defaultConfig.contact,
-        colors: currentConfig.colors || defaultConfig.colors
+        banner: currentConfig.banner && typeof currentConfig.banner === 'object'
+            ? {
+                title: currentConfig.banner.title || defaultConfig.banner.title,
+                subtitle: currentConfig.banner.subtitle || defaultConfig.banner.subtitle,
+                image: currentConfig.banner.image || defaultConfig.banner.image,
+                enabled: currentConfig.banner.enabled !== undefined ? currentConfig.banner.enabled : defaultConfig.banner.enabled
+            }
+            : defaultConfig.banner,
+        logo: currentConfig.logo && typeof currentConfig.logo === 'object'
+            ? {
+                text: currentConfig.logo.text || defaultConfig.logo.text,
+                slogan: currentConfig.logo.slogan || defaultConfig.logo.slogan,
+                image: currentConfig.logo.image || defaultConfig.logo.image,
+                enabled: currentConfig.logo.enabled !== undefined ? currentConfig.logo.enabled : defaultConfig.logo.enabled
+            }
+            : defaultConfig.logo,
+        values: currentConfig.values && typeof currentConfig.values === 'object'
+            ? {
+                diseño: currentConfig.values.diseño && typeof currentConfig.values.diseño === 'object'
+                    ? currentConfig.values.diseño
+                    : defaultConfig.values.diseño,
+                calidad: currentConfig.values.calidad && typeof currentConfig.values.calidad === 'object'
+                    ? currentConfig.values.calidad
+                    : defaultConfig.values.calidad,
+                proteccion: currentConfig.values.proteccion && typeof currentConfig.values.proteccion === 'object'
+                    ? currentConfig.values.proteccion
+                    : defaultConfig.values.proteccion
+            }
+            : defaultConfig.values,
+        products: currentConfig.products && typeof currentConfig.products === 'object'
+            ? {
+                title: currentConfig.products.title || defaultConfig.products.title,
+                items: Array.isArray(currentConfig.products.items) 
+                    ? currentConfig.products.items 
+                    : defaultConfig.products.items
+            }
+            : defaultConfig.products,
+        contact: currentConfig.contact && typeof currentConfig.contact === 'object'
+            ? {
+                title: currentConfig.contact.title || defaultConfig.contact.title,
+                subtitle: currentConfig.contact.subtitle || defaultConfig.contact.subtitle,
+                enabled: currentConfig.contact.enabled !== undefined ? currentConfig.contact.enabled : defaultConfig.contact.enabled
+            }
+            : defaultConfig.contact,
+        colors: currentConfig.colors && typeof currentConfig.colors === 'object'
+            ? {
+                primary: currentConfig.colors.primary || defaultConfig.colors.primary,
+                secondary: currentConfig.colors.secondary || defaultConfig.colors.secondary,
+                accent: currentConfig.colors.accent || defaultConfig.colors.accent,
+                background: currentConfig.colors.background || defaultConfig.colors.background,
+                text: currentConfig.colors.text || defaultConfig.colors.text
+            }
+            : defaultConfig.colors
     };
 
     const modules: Array<{
