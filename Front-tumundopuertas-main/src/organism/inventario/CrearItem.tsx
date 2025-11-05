@@ -79,33 +79,54 @@ const CrearItem: React.FC = () => {
       // Si el código es solo números (como "271"), enviarlo como vacío para que el backend genere automáticamente
       const codigoEnviar = item.codigo && /^\d+$/.test(item.codigo.trim()) ? "" : (item.codigo || "");
       
+      const requestBody = {
+        codigo: codigoEnviar, // Si es solo números, enviar vacío para generación automática
+        nombre: item.nombre,
+        descripcion: item.descripcion,
+        categoria: item.categoria,
+        precio: parseFloat(item.precio),
+        costo: parseFloat(item.costo),
+        costoProduccion: parseFloat(item.costoProduccion),
+        cantidad: parseInt(item.cantidad, 10),
+        activo: item.activo,
+        imagenes: item.imagenes ?? [],
+      };
+      
+      console.log("📤 Enviando item al backend:", requestBody);
+      
       const res = await fetch(`${apiUrl}/inventario/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem("access_token")}`,
         },
-        body: JSON.stringify({
-          codigo: codigoEnviar, // Si es solo números, enviar vacío para generación automática
-          nombre: item.nombre,
-          descripcion: item.descripcion,
-          categoria: item.categoria,
-          precio: parseFloat(item.precio),
-          costo: parseFloat(item.costo),
-          costoProduccion: parseFloat(item.costoProduccion),
-          cantidad: parseInt(item.cantidad, 10),
-          activo: item.activo,
-          imagenes: item.imagenes ?? [],
-        }),
+        body: JSON.stringify(requestBody),
       });
       
+      console.log("📥 Respuesta del backend:", res.status, res.statusText);
+      
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: "Error desconocido" }));
+        const errorText = await res.text();
+        console.error("❌ Error del backend:", errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { detail: errorText || "Error desconocido" };
+        }
         setMensaje(`Error: ${errorData.detail || "No se pudo crear el item"}`);
         return;
       }
       
       const result = await res.json();
+      console.log("✅ Item creado exitosamente:", result);
+      
+      if (!result || !result.id) {
+        console.error("❌ Respuesta del backend no tiene ID:", result);
+        setMensaje("Error: No se recibió confirmación del servidor. El item puede no haberse creado.");
+        return;
+      }
+      
       const codigoUsado = result.codigo || item.codigo || "generado automáticamente";
       
       // Si se generó un código automático, mostrarlo en el campo código
