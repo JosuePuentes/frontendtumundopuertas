@@ -108,20 +108,20 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           items: Array.isArray(config.products.items) ? config.products.items : []
         }
       : { title: 'Productos', items: [] },
-    contact: safeConfig.contact && typeof safeConfig.contact === 'object' && !Array.isArray(safeConfig.contact)
+    contact: config.contact && typeof config.contact === 'object' && !Array.isArray(config.contact)
       ? {
-          title: safeConfig.contact.title || '',
-          subtitle: safeConfig.contact.subtitle || '',
-          enabled: safeConfig.contact.enabled !== undefined ? safeConfig.contact.enabled : true
+          title: config.contact.title || '',
+          subtitle: config.contact.subtitle || '',
+          enabled: config.contact.enabled !== undefined ? config.contact.enabled : true
         }
       : { title: '', subtitle: '', enabled: true },
-    colors: safeConfig.colors && typeof safeConfig.colors === 'object' && !Array.isArray(safeConfig.colors)
+    colors: config.colors && typeof config.colors === 'object' && !Array.isArray(config.colors)
       ? {
-          primary: safeConfig.colors.primary || '#06b6d4',
-          secondary: safeConfig.colors.secondary || '#0891b2',
-          accent: safeConfig.colors.accent || '#0ea5e9',
-          background: safeConfig.colors.background || '#000000',
-          text: safeConfig.colors.text || '#e5e7eb'
+          primary: config.colors.primary || '#06b6d4',
+          secondary: config.colors.secondary || '#0891b2',
+          accent: config.colors.accent || '#0ea5e9',
+          background: config.colors.background || '#000000',
+          text: config.colors.text || '#e5e7eb'
         }
       : {
           primary: '#06b6d4',
