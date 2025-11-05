@@ -23,7 +23,9 @@ import {
   Palette, 
   Trash2, 
   Upload, 
-  Plus 
+  Plus,
+  Check,
+  X
 } from "lucide-react";
 import HomePreview from './HomePreview';
 import { getApiUrl } from "@/lib/api";
@@ -297,6 +299,8 @@ const AdminHome: React.FC = () => {
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingConfig, setLoadingConfig] = useState(true);
+  // Estado para almacenar imágenes temporales de productos antes de confirmarlas
+  const [tempProductImages, setTempProductImages] = useState<Map<number, string>>(new Map());
 
   const apiUrl = getApiUrl();
   const token = localStorage.getItem('access_token');
@@ -1549,33 +1553,77 @@ const AdminHome: React.FC = () => {
                         <div>
                           <Label className="text-gray-200">Imagen</Label>
                           <div className="border-2 border-dashed border-gray-500 rounded-lg p-4 text-center">
-                            {(product.image || (product as any).url) ? (
+                            {(product.image || (product as any).url || tempProductImages.get(index)) ? (
                               <div className="space-y-2">
                                 <img 
-                                  src={product.image || (product as any).url || ''} 
+                                  src={product.image || (product as any).url || tempProductImages.get(index) || ''} 
                                   alt={product.name} 
                                   className="max-w-full h-20 object-cover rounded-lg mx-auto"
                                 />
-                                <Button
-                                  onClick={() => {
-                                    const currentItems = config.products?.items || [];
-                                    const newItems = [...currentItems];
-                                    newItems[index] = { ...product, image: '' };
-                                    setConfig(prev => ({
-                                      ...prev,
-                                      products: {
-                                        ...prev.products || { title: '', items: [] },
-                                        items: newItems
-                                      }
-                                    }));
-                                  }}
-                                  size="sm"
-                                  variant="outline"
-                                  className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-2" />
-                                  Eliminar
-                                </Button>
+                                {tempProductImages.get(index) && !product.image && !(product as any).url ? (
+                                  <div className="flex gap-2 justify-center">
+                                    <Button
+                                      onClick={() => {
+                                        // Confirmar la imagen temporal y guardarla en el estado
+                                        const imageData = tempProductImages.get(index) || '';
+                                        const currentItems = config.products?.items || [];
+                                        const newItems = [...currentItems];
+                                        newItems[index] = { ...product, image: imageData };
+                                        setConfig(prev => ({
+                                          ...prev,
+                                          products: {
+                                            ...prev.products || { title: '', items: [] },
+                                            items: newItems
+                                          }
+                                        }));
+                                        // Limpiar la imagen temporal
+                                        const newTempImages = new Map(tempProductImages);
+                                        newTempImages.delete(index);
+                                        setTempProductImages(newTempImages);
+                                      }}
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700 text-white"
+                                    >
+                                      <Check className="w-4 h-4 mr-2" />
+                                      Agregar
+                                    </Button>
+                                    <Button
+                                      onClick={() => {
+                                        // Cancelar y eliminar la imagen temporal
+                                        const newTempImages = new Map(tempProductImages);
+                                        newTempImages.delete(index);
+                                        setTempProductImages(newTempImages);
+                                      }}
+                                      size="sm"
+                                      variant="outline"
+                                      className="border-gray-500 text-gray-500 hover:bg-gray-500 hover:text-white"
+                                    >
+                                      <X className="w-4 h-4 mr-2" />
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    onClick={() => {
+                                      const currentItems = config.products?.items || [];
+                                      const newItems = [...currentItems];
+                                      newItems[index] = { ...product, image: '' };
+                                      setConfig(prev => ({
+                                        ...prev,
+                                        products: {
+                                          ...prev.products || { title: '', items: [] },
+                                          items: newItems
+                                        }
+                                      }));
+                                    }}
+                                    size="sm"
+                                    variant="outline"
+                                    className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Eliminar
+                                  </Button>
+                                )}
                               </div>
                             ) : (
                               <div className="space-y-2">
@@ -1594,19 +1642,15 @@ const AdminHome: React.FC = () => {
                                         const reader = new FileReader();
                                         reader.onload = (e) => {
                                           const imageData = e.target?.result as string;
-                                          const currentItems = config.products?.items || [];
-                                          const newItems = [...currentItems];
-                                          newItems[index] = { ...product, image: imageData };
-                                          setConfig(prev => ({
-                                            ...prev,
-                                            products: {
-                                              ...prev.products || { title: '', items: [] },
-                                              items: newItems
-                                            }
-                                          }));
+                                          // Guardar en estado temporal, no en el estado principal todavía
+                                          const newTempImages = new Map(tempProductImages);
+                                          newTempImages.set(index, imageData);
+                                          setTempProductImages(newTempImages);
                                         };
                                         reader.readAsDataURL(file);
                                       }
+                                      // Limpiar el input para permitir seleccionar el mismo archivo de nuevo
+                                      e.target.value = '';
                                     }}
                                     className="hidden"
                                   />
