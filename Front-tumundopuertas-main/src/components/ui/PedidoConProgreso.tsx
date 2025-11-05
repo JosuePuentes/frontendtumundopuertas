@@ -134,8 +134,49 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
         throw new Error('No hay token de autenticación. Por favor, inicia sesión nuevamente.');
       }
       
-      console.log('🔑 Token encontrado, enviando request...');
+      console.log('🔑 Token encontrado');
       
+      // PASO 1: Limpiar todos los pagos del pedido antes de cancelar
+      console.log('🧹 Limpiando pagos del pedido...');
+      try {
+        const limpiarPagosResponse = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/limpiar-pagos`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (limpiarPagosResponse.ok) {
+          const limpiarResult = await limpiarPagosResponse.json();
+          console.log('✅ Pagos limpiados:', limpiarResult);
+        } else {
+          // Si el endpoint no existe, intentar limpiar manualmente
+          console.warn('⚠️ Endpoint de limpiar pagos no disponible, intentando limpiar manualmente...');
+          const limpiarManualResponse = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/pago`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              pago: "sin pago",
+              limpiar_historial: true
+            })
+          });
+          
+          if (limpiarManualResponse.ok) {
+            console.log('✅ Pagos limpiados manualmente');
+          } else {
+            console.warn('⚠️ No se pudieron limpiar los pagos, pero continuando con la cancelación');
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ Error al limpiar pagos (continuando con cancelación):', error);
+      }
+      
+      // PASO 2: Cancelar el pedido
+      console.log('📤 Cancelando pedido...');
       const requestBody = {
         motivo_cancelacion: motivoCancelacion
       };
