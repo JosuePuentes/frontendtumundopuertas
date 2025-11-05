@@ -500,6 +500,15 @@ const AdminHome: React.FC = () => {
           width: config.logo.width || "200px",
           height: config.logo.height || "auto"
         },
+        products: {
+          ...config.products,
+          title: config.products?.title || 'Productos',
+          items: (config.products?.items || []).map(item => ({
+            ...item,
+            // Asegurar que image esté presente (puede ser string vacío si no hay imagen)
+            image: item.image || (item as any).url || ''
+          }))
+        },
         nosotros: config.nosotros || {
           historia: "",
           mision: "",
@@ -561,14 +570,65 @@ const AdminHome: React.FC = () => {
       });
       
       // Asegurar que todas las imágenes de productos estén incluidas
-      // El backend hará merge inteligente, así que enviamos el valor tal cual está
-      configToSave.products.items = configToSave.products.items.map(item => ({
-        ...item,
-        image: item.image || '' // Si está vacío, el backend lo preservará si hay una imagen guardada
-      }));
+      // Verificar y preservar imágenes de productos antes de enviar
+      configToSave.products.items = configToSave.products.items.map(item => {
+        const itemImage = item.image || (item as any).url || '';
+        return {
+          ...item,
+          // Incluir image explícitamente, normalizar url a image
+          image: itemImage.length > 100 ? itemImage : item.image || ''
+        };
+      });
+      
+      // Log detallado de productos antes de enviar
+      const productosConImagenDetalle = configToSave.products.items
+        .filter(p => {
+          const img = p.image || (p as any).url || '';
+          return img && img.length > 100;
+        })
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          imageLength: (p.image || (p as any).url || '').length
+        }));
+      
+      console.log('📦 Productos antes de enviar:', {
+        total: configToSave.products.items.length,
+        conImagen: productosConImagenDetalle.length,
+        detalles: productosConImagenDetalle
+      });
       
       // IMPORTANTE: Enviamos el objeto completo para que el backend haga merge inteligente
       // El backend preservará campos existentes (como width, height) y actualizará solo los nuevos
+      
+      // Verificar que products esté presente en configToSave antes de enviar
+      if (!configToSave.products) {
+        console.warn('⚠️ configToSave.products no existe, usando valores por defecto');
+        configToSave.products = {
+          title: 'Productos',
+          items: []
+        };
+      }
+      
+      // Log final para verificar qué se está enviando
+      const productosEnPayload = configToSave.products.items || [];
+      const productosConImagenEnPayload = productosEnPayload.filter(p => {
+        const img = p.image || (p as any).url || '';
+        return img && img.length > 100;
+      });
+      console.log('📤 Payload final - Productos:', {
+        totalItems: productosEnPayload.length,
+        itemsConImagen: productosConImagenEnPayload.length,
+        items: productosEnPayload.map(p => ({
+          id: p.id,
+          name: p.name,
+          tieneImage: !!(p.image && p.image.length > 100),
+          tieneUrl: !!((p as any).url && (p as any).url.length > 100),
+          imageLength: (p.image || '').length,
+          urlLength: ((p as any).url || '').length
+        }))
+      });
+      
       const response = await fetch(`${apiUrl}/home/config`, {
         method: 'PUT',
         headers: {
