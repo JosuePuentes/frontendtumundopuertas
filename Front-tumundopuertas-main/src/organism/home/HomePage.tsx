@@ -467,16 +467,16 @@ const HomePage: React.FC = () => {
                     </div>
                 </header>
 
-                {/* Dynamic Banner Section */}
+                {/* Dynamic Banner Section - Large Banner */}
                 {currentConfig.banner.enabled && (
-                    <section className="relative z-10 py-6 sm:py-8 md:py-12 px-4 sm:px-6">
+                    <section className="relative z-10 py-12 sm:py-16 md:py-24 lg:py-32 px-4 sm:px-6">
                         <div className="max-w-7xl mx-auto">
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-4 sm:p-6 md:p-12 backdrop-blur-sm">
-                                <div className="text-center">
-                                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-200 mb-4 sm:mb-6">{currentConfig.banner.title}</h2>
-                                    <p className="text-gray-200 mb-4 sm:mb-6 md:mb-8 text-base sm:text-lg">{currentConfig.banner.subtitle}</p>
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 md:p-16 lg:p-20 backdrop-blur-sm min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center justify-center">
+                                <div className="text-center w-full">
+                                    <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-200 mb-6 sm:mb-8 md:mb-10">{currentConfig.banner.title}</h2>
+                                    <p className="text-gray-200 mb-6 sm:mb-8 md:mb-12 text-lg sm:text-xl md:text-2xl">{currentConfig.banner.subtitle}</p>
                                     {currentConfig.banner.image && (
-                                        <div className="w-full h-48 bg-gradient-to-r from-gray-600 to-gray-700 border-2 border-cyan-400 rounded-lg flex items-center justify-center">
+                                        <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] bg-gradient-to-r from-gray-600 to-gray-700 border-2 border-cyan-400 rounded-lg flex items-center justify-center overflow-hidden">
                                             <img src={currentConfig.banner.image} alt="Banner" className="w-full h-full object-cover rounded-lg" />
                                         </div>
                                     )}
@@ -485,47 +485,6 @@ const HomePage: React.FC = () => {
                         </div>
                     </section>
                 )}
-
-                {/* Dynamic Values Section */}
-                <section className="relative z-10 py-20 px-6">
-                    <div className="max-w-6xl mx-auto">
-                        {/* Separator */}
-                        <div className="w-full h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent mb-16"></div>
-                        
-                        {/* Values Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                            <div className="text-center group">
-                                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
-                                    {currentConfig.values.diseño.icon === 'Star' && <Star className="w-10 h-10 text-cyan-400" />}
-                                    {currentConfig.values.diseño.icon === 'Shield' && <Shield className="w-10 h-10 text-cyan-400" />}
-                                    {currentConfig.values.diseño.icon === 'Zap' && <Zap className="w-10 h-10 text-cyan-400" />}
-                                </div>
-                                <h3 className="text-xl sm:text-2xl font-bold text-gray-200 mb-2 sm:mb-3">{currentConfig.values.diseño.title}</h3>
-                                <p className="text-gray-200 text-base sm:text-lg">{currentConfig.values.diseño.description}</p>
-                            </div>
-                            
-                            <div className="text-center group">
-                                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
-                                    {currentConfig.values.calidad.icon === 'Star' && <Star className="w-10 h-10 text-cyan-400" />}
-                                    {currentConfig.values.calidad.icon === 'Shield' && <Shield className="w-10 h-10 text-cyan-400" />}
-                                    {currentConfig.values.calidad.icon === 'Zap' && <Zap className="w-10 h-10 text-cyan-400" />}
-                                </div>
-                                <h3 className="text-xl sm:text-2xl font-bold text-gray-200 mb-2 sm:mb-3">{currentConfig.values.calidad.title}</h3>
-                                <p className="text-gray-200 text-base sm:text-lg">{currentConfig.values.calidad.description}</p>
-                            </div>
-                            
-                            <div className="text-center group">
-                                <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/20 flex items-center justify-center border border-cyan-400/30 group-hover:border-cyan-400/60 transition-all duration-300">
-                                    {currentConfig.values.proteccion.icon === 'Star' && <Star className="w-10 h-10 text-cyan-400" />}
-                                    {currentConfig.values.proteccion.icon === 'Shield' && <Shield className="w-10 h-10 text-cyan-400" />}
-                                    {currentConfig.values.proteccion.icon === 'Zap' && <Zap className="w-10 h-10 text-cyan-400" />}
-                                </div>
-                                <h3 className="text-xl sm:text-2xl font-bold text-gray-200 mb-2 sm:mb-3">{currentConfig.values.proteccion.title}</h3>
-                                <p className="text-gray-200 text-base sm:text-lg">{currentConfig.values.proteccion.description}</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
                 {/* Product Gallery Section */}
                 <section id="productos" className="relative z-10 py-10 sm:py-16 md:py-20 px-4 sm:px-6">
