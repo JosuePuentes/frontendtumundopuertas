@@ -1008,6 +1008,7 @@ const PanelControlLogistico: React.FC = () => {
                       </tbody>
                     </table>
                   </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
