@@ -34,12 +34,15 @@ interface RegisterResponse {
     "modificarinventario",
     "modificarclientes",
     "dashboard",
+    "dashboard-asignaciones",
+    "panel-control-logistico",
     "monitorpedidos",
     "terminarasignacion",
     "pagos",
     "resumenVentaDiaria",
     "metodos_pago",
-    "cuentas_por_pagar"
+    "cuentas_por_pagar",
+    "pedidos_web"
 ];
 
   const Register: React.FC = () => {

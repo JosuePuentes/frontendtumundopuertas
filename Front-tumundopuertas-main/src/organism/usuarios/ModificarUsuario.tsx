@@ -34,6 +34,7 @@ interface Usuario {
     "terminarasignacion",
     "dashboard",
     "dashboard-asignaciones",
+    "panel-control-logistico",
     "pagos",
     "resumenVentaDiaria",
     "metodos_pago",

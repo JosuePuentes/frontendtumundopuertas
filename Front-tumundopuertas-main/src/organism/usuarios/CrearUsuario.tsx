@@ -24,7 +24,13 @@ const permisosDisponibles = [
     "monitorpedidos",
     "terminarasignacion",
     "dashboard",
-    "pagos"
+    "dashboard-asignaciones",
+    "panel-control-logistico",
+    "pagos",
+    "resumenVentaDiaria",
+    "metodos_pago",
+    "cuentas_por_pagar",
+    "pedidos_web"
 ];
 
 const CrearUsuario: React.FC = () => {

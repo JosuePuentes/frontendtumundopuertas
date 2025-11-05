@@ -124,7 +124,7 @@ function AppRouter() {
         <Route
           path="panel-control-logistico"
           element={
-            <ProtectedRoute permiso="dashboard-asignaciones">
+            <ProtectedRoute permiso="panel-control-logistico">
               <PanelControlLogistico />
             </ProtectedRoute>
           }
