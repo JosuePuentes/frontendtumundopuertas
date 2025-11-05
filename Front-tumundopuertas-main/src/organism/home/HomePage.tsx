@@ -349,28 +349,34 @@ const HomePage: React.FC = () => {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen bg-black text-gray-300 overflow-hidden relative">
+            <div className="min-h-screen overflow-hidden relative" style={{ backgroundColor: currentConfig.colors.background, color: currentConfig.colors.text }}>
                 {/* Futuristic Glitch Background - Crack Lines */}
                 <div className="absolute inset-0">
                     {/* Horizontal Crack Lines - Futuristic */}
-                    <div className="absolute top-20 left-0 w-full h-px bg-cyan-400 opacity-70" style={{
+                    <div className="absolute top-20 left-0 w-full h-px opacity-70" style={{
+                        backgroundColor: currentConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 20% 0%, 25% 100%, 30% 0%, 45% 0%, 50% 100%, 55% 0%, 70% 0%, 75% 100%, 80% 0%, 100% 0%)'
                     }}></div>
-                    <div className="absolute top-40 left-0 w-full h-px bg-cyan-400 opacity-50" style={{
+                    <div className="absolute top-40 left-0 w-full h-px opacity-50" style={{
+                        backgroundColor: currentConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 15% 0%, 20% 100%, 35% 0%, 40% 100%, 45% 0%, 60% 0%, 65% 100%, 70% 0%, 85% 0%, 100% 0%)'
                     }}></div>
-                    <div className="absolute bottom-40 left-0 w-full h-px bg-cyan-400 opacity-60" style={{
+                    <div className="absolute bottom-40 left-0 w-full h-px opacity-60" style={{
+                        backgroundColor: currentConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 10% 0%, 15% 100%, 30% 0%, 35% 100%, 40% 0%, 55% 0%, 60% 100%, 65% 0%, 80% 0%, 85% 100%, 100% 0%)'
                     }}></div>
-                    <div className="absolute bottom-20 left-0 w-full h-px bg-cyan-400 opacity-40" style={{
+                    <div className="absolute bottom-20 left-0 w-full h-px opacity-40" style={{
+                        backgroundColor: currentConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 25% 0%, 30% 100%, 35% 0%, 50% 0%, 55% 100%, 60% 0%, 75% 0%, 80% 100%, 100% 0%)'
                     }}></div>
                     
                     {/* Vertical Crack Lines - Futuristic */}
-                    <div className="absolute left-20 top-0 w-px h-full bg-cyan-400 opacity-50" style={{
+                    <div className="absolute left-20 top-0 w-px h-full opacity-50" style={{
+                        backgroundColor: currentConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 100% 20%, 0% 25%, 100% 40%, 0% 45%, 100% 60%, 0% 65%, 100% 80%, 0% 100%)'
                     }}></div>
-                    <div className="absolute right-20 top-0 w-px h-full bg-cyan-400 opacity-40" style={{
+                    <div className="absolute right-20 top-0 w-px h-full opacity-40" style={{
+                        backgroundColor: currentConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 100% 15%, 0% 20%, 100% 35%, 0% 40%, 100% 55%, 0% 60%, 100% 75%, 0% 80%, 100% 100%)'
                     }}></div>
                     
@@ -394,36 +400,31 @@ const HomePage: React.FC = () => {
                             {/* Dynamic Logo */}
                             {currentConfig.logo.enabled && (
                                 <div className="relative">
-                                    <div className="w-20 h-20 rounded-full border-2 border-cyan-400 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg shadow-cyan-400/30">
+                                    <div className="w-20 h-20 rounded-full border-2 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg" style={{ borderColor: currentConfig.colors.primary, boxShadow: `0 0 20px ${currentConfig.colors.primary}30` }}>
                                         <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
-                                            {/* World/Globe pattern background */}
-                                            <div className="absolute inset-0 opacity-40" style={{
-                                                backgroundImage: `url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2306b6d4' fill-opacity='0.4'%3E%3Cpath d='M8 0C3.6 0 0 3.6 0 8s3.6 8 8 8 8-3.6 8-8-3.6-8-8-8zm0 14c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6z'/%3E%3Cpath d='M8 2c-3.3 0-6 2.7-6 6s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 10c-2.2 0-4-1.8-4-4s1.8-4 4-4 4 1.8 4 4-1.8 4-4 4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                                                backgroundSize: '16px 16px'
-                                            }}></div>
                                             {/* TM Letters - Portal Style */}
                                             <div className="relative z-10">
-                                                <div className="text-cyan-400 font-bold text-lg leading-none">
+                                                <div className="font-bold text-lg leading-none" style={{ color: currentConfig.colors.primary }}>
                                                     <div className="text-sm font-black">T</div>
                                                     <div className="text-sm font-black">M</div>
                                                 </div>
                                             </div>
                                             {/* Portal effect lines */}
-                                            <div className="absolute inset-0 border border-cyan-400/30 rounded-lg"></div>
-                                        <div className="absolute top-1 left-1 right-1 h-px bg-cyan-400/50"></div>
-                                        <div className="absolute bottom-1 left-1 right-1 h-px bg-cyan-400/50">                                        </div>
+                                            <div className="absolute inset-0 border rounded-lg" style={{ borderColor: `${currentConfig.colors.primary}30` }}></div>
+                                            <div className="absolute top-1 left-1 right-1 h-px" style={{ backgroundColor: `${currentConfig.colors.primary}50` }}></div>
+                                            <div className="absolute bottom-1 left-1 right-1 h-px" style={{ backgroundColor: `${currentConfig.colors.primary}50` }}></div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="absolute inset-0 rounded-full border border-cyan-400 animate-pulse opacity-50"></div>
+                                    <div className="absolute inset-0 rounded-full border animate-pulse opacity-50" style={{ borderColor: currentConfig.colors.primary }}></div>
                             </div>
                             )}
                             
                             <div className="flex flex-col">
-                                <span className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-200 tracking-wide">
+                                <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-wide" style={{ color: currentConfig.colors.text }}>
                                     {currentConfig.logo.text}
                                 </span>
-                                <div className="w-full h-px bg-gradient-to-r from-cyan-400 to-transparent mt-1 sm:mt-2"></div>
-                                <span className="text-xs sm:text-sm text-gray-200 mt-1 sm:mt-2">
+                                <div className="w-full h-px mt-1 sm:mt-2" style={{ background: `linear-gradient(to right, ${currentConfig.colors.primary}, transparent)` }}></div>
+                                <span className="text-xs sm:text-sm mt-1 sm:mt-2" style={{ color: currentConfig.colors.text }}>
                                     {currentConfig.logo.slogan}
                                 </span>
                             </div>
@@ -436,10 +437,13 @@ const HomePage: React.FC = () => {
                                     e.preventDefault();
                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
-                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                                className="transition-colors duration-300 relative group"
+                                style={{ color: currentConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
                             >
                                 Inicio
-                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
                             </a>
                             <a 
                                 href="#productos"
@@ -447,10 +451,13 @@ const HomePage: React.FC = () => {
                                     e.preventDefault();
                                     document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
-                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                                className="transition-colors duration-300 relative group"
+                                style={{ color: currentConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
                             >
                                 Productos
-                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
                             </a>
                             <a 
                                 href="#nosotros"
@@ -458,10 +465,13 @@ const HomePage: React.FC = () => {
                                     e.preventDefault();
                                     document.getElementById('nosotros')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
-                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                                className="transition-colors duration-300 relative group"
+                                style={{ color: currentConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
                             >
                                 Nosotros
-                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
                             </a>
                             <a 
                                 href="#servicios"
@@ -469,10 +479,13 @@ const HomePage: React.FC = () => {
                                     e.preventDefault();
                                     document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
-                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                                className="transition-colors duration-300 relative group"
+                                style={{ color: currentConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
                             >
                                 Servicios
-                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
                             </a>
                             <a 
                                 href="#contacto"
@@ -480,10 +493,13 @@ const HomePage: React.FC = () => {
                                     e.preventDefault();
                                     document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
-                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                                className="transition-colors duration-300 relative group"
+                                style={{ color: currentConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
                             >
                                 Contacto
-                                <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
                             </a>
                         </nav>
                         
@@ -501,12 +517,12 @@ const HomePage: React.FC = () => {
                 {currentConfig.banner.enabled && (
                     <section className="relative z-10 py-12 sm:py-16 md:py-24 lg:py-32 px-4 sm:px-6">
                         <div className="max-w-7xl mx-auto">
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 md:p-16 lg:p-20 backdrop-blur-sm min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center justify-center">
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-16 lg:p-20 backdrop-blur-sm min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center justify-center" style={{ borderColor: currentConfig.colors.primary }}>
                                 <div className="text-center w-full">
-                                    <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-200 mb-6 sm:mb-8 md:mb-10">{currentConfig.banner.title}</h2>
-                                    <p className="text-gray-200 mb-6 sm:mb-8 md:mb-12 text-lg sm:text-xl md:text-2xl">{currentConfig.banner.subtitle}</p>
+                                    <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 sm:mb-8 md:mb-10" style={{ color: currentConfig.colors.text }}>{currentConfig.banner.title}</h2>
+                                    <p className="mb-6 sm:mb-8 md:mb-12 text-lg sm:text-xl md:text-2xl" style={{ color: currentConfig.colors.text }}>{currentConfig.banner.subtitle}</p>
                                     {currentConfig.banner.image && (
-                                        <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] bg-gradient-to-r from-gray-600 to-gray-700 border-2 border-cyan-400 rounded-lg flex items-center justify-center overflow-hidden">
+                                        <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] bg-gradient-to-r from-gray-600 to-gray-700 border-2 rounded-lg flex items-center justify-center overflow-hidden" style={{ borderColor: currentConfig.colors.primary }}>
                                             <img src={currentConfig.banner.image} alt="Banner" className="w-full h-full object-cover rounded-lg" />
                                         </div>
                                     )}
@@ -519,21 +535,21 @@ const HomePage: React.FC = () => {
                 {/* Product Gallery Section */}
                 <section id="productos" className="relative z-10 py-10 sm:py-16 md:py-20 px-4 sm:px-6">
                     <div className="max-w-6xl mx-auto">
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-200 text-center mb-6 sm:mb-8 md:mb-12">{currentConfig.products.title}</h2>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-6 sm:mb-8 md:mb-12" style={{ color: currentConfig.colors.text }}>{currentConfig.products.title}</h2>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
                             {currentConfig.products.items.filter(item => item.enabled).map((product) => (
-                                <div key={product.id} className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 backdrop-blur-sm group hover:border-cyan-400 transition-all duration-300">
-                                    <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2 border-cyan-400">
+                                <div key={product.id} className="bg-gray-700/50 border-2 rounded-lg p-6 backdrop-blur-sm group transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
+                                    <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2" style={{ borderColor: currentConfig.colors.primary }}>
                                         {product.image ? (
                                             <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded-lg" />
                                         ) : (
-                                            <span className="text-cyan-400 font-semibold text-lg">{product.name}</span>
+                                            <span className="font-semibold text-lg" style={{ color: currentConfig.colors.primary }}>{product.name}</span>
                                         )}
                                     </div>
-                                    <h3 className="text-xl font-bold text-gray-200 mb-2">{product.name}</h3>
-                                    <p className="text-gray-200 mb-4">{product.description}</p>
-                                    <Button className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-400 hover:to-cyan-500 text-black font-semibold py-2 rounded-lg transition-all duration-300">
+                                    <h3 className="text-xl font-bold mb-2" style={{ color: currentConfig.colors.text }}>{product.name}</h3>
+                                    <p className="mb-4" style={{ color: currentConfig.colors.text }}>{product.description}</p>
+                                    <Button className="w-full font-semibold py-2 rounded-lg transition-all duration-300" style={{ background: `linear-gradient(to right, ${currentConfig.colors.primary}, ${currentConfig.colors.secondary})`, color: '#000000' }}>
                                         Ver Más
                                     </Button>
                                 </div>
@@ -546,16 +562,16 @@ const HomePage: React.FC = () => {
                 <section id="nosotros" className="relative z-10 py-20 px-4 sm:px-6">
                     <div className="max-w-6xl mx-auto">
                         <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-200 mb-4">Nosotros</h2>
-                            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent mx-auto"></div>
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: currentConfig.colors.text }}>Nosotros</h2>
+                            <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${currentConfig.colors.primary}, transparent)` }}></div>
                         </div>
                         
                         {/* Historia */}
-                        <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 md:p-12 mb-8 backdrop-blur-sm">
-                            <h3 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-4 text-center">Nuestra Historia</h3>
-                            <p className="text-gray-200 text-base sm:text-lg leading-relaxed text-center">
+                        <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-12 mb-8 backdrop-blur-sm" style={{ borderColor: currentConfig.colors.primary }}>
+                            <h3 className="text-2xl sm:text-3xl font-bold mb-4 text-center" style={{ color: currentConfig.colors.primary }}>Nuestra Historia</h3>
+                            <p className="text-base sm:text-lg leading-relaxed text-center" style={{ color: currentConfig.colors.text }}>
                                 Todo comenzó como un sueño, una idea, pero con muchas ganas. Con el paso de los años, hemos logrado consolidarnos 
-                                como líderes en el mercado de puertas y ventanas, acumulando más de <strong className="text-cyan-400">10 años de experiencia</strong> 
+                                como líderes en el mercado de puertas y ventanas, acumulando más de <strong style={{ color: currentConfig.colors.primary }}>10 años de experiencia</strong> 
                                 en el sector. Nos hemos posicionado firmemente en nuestra región y estamos abriendo caminos en todo el territorio nacional.
                             </p>
                         </div>
@@ -563,12 +579,12 @@ const HomePage: React.FC = () => {
                         {/* Grid de Misión y Visión */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                             {/* Misión */}
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
                                 <div className="text-center mb-4">
-                                    <Shield className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
-                                    <h3 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-4">Nuestra Misión</h3>
+                                    <Shield className="w-16 h-16 mx-auto mb-4" style={{ color: currentConfig.colors.primary }} />
+                                    <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: currentConfig.colors.primary }}>Nuestra Misión</h3>
                                 </div>
-                                <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
                                     Proporcionar puertas y ventanas de alta calidad a precios competitivos, fabricando productos personalizados 
                                     en tiempo récord. Nos comprometemos a ofrecer el mejor precio del mercado sin comprometer la excelencia en 
                                     calidad, asegurando que cada producto brinde seguridad y satisfacción a nuestros clientes.
@@ -576,12 +592,12 @@ const HomePage: React.FC = () => {
                             </div>
 
                             {/* Visión */}
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
                                 <div className="text-center mb-4">
-                                    <Star className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
-                                    <h3 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-4">Nuestra Visión</h3>
+                                    <Star className="w-16 h-16 mx-auto mb-4" style={{ color: currentConfig.colors.primary }} />
+                                    <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: currentConfig.colors.primary }}>Nuestra Visión</h3>
                                 </div>
-                                <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
                                     Ser la empresa líder en fabricación y distribución de puertas y ventanas a nivel nacional, reconocida por 
                                     nuestra capacidad de envío a todo el territorio, tiempos de fabricación récord, precios competitivos y, 
                                     sobre todo, por la calidad excepcional que garantiza la seguridad y confianza de nuestros clientes en 
@@ -592,20 +608,20 @@ const HomePage: React.FC = () => {
 
                         {/* Valores destacados */}
                         <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                            <div className="bg-gray-700/30 border border-cyan-400/50 rounded-lg p-4 text-center">
-                                <Zap className="w-10 h-10 text-cyan-400 mx-auto mb-2" />
-                                <h4 className="text-lg font-bold text-cyan-400 mb-2">Fabricación Rápida</h4>
-                                <p className="text-gray-200 text-sm">Tiempo récord en producción</p>
+                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${currentConfig.colors.primary}50` }}>
+                                <Zap className="w-10 h-10 mx-auto mb-2" style={{ color: currentConfig.colors.primary }} />
+                                <h4 className="text-lg font-bold mb-2" style={{ color: currentConfig.colors.primary }}>Fabricación Rápida</h4>
+                                <p className="text-sm" style={{ color: currentConfig.colors.text }}>Tiempo récord en producción</p>
                             </div>
-                            <div className="bg-gray-700/30 border border-cyan-400/50 rounded-lg p-4 text-center">
-                                <Star className="w-10 h-10 text-cyan-400 mx-auto mb-2" />
-                                <h4 className="text-lg font-bold text-cyan-400 mb-2">Mejor Precio</h4>
-                                <p className="text-gray-200 text-sm">Competitivos en el mercado</p>
+                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${currentConfig.colors.primary}50` }}>
+                                <Star className="w-10 h-10 mx-auto mb-2" style={{ color: currentConfig.colors.primary }} />
+                                <h4 className="text-lg font-bold mb-2" style={{ color: currentConfig.colors.primary }}>Mejor Precio</h4>
+                                <p className="text-sm" style={{ color: currentConfig.colors.text }}>Competitivos en el mercado</p>
                             </div>
-                            <div className="bg-gray-700/30 border border-cyan-400/50 rounded-lg p-4 text-center">
-                                <Shield className="w-10 h-10 text-cyan-400 mx-auto mb-2" />
-                                <h4 className="text-lg font-bold text-cyan-400 mb-2">Alta Calidad</h4>
-                                <p className="text-gray-200 text-sm">Seguridad garantizada</p>
+                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${currentConfig.colors.primary}50` }}>
+                                <Shield className="w-10 h-10 mx-auto mb-2" style={{ color: currentConfig.colors.primary }} />
+                                <h4 className="text-lg font-bold mb-2" style={{ color: currentConfig.colors.primary }}>Alta Calidad</h4>
+                                <p className="text-sm" style={{ color: currentConfig.colors.text }}>Seguridad garantizada</p>
                             </div>
                         </div>
                     </div>
@@ -615,20 +631,20 @@ const HomePage: React.FC = () => {
                 <section id="servicios" className="relative z-10 py-20 px-4 sm:px-6 bg-gray-800/30">
                     <div className="max-w-6xl mx-auto">
                         <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-200 mb-4">Nuestros Servicios</h2>
-                            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent mx-auto"></div>
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: currentConfig.colors.text }}>Nuestros Servicios</h2>
+                            <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${currentConfig.colors.primary}, transparent)` }}></div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                             {/* Servicio 1 */}
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
                                 <div className="flex items-start space-x-4">
                                     <div className="flex-shrink-0">
-                                        <ShoppingCart className="w-12 h-12 text-cyan-400" />
+                                        <ShoppingCart className="w-12 h-12" style={{ color: currentConfig.colors.primary }} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-3">Venta de Puertas y Ventanas</h3>
-                                        <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: currentConfig.colors.primary }}>Venta de Puertas y Ventanas</h3>
+                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
                                             Ofrecemos una amplia variedad de puertas y ventanas a los mejores precios del mercado. 
                                             Todos nuestros productos son seleccionados cuidadosamente para garantizar la mejor relación 
                                             calidad-precio para nuestros clientes.
@@ -638,14 +654,14 @@ const HomePage: React.FC = () => {
                             </div>
 
                             {/* Servicio 2 */}
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
                                 <div className="flex items-start space-x-4">
                                     <div className="flex-shrink-0">
-                                        <Package className="w-12 h-12 text-cyan-400" />
+                                        <Package className="w-12 h-12" style={{ color: currentConfig.colors.primary }} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-3">Fabricación a Medida</h3>
-                                        <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: currentConfig.colors.primary }}>Fabricación a Medida</h3>
+                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
                                             Si necesitas medidas especiales, las fabricamos para ti. Trabajamos en tiempo récord sin 
                                             comprometer la calidad. Cada producto personalizado es fabricado con los más altos estándares 
                                             de calidad y seguridad.
@@ -655,14 +671,14 @@ const HomePage: React.FC = () => {
                             </div>
 
                             {/* Servicio 3 */}
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
                                 <div className="flex items-start space-x-4">
                                     <div className="flex-shrink-0">
-                                        <Zap className="w-12 h-12 text-cyan-400" />
+                                        <Zap className="w-12 h-12" style={{ color: currentConfig.colors.primary }} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-3">Tiempo Récord</h3>
-                                        <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: currentConfig.colors.primary }}>Tiempo Récord</h3>
+                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
                                             Entendemos la urgencia de nuestros clientes. Por eso, fabricamos tus productos en el menor 
                                             tiempo posible, siempre manteniendo los más altos estándares de calidad y seguridad.
                                         </p>
@@ -671,14 +687,14 @@ const HomePage: React.FC = () => {
                             </div>
 
                             {/* Servicio 4 */}
-                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
                                 <div className="flex items-start space-x-4">
                                     <div className="flex-shrink-0">
-                                        <Star className="w-12 h-12 text-cyan-400" />
+                                        <Star className="w-12 h-12" style={{ color: currentConfig.colors.primary }} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-3">Mejor Precio del Mercado</h3>
-                                        <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: currentConfig.colors.primary }}>Mejor Precio del Mercado</h3>
+                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
                                             Ofrecemos los mejores precios sin sacrificar calidad. Nuestro compromiso es brindarte 
                                             productos de alta calidad a precios competitivos que se ajusten a tu presupuesto.
                                         </p>
@@ -686,67 +702,67 @@ const HomePage: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                        </div>
+                    </section>
 
                 {/* Contact Section */}
                 <section id="contacto" className="relative z-10 py-20 px-4 sm:px-6">
                     <div className="max-w-4xl mx-auto">
                         <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-200 mb-4">{currentConfig.contact.title}</h2>
-                            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent mx-auto mb-6"></div>
-                            <p className="text-gray-200 text-lg">{currentConfig.contact.subtitle}</p>
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: currentConfig.colors.text }}>{currentConfig.contact.title}</h2>
+                            <div className="w-24 h-1 mx-auto mb-6" style={{ background: `linear-gradient(to right, transparent, ${currentConfig.colors.primary}, transparent)` }}></div>
+                            <p className="text-lg" style={{ color: currentConfig.colors.text }}>{currentConfig.contact.subtitle}</p>
                         </div>
 
-                        <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 md:p-12 backdrop-blur-sm">
+                        <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-12 backdrop-blur-sm" style={{ borderColor: currentConfig.colors.primary }}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                                 {/* Información de Contacto */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-4">Información de Contacto</h3>
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: currentConfig.colors.primary }}>Información de Contacto</h3>
                                         <div className="space-y-4">
                                             <div className="flex items-start space-x-3">
                                                 <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-cyan-400 text-xl">📍</span>
+                                                    <span className="text-xl" style={{ color: currentConfig.colors.primary }}>📍</span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-200 font-semibold">Dirección:</p>
-                                                    <p className="text-gray-300">Av. Principal, Zona Industrial</p>
-                                                    <p className="text-gray-300">San Francisco, Estado Zulia</p>
-                                                    <p className="text-gray-300">Venezuela</p>
+                                                    <p className="font-semibold" style={{ color: currentConfig.colors.text }}>Dirección:</p>
+                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>Av. Principal, Zona Industrial</p>
+                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>San Francisco, Estado Zulia</p>
+                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>Venezuela</p>
                                                 </div>
                                             </div>
                                             
                                             <div className="flex items-start space-x-3">
                                                 <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-cyan-400 text-xl">📞</span>
+                                                    <span className="text-xl" style={{ color: currentConfig.colors.primary }}>📞</span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-200 font-semibold">Teléfono:</p>
-                                                    <p className="text-gray-300">+58 412-123-4567</p>
-                                                    <p className="text-gray-300">+58 416-987-6543</p>
+                                                    <p className="font-semibold" style={{ color: currentConfig.colors.text }}>Teléfono:</p>
+                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>+58 412-123-4567</p>
+                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>+58 416-987-6543</p>
                                                 </div>
                                             </div>
                                             
                                             <div className="flex items-start space-x-3">
                                                 <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-cyan-400 text-xl">✉️</span>
+                                                    <span className="text-xl" style={{ color: currentConfig.colors.primary }}>✉️</span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-200 font-semibold">Email:</p>
-                                                    <p className="text-gray-300">contacto@tumundopuertas.com</p>
-                                                    <p className="text-gray-300">ventas@tumundopuertas.com</p>
+                                                    <p className="font-semibold" style={{ color: currentConfig.colors.text }}>Email:</p>
+                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>contacto@tumundopuertas.com</p>
+                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>ventas@tumundopuertas.com</p>
                                                 </div>
                                             </div>
                                             
                                             <div className="flex items-start space-x-3">
                                                 <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-cyan-400 text-xl">🕒</span>
+                                                    <span className="text-xl" style={{ color: currentConfig.colors.primary }}>🕒</span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-gray-200 font-semibold">Horario de Atención:</p>
-                                                    <p className="text-gray-300">Lunes a Viernes: 8:00 AM - 6:00 PM</p>
-                                                    <p className="text-gray-300">Sábados: 8:00 AM - 2:00 PM</p>
+                                                    <p className="font-semibold" style={{ color: currentConfig.colors.text }}>Horario de Atención:</p>
+                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>Lunes a Viernes: 8:00 AM - 6:00 PM</p>
+                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>Sábados: 8:00 AM - 2:00 PM</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -756,26 +772,26 @@ const HomePage: React.FC = () => {
                                 {/* Redes Sociales / Información Adicional */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-4">Síguenos</h3>
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: currentConfig.colors.primary }}>Síguenos</h3>
                                         <div className="space-y-3">
                                             <div className="flex items-center space-x-3">
-                                                <span className="text-cyan-400 text-xl">📱</span>
-                                                <p className="text-gray-200">Instagram: @tumundopuertas</p>
+                                                <span className="text-xl" style={{ color: currentConfig.colors.primary }}>📱</span>
+                                                <p style={{ color: currentConfig.colors.text }}>Instagram: @tumundopuertas</p>
                                             </div>
                                             <div className="flex items-center space-x-3">
-                                                <span className="text-cyan-400 text-xl">📘</span>
-                                                <p className="text-gray-200">Facebook: Tu Mundo Puertas</p>
+                                                <span className="text-xl" style={{ color: currentConfig.colors.primary }}>📘</span>
+                                                <p style={{ color: currentConfig.colors.text }}>Facebook: Tu Mundo Puertas</p>
                                             </div>
                                             <div className="flex items-center space-x-3">
-                                                <span className="text-cyan-400 text-xl">💼</span>
-                                                <p className="text-gray-200">WhatsApp: +58 412-123-4567</p>
+                                                <span className="text-xl" style={{ color: currentConfig.colors.primary }}>💼</span>
+                                                <p style={{ color: currentConfig.colors.text }}>WhatsApp: +58 412-123-4567</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-cyan-400/10 border border-cyan-400/30 rounded-lg p-4">
-                                        <p className="text-gray-200 text-sm sm:text-base">
-                                            <strong className="text-cyan-400">¿Tienes una pregunta?</strong><br />
+                                    <div className="border rounded-lg p-4" style={{ backgroundColor: `${currentConfig.colors.primary}10`, borderColor: `${currentConfig.colors.primary}30` }}>
+                                        <p className="text-sm sm:text-base" style={{ color: currentConfig.colors.text }}>
+                                            <strong style={{ color: currentConfig.colors.primary }}>¿Tienes una pregunta?</strong><br />
                                             Estamos aquí para ayudarte. Contáctanos y te responderemos lo antes posible.
                                         </p>
                                     </div>
