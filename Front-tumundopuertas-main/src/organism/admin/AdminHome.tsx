@@ -499,18 +499,43 @@ const AdminHome: React.FC = () => {
       };
 
       // Verificar que las imágenes estén incluidas (sin loguear el JSON completo porque puede ser muy grande con base64)
-      console.log('Guardando configuración en el backend');
-      console.log('Banner image:', configToSave.banner.image ? `Presente (${configToSave.banner.image.substring(0, 50)}...)` : 'Vacio');
-      console.log('Logo image:', configToSave.logo.image ? `Presente (${configToSave.logo.image.substring(0, 50)}...)` : 'Vacio');
-      console.log('Productos con imágenes:', configToSave.products.items.filter(p => p.image).length);
-      console.log('Contacto completo:', !!configToSave.contact);
+      console.log('📤 Guardando configuración en el backend');
+      const bannerImageLength = configToSave.banner.image?.length || 0;
+      const logoImageLength = configToSave.logo.image?.length || 0;
+      const productosConImagen = configToSave.products.items.filter(p => p.image && p.image.length > 100).length;
+      
+      console.log('Banner:', {
+        tieneImagen: !!configToSave.banner.image,
+        longitud: bannerImageLength,
+        esBase64Valido: bannerImageLength > 100,
+        preview: configToSave.banner.image?.substring(0, 50) || 'Vacio'
+      });
+      console.log('Logo:', {
+        tieneImagen: !!configToSave.logo.image,
+        longitud: logoImageLength,
+        esBase64Valido: logoImageLength > 100,
+        preview: configToSave.logo.image?.substring(0, 50) || 'Vacio'
+      });
+      console.log('Productos:', {
+        total: configToSave.products.items.length,
+        conImagen: productosConImagen,
+        items: configToSave.products.items.map(p => ({
+          id: p.id,
+          nombre: p.name,
+          tieneImagen: !!(p.image && p.image.length > 100),
+          longitud: p.image?.length || 0
+        }))
+      });
       
       // Asegurar que todas las imágenes de productos estén incluidas
+      // El backend hará merge inteligente, así que enviamos el valor tal cual está
       configToSave.products.items = configToSave.products.items.map(item => ({
         ...item,
-        image: item.image || ''
+        image: item.image || '' // Si está vacío, el backend lo preservará si hay una imagen guardada
       }));
       
+      // IMPORTANTE: Enviamos el objeto completo para que el backend haga merge inteligente
+      // El backend preservará campos existentes (como width, height) y actualizará solo los nuevos
       const response = await fetch(`${apiUrl}/home/config`, {
         method: 'PUT',
         headers: {
@@ -519,6 +544,8 @@ const AdminHome: React.FC = () => {
         },
         body: JSON.stringify({ config: configToSave })
       });
+      
+      console.log('📥 Respuesta del backend:', response.status, response.statusText);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -527,13 +554,28 @@ const AdminHome: React.FC = () => {
       }
 
       const data = await response.json();
-      console.log('Configuración guardada exitosamente:', data);
+      console.log('✅ Configuración guardada exitosamente');
       
-      // Actualizar el estado local con la configuración guardada
-      setConfig(configToSave);
+      // Verificar que las imágenes se guardaron correctamente
+      if (data.config) {
+        const savedBannerImage = data.config.banner?.image?.length || 0;
+        const savedLogoImage = data.config.logo?.image?.length || 0;
+        const savedProductImages = data.config.products?.items?.filter(p => p.image && p.image.length > 100).length || 0;
+        
+        console.log('📋 Configuración guardada en backend:');
+        console.log('  Banner image:', savedBannerImage > 100 ? `✅ Guardada (${savedBannerImage} chars)` : '❌ No guardada');
+        console.log('  Logo image:', savedLogoImage > 100 ? `✅ Guardada (${savedLogoImage} chars)` : '❌ No guardada');
+        console.log('  Productos con imagen:', savedProductImages);
+      }
+      
+      // Actualizar el estado local con la configuración guardada (usar la respuesta del backend)
+      // Esto asegura que tengamos exactamente lo que el backend guardó (con merge inteligente aplicado)
+      const finalConfig = data.config || configToSave;
+      setConfig(finalConfig);
       
       // También guardar en localStorage como respaldo/cache
-      localStorage.setItem('home-config', JSON.stringify(configToSave));
+      // Usar la respuesta del backend para mantener sincronización
+      localStorage.setItem('home-config', JSON.stringify(finalConfig));
       
       // Disparar evento personalizado para notificar cambios (misma pestaña)
       window.dispatchEvent(new CustomEvent('customStorageChange', {
