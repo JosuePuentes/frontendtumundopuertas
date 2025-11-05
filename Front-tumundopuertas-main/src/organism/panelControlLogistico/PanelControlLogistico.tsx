@@ -997,17 +997,14 @@ const PanelControlLogistico: React.FC = () => {
                             <td className="p-3">{item.ventas}</td>
                             <td className="p-3 font-semibold">{item.promedio_diario.toFixed(2)}</td>
                             <td className="p-3">
-                              <Badge className={
-                                item.tendencia === 'creciente' ? 'bg-green-600' :
-                                item.tendencia === 'decreciente' ? 'bg-red-600' : 'bg-gray-600'
-                              }>
+                              <Badge className={item.tendencia === 'creciente' ? 'bg-green-600' : item.tendencia === 'decreciente' ? 'bg-red-600' : 'bg-gray-600'}>
                                 {item.tendencia === 'creciente' && <TrendingUp className="w-3 h-3 inline mr-1" />}
                                 {item.tendencia === 'decreciente' && <TrendingDown className="w-3 h-3 inline mr-1" />}
                                 {item.tendencia}
                               </Badge>
                             </td>
                           </tr>
-                        ))}
+                          ))}
                       </tbody>
                     </table>
                   </div>
