@@ -152,6 +152,25 @@ const CrearPedido: React.FC = () => {
     }
   }, [sucursal]);
 
+  // Actualización automática del inventario cada 5 minutos
+  useEffect(() => {
+    if (!sucursal) return; // No hacer nada si no hay sucursal seleccionada
+
+    // Función para actualizar inventario
+    const actualizarInventario = () => {
+      console.log("🔄 Actualizando inventario automáticamente...");
+      fetchItems(`${apiUrl}/inventario/all?sucursal=${sucursal}`);
+    };
+
+    // Configurar intervalo de 5 minutos (300000 ms)
+    const intervalo = setInterval(actualizarInventario, 5 * 60 * 1000);
+
+    // Limpiar intervalo al desmontar el componente o cambiar de sucursal
+    return () => {
+      clearInterval(intervalo);
+    };
+  }, [sucursal, apiUrl, fetchItems]);
+
   useEffect(() => {
     const fetchMetodosPago = async () => {
       try {
