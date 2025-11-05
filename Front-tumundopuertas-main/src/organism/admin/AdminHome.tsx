@@ -5,6 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Eye, 
   RefreshCw, 
@@ -27,6 +35,8 @@ interface HomeConfig {
     subtitle: string;
     image: string;
     enabled: boolean;
+    width?: string;
+    height?: string;
   };
   
   // Logo
@@ -35,6 +45,8 @@ interface HomeConfig {
     slogan: string;
     image: string;
     enabled: boolean;
+    width?: string;
+    height?: string;
   };
   
   // Valores
@@ -83,6 +95,46 @@ interface HomeConfig {
     background: string;
     text: string;
   };
+  
+  // Nosotros
+  nosotros: {
+    historia: string;
+    mision: string;
+    vision: string;
+    enabled: boolean;
+    titleFontSize?: string;
+    titleFontFamily?: string;
+    titleFontWeight?: string;
+    textFontSize?: string;
+    textFontFamily?: string;
+    textFontWeight?: string;
+  };
+  
+  // Servicios
+  servicios: {
+    items: Array<{
+      id: string;
+      title: string;
+      description: string;
+      enabled: boolean;
+    }>;
+    enabled: boolean;
+    titleFontSize?: string;
+    titleFontFamily?: string;
+    titleFontWeight?: string;
+    textFontSize?: string;
+    textFontFamily?: string;
+    textFontWeight?: string;
+  };
+  
+  // Tipografía Global
+  typography?: {
+    defaultFontFamily?: string;
+    defaultFontSize?: string;
+    headingFontFamily?: string;
+    headingFontSize?: string;
+    headingFontWeight?: string;
+  };
 }
 
 const AdminHome: React.FC = () => {
@@ -91,13 +143,17 @@ const AdminHome: React.FC = () => {
       title: "Banner Promocional",
       subtitle: "Espacio reservado para contenido promocional o anuncios",
       image: "",
-      enabled: true
+      enabled: true,
+      width: "100%",
+      height: "400px"
     },
     logo: {
       text: "TU MUNDO PUERTAS",
       slogan: "DISEÑO, CALIDAD Y PROTECCIÓN",
       image: "",
-      enabled: true
+      enabled: true,
+      width: "200px",
+      height: "auto"
     },
     values: {
       diseño: {
@@ -153,6 +209,60 @@ const AdminHome: React.FC = () => {
       accent: "#0ea5e9",
       background: "#000000",
       text: "#e5e7eb"
+    },
+    nosotros: {
+      historia: "Todo comenzó como un sueño, una idea, pero con muchas ganas. Con el paso de los años, hemos logrado consolidarnos como líderes en el mercado de puertas y ventanas, acumulando más de 10 años de experiencia en el sector. Nos hemos posicionado firmemente en nuestra región y estamos abriendo caminos en todo el territorio nacional.",
+      mision: "Proporcionar puertas y ventanas de alta calidad a precios competitivos, fabricando productos personalizados en tiempo récord. Nos comprometemos a ofrecer el mejor precio del mercado sin comprometer la excelencia en calidad, asegurando que cada producto brinde seguridad y satisfacción a nuestros clientes.",
+      vision: "Ser la empresa líder en fabricación y distribución de puertas y ventanas a nivel nacional, reconocida por nuestra capacidad de envío a todo el territorio, tiempos de fabricación récord, precios competitivos y, sobre todo, por la calidad excepcional que garantiza la seguridad y confianza de nuestros clientes en cada uno de nuestros productos.",
+      enabled: true,
+      titleFontSize: "2rem",
+      titleFontFamily: "Arial, sans-serif",
+      titleFontWeight: "bold",
+      textFontSize: "1rem",
+      textFontFamily: "Arial, sans-serif",
+      textFontWeight: "normal"
+    },
+    servicios: {
+      items: [
+        {
+          id: "1",
+          title: "Venta de Puertas y Ventanas",
+          description: "Ofrecemos una amplia variedad de puertas y ventanas a los mejores precios del mercado. Todos nuestros productos son seleccionados cuidadosamente para garantizar la mejor relación calidad-precio para nuestros clientes.",
+          enabled: true
+        },
+        {
+          id: "2",
+          title: "Fabricación a Medida",
+          description: "Si necesitas medidas especiales, las fabricamos para ti. Trabajamos en tiempo récord sin comprometer la calidad. Cada producto personalizado es fabricado con los más altos estándares de calidad y seguridad.",
+          enabled: true
+        },
+        {
+          id: "3",
+          title: "Tiempo Récord",
+          description: "Entendemos la urgencia de nuestros clientes. Por eso, fabricamos tus productos en el menor tiempo posible, siempre manteniendo los más altos estándares de calidad y seguridad.",
+          enabled: true
+        },
+        {
+          id: "4",
+          title: "Mejor Precio del Mercado",
+          description: "Ofrecemos los mejores precios sin sacrificar calidad. Nuestro compromiso es brindarte productos de alta calidad a precios competitivos que se ajusten a tu presupuesto.",
+          enabled: true
+        }
+      ],
+      enabled: true,
+      titleFontSize: "1.5rem",
+      titleFontFamily: "Arial, sans-serif",
+      titleFontWeight: "bold",
+      textFontSize: "1rem",
+      textFontFamily: "Arial, sans-serif",
+      textFontWeight: "normal"
+    },
+    typography: {
+      defaultFontFamily: "Arial, sans-serif",
+      defaultFontSize: "1rem",
+      headingFontFamily: "Arial, sans-serif",
+      headingFontSize: "2rem",
+      headingFontWeight: "bold"
     }
   });
 
@@ -186,7 +296,9 @@ const AdminHome: React.FC = () => {
                     title: data.config.banner.title ?? config.banner.title,
                     subtitle: data.config.banner.subtitle ?? config.banner.subtitle,
                     image: data.config.banner.image ?? config.banner.image,
-                    enabled: data.config.banner.enabled !== undefined ? data.config.banner.enabled : config.banner.enabled
+                    enabled: data.config.banner.enabled !== undefined ? data.config.banner.enabled : config.banner.enabled,
+                    width: data.config.banner.width ?? config.banner.width ?? "100%",
+                    height: data.config.banner.height ?? config.banner.height ?? "400px"
                   }
                 : config.banner,
               logo: data.config.logo && typeof data.config.logo === 'object' && !Array.isArray(data.config.logo)
@@ -194,7 +306,9 @@ const AdminHome: React.FC = () => {
                     text: data.config.logo.text ?? config.logo.text,
                     slogan: data.config.logo.slogan ?? config.logo.slogan,
                     image: data.config.logo.image ?? config.logo.image,
-                    enabled: data.config.logo.enabled !== undefined ? data.config.logo.enabled : config.logo.enabled
+                    enabled: data.config.logo.enabled !== undefined ? data.config.logo.enabled : config.logo.enabled,
+                    width: data.config.logo.width ?? config.logo.width ?? "200px",
+                    height: data.config.logo.height ?? config.logo.height ?? "auto"
                   }
                 : config.logo,
               values: data.config.values && typeof data.config.values === 'object' && !Array.isArray(data.config.values)
@@ -231,7 +345,48 @@ const AdminHome: React.FC = () => {
                     background: data.config.colors.background ?? config.colors.background,
                     text: data.config.colors.text ?? config.colors.text
                   }
-                : config.colors
+                : config.colors,
+              nosotros: data.config.nosotros && typeof data.config.nosotros === 'object' && !Array.isArray(data.config.nosotros)
+                ? {
+                    historia: data.config.nosotros.historia ?? config.nosotros.historia,
+                    mision: data.config.nosotros.mision ?? config.nosotros.mision,
+                    vision: data.config.nosotros.vision ?? config.nosotros.vision,
+                    enabled: data.config.nosotros.enabled !== undefined ? data.config.nosotros.enabled : config.nosotros.enabled,
+                    titleFontSize: data.config.nosotros.titleFontSize ?? config.nosotros.titleFontSize ?? "2rem",
+                    titleFontFamily: data.config.nosotros.titleFontFamily ?? config.nosotros.titleFontFamily ?? "Arial, sans-serif",
+                    titleFontWeight: data.config.nosotros.titleFontWeight ?? config.nosotros.titleFontWeight ?? "bold",
+                    textFontSize: data.config.nosotros.textFontSize ?? config.nosotros.textFontSize ?? "1rem",
+                    textFontFamily: data.config.nosotros.textFontFamily ?? config.nosotros.textFontFamily ?? "Arial, sans-serif",
+                    textFontWeight: data.config.nosotros.textFontWeight ?? config.nosotros.textFontWeight ?? "normal"
+                  }
+                : config.nosotros,
+              servicios: data.config.servicios && typeof data.config.servicios === 'object' && !Array.isArray(data.config.servicios)
+                ? {
+                    items: Array.isArray(data.config.servicios.items) ? data.config.servicios.items : config.servicios.items,
+                    enabled: data.config.servicios.enabled !== undefined ? data.config.servicios.enabled : config.servicios.enabled,
+                    titleFontSize: data.config.servicios.titleFontSize ?? config.servicios.titleFontSize ?? "1.5rem",
+                    titleFontFamily: data.config.servicios.titleFontFamily ?? config.servicios.titleFontFamily ?? "Arial, sans-serif",
+                    titleFontWeight: data.config.servicios.titleFontWeight ?? config.servicios.titleFontWeight ?? "bold",
+                    textFontSize: data.config.servicios.textFontSize ?? config.servicios.textFontSize ?? "1rem",
+                    textFontFamily: data.config.servicios.textFontFamily ?? config.servicios.textFontFamily ?? "Arial, sans-serif",
+                    textFontWeight: data.config.servicios.textFontWeight ?? config.servicios.textFontWeight ?? "normal"
+                  }
+                : config.servicios,
+              typography: data.config.typography && typeof data.config.typography === 'object' && !Array.isArray(data.config.typography)
+                ? {
+                    defaultFontFamily: data.config.typography.defaultFontFamily ?? config.typography?.defaultFontFamily ?? "Arial, sans-serif",
+                    defaultFontSize: data.config.typography.defaultFontSize ?? config.typography?.defaultFontSize ?? "1rem",
+                    headingFontFamily: data.config.typography.headingFontFamily ?? config.typography?.headingFontFamily ?? "Arial, sans-serif",
+                    headingFontSize: data.config.typography.headingFontSize ?? config.typography?.headingFontSize ?? "2rem",
+                    headingFontWeight: data.config.typography.headingFontWeight ?? config.typography?.headingFontWeight ?? "bold"
+                  }
+                : (config.typography || {
+                    defaultFontFamily: "Arial, sans-serif",
+                    defaultFontSize: "1rem",
+                    headingFontFamily: "Arial, sans-serif",
+                    headingFontSize: "2rem",
+                    headingFontWeight: "bold"
+                  })
             };
             setConfig(normalizedConfig);
           }
@@ -257,7 +412,53 @@ const AdminHome: React.FC = () => {
   const saveConfig = async () => {
     setLoading(true);
     try {
-      console.log('Guardando configuración en el backend:', config);
+      // Asegurar que todos los campos estén presentes antes de guardar
+      const configToSave: HomeConfig = {
+        ...config,
+        banner: {
+          ...config.banner,
+          width: config.banner.width || "100%",
+          height: config.banner.height || "400px"
+        },
+        logo: {
+          ...config.logo,
+          width: config.logo.width || "200px",
+          height: config.logo.height || "auto"
+        },
+        nosotros: config.nosotros || {
+          historia: "",
+          mision: "",
+          vision: "",
+          enabled: true,
+          titleFontSize: "2rem",
+          titleFontFamily: "Arial, sans-serif",
+          titleFontWeight: "bold",
+          textFontSize: "1rem",
+          textFontFamily: "Arial, sans-serif",
+          textFontWeight: "normal"
+        },
+        servicios: config.servicios || {
+          items: [],
+          enabled: true,
+          titleFontSize: "1.5rem",
+          titleFontFamily: "Arial, sans-serif",
+          titleFontWeight: "bold",
+          textFontSize: "1rem",
+          textFontFamily: "Arial, sans-serif",
+          textFontWeight: "normal"
+        },
+        typography: config.typography || {
+          defaultFontFamily: "Arial, sans-serif",
+          defaultFontSize: "1rem",
+          headingFontFamily: "Arial, sans-serif",
+          headingFontSize: "2rem",
+          headingFontWeight: "bold"
+        }
+      };
+
+      console.log('Guardando configuración en el backend:', JSON.stringify(configToSave, null, 2));
+      console.log('Banner image:', configToSave.banner.image ? 'Presente' : 'Vacio');
+      console.log('Logo image:', configToSave.logo.image ? 'Presente' : 'Vacio');
       
       const response = await fetch(`${apiUrl}/home/config`, {
         method: 'PUT',
@@ -265,23 +466,27 @@ const AdminHome: React.FC = () => {
           'Content-Type': 'application/json',
           ...(token && { Authorization: `Bearer ${token}` })
         },
-        body: JSON.stringify({ config })
+        body: JSON.stringify({ config: configToSave })
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        console.error('Error del servidor:', errorData);
         throw new Error(errorData.detail || errorData.message || 'Error al guardar la configuración');
       }
 
       const data = await response.json();
       console.log('Configuración guardada exitosamente:', data);
       
+      // Actualizar el estado local con la configuración guardada
+      setConfig(configToSave);
+      
       // También guardar en localStorage como respaldo/cache
-      localStorage.setItem('home-config', JSON.stringify(config));
+      localStorage.setItem('home-config', JSON.stringify(configToSave));
       
       // Disparar evento personalizado para notificar cambios (misma pestaña)
       window.dispatchEvent(new CustomEvent('customStorageChange', {
-        detail: { key: 'home-config', value: config }
+        detail: { key: 'home-config', value: configToSave }
       }));
       
       alert('✅ Configuración guardada exitosamente!');
@@ -295,13 +500,16 @@ const AdminHome: React.FC = () => {
 
   // Actualizar configuración
   const updateConfig = (section: string, field: string, value: any) => {
-    setConfig(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section as keyof HomeConfig],
-        [field]: value
-      }
-    }));
+    setConfig(prev => {
+      const currentSection = prev[section as keyof HomeConfig] as any;
+      return {
+        ...prev,
+        [section]: {
+          ...currentSection,
+          [field]: value
+        }
+      };
+    });
   };
 
   // Actualizar configuración anidada
@@ -380,30 +588,42 @@ const AdminHome: React.FC = () => {
 
         {/* Tabs de Administración */}
         <Tabs defaultValue="banner" className="w-full">
-          <TabsList className="grid w-full grid-cols-6 bg-gray-800 border-gray-700">
-            <TabsTrigger value="banner" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <ImageIcon className="w-4 h-4 mr-2" />
+          <TabsList className="grid w-full grid-cols-9 bg-gray-800 border-gray-700">
+            <TabsTrigger value="banner" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black text-xs">
+              <ImageIcon className="w-4 h-4 mr-1" />
               Banner
             </TabsTrigger>
-            <TabsTrigger value="logo" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Settings className="w-4 h-4 mr-2" />
+            <TabsTrigger value="logo" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black text-xs">
+              <Settings className="w-4 h-4 mr-1" />
               Logo
             </TabsTrigger>
-            <TabsTrigger value="values" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Type className="w-4 h-4 mr-2" />
+            <TabsTrigger value="values" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black text-xs">
+              <Type className="w-4 h-4 mr-1" />
               Valores
             </TabsTrigger>
-            <TabsTrigger value="products" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <ImageIcon className="w-4 h-4 mr-2" />
+            <TabsTrigger value="products" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black text-xs">
+              <ImageIcon className="w-4 h-4 mr-1" />
               Productos
             </TabsTrigger>
-            <TabsTrigger value="contact" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Type className="w-4 h-4 mr-2" />
+            <TabsTrigger value="nosotros" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black text-xs">
+              <Type className="w-4 h-4 mr-1" />
+              Nosotros
+            </TabsTrigger>
+            <TabsTrigger value="servicios" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black text-xs">
+              <Type className="w-4 h-4 mr-1" />
+              Servicios
+            </TabsTrigger>
+            <TabsTrigger value="contact" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black text-xs">
+              <Type className="w-4 h-4 mr-1" />
               Contacto
             </TabsTrigger>
-            <TabsTrigger value="colors" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black">
-              <Palette className="w-4 h-4 mr-2" />
+            <TabsTrigger value="colors" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black text-xs">
+              <Palette className="w-4 h-4 mr-1" />
               Colores
+            </TabsTrigger>
+            <TabsTrigger value="typography" className="text-gray-200 data-[state=active]:bg-cyan-500 data-[state=active]:text-black text-xs">
+              <Type className="w-4 h-4 mr-1" />
+              Tipografía
             </TabsTrigger>
           </TabsList>
 
@@ -461,8 +681,37 @@ const AdminHome: React.FC = () => {
                             <img 
                               src={config.banner.image} 
                               alt="Banner" 
-                              className="max-w-full h-32 object-cover rounded-lg mx-auto"
+                              className="max-w-full rounded-lg mx-auto"
+                              style={{
+                                width: config.banner.width || "100%",
+                                height: config.banner.height || "400px",
+                                objectFit: "cover"
+                              }}
                             />
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                              <div>
+                                <Label htmlFor="banner-width" className="text-gray-200 text-sm">Ancho</Label>
+                                <Input
+                                  id="banner-width"
+                                  type="text"
+                                  value={config.banner.width || "100%"}
+                                  onChange={(e) => updateConfig('banner', 'width', e.target.value)}
+                                  placeholder="Ej: 100%, 800px"
+                                  className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="banner-height" className="text-gray-200 text-sm">Alto</Label>
+                                <Input
+                                  id="banner-height"
+                                  type="text"
+                                  value={config.banner.height || "400px"}
+                                  onChange={(e) => updateConfig('banner', 'height', e.target.value)}
+                                  placeholder="Ej: 400px, auto"
+                                  className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                                />
+                              </div>
+                            </div>
                             <Button
                               onClick={() => updateConfig('banner', 'image', '')}
                               variant="outline"
@@ -554,8 +803,37 @@ const AdminHome: React.FC = () => {
                             <img 
                               src={config.logo.image} 
                               alt="Logo" 
-                              className="max-w-full h-24 object-contain rounded-lg mx-auto"
+                              className="rounded-lg mx-auto"
+                              style={{
+                                width: config.logo.width || "200px",
+                                height: config.logo.height || "auto",
+                                objectFit: "contain"
+                              }}
                             />
+                            <div className="grid grid-cols-2 gap-4 mt-4">
+                              <div>
+                                <Label htmlFor="logo-width" className="text-gray-200 text-sm">Ancho</Label>
+                                <Input
+                                  id="logo-width"
+                                  type="text"
+                                  value={config.logo.width || "200px"}
+                                  onChange={(e) => updateConfig('logo', 'width', e.target.value)}
+                                  placeholder="Ej: 200px, 50%"
+                                  className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="logo-height" className="text-gray-200 text-sm">Alto</Label>
+                                <Input
+                                  id="logo-height"
+                                  type="text"
+                                  value={config.logo.height || "auto"}
+                                  onChange={(e) => updateConfig('logo', 'height', e.target.value)}
+                                  placeholder="Ej: auto, 100px"
+                                  className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                                />
+                              </div>
+                            </div>
                             <Button
                               onClick={() => updateConfig('logo', 'image', '')}
                               variant="outline"
@@ -820,12 +1098,13 @@ const AdminHome: React.FC = () => {
                                 />
                                 <Button
                                   onClick={() => {
-                                    const newItems = [...config.products.items];
+                                    const currentItems = config.products?.items || [];
+                                    const newItems = [...currentItems];
                                     newItems[index] = { ...product, image: '' };
                                     setConfig(prev => ({
                                       ...prev,
                                       products: {
-                                        ...prev.products,
+                                        ...prev.products || { title: '', items: [] },
                                         items: newItems
                                       }
                                     }));
@@ -947,6 +1226,558 @@ const AdminHome: React.FC = () => {
                         className="rounded"
                       />
                       <Label htmlFor="contact-enabled" className="text-gray-200">Mostrar Sección de Contacto</Label>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab Nosotros */}
+          <TabsContent value="nosotros" className="mt-6">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-gray-200 flex items-center">
+                  <Type className="w-5 h-5 mr-2" />
+                  Configuración de Nosotros
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center space-x-2 mb-6">
+                  <input
+                    type="checkbox"
+                    id="nosotros-enabled"
+                    checked={config.nosotros?.enabled ?? true}
+                    onChange={(e) => updateConfig('nosotros', 'enabled', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="nosotros-enabled" className="text-gray-200">Mostrar Sección Nosotros</Label>
+                </div>
+
+                <div className="space-y-6">
+                  <div>
+                    <Label htmlFor="nosotros-historia" className="text-gray-200">Historia</Label>
+                    <Textarea
+                      id="nosotros-historia"
+                      value={config.nosotros?.historia || ''}
+                      onChange={(e) => updateConfig('nosotros', 'historia', e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      rows={4}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="nosotros-mision" className="text-gray-200">Misión</Label>
+                    <Textarea
+                      id="nosotros-mision"
+                      value={config.nosotros?.mision || ''}
+                      onChange={(e) => updateConfig('nosotros', 'mision', e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      rows={4}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="nosotros-vision" className="text-gray-200">Visión</Label>
+                    <Textarea
+                      id="nosotros-vision"
+                      value={config.nosotros?.vision || ''}
+                      onChange={(e) => updateConfig('nosotros', 'vision', e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      rows={4}
+                    />
+                  </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold">Tipografía de Títulos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="nosotros-title-font-size" className="text-gray-200 text-sm">Tamaño</Label>
+                      <Input
+                        id="nosotros-title-font-size"
+                        type="text"
+                        value={config.nosotros?.titleFontSize || '2rem'}
+                        onChange={(e) => updateConfig('nosotros', 'titleFontSize', e.target.value)}
+                        placeholder="Ej: 2rem, 32px"
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nosotros-title-font-family" className="text-gray-200 text-sm">Fuente</Label>
+                      <Select
+                        value={config.nosotros?.titleFontFamily || 'Arial, sans-serif'}
+                        onValueChange={(value) => updateConfig('nosotros', 'titleFontFamily', value)}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Arial, sans-serif">Arial</SelectItem>
+                          <SelectItem value="'Times New Roman', serif">Times New Roman</SelectItem>
+                          <SelectItem value="'Courier New', monospace">Courier New</SelectItem>
+                          <SelectItem value="Georgia, serif">Georgia</SelectItem>
+                          <SelectItem value="Verdana, sans-serif">Verdana</SelectItem>
+                          <SelectItem value="'Helvetica Neue', sans-serif">Helvetica</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="nosotros-title-font-weight" className="text-gray-200 text-sm">Peso</Label>
+                      <Select
+                        value={config.nosotros?.titleFontWeight || 'bold'}
+                        onValueChange={(value) => updateConfig('nosotros', 'titleFontWeight', value)}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="bold">Bold</SelectItem>
+                          <SelectItem value="600">Semi-bold</SelectItem>
+                          <SelectItem value="700">Extra-bold</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold">Tipografía de Texto</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="nosotros-text-font-size" className="text-gray-200 text-sm">Tamaño</Label>
+                      <Input
+                        id="nosotros-text-font-size"
+                        type="text"
+                        value={config.nosotros?.textFontSize || '1rem'}
+                        onChange={(e) => updateConfig('nosotros', 'textFontSize', e.target.value)}
+                        placeholder="Ej: 1rem, 16px"
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nosotros-text-font-family" className="text-gray-200 text-sm">Fuente</Label>
+                      <Select
+                        value={config.nosotros?.textFontFamily || 'Arial, sans-serif'}
+                        onValueChange={(value) => updateConfig('nosotros', 'textFontFamily', value)}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Arial, sans-serif">Arial</SelectItem>
+                          <SelectItem value="'Times New Roman', serif">Times New Roman</SelectItem>
+                          <SelectItem value="'Courier New', monospace">Courier New</SelectItem>
+                          <SelectItem value="Georgia, serif">Georgia</SelectItem>
+                          <SelectItem value="Verdana, sans-serif">Verdana</SelectItem>
+                          <SelectItem value="'Helvetica Neue', sans-serif">Helvetica</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="nosotros-text-font-weight" className="text-gray-200 text-sm">Peso</Label>
+                      <Select
+                        value={config.nosotros?.textFontWeight || 'normal'}
+                        onValueChange={(value) => updateConfig('nosotros', 'textFontWeight', value)}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="bold">Bold</SelectItem>
+                          <SelectItem value="600">Semi-bold</SelectItem>
+                          <SelectItem value="700">Extra-bold</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab Servicios */}
+          <TabsContent value="servicios" className="mt-6">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-gray-200 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Type className="w-5 h-5 mr-2" />
+                    Configuración de Servicios
+                  </div>
+                  <Button
+                    onClick={() => {
+                      const newService = {
+                        id: Date.now().toString(),
+                        title: "Nuevo Servicio",
+                        description: "Descripción del servicio",
+                        enabled: true
+                      };
+                      setConfig(prev => ({
+                        ...prev,
+                        servicios: {
+                          ...prev.servicios || { items: [], enabled: true },
+                          items: [...(prev.servicios?.items || []), newService]
+                        }
+                      }));
+                    }}
+                    size="sm"
+                    className="bg-cyan-500 hover:bg-cyan-600 text-black"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Agregar Servicio
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center space-x-2 mb-6">
+                  <input
+                    type="checkbox"
+                    id="servicios-enabled"
+                    checked={config.servicios?.enabled ?? true}
+                    onChange={(e) => updateConfig('servicios', 'enabled', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="servicios-enabled" className="text-gray-200">Mostrar Sección Servicios</Label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {(config.servicios?.items || []).map((service, index) => (
+                    <Card key={service.id} className="bg-gray-700 border-gray-600">
+                      <CardHeader>
+                        <CardTitle className="text-gray-200 text-lg flex items-center justify-between">
+                          {service.title}
+                          <Button
+                            onClick={() => {
+                              const currentItems = config.servicios?.items || [];
+                              const newItems = currentItems.filter((_, i) => i !== index);
+                              setConfig(prev => ({
+                                ...prev,
+                                servicios: {
+                                  ...prev.servicios || { items: [], enabled: true },
+                                  items: newItems
+                                }
+                              }));
+                            }}
+                            size="sm"
+                            variant="outline"
+                            className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <Label className="text-gray-200">Título</Label>
+                          <Input
+                            value={service.title}
+                            onChange={(e) => {
+                              const currentItems = config.servicios?.items || [];
+                              const newItems = [...currentItems];
+                              newItems[index] = { ...service, title: e.target.value };
+                              setConfig(prev => ({
+                                ...prev,
+                                servicios: {
+                                  ...prev.servicios || { items: [], enabled: true },
+                                  items: newItems
+                                }
+                              }));
+                            }}
+                            className="bg-gray-600 border-gray-500 text-gray-200"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-gray-200">Descripción</Label>
+                          <Textarea
+                            value={service.description}
+                            onChange={(e) => {
+                              const currentItems = config.servicios?.items || [];
+                              const newItems = [...currentItems];
+                              newItems[index] = { ...service, description: e.target.value };
+                              setConfig(prev => ({
+                                ...prev,
+                                servicios: {
+                                  ...prev.servicios || { items: [], enabled: true },
+                                  items: newItems
+                                }
+                              }));
+                            }}
+                            className="bg-gray-600 border-gray-500 text-gray-200"
+                            rows={3}
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            checked={service.enabled}
+                            onChange={(e) => {
+                              const currentItems = config.servicios?.items || [];
+                              const newItems = [...currentItems];
+                              newItems[index] = { ...service, enabled: e.target.checked };
+                              setConfig(prev => ({
+                                ...prev,
+                                servicios: {
+                                  ...prev.servicios || { items: [], enabled: true },
+                                  items: newItems
+                                }
+                              }));
+                            }}
+                            className="rounded"
+                          />
+                          <Label className="text-gray-200">Mostrar Servicio</Label>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <Separator className="my-6" />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold">Tipografía de Títulos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="servicios-title-font-size" className="text-gray-200 text-sm">Tamaño</Label>
+                      <Input
+                        id="servicios-title-font-size"
+                        type="text"
+                        value={config.servicios?.titleFontSize || '1.5rem'}
+                        onChange={(e) => updateConfig('servicios', 'titleFontSize', e.target.value)}
+                        placeholder="Ej: 1.5rem, 24px"
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="servicios-title-font-family" className="text-gray-200 text-sm">Fuente</Label>
+                      <Select
+                        value={config.servicios?.titleFontFamily || 'Arial, sans-serif'}
+                        onValueChange={(value) => updateConfig('servicios', 'titleFontFamily', value)}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Arial, sans-serif">Arial</SelectItem>
+                          <SelectItem value="'Times New Roman', serif">Times New Roman</SelectItem>
+                          <SelectItem value="'Courier New', monospace">Courier New</SelectItem>
+                          <SelectItem value="Georgia, serif">Georgia</SelectItem>
+                          <SelectItem value="Verdana, sans-serif">Verdana</SelectItem>
+                          <SelectItem value="'Helvetica Neue', sans-serif">Helvetica</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="servicios-title-font-weight" className="text-gray-200 text-sm">Peso</Label>
+                      <Select
+                        value={config.servicios?.titleFontWeight || 'bold'}
+                        onValueChange={(value) => updateConfig('servicios', 'titleFontWeight', value)}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="bold">Bold</SelectItem>
+                          <SelectItem value="600">Semi-bold</SelectItem>
+                          <SelectItem value="700">Extra-bold</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold">Tipografía de Texto</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="servicios-text-font-size" className="text-gray-200 text-sm">Tamaño</Label>
+                      <Input
+                        id="servicios-text-font-size"
+                        type="text"
+                        value={config.servicios?.textFontSize || '1rem'}
+                        onChange={(e) => updateConfig('servicios', 'textFontSize', e.target.value)}
+                        placeholder="Ej: 1rem, 16px"
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="servicios-text-font-family" className="text-gray-200 text-sm">Fuente</Label>
+                      <Select
+                        value={config.servicios?.textFontFamily || 'Arial, sans-serif'}
+                        onValueChange={(value) => updateConfig('servicios', 'textFontFamily', value)}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Arial, sans-serif">Arial</SelectItem>
+                          <SelectItem value="'Times New Roman', serif">Times New Roman</SelectItem>
+                          <SelectItem value="'Courier New', monospace">Courier New</SelectItem>
+                          <SelectItem value="Georgia, serif">Georgia</SelectItem>
+                          <SelectItem value="Verdana, sans-serif">Verdana</SelectItem>
+                          <SelectItem value="'Helvetica Neue', sans-serif">Helvetica</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="servicios-text-font-weight" className="text-gray-200 text-sm">Peso</Label>
+                      <Select
+                        value={config.servicios?.textFontWeight || 'normal'}
+                        onValueChange={(value) => updateConfig('servicios', 'textFontWeight', value)}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="bold">Bold</SelectItem>
+                          <SelectItem value="600">Semi-bold</SelectItem>
+                          <SelectItem value="700">Extra-bold</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Tab Tipografía Global */}
+          <TabsContent value="typography" className="mt-6">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-gray-200 flex items-center">
+                  <Type className="w-5 h-5 mr-2" />
+                  Tipografía Global
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold">Fuente por Defecto (Texto General)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="typography-default-font-family" className="text-gray-200">Familia de Fuente</Label>
+                      <Select
+                        value={config.typography?.defaultFontFamily || 'Arial, sans-serif'}
+                        onValueChange={(value) => setConfig(prev => ({
+                          ...prev,
+                          typography: {
+                            ...prev.typography,
+                            defaultFontFamily: value
+                          }
+                        }))}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Arial, sans-serif">Arial</SelectItem>
+                          <SelectItem value="'Times New Roman', serif">Times New Roman</SelectItem>
+                          <SelectItem value="'Courier New', monospace">Courier New</SelectItem>
+                          <SelectItem value="Georgia, serif">Georgia</SelectItem>
+                          <SelectItem value="Verdana, sans-serif">Verdana</SelectItem>
+                          <SelectItem value="'Helvetica Neue', sans-serif">Helvetica</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="typography-default-font-size" className="text-gray-200">Tamaño</Label>
+                      <Input
+                        id="typography-default-font-size"
+                        type="text"
+                        value={config.typography?.defaultFontSize || '1rem'}
+                        onChange={(e) => setConfig(prev => ({
+                          ...prev,
+                          typography: {
+                            ...prev.typography,
+                            defaultFontSize: e.target.value
+                          }
+                        }))}
+                        placeholder="Ej: 1rem, 16px"
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="my-6" />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold">Fuente de Títulos (Headings)</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="typography-heading-font-family" className="text-gray-200">Familia de Fuente</Label>
+                      <Select
+                        value={config.typography?.headingFontFamily || 'Arial, sans-serif'}
+                        onValueChange={(value) => setConfig(prev => ({
+                          ...prev,
+                          typography: {
+                            ...prev.typography,
+                            headingFontFamily: value
+                          }
+                        }))}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Arial, sans-serif">Arial</SelectItem>
+                          <SelectItem value="'Times New Roman', serif">Times New Roman</SelectItem>
+                          <SelectItem value="'Courier New', monospace">Courier New</SelectItem>
+                          <SelectItem value="Georgia, serif">Georgia</SelectItem>
+                          <SelectItem value="Verdana, sans-serif">Verdana</SelectItem>
+                          <SelectItem value="'Helvetica Neue', sans-serif">Helvetica</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="typography-heading-font-size" className="text-gray-200">Tamaño</Label>
+                      <Input
+                        id="typography-heading-font-size"
+                        type="text"
+                        value={config.typography?.headingFontSize || '2rem'}
+                        onChange={(e) => setConfig(prev => ({
+                          ...prev,
+                          typography: {
+                            ...prev.typography,
+                            headingFontSize: e.target.value
+                          }
+                        }))}
+                        placeholder="Ej: 2rem, 32px"
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="typography-heading-font-weight" className="text-gray-200">Peso</Label>
+                      <Select
+                        value={config.typography?.headingFontWeight || 'bold'}
+                        onValueChange={(value) => setConfig(prev => ({
+                          ...prev,
+                          typography: {
+                            ...prev.typography,
+                            headingFontWeight: value
+                          }
+                        }))}
+                      >
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-gray-200 mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="normal">Normal</SelectItem>
+                          <SelectItem value="bold">Bold</SelectItem>
+                          <SelectItem value="600">Semi-bold</SelectItem>
+                          <SelectItem value="700">Extra-bold</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>

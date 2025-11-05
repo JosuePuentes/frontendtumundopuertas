@@ -13,12 +13,16 @@ interface HomeConfig {
     subtitle: string;
     image: string;
     enabled: boolean;
+    width?: string;
+    height?: string;
   };
   logo: {
     text: string;
     slogan: string;
     image: string;
     enabled: boolean;
+    width?: string;
+    height?: string;
   };
   values: {
     diseño: {
@@ -74,17 +78,21 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           title: config.banner.title || '',
           subtitle: config.banner.subtitle || '',
           image: config.banner.image || '',
-          enabled: config.banner.enabled !== undefined ? config.banner.enabled : true
+          enabled: config.banner.enabled !== undefined ? config.banner.enabled : true,
+          width: config.banner.width || "100%",
+          height: config.banner.height || "400px"
         }
-      : { title: '', subtitle: '', image: '', enabled: true },
+      : { title: '', subtitle: '', image: '', enabled: true, width: "100%", height: "400px" },
     logo: config.logo && typeof config.logo === 'object' && !Array.isArray(config.logo)
       ? {
           text: config.logo.text || '',
           slogan: config.logo.slogan || '',
           image: config.logo.image || '',
-          enabled: config.logo.enabled !== undefined ? config.logo.enabled : true
+          enabled: config.logo.enabled !== undefined ? config.logo.enabled : true,
+          width: config.logo.width || "200px",
+          height: config.logo.height || "auto"
         }
-      : { text: '', slogan: '', image: '', enabled: true },
+      : { text: '', slogan: '', image: '', enabled: true, width: "200px", height: "auto" },
     values: config.values && typeof config.values === 'object' && !Array.isArray(config.values)
       ? {
           diseño: (config.values.diseño && typeof config.values.diseño === 'object' && !Array.isArray(config.values.diseño))
@@ -187,12 +195,24 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                       backgroundColor: '#374151'
                     }}
                   >
-                    <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
+                    <div 
+                      className="bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden"
+                      style={{
+                        width: safeConfig.logo.width || "200px",
+                        height: safeConfig.logo.height === "auto" ? "auto" : (safeConfig.logo.height || "auto"),
+                        minHeight: safeConfig.logo.height === "auto" ? "64px" : undefined
+                      }}
+                    >
                       {safeConfig.logo.image ? (
                         <img 
                           src={safeConfig.logo.image} 
                           alt="Logo" 
-                          className="w-full h-full object-contain"
+                          className="object-contain"
+                          style={{
+                            width: safeConfig.logo.width || "200px",
+                            height: safeConfig.logo.height === "auto" ? "auto" : (safeConfig.logo.height || "auto"),
+                            maxHeight: "100%"
+                          }}
                         />
                       ) : (
                         <div className="relative z-10">
@@ -289,17 +309,23 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                       {config.banner.subtitle}
                     </p>
                     <div 
-                      className="w-full h-48 rounded-lg flex items-center justify-center border-2"
+                      className="rounded-lg flex items-center justify-center border-2"
                       style={{ 
                         backgroundColor: '#4B5563',
-                        borderColor: safeConfig.colors.primary 
+                        borderColor: safeConfig.colors.primary,
+                        width: safeConfig.banner.width || "100%",
+                        height: safeConfig.banner.height || "400px"
                       }}
                     >
                       {safeConfig.banner.image ? (
                         <img 
                           src={safeConfig.banner.image} 
                           alt="Banner" 
-                          className="w-full h-full object-cover rounded-lg"
+                          className="object-cover rounded-lg"
+                          style={{
+                            width: safeConfig.banner.width || "100%",
+                            height: safeConfig.banner.height || "400px"
+                          }}
                         />
                       ) : (
                         <span 

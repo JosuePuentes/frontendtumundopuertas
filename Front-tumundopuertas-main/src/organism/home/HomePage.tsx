@@ -27,12 +27,16 @@ interface HomeConfig {
     subtitle: string;
     image: string;
     enabled: boolean;
+    width?: string;
+    height?: string;
   };
   logo: {
     text: string;
     slogan: string;
     image: string;
     enabled: boolean;
+    width?: string;
+    height?: string;
   };
   values: {
     diseño: {
