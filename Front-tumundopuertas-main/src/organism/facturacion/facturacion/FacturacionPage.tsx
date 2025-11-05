@@ -11,7 +11,7 @@ import {
   guardarPedidoCargadoInventario as apiGuardarPedidoInventario,
   getPedidosCargadosInventario as apiGetPedidosInventario
 } from "@/lib/api";
-import { CheckCircle2, DollarSign, Receipt, Printer, FileText, RefreshCw, Search } from "lucide-react";
+import { CheckCircle2, DollarSign, Receipt, Printer, FileText, RefreshCw, Search, ChevronDown, X } from "lucide-react";
 
 interface FacturaConfirmada {
   id: string;
@@ -55,6 +55,7 @@ const FacturacionPage: React.FC = () => {
   const [confirming, setConfirming] = useState<boolean>(false);
   const [busquedaCliente, setBusquedaCliente] = useState<string>("");
   const [busquedaFacturas, setBusquedaFacturas] = useState<string>("");
+  const [dropdownFacturasOpen, setDropdownFacturasOpen] = useState<boolean>(false);
 
   const fetchPedidosFacturacion = async () => {
     setLoading(true);
@@ -1465,9 +1466,137 @@ const FacturacionPage: React.FC = () => {
   return (
     <>
     <div className="w-full max-w-[2000px] mx-auto mt-4 md:mt-8 px-4 sm:px-6 lg:px-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6 items-start">
-      {/* Sección: Pendientes de Facturar */}
-      <Card className="flex flex-col h-full max-h-[90vh]">
+      {/* Header con botón de Facturas Procesadas en la parte superior derecha */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Facturación</h1>
+        {/* Botón dropdown para Facturas Procesadas */}
+        <div className="relative">
+          <Button
+            onClick={() => setDropdownFacturasOpen(!dropdownFacturasOpen)}
+            variant="outline"
+            className="flex items-center gap-2 bg-green-50 hover:bg-green-100 border-green-300 text-green-700 font-semibold"
+          >
+            <FileText className="w-5 h-5" />
+            <span>Facturas Procesadas</span>
+            <Badge className="bg-green-600 text-white ml-2">{facturasConfirmadas.length}</Badge>
+            <ChevronDown className={`w-4 h-4 transition-transform ${dropdownFacturasOpen ? 'rotate-180' : ''}`} />
+          </Button>
+          
+          {/* Dropdown Menu */}
+          {dropdownFacturasOpen && (
+            <>
+              {/* Overlay para cerrar al hacer click fuera */}
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setDropdownFacturasOpen(false)}
+              />
+              {/* Menu dropdown */}
+              <div className="absolute right-0 mt-2 w-96 max-h-[600px] bg-white border-2 border-green-300 rounded-lg shadow-2xl z-50 overflow-hidden">
+                <div className="bg-green-600 text-white p-4 flex justify-between items-center">
+                  <h3 className="font-bold text-lg flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Facturas Procesadas ({facturasConfirmadas.length})
+                  </h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDropdownFacturasOpen(false)}
+                    className="text-white hover:bg-green-700 h-8 w-8 p-0"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                
+                {/* Buscador */}
+                <div className="p-4 border-b">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      type="text"
+                      placeholder="Buscar por cliente, factura o pedido..."
+                      value={busquedaFacturas}
+                      onChange={(e) => setBusquedaFacturas(e.target.value)}
+                      className="pl-10 w-full"
+                    />
+                  </div>
+                  {busquedaFacturas && (
+                    <div className="mt-2 text-sm text-gray-600">
+                      Mostrando {facturasFiltradas.length} de {facturasConfirmadas.length} facturas
+                    </div>
+                  )}
+                </div>
+                
+                {/* Lista de facturas */}
+                <div className="overflow-y-auto max-h-[500px]">
+                  {facturasFiltradas.length === 0 ? (
+                    <div className="text-center py-8 bg-gray-50">
+                      <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 font-medium">
+                        {busquedaFacturas ? 'No se encontraron facturas' : 'No hay facturas procesadas'}
+                      </p>
+                    </div>
+                  ) : (
+                    <ul className="p-2 space-y-2">
+                      {facturasFiltradas.map((factura) => {
+                        let fechaFormateada = 'N/A';
+                        if (factura.fechaFacturacion) {
+                          try {
+                            const fecha = new Date(factura.fechaFacturacion);
+                            if (!isNaN(fecha.getTime())) {
+                              fechaFormateada = fecha.toLocaleDateString('es-VE', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit'
+                              });
+                            }
+                          } catch (e) {
+                            console.warn('Error al formatear fecha:', e);
+                          }
+                        }
+
+                        const pedidoIdDisplay = factura.pedidoId 
+                          ? `#${factura.pedidoId.length >= 6 ? factura.pedidoId.slice(-6) : factura.pedidoId}`
+                          : 'N/A';
+
+                        const clienteNombre = factura.clienteNombre || factura.clienteId || 'Sin nombre';
+                        const montoTotal = factura.montoTotal || 0;
+                        const numeroFactura = factura.numeroFactura || 'Sin número';
+
+                        return (
+                          <li 
+                            key={factura.id || factura.pedidoId || Math.random()} 
+                            className="border border-green-200 rounded-lg bg-gradient-to-br from-white to-green-50 p-3 hover:shadow-md transition-shadow cursor-pointer"
+                            onClick={() => {
+                              handleVerPreliminar(factura);
+                              setDropdownFacturasOpen(false);
+                            }}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <Badge className="bg-green-600 text-white px-2 py-0.5 text-xs font-bold">
+                                {numeroFactura}
+                              </Badge>
+                              <span className="text-xs text-gray-500">{fechaFormateada}</span>
+                            </div>
+                            <div>
+                              <p className="font-bold text-sm text-gray-800">{clienteNombre}</p>
+                              <p className="text-xs text-gray-600">Pedido: {pedidoIdDisplay}</p>
+                              <p className="text-sm font-bold text-green-700 mt-1">${montoTotal.toFixed(2)}</p>
+                            </div>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      
+      <div className="w-full">
+      {/* Sección: Pendientes de Facturar - 3 veces más grande */}
+      <Card className="flex flex-col h-full max-h-[85vh] w-full">
         <CardHeader className="pb-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg lg:text-xl">
@@ -1818,114 +1947,12 @@ const FacturacionPage: React.FC = () => {
         )}
       </CardContent>
     </Card>
-
-      {/* Sección: Facturas Procesadas */}
-      <Card className="flex flex-col h-full max-h-[90vh]">
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 mb-3 text-base sm:text-lg lg:text-xl">
-            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 flex-shrink-0" />
-            <span className="whitespace-nowrap">Facturas Procesadas</span>
-          </CardTitle>
-          {/* Buscador en tiempo real por nombre de cliente, factura o pedido */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              type="text"
-              placeholder="Buscar por cliente, factura o pedido..."
-              value={busquedaFacturas}
-              onChange={(e) => setBusquedaFacturas(e.target.value)}
-              className="pl-10 w-full"
-            />
-            {busquedaFacturas && (
-              <div className="mt-2 text-sm text-gray-600">
-                Mostrando {facturasFiltradas.length} de {facturasConfirmadas.length} facturas
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-auto">
-          {facturasFiltradas.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 text-lg font-medium">
-                {busquedaFacturas ? 'No se encontraron facturas con esa búsqueda' : 'No hay facturas procesadas'}
-              </p>
-              <p className="text-gray-500 text-sm mt-2">
-                {busquedaFacturas ? 'Intenta con otro término o limpia la búsqueda' : 'Las facturas confirmadas aparecerán aquí'}
-              </p>
-            </div>
-          ) : (
-            <ul className="space-y-3">
-              {facturasFiltradas.map((factura) => {
-                // Validar y formatear fecha
-                let fechaFormateada = 'N/A';
-                if (factura.fechaFacturacion) {
-                  try {
-                    const fecha = new Date(factura.fechaFacturacion);
-                    if (!isNaN(fecha.getTime())) {
-                      fechaFormateada = fecha.toLocaleDateString('es-VE', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                      });
-                    }
-                  } catch (e) {
-                    console.warn('Error al formatear fecha:', e);
-                  }
-                }
-
-                // Validar pedidoId
-                const pedidoIdDisplay = factura.pedidoId 
-                  ? `#${factura.pedidoId.length >= 6 ? factura.pedidoId.slice(-6) : factura.pedidoId}`
-                  : 'N/A';
-
-                // Validar clienteNombre
-                const clienteNombre = factura.clienteNombre || factura.clienteId || 'Sin nombre';
-
-                // Validar montoTotal
-                const montoTotal = factura.montoTotal || 0;
-
-                // Validar numeroFactura
-                const numeroFactura = factura.numeroFactura || 'Sin número';
-
-                return (
-                  <li key={factura.id || factura.pedidoId || Math.random()} className="border-2 border-green-300 rounded-xl bg-gradient-to-br from-white to-green-50 shadow-lg p-3 sm:p-4 transition-all duration-300 hover:shadow-xl">
-                    <div className="flex items-center justify-between mb-3">
-                      <Badge className="bg-green-600 text-white px-3 py-1 text-sm font-bold">
-                        {numeroFactura}
-                      </Badge>
-                      <span className="text-xs text-gray-500">
-                        {fechaFormateada}
-                      </span>
-                    </div>
-                    <div className="mb-3">
-                      <h3 className="font-bold text-lg text-gray-800">{clienteNombre}</h3>
-                      <p className="text-sm text-gray-600">ID Pedido: {pedidoIdDisplay}</p>
-                    </div>
-                    <div className="mb-3">
-                      <p className="text-2xl font-bold text-green-700">${montoTotal.toFixed(2)}</p>
-                    </div>
-                    <Button 
-                      onClick={() => handleVerPreliminar(factura)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
-                      size="sm"
-                    >
-                      <FileText className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span>Ver Preliminar</span>
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
       </div>
     </div>
     
-    {/* Modal de Confirmación y Nota de Entrega */}
+    {/* Modal de Confirmación y Nota de Entrega - 3 veces más grande */}
     <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto w-[95vw]">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto w-[95vw] h-[95vh]">
         <DialogHeader>
           <DialogTitle>
             {modalAccion === 'cargar_inventario' 
