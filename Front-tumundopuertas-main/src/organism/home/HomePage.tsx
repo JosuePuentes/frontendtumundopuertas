@@ -16,7 +16,6 @@ import {
   Settings,
   Printer,
   Shield,
-  Zap,
   Star,
   Receipt
 } from "lucide-react";
@@ -76,6 +75,40 @@ interface HomeConfig {
     accent: string;
     background: string;
     text: string;
+  };
+  nosotros?: {
+    historia: string;
+    mision: string;
+    vision: string;
+    enabled: boolean;
+    titleFontSize?: string;
+    titleFontFamily?: string;
+    titleFontWeight?: string;
+    textFontSize?: string;
+    textFontFamily?: string;
+    textFontWeight?: string;
+  };
+  servicios?: {
+    items: Array<{
+      id: string;
+      title: string;
+      description: string;
+      enabled: boolean;
+    }>;
+    enabled: boolean;
+    titleFontSize?: string;
+    titleFontFamily?: string;
+    titleFontWeight?: string;
+    textFontSize?: string;
+    textFontFamily?: string;
+    textFontWeight?: string;
+  };
+  typography?: {
+    defaultFontFamily?: string;
+    defaultFontSize?: string;
+    headingFontFamily?: string;
+    headingFontSize?: string;
+    headingFontWeight?: string;
   };
 }
 
@@ -241,6 +274,35 @@ const HomePage: React.FC = () => {
             accent: "#22d3ee",
             background: "#000000",
             text: "#e5e7eb"
+        },
+        nosotros: {
+            historia: "Todo comenzó como un sueño, una idea, pero con muchas ganas...",
+            mision: "Proporcionar puertas y ventanas de alta calidad a precios competitivos...",
+            vision: "Ser la empresa líder en fabricación y distribución...",
+            enabled: true,
+            titleFontSize: "2rem",
+            titleFontFamily: "Arial, sans-serif",
+            titleFontWeight: "bold",
+            textFontSize: "1rem",
+            textFontFamily: "Arial, sans-serif",
+            textFontWeight: "normal"
+        },
+        servicios: {
+            items: [],
+            enabled: true,
+            titleFontSize: "1.5rem",
+            titleFontFamily: "Arial, sans-serif",
+            titleFontWeight: "bold",
+            textFontSize: "1rem",
+            textFontFamily: "Arial, sans-serif",
+            textFontWeight: "normal"
+        },
+        typography: {
+            defaultFontFamily: "Arial, sans-serif",
+            defaultFontSize: "1rem",
+            headingFontFamily: "Arial, sans-serif",
+            headingFontSize: "2rem",
+            headingFontWeight: "bold"
         }
     };
 
@@ -259,7 +321,9 @@ const HomePage: React.FC = () => {
                     title: config.banner.title ?? defaultConfig.banner.title,
                     subtitle: config.banner.subtitle ?? defaultConfig.banner.subtitle,
                     image: config.banner.image ?? defaultConfig.banner.image,
-                    enabled: config.banner.enabled !== undefined ? config.banner.enabled : defaultConfig.banner.enabled
+                    enabled: config.banner.enabled !== undefined ? config.banner.enabled : defaultConfig.banner.enabled,
+                    width: config.banner.width ?? defaultConfig.banner.width ?? "100%",
+                    height: config.banner.height ?? defaultConfig.banner.height ?? "400px"
                 }
                 : defaultConfig.banner,
             logo: config.logo && typeof config.logo === 'object' && !Array.isArray(config.logo)
@@ -267,7 +331,9 @@ const HomePage: React.FC = () => {
                     text: config.logo.text ?? defaultConfig.logo.text,
                     slogan: config.logo.slogan ?? defaultConfig.logo.slogan,
                     image: config.logo.image ?? defaultConfig.logo.image,
-                    enabled: config.logo.enabled !== undefined ? config.logo.enabled : defaultConfig.logo.enabled
+                    enabled: config.logo.enabled !== undefined ? config.logo.enabled : defaultConfig.logo.enabled,
+                    width: config.logo.width ?? defaultConfig.logo.width ?? "200px",
+                    height: config.logo.height ?? defaultConfig.logo.height ?? "auto"
                 }
                 : defaultConfig.logo,
             values: config.values && typeof config.values === 'object' && !Array.isArray(config.values)
@@ -308,7 +374,42 @@ const HomePage: React.FC = () => {
                     background: config.colors.background ?? defaultConfig.colors.background,
                     text: config.colors.text ?? defaultConfig.colors.text
                 }
-                : defaultConfig.colors
+                : defaultConfig.colors,
+            nosotros: config.nosotros && typeof config.nosotros === 'object' && !Array.isArray(config.nosotros)
+                ? {
+                    historia: config.nosotros.historia ?? defaultConfig.nosotros!.historia,
+                    mision: config.nosotros.mision ?? defaultConfig.nosotros!.mision,
+                    vision: config.nosotros.vision ?? defaultConfig.nosotros!.vision,
+                    enabled: config.nosotros.enabled !== undefined ? config.nosotros.enabled : defaultConfig.nosotros!.enabled,
+                    titleFontSize: config.nosotros.titleFontSize ?? defaultConfig.nosotros!.titleFontSize,
+                    titleFontFamily: config.nosotros.titleFontFamily ?? defaultConfig.nosotros!.titleFontFamily,
+                    titleFontWeight: config.nosotros.titleFontWeight ?? defaultConfig.nosotros!.titleFontWeight,
+                    textFontSize: config.nosotros.textFontSize ?? defaultConfig.nosotros!.textFontSize,
+                    textFontFamily: config.nosotros.textFontFamily ?? defaultConfig.nosotros!.textFontFamily,
+                    textFontWeight: config.nosotros.textFontWeight ?? defaultConfig.nosotros!.textFontWeight
+                }
+                : defaultConfig.nosotros!,
+            servicios: config.servicios && typeof config.servicios === 'object' && !Array.isArray(config.servicios)
+                ? {
+                    items: Array.isArray(config.servicios.items) ? config.servicios.items : defaultConfig.servicios!.items,
+                    enabled: config.servicios.enabled !== undefined ? config.servicios.enabled : defaultConfig.servicios!.enabled,
+                    titleFontSize: config.servicios.titleFontSize ?? defaultConfig.servicios!.titleFontSize,
+                    titleFontFamily: config.servicios.titleFontFamily ?? defaultConfig.servicios!.titleFontFamily,
+                    titleFontWeight: config.servicios.titleFontWeight ?? defaultConfig.servicios!.titleFontWeight,
+                    textFontSize: config.servicios.textFontSize ?? defaultConfig.servicios!.textFontSize,
+                    textFontFamily: config.servicios.textFontFamily ?? defaultConfig.servicios!.textFontFamily,
+                    textFontWeight: config.servicios.textFontWeight ?? defaultConfig.servicios!.textFontWeight
+                }
+                : defaultConfig.servicios!,
+            typography: config.typography && typeof config.typography === 'object' && !Array.isArray(config.typography)
+                ? {
+                    defaultFontFamily: config.typography.defaultFontFamily ?? defaultConfig.typography!.defaultFontFamily,
+                    defaultFontSize: config.typography.defaultFontSize ?? defaultConfig.typography!.defaultFontSize,
+                    headingFontFamily: config.typography.headingFontFamily ?? defaultConfig.typography!.headingFontFamily,
+                    headingFontSize: config.typography.headingFontSize ?? defaultConfig.typography!.headingFontSize,
+                    headingFontWeight: config.typography.headingFontWeight ?? defaultConfig.typography!.headingFontWeight
+                }
+                : defaultConfig.typography!
         };
     }, [config]);
 
@@ -602,8 +703,8 @@ const HomePage: React.FC = () => {
                                     <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 sm:mb-8 md:mb-10" style={{ color: safeConfig.colors.text }}>{safeConfig.banner.title}</h2>
                                     <p className="mb-6 sm:mb-8 md:mb-12 text-lg sm:text-xl md:text-2xl" style={{ color: safeConfig.colors.text }}>{safeConfig.banner.subtitle}</p>
                                     {safeConfig.banner.image && (
-                                        <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] bg-gradient-to-r from-gray-600 to-gray-700 border-2 rounded-lg flex items-center justify-center overflow-hidden" style={{ borderColor: safeConfig.colors.primary }}>
-                                            <img src={safeConfig.banner.image} alt="Banner" className="w-full h-full object-cover rounded-lg" />
+                                        <div className="w-full bg-gradient-to-r from-gray-600 to-gray-700 border-2 rounded-lg flex items-center justify-center overflow-hidden mx-auto" style={{ borderColor: safeConfig.colors.primary, width: safeConfig.banner.width || "100%", height: safeConfig.banner.height || "400px" }}>
+                                            <img src={safeConfig.banner.image} alt="Banner" className="w-full h-full object-cover rounded-lg" style={{ width: safeConfig.banner.width || "100%", height: safeConfig.banner.height || "400px" }} />
                                         </div>
                                     )}
                                 </div>
@@ -639,151 +740,128 @@ const HomePage: React.FC = () => {
                 </section>
 
                 {/* Nosotros Section - Misión y Visión */}
-                <section id="nosotros" className="relative z-10 py-20 px-4 sm:px-6">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: safeConfig.colors.text }}>Nosotros</h2>
-                            <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${safeConfig.colors.primary}, transparent)` }}></div>
-                        </div>
-                        
-                        {/* Historia */}
-                        <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-12 mb-8 backdrop-blur-sm" style={{ borderColor: safeConfig.colors.primary }}>
-                            <h3 className="text-2xl sm:text-3xl font-bold mb-4 text-center" style={{ color: safeConfig.colors.primary }}>Nuestra Historia</h3>
-                            <p className="text-base sm:text-lg leading-relaxed text-center" style={{ color: safeConfig.colors.text }}>
-                                Todo comenzó como un sueño, una idea, pero con muchas ganas. Con el paso de los años, hemos logrado consolidarnos 
-                                como líderes en el mercado de puertas y ventanas, acumulando más de <strong style={{ color: safeConfig.colors.primary }}>10 años de experiencia</strong> 
-                                en el sector. Nos hemos posicionado firmemente en nuestra región y estamos abriendo caminos en todo el territorio nacional.
-                            </p>
-                        </div>
-
-                        {/* Grid de Misión y Visión */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                            {/* Misión */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
-                                <div className="text-center mb-4">
-                                    <Shield className="w-16 h-16 mx-auto mb-4" style={{ color: safeConfig.colors.primary }} />
-                                    <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: safeConfig.colors.primary }}>Nuestra Misión</h3>
-                                </div>
-                                <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
-                                    Proporcionar puertas y ventanas de alta calidad a precios competitivos, fabricando productos personalizados 
-                                    en tiempo récord. Nos comprometemos a ofrecer el mejor precio del mercado sin comprometer la excelencia en 
-                                    calidad, asegurando que cada producto brinde seguridad y satisfacción a nuestros clientes.
+                {safeConfig.nosotros && safeConfig.nosotros.enabled && (
+                    <section id="nosotros" className="relative z-10 py-20 px-4 sm:px-6" style={{ fontFamily: safeConfig.typography?.defaultFontFamily }}>
+                        <div className="max-w-6xl mx-auto">
+                            <div className="text-center mb-12">
+                                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ 
+                                    color: safeConfig.colors.text,
+                                    fontFamily: safeConfig.typography?.headingFontFamily || safeConfig.nosotros.titleFontFamily,
+                                    fontSize: safeConfig.typography?.headingFontSize || safeConfig.nosotros.titleFontSize,
+                                    fontWeight: safeConfig.typography?.headingFontWeight || safeConfig.nosotros.titleFontWeight
+                                }}>Nosotros</h2>
+                                <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${safeConfig.colors.primary}, transparent)` }}></div>
+                            </div>
+                            
+                            {/* Historia */}
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-12 mb-8 backdrop-blur-sm" style={{ borderColor: safeConfig.colors.primary }}>
+                                <h3 className="text-2xl sm:text-3xl font-bold mb-4 text-center" style={{ 
+                                    color: safeConfig.colors.primary,
+                                    fontFamily: safeConfig.nosotros.titleFontFamily,
+                                    fontSize: safeConfig.nosotros.titleFontSize,
+                                    fontWeight: safeConfig.nosotros.titleFontWeight
+                                }}>Nuestra Historia</h3>
+                                <p className="text-base sm:text-lg leading-relaxed text-center" style={{ 
+                                    color: safeConfig.colors.text,
+                                    fontFamily: safeConfig.nosotros.textFontFamily,
+                                    fontSize: safeConfig.nosotros.textFontSize,
+                                    fontWeight: safeConfig.nosotros.textFontWeight
+                                }}>
+                                    {safeConfig.nosotros.historia || "Todo comenzó como un sueño, una idea, pero con muchas ganas..."}
                                 </p>
                             </div>
 
-                            {/* Visión */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
-                                <div className="text-center mb-4">
-                                    <Star className="w-16 h-16 mx-auto mb-4" style={{ color: safeConfig.colors.primary }} />
-                                    <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: safeConfig.colors.primary }}>Nuestra Visión</h3>
+                            {/* Grid de Misión y Visión */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                                {/* Misión */}
+                                <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
+                                    <div className="text-center mb-4">
+                                        <Shield className="w-16 h-16 mx-auto mb-4" style={{ color: safeConfig.colors.primary }} />
+                                        <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ 
+                                            color: safeConfig.colors.primary,
+                                            fontFamily: safeConfig.nosotros.titleFontFamily,
+                                            fontSize: safeConfig.nosotros.titleFontSize,
+                                            fontWeight: safeConfig.nosotros.titleFontWeight
+                                        }}>Nuestra Misión</h3>
+                                    </div>
+                                    <p className="text-base sm:text-lg leading-relaxed" style={{ 
+                                        color: safeConfig.colors.text,
+                                        fontFamily: safeConfig.nosotros.textFontFamily,
+                                        fontSize: safeConfig.nosotros.textFontSize,
+                                        fontWeight: safeConfig.nosotros.textFontWeight
+                                    }}>
+                                        {safeConfig.nosotros.mision || "Proporcionar puertas y ventanas de alta calidad a precios competitivos..."}
+                                    </p>
                                 </div>
-                                <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
-                                    Ser la empresa líder en fabricación y distribución de puertas y ventanas a nivel nacional, reconocida por 
-                                    nuestra capacidad de envío a todo el territorio, tiempos de fabricación récord, precios competitivos y, 
-                                    sobre todo, por la calidad excepcional que garantiza la seguridad y confianza de nuestros clientes en 
-                                    cada uno de nuestros productos.
-                                </p>
-                            </div>
-                        </div>
 
-                        {/* Valores destacados */}
-                        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${safeConfig.colors.primary}50` }}>
-                                <Zap className="w-10 h-10 mx-auto mb-2" style={{ color: safeConfig.colors.primary }} />
-                                <h4 className="text-lg font-bold mb-2" style={{ color: safeConfig.colors.primary }}>Fabricación Rápida</h4>
-                                <p className="text-sm" style={{ color: safeConfig.colors.text }}>Tiempo récord en producción</p>
-                            </div>
-                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${safeConfig.colors.primary}50` }}>
-                                <Star className="w-10 h-10 mx-auto mb-2" style={{ color: safeConfig.colors.primary }} />
-                                <h4 className="text-lg font-bold mb-2" style={{ color: safeConfig.colors.primary }}>Mejor Precio</h4>
-                                <p className="text-sm" style={{ color: safeConfig.colors.text }}>Competitivos en el mercado</p>
-                            </div>
-                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${safeConfig.colors.primary}50` }}>
-                                <Shield className="w-10 h-10 mx-auto mb-2" style={{ color: safeConfig.colors.primary }} />
-                                <h4 className="text-lg font-bold mb-2" style={{ color: safeConfig.colors.primary }}>Alta Calidad</h4>
-                                <p className="text-sm" style={{ color: safeConfig.colors.text }}>Seguridad garantizada</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Servicios Section */}
-                <section id="servicios" className="relative z-10 py-20 px-4 sm:px-6 bg-gray-800/30">
-                    <div className="max-w-6xl mx-auto">
-                        <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: safeConfig.colors.text }}>Nuestros Servicios</h2>
-                            <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${safeConfig.colors.primary}, transparent)` }}></div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-                            {/* Servicio 1 */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
-                                <div className="flex items-start space-x-4">
-                                    <div className="flex-shrink-0">
-                                        <ShoppingCart className="w-12 h-12" style={{ color: safeConfig.colors.primary }} />
+                                {/* Visión */}
+                                <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
+                                    <div className="text-center mb-4">
+                                        <Star className="w-16 h-16 mx-auto mb-4" style={{ color: safeConfig.colors.primary }} />
+                                        <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ 
+                                            color: safeConfig.colors.primary,
+                                            fontFamily: safeConfig.nosotros.titleFontFamily,
+                                            fontSize: safeConfig.nosotros.titleFontSize,
+                                            fontWeight: safeConfig.nosotros.titleFontWeight
+                                        }}>Nuestra Visión</h3>
                                     </div>
-                                    <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: safeConfig.colors.primary }}>Venta de Puertas y Ventanas</h3>
-                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
-                                            Ofrecemos una amplia variedad de puertas y ventanas a los mejores precios del mercado. 
-                                            Todos nuestros productos son seleccionados cuidadosamente para garantizar la mejor relación 
-                                            calidad-precio para nuestros clientes.
-                                        </p>
-                                    </div>
+                                    <p className="text-base sm:text-lg leading-relaxed" style={{ 
+                                        color: safeConfig.colors.text,
+                                        fontFamily: safeConfig.nosotros.textFontFamily,
+                                        fontSize: safeConfig.nosotros.textFontSize,
+                                        fontWeight: safeConfig.nosotros.textFontWeight
+                                    }}>
+                                        {safeConfig.nosotros.vision || "Ser la empresa líder en fabricación y distribución..."}
+                                    </p>
                                 </div>
                             </div>
-
-                            {/* Servicio 2 */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
-                                <div className="flex items-start space-x-4">
-                                    <div className="flex-shrink-0">
-                                        <Package className="w-12 h-12" style={{ color: safeConfig.colors.primary }} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: safeConfig.colors.primary }}>Fabricación a Medida</h3>
-                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
-                                            Si necesitas medidas especiales, las fabricamos para ti. Trabajamos en tiempo récord sin 
-                                            comprometer la calidad. Cada producto personalizado es fabricado con los más altos estándares 
-                                            de calidad y seguridad.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Servicio 3 */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
-                                <div className="flex items-start space-x-4">
-                                    <div className="flex-shrink-0">
-                                        <Zap className="w-12 h-12" style={{ color: safeConfig.colors.primary }} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: safeConfig.colors.primary }}>Tiempo Récord</h3>
-                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
-                                            Entendemos la urgencia de nuestros clientes. Por eso, fabricamos tus productos en el menor 
-                                            tiempo posible, siempre manteniendo los más altos estándares de calidad y seguridad.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Servicio 4 */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
-                                <div className="flex items-start space-x-4">
-                                    <div className="flex-shrink-0">
-                                        <Star className="w-12 h-12" style={{ color: safeConfig.colors.primary }} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: safeConfig.colors.primary }}>Mejor Precio del Mercado</h3>
-                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
-                                            Ofrecemos los mejores precios sin sacrificar calidad. Nuestro compromiso es brindarte 
-                                            productos de alta calidad a precios competitivos que se ajusten a tu presupuesto.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                         </div>
                     </section>
+                )}
+
+                {/* Servicios Section */}
+                {safeConfig.servicios && safeConfig.servicios.enabled && (
+                    <section id="servicios" className="relative z-10 py-20 px-4 sm:px-6 bg-gray-800/30" style={{ fontFamily: safeConfig.typography?.defaultFontFamily }}>
+                        <div className="max-w-6xl mx-auto">
+                            <div className="text-center mb-12">
+                                <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ 
+                                    color: safeConfig.colors.text,
+                                    fontFamily: safeConfig.typography?.headingFontFamily || safeConfig.servicios.titleFontFamily,
+                                    fontSize: safeConfig.typography?.headingFontSize || safeConfig.servicios.titleFontSize,
+                                    fontWeight: safeConfig.typography?.headingFontWeight || safeConfig.servicios.titleFontWeight
+                                }}>Nuestros Servicios</h2>
+                                <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${safeConfig.colors.primary}, transparent)` }}></div>
+                            </div>
+
+                            {safeConfig.servicios.items && safeConfig.servicios.items.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                                    {safeConfig.servicios.items.filter(item => item && item.enabled).map((servicio) => (
+                                        <div key={servicio.id} className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
+                                            <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ 
+                                                color: safeConfig.colors.primary,
+                                                fontFamily: safeConfig.servicios?.titleFontFamily,
+                                                fontSize: safeConfig.servicios?.titleFontSize,
+                                                fontWeight: safeConfig.servicios?.titleFontWeight
+                                            }}>{servicio.title}</h3>
+                                            <p className="text-base sm:text-lg leading-relaxed" style={{ 
+                                                color: safeConfig.colors.text,
+                                                fontFamily: safeConfig.servicios?.textFontFamily,
+                                                fontSize: safeConfig.servicios?.textFontSize,
+                                                fontWeight: safeConfig.servicios?.textFontWeight
+                                            }}>
+                                                {servicio.description}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <p style={{ color: safeConfig.colors.text }}>No hay servicios disponibles.</p>
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
 
                 {/* Contact Section */}
                 <section id="contacto" className="relative z-10 py-20 px-4 sm:px-6">
