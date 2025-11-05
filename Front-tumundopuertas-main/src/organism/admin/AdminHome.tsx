@@ -647,6 +647,10 @@ const AdminHome: React.FC = () => {
           if (!data.config.banner) data.config.banner = {};
           data.config.banner.image = configToSave.banner.image;
           data.config.banner.url = configToSave.banner.image;
+          console.log('✅ Banner image preservada en data.config.banner:', {
+            tieneImage: !!data.config.banner.image,
+            longitud: data.config.banner.image?.length || 0
+          });
         }
         
         if (savedLogoImage > 100 && logoUrl) {
@@ -690,16 +694,20 @@ const AdminHome: React.FC = () => {
               subtitle: backendBanner?.subtitle ?? savedBanner.subtitle ?? '',
               // Priorizar imagen del backend (ya que ahora las retorna correctamente)
               // El backend puede usar 'url' o 'image', normalizamos a 'image'
+              // NOTA: Si preservamos la imagen en data.config.banner.image antes, backendBanner la tendrá
               image: (() => {
                 const bannerUrl = backendBanner?.url || backendBanner?.image || '';
                 // Priorizar la respuesta del backend si tiene imagen válida
                 if (bannerUrl && bannerUrl.length > 100) {
+                  console.log('✅ Usando imagen del backend (banner):', bannerUrl.length, 'caracteres');
                   return bannerUrl;
                 }
                 // Fallback: usar la imagen que enviamos si el backend no la retornó
                 if (savedBanner.image && savedBanner.image.length > 100) {
+                  console.log('✅ Usando imagen preservada (banner):', savedBanner.image.length, 'caracteres');
                   return savedBanner.image;
                 }
+                console.warn('⚠️ No hay imagen válida para banner');
                 return '';
               })(),
               enabled: backendBanner?.enabled !== undefined ? backendBanner.enabled : (savedBanner.enabled !== undefined ? savedBanner.enabled : true),
