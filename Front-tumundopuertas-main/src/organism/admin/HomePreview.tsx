@@ -252,63 +252,75 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           )}
 
           {/* Values Section */}
-          <section className="relative z-10 py-20 px-6">
-            <div className="max-w-6xl mx-auto">
-              <div 
-                className="w-full h-px mb-16"
-                style={{ 
-                  background: `linear-gradient(to right, transparent, ${config.colors.primary}, transparent)` 
-                }}
-              ></div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                {Object.entries(config.values).map(([key, value]) => {
-                  const IconComponent = getIconComponent(value.icon);
-                  return (
-                    <div key={key} className="text-center group">
-                      <div 
-                        className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center border group-hover:border-opacity-60 transition-all duration-300"
-                        style={{ 
-                          backgroundColor: `${config.colors.primary}20`,
-                          borderColor: `${config.colors.primary}30`
-                        }}
-                      >
-                        <IconComponent 
-                          className="w-10 h-10" 
-                          style={{ color: config.colors.primary }} 
-                        />
-                      </div>
-                      <h3 
-                        className="text-2xl font-bold mb-3"
-                        style={{ color: config.colors.text }}
-                      >
-                        {value.title}
-                      </h3>
-                      <p 
-                        className="text-lg"
-                        style={{ color: config.colors.text }}
-                      >
-                        {value.description}
-                      </p>
-                    </div>
-                  );
-                })}
+          {config.values && typeof config.values === 'object' && !Array.isArray(config.values) && (
+            <section className="relative z-10 py-20 px-6">
+              <div className="max-w-6xl mx-auto">
+                <div 
+                  className="w-full h-px mb-16"
+                  style={{ 
+                    background: `linear-gradient(to right, transparent, ${config.colors.primary}, transparent)` 
+                  }}
+                ></div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                  {Object.entries(config.values)
+                    .filter(([key, value]) => 
+                      value && 
+                      typeof value === 'object' && 
+                      !Array.isArray(value) &&
+                      'title' in value &&
+                      'description' in value &&
+                      'icon' in value
+                    )
+                    .map(([key, value]: [string, any]) => {
+                      const IconComponent = getIconComponent(value.icon);
+                      return (
+                        <div key={key} className="text-center group">
+                          <div 
+                            className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center border group-hover:border-opacity-60 transition-all duration-300"
+                            style={{ 
+                              backgroundColor: `${config.colors.primary}20`,
+                              borderColor: `${config.colors.primary}30`
+                            }}
+                          >
+                            <IconComponent 
+                              className="w-10 h-10" 
+                              style={{ color: config.colors.primary }} 
+                            />
+                          </div>
+                          <h3 
+                            className="text-2xl font-bold mb-3"
+                            style={{ color: config.colors.text }}
+                          >
+                            {value.title || ''}
+                          </h3>
+                          <p 
+                            className="text-lg"
+                            style={{ color: config.colors.text }}
+                          >
+                            {value.description || ''}
+                          </p>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Product Gallery Section */}
-          <section className="relative z-10 py-20 px-6">
-            <div className="max-w-6xl mx-auto">
-              <h2 
-                className="text-4xl font-bold text-center mb-12"
-                style={{ color: config.colors.text }}
-              >
-                {config.products.title}
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {config.products.items.filter(item => item.enabled).map((product) => (
+          {config.products && typeof config.products === 'object' && !Array.isArray(config.products) && (
+            <section className="relative z-10 py-20 px-6">
+              <div className="max-w-6xl mx-auto">
+                <h2 
+                  className="text-4xl font-bold text-center mb-12"
+                  style={{ color: config.colors.text }}
+                >
+                  {config.products.title || 'Productos'}
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {(Array.isArray(config.products.items) ? config.products.items : []).filter(item => item && item.enabled).map((product) => (
                   <div 
                     key={product.id}
                     className="border-2 rounded-lg p-6 backdrop-blur-sm group hover:border-opacity-100 transition-all duration-300"
@@ -361,10 +373,11 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                       Ver Más
                     </Button>
                   </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          )}
 
           {/* Contact Section */}
           {config.contact.enabled && (

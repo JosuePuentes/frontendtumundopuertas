@@ -281,7 +281,9 @@ const HomePage: React.FC = () => {
                 : defaultConfig.values,
             products: config.products && typeof config.products === 'object' && !Array.isArray(config.products)
                 ? {
-                    title: config.products.title ?? defaultConfig.products.title,
+                    title: (config.products.title !== undefined && config.products.title !== null) 
+                        ? config.products.title 
+                        : defaultConfig.products.title,
                     items: Array.isArray(config.products.items) 
                         ? config.products.items 
                         : (defaultConfig.products.items || [])
