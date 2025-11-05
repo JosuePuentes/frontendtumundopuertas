@@ -633,29 +633,34 @@ const AdminHome: React.FC = () => {
         });
         console.log('  Productos con imagen:', savedProductImages);
         
-        // Si las imágenes no están en la respuesta, usar las que enviamos
-        // Normalizar: usar 'image' internamente, pero aceptar 'url' del backend
-        if (savedBannerImage < 100 && configToSave.banner.image && configToSave.banner.image.length > 100) {
-          console.warn('⚠️ Banner image no está en la respuesta del backend, usando la enviada');
-          if (!data.config.banner) data.config.banner = {};
-          // El backend puede usar 'url', pero nosotros usamos 'image' internamente
-          data.config.banner.image = configToSave.banner.image;
-          data.config.banner.url = configToSave.banner.image; // También establecer 'url' para compatibilidad
-        } else if (savedBannerImage > 100 && bannerUrl) {
-          // Si el backend retornó 'url', copiarlo a 'image' para consistencia
+        // Normalizar: el backend puede usar 'url' o 'image', normalizamos a 'image' internamente
+        // Ahora que el backend retorna las imágenes correctamente, priorizamos la respuesta del backend
+        if (savedBannerImage > 100 && bannerUrl) {
+          // Si el backend retornó la imagen (en 'url' o 'image'), normalizarla a 'image'
           if (!data.config.banner) data.config.banner = {};
           data.config.banner.image = bannerUrl;
+          // Mantener también 'url' para compatibilidad con el backend
+          if (!data.config.banner.url) data.config.banner.url = bannerUrl;
+        } else if (savedBannerImage < 100 && configToSave.banner.image && configToSave.banner.image.length > 100) {
+          // Fallback: si el backend no retornó la imagen, usar la que enviamos
+          console.warn('⚠️ Banner image no está en la respuesta del backend, usando la enviada');
+          if (!data.config.banner) data.config.banner = {};
+          data.config.banner.image = configToSave.banner.image;
+          data.config.banner.url = configToSave.banner.image;
         }
         
-        if (savedLogoImage < 100 && configToSave.logo.image && configToSave.logo.image.length > 100) {
+        if (savedLogoImage > 100 && logoUrl) {
+          // Si el backend retornó la imagen (en 'url' o 'image'), normalizarla a 'image'
+          if (!data.config.logo) data.config.logo = {};
+          data.config.logo.image = logoUrl;
+          // Mantener también 'url' para compatibilidad con el backend
+          if (!data.config.logo.url) data.config.logo.url = logoUrl;
+        } else if (savedLogoImage < 100 && configToSave.logo.image && configToSave.logo.image.length > 100) {
+          // Fallback: si el backend no retornó la imagen, usar la que enviamos
           console.warn('⚠️ Logo image no está en la respuesta del backend, usando la enviada');
           if (!data.config.logo) data.config.logo = {};
           data.config.logo.image = configToSave.logo.image;
-          data.config.logo.url = configToSave.logo.image; // También establecer 'url' para compatibilidad
-        } else if (savedLogoImage > 100 && logoUrl) {
-          // Si el backend retornó 'url', copiarlo a 'image' para consistencia
-          if (!data.config.logo) data.config.logo = {};
-          data.config.logo.image = logoUrl;
+          data.config.logo.url = configToSave.logo.image;
         }
       }
       
@@ -672,42 +677,72 @@ const AdminHome: React.FC = () => {
           banner: {
             ...configToSave.banner,
             ...(data.config.banner || {}),
-            // Preservar imagen si la respuesta no la tiene pero la enviamos
+            // Priorizar imagen del backend (ya que ahora las retorna correctamente)
             // El backend puede usar 'url' o 'image', normalizamos a 'image'
             image: (() => {
               const bannerUrl = data.config.banner?.url || data.config.banner?.image || '';
-              if (bannerUrl && bannerUrl.length > 100) return bannerUrl;
-              if (configToSave.banner.image && configToSave.banner.image.length > 100) return configToSave.banner.image;
+              // Priorizar la respuesta del backend si tiene imagen válida
+              if (bannerUrl && bannerUrl.length > 100) {
+                return bannerUrl;
+              }
+              // Fallback: usar la imagen que enviamos si el backend no la retornó
+              if (configToSave.banner.image && configToSave.banner.image.length > 100) {
+                return configToSave.banner.image;
+              }
               return '';
-            })()
+            })(),
+            // Preservar width y height del backend si están presentes
+            width: data.config.banner?.width || configToSave.banner.width || "100%",
+            height: data.config.banner?.height || configToSave.banner.height || "400px"
           },
           logo: {
             ...configToSave.logo,
             ...(data.config.logo || {}),
-            // Preservar imagen si la respuesta no la tiene pero la enviamos
+            // Priorizar imagen del backend (ya que ahora las retorna correctamente)
             // El backend puede usar 'url' o 'image', normalizamos a 'image'
             image: (() => {
               const logoUrl = data.config.logo?.url || data.config.logo?.image || '';
-              if (logoUrl && logoUrl.length > 100) return logoUrl;
-              if (configToSave.logo.image && configToSave.logo.image.length > 100) return configToSave.logo.image;
+              // Priorizar la respuesta del backend si tiene imagen válida
+              if (logoUrl && logoUrl.length > 100) {
+                return logoUrl;
+              }
+              // Fallback: usar la imagen que enviamos si el backend no la retornó
+              if (configToSave.logo.image && configToSave.logo.image.length > 100) {
+                return configToSave.logo.image;
+              }
               return '';
-            })()
+            })(),
+            // Preservar width y height del backend si están presentes
+            width: data.config.logo?.width || configToSave.logo.width || "200px",
+            height: data.config.logo?.height || configToSave.logo.height || "auto"
           },
-          products: {
-            title: data.config.products?.title || configToSave.products.title || 'Productos',
-            items: (data.config.products?.items || configToSave.products.items || []).map((item: any, index: number) => ({
-              ...item,
-              // Preservar imagen si la respuesta no la tiene pero la enviamos
-              // El backend puede usar 'url' o 'image', normalizamos a 'image'
-              image: (() => {
-                const productImage = item.image || item.url || '';
-                if (productImage && productImage.length > 100) return productImage;
-                const savedImage = configToSave.products.items[index]?.image || '';
-                if (savedImage && savedImage.length > 100) return savedImage;
-                return '';
-              })()
-            }))
-          },
+          products: (() => {
+            // Validación defensiva: asegurar que products es un objeto válido
+            const backendProducts = data.config.products && typeof data.config.products === 'object' && !Array.isArray(data.config.products)
+              ? data.config.products
+              : null;
+            const savedProducts = configToSave.products && typeof configToSave.products === 'object' && !Array.isArray(configToSave.products)
+              ? configToSave.products
+              : { title: 'Productos', items: [] };
+            
+            return {
+              title: backendProducts?.title || savedProducts.title || 'Productos',
+              items: (Array.isArray(backendProducts?.items) ? backendProducts.items : (Array.isArray(savedProducts.items) ? savedProducts.items : [])).map((item: any, index: number) => ({
+                ...item,
+                // Priorizar imagen del backend (ya que ahora las retorna correctamente)
+                // El backend puede usar 'url' o 'image', normalizamos a 'image'
+                image: (() => {
+                  const productImage = item.image || item.url || '';
+                  // Priorizar la imagen del backend si es válida
+                  if (productImage && productImage.length > 100) return productImage;
+                  // Fallback: usar la imagen que enviamos si el backend no la retornó
+                  const savedImage = savedProducts.items[index]?.image || '';
+                  if (savedImage && savedImage.length > 100) return savedImage;
+                  return '';
+                })()
+              }))
+            };
+          })(),
           // Asegurar que todos los campos requeridos estén presentes
           values: data.config.values || configToSave.values,
           contact: {

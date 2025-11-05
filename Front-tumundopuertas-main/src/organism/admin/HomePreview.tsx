@@ -285,7 +285,7 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           </header>
 
           {/* Banner Section */}
-          {config.banner.enabled && (
+          {safeConfig.banner.enabled && (
             <section className="relative z-10 py-12 px-6">
               <div className="max-w-7xl mx-auto">
                 <div 
@@ -300,13 +300,13 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                       className="text-4xl font-bold mb-6"
                       style={{ color: safeConfig.colors.text }}
                     >
-                      {config.banner.title}
+                      {safeConfig.banner.title}
                     </h2>
                     <p 
                       className="mb-8 text-lg"
                       style={{ color: safeConfig.colors.text }}
                     >
-                      {config.banner.subtitle}
+                      {safeConfig.banner.subtitle}
                     </p>
                     <div 
                       className="rounded-lg flex items-center justify-center border-2"
