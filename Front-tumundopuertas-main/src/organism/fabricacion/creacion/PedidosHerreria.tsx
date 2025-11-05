@@ -287,11 +287,12 @@ const PedidosHerreria: React.FC = () => {
     }
   }, [dataEmpleados]);
 
-  // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
+  // Actualización automática cada 5 minutos
   useEffect(() => {
     const interval = setInterval(() => {
+      console.log("🔄 Actualizando PedidosHerreria automáticamente...");
       recargarDatos();
-    }, 10 * 60 * 1000); // 10 minutos en milisegundos
+    }, 5 * 60 * 1000); // 5 minutos en milisegundos
 
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);

@@ -300,6 +300,18 @@ const DashboardAsignaciones: React.FC = () => {
     cargarEmpleados();
   }, []);
 
+  // Actualización automática cada 5 minutos
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("🔄 Actualizando DashboardAsignaciones automáticamente...");
+      cargarAsignaciones();
+      cargarEmpleados();
+    }, 5 * 60 * 1000); // 5 minutos en milisegundos
+
+    // Limpiar el intervalo cuando el componente se desmonte
+    return () => clearInterval(interval);
+  }, []);
+
   // NUEVO: Escuchar eventos de asignación realizada
   useEffect(() => {
     const handleAsignacionRealizada = (event: Event) => {

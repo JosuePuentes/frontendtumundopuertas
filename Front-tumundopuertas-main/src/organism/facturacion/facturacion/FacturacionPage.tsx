@@ -705,6 +705,17 @@ const FacturacionPage: React.FC = () => {
     fetchPedidosFacturacion();
   }, [facturasConfirmadas, pedidosCargadosInventario]);
 
+  // Actualización automática cada 5 minutos para "Pendientes de Facturar"
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("🔄 Actualizando Facturación (Pendientes de Facturar) automáticamente...");
+      fetchPedidosFacturacion();
+    }, 5 * 60 * 1000); // 5 minutos en milisegundos
+
+    // Limpiar el intervalo cuando el componente se desmonte
+    return () => clearInterval(interval);
+  }, []);
+
   // Filtrar pedidos por nombre de cliente en tiempo real y mantener orden por fecha más reciente
   const facturacionFiltrada = useMemo(() => {
     let pedidos = facturacion;
