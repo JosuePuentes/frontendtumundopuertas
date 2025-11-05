@@ -348,7 +348,8 @@ const HomePage: React.FC = () => {
                 ? {
                     title: config.banner.title ?? defaultConfig.banner.title,
                     subtitle: config.banner.subtitle ?? defaultConfig.banner.subtitle,
-                    image: config.banner.image ?? defaultConfig.banner.image,
+                    // El backend puede usar 'url' o 'image', normalizamos a 'image'
+                    image: (config.banner as any).url || config.banner.image || defaultConfig.banner.image,
                     enabled: config.banner.enabled !== undefined ? config.banner.enabled : defaultConfig.banner.enabled,
                     width: config.banner.width ?? defaultConfig.banner.width ?? "100%",
                     height: config.banner.height ?? defaultConfig.banner.height ?? "400px"
@@ -358,7 +359,8 @@ const HomePage: React.FC = () => {
                 ? {
                     text: config.logo.text ?? defaultConfig.logo.text,
                     slogan: config.logo.slogan ?? defaultConfig.logo.slogan,
-                    image: config.logo.image ?? defaultConfig.logo.image,
+                    // El backend puede usar 'url' o 'image', normalizamos a 'image'
+                    image: (config.logo as any).url || config.logo.image || defaultConfig.logo.image,
                     enabled: config.logo.enabled !== undefined ? config.logo.enabled : defaultConfig.logo.enabled,
                     width: config.logo.width ?? defaultConfig.logo.width ?? "200px",
                     height: config.logo.height ?? defaultConfig.logo.height ?? "auto"
@@ -383,7 +385,11 @@ const HomePage: React.FC = () => {
                         ? config.products.title 
                         : defaultConfig.products.title,
                     items: Array.isArray(config.products.items) 
-                        ? config.products.items 
+                        ? config.products.items.map((item: any) => ({
+                            ...item,
+                            // El backend puede usar 'url' o 'image', normalizamos a 'image'
+                            image: item.url || item.image || ''
+                        }))
                         : (defaultConfig.products.items || [])
                 }
                 : defaultConfig.products,
