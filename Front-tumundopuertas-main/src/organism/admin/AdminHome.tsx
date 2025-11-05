@@ -179,7 +179,61 @@ const AdminHome: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.config) {
-            setConfig(data.config);
+            // Normalizar la configuración para asegurar que todos los campos existan
+            const normalizedConfig: HomeConfig = {
+              banner: data.config.banner && typeof data.config.banner === 'object' && !Array.isArray(data.config.banner)
+                ? {
+                    title: data.config.banner.title ?? config.banner.title,
+                    subtitle: data.config.banner.subtitle ?? config.banner.subtitle,
+                    image: data.config.banner.image ?? config.banner.image,
+                    enabled: data.config.banner.enabled !== undefined ? data.config.banner.enabled : config.banner.enabled
+                  }
+                : config.banner,
+              logo: data.config.logo && typeof data.config.logo === 'object' && !Array.isArray(data.config.logo)
+                ? {
+                    text: data.config.logo.text ?? config.logo.text,
+                    slogan: data.config.logo.slogan ?? config.logo.slogan,
+                    image: data.config.logo.image ?? config.logo.image,
+                    enabled: data.config.logo.enabled !== undefined ? data.config.logo.enabled : config.logo.enabled
+                  }
+                : config.logo,
+              values: data.config.values && typeof data.config.values === 'object' && !Array.isArray(data.config.values)
+                ? {
+                    diseño: (data.config.values.diseño && typeof data.config.values.diseño === 'object' && !Array.isArray(data.config.values.diseño))
+                      ? data.config.values.diseño
+                      : config.values.diseño,
+                    calidad: (data.config.values.calidad && typeof data.config.values.calidad === 'object' && !Array.isArray(data.config.values.calidad))
+                      ? data.config.values.calidad
+                      : config.values.calidad,
+                    proteccion: (data.config.values.proteccion && typeof data.config.values.proteccion === 'object' && !Array.isArray(data.config.values.proteccion))
+                      ? data.config.values.proteccion
+                      : config.values.proteccion
+                  }
+                : config.values,
+              products: data.config.products && typeof data.config.products === 'object' && !Array.isArray(data.config.products)
+                ? {
+                    title: data.config.products.title ?? config.products.title,
+                    items: Array.isArray(data.config.products.items) ? data.config.products.items : config.products.items
+                  }
+                : config.products,
+              contact: data.config.contact && typeof data.config.contact === 'object' && !Array.isArray(data.config.contact)
+                ? {
+                    title: data.config.contact.title ?? config.contact.title,
+                    subtitle: data.config.contact.subtitle ?? config.contact.subtitle,
+                    enabled: data.config.contact.enabled !== undefined ? data.config.contact.enabled : config.contact.enabled
+                  }
+                : config.contact,
+              colors: data.config.colors && typeof data.config.colors === 'object' && !Array.isArray(data.config.colors)
+                ? {
+                    primary: data.config.colors.primary ?? config.colors.primary,
+                    secondary: data.config.colors.secondary ?? config.colors.secondary,
+                    accent: data.config.colors.accent ?? config.colors.accent,
+                    background: data.config.colors.background ?? config.colors.background,
+                    text: data.config.colors.text ?? config.colors.text
+                  }
+                : config.colors
+            };
+            setConfig(normalizedConfig);
           }
         } else if (response.status === 404) {
           // No hay configuración guardada, usar la por defecto
@@ -660,8 +714,8 @@ const AdminHome: React.FC = () => {
                       setConfig(prev => ({
                         ...prev,
                         products: {
-                          ...prev.products,
-                          items: [...prev.products.items, newProduct]
+                          ...prev.products || { title: '', items: [] },
+                          items: [...(prev.products?.items || []), newProduct]
                         }
                       }));
                     }}
@@ -678,14 +732,14 @@ const AdminHome: React.FC = () => {
                   <Label htmlFor="products-title" className="text-gray-200">Título de la Sección</Label>
                   <Input
                     id="products-title"
-                    value={config.products.title}
+                    value={config.products?.title || ''}
                     onChange={(e) => updateConfig('products', 'title', e.target.value)}
                     className="bg-gray-700 border-gray-600 text-gray-200"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {config.products.items.map((product, index) => (
+                  {(config.products?.items || []).map((product, index) => (
                     <Card key={product.id} className="bg-gray-700 border-gray-600">
                       <CardHeader>
                         <CardTitle className="text-gray-200 text-lg flex items-center justify-between">
@@ -693,11 +747,12 @@ const AdminHome: React.FC = () => {
                           <div className="flex space-x-2">
                             <Button
                               onClick={() => {
-                                const newItems = config.products.items.filter((_, i) => i !== index);
+                                const currentItems = config.products?.items || [];
+                                const newItems = currentItems.filter((_, i) => i !== index);
                                 setConfig(prev => ({
                                   ...prev,
                                   products: {
-                                    ...prev.products,
+                                    ...prev.products || { title: '', items: [] },
                                     items: newItems
                                   }
                                 }));
@@ -717,12 +772,13 @@ const AdminHome: React.FC = () => {
                           <Input
                             value={product.name}
                             onChange={(e) => {
-                              const newItems = [...config.products.items];
+                              const currentItems = config.products?.items || [];
+                              const newItems = [...currentItems];
                               newItems[index] = { ...product, name: e.target.value };
                               setConfig(prev => ({
                                 ...prev,
                                 products: {
-                                  ...prev.products,
+                                  ...prev.products || { title: '', items: [] },
                                   items: newItems
                                 }
                               }));
@@ -736,12 +792,13 @@ const AdminHome: React.FC = () => {
                           <Textarea
                             value={product.description}
                             onChange={(e) => {
-                              const newItems = [...config.products.items];
+                              const currentItems = config.products?.items || [];
+                              const newItems = [...currentItems];
                               newItems[index] = { ...product, description: e.target.value };
                               setConfig(prev => ({
                                 ...prev,
                                 products: {
-                                  ...prev.products,
+                                  ...prev.products || { title: '', items: [] },
                                   items: newItems
                                 }
                               }));
@@ -798,12 +855,13 @@ const AdminHome: React.FC = () => {
                                         const reader = new FileReader();
                                         reader.onload = (e) => {
                                           const imageData = e.target?.result as string;
-                                          const newItems = [...config.products.items];
+                                          const currentItems = config.products?.items || [];
+                                          const newItems = [...currentItems];
                                           newItems[index] = { ...product, image: imageData };
                                           setConfig(prev => ({
                                             ...prev,
                                             products: {
-                                              ...prev.products,
+                                              ...prev.products || { title: '', items: [] },
                                               items: newItems
                                             }
                                           }));
@@ -824,12 +882,13 @@ const AdminHome: React.FC = () => {
                             type="checkbox"
                             checked={product.enabled}
                             onChange={(e) => {
-                              const newItems = [...config.products.items];
+                              const currentItems = config.products?.items || [];
+                              const newItems = [...currentItems];
                               newItems[index] = { ...product, enabled: e.target.checked };
                               setConfig(prev => ({
                                 ...prev,
                                 products: {
-                                  ...prev.products,
+                                  ...prev.products || { title: '', items: [] },
                                   items: newItems
                                 }
                               }));

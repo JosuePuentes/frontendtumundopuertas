@@ -67,6 +67,71 @@ interface HomePreviewProps {
 }
 
 const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
+  // Validación defensiva de la configuración
+  const safeConfig: HomeConfig = {
+    banner: config.banner && typeof config.banner === 'object' && !Array.isArray(config.banner)
+      ? {
+          title: config.banner.title || '',
+          subtitle: config.banner.subtitle || '',
+          image: safeConfig.banner.image || '',
+          enabled: config.banner.enabled !== undefined ? config.banner.enabled : true
+        }
+      : { title: '', subtitle: '', image: '', enabled: true },
+    logo: safeConfig.logo && typeof safeConfig.logo === 'object' && !Array.isArray(safeConfig.logo)
+      ? {
+          text: safeConfig.logo.text || '',
+          slogan: safeConfig.logo.slogan || '',
+          image: safeConfig.logo.image || '',
+          enabled: safeConfig.logo.enabled !== undefined ? safeConfig.logo.enabled : true
+        }
+      : { text: '', slogan: '', image: '', enabled: true },
+    values: safeConfig.values && typeof safeConfig.values === 'object' && !Array.isArray(safeConfig.values)
+      ? {
+          diseño: (safeConfig.values.diseño && typeof safeConfig.values.diseño === 'object' && !Array.isArray(safeConfig.values.diseño))
+            ? safeConfig.values.diseño
+            : { title: '', description: '', icon: 'Star' },
+          calidad: (safeConfig.values.calidad && typeof safeConfig.values.calidad === 'object' && !Array.isArray(safeConfig.values.calidad))
+            ? safeConfig.values.calidad
+            : { title: '', description: '', icon: 'Shield' },
+          proteccion: (safeConfig.values.proteccion && typeof safeConfig.values.proteccion === 'object' && !Array.isArray(safeConfig.values.proteccion))
+            ? safeConfig.values.proteccion
+            : { title: '', description: '', icon: 'Zap' }
+        }
+      : {
+          diseño: { title: '', description: '', icon: 'Star' },
+          calidad: { title: '', description: '', icon: 'Shield' },
+          proteccion: { title: '', description: '', icon: 'Zap' }
+        },
+    products: safeConfig.products && typeof safeConfig.products === 'object' && !Array.isArray(safeConfig.products)
+      ? {
+          title: safeConfig.products.title || 'Productos',
+          items: Array.isArray(safeConfig.products.items) ? safeConfig.products.items : []
+        }
+      : { title: 'Productos', items: [] },
+    contact: safeConfig.contact && typeof safeConfig.contact === 'object' && !Array.isArray(safeConfig.contact)
+      ? {
+          title: safeConfig.contact.title || '',
+          subtitle: safeConfig.contact.subtitle || '',
+          enabled: safeConfig.contact.enabled !== undefined ? safeConfig.contact.enabled : true
+        }
+      : { title: '', subtitle: '', enabled: true },
+    colors: safeConfig.colors && typeof safeConfig.colors === 'object' && !Array.isArray(safeConfig.colors)
+      ? {
+          primary: safeConfig.colors.primary || '#06b6d4',
+          secondary: safeConfig.colors.secondary || '#0891b2',
+          accent: safeConfig.colors.accent || '#0ea5e9',
+          background: safeConfig.colors.background || '#000000',
+          text: safeConfig.colors.text || '#e5e7eb'
+        }
+      : {
+          primary: '#06b6d4',
+          secondary: '#0891b2',
+          accent: '#0ea5e9',
+          background: '#000000',
+          text: '#e5e7eb'
+        }
+  };
+
   const getIconComponent = (iconName: string) => {
     switch (iconName) {
       case 'Star': return Star;
@@ -97,8 +162,8 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
         <div 
           className="min-h-screen overflow-hidden relative"
           style={{ 
-            backgroundColor: config.colors.background,
-            color: config.colors.text 
+            backgroundColor: safeConfig.colors.background,
+            color: safeConfig.colors.text 
           }}
         >
           {/* Efectos de fondo futuristas */}
@@ -118,14 +183,14 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                   <div 
                     className="w-20 h-20 rounded-full border-2 flex items-center justify-center shadow-lg"
                     style={{ 
-                      borderColor: config.colors.primary,
+                      borderColor: safeConfig.colors.primary,
                       backgroundColor: '#374151'
                     }}
                   >
                     <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
-                      {config.logo.image ? (
+                      {safeConfig.logo.image ? (
                         <img 
-                          src={config.logo.image} 
+                          src={safeConfig.logo.image} 
                           alt="Logo" 
                           className="w-full h-full object-contain"
                         />
@@ -133,7 +198,7 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                         <div className="relative z-10">
                           <div 
                             className="font-bold text-lg leading-none"
-                            style={{ color: config.colors.primary }}
+                            style={{ color: safeConfig.colors.primary }}
                           >
                             <div className="text-sm font-black">T</div>
                             <div className="text-sm font-black">M</div>
@@ -144,28 +209,28 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                   </div>
                   <div 
                     className="absolute inset-0 rounded-full border animate-pulse opacity-50"
-                    style={{ borderColor: config.colors.primary }}
+                    style={{ borderColor: safeConfig.colors.primary }}
                   ></div>
                 </div>
                 
                 <div className="flex flex-col">
                   <span 
                     className="text-3xl font-bold tracking-wide"
-                    style={{ color: config.colors.text }}
+                    style={{ color: safeConfig.colors.text }}
                   >
-                    {config.logo.text}
+                    {safeConfig.logo.text}
                   </span>
                   <div 
                     className="w-full h-px mt-2"
                     style={{ 
-                      background: `linear-gradient(to right, ${config.colors.primary}, transparent)` 
+                      background: `linear-gradient(to right, ${safeConfig.colors.primary}, transparent)` 
                     }}
                   ></div>
                   <span 
                     className="text-sm mt-2"
-                    style={{ color: config.colors.text }}
+                    style={{ color: safeConfig.colors.text }}
                   >
-                    {config.logo.slogan}
+                    {safeConfig.logo.slogan}
                   </span>
                 </div>
               </div>
@@ -176,12 +241,12 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                     key={item}
                     href="#" 
                     className="transition-colors duration-300 relative group"
-                    style={{ color: config.colors.text }}
+                    style={{ color: safeConfig.colors.text }}
                   >
                     {item}
                     <div 
                       className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full"
-                      style={{ backgroundColor: config.colors.primary }}
+                      style={{ backgroundColor: safeConfig.colors.primary }}
                     ></div>
                   </a>
                 ))}
@@ -190,7 +255,7 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
               <Button 
                 className="font-bold px-8 py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
                 style={{ 
-                  background: `linear-gradient(to right, ${config.colors.primary}, ${config.colors.secondary})`,
+                  background: `linear-gradient(to right, ${safeConfig.colors.primary}, ${safeConfig.colors.secondary})`,
                   color: '#000000'
                 }}
               >
@@ -207,19 +272,19 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                   className="border-2 rounded-lg p-12 backdrop-blur-sm"
                   style={{ 
                     backgroundColor: 'rgba(55, 65, 81, 0.5)',
-                    borderColor: config.colors.primary 
+                    borderColor: safeConfig.colors.primary 
                   }}
                 >
                   <div className="text-center">
                     <h2 
                       className="text-4xl font-bold mb-6"
-                      style={{ color: config.colors.text }}
+                      style={{ color: safeConfig.colors.text }}
                     >
                       {config.banner.title}
                     </h2>
                     <p 
                       className="mb-8 text-lg"
-                      style={{ color: config.colors.text }}
+                      style={{ color: safeConfig.colors.text }}
                     >
                       {config.banner.subtitle}
                     </p>
@@ -227,19 +292,19 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                       className="w-full h-48 rounded-lg flex items-center justify-center border-2"
                       style={{ 
                         backgroundColor: '#4B5563',
-                        borderColor: config.colors.primary 
+                        borderColor: safeConfig.colors.primary 
                       }}
                     >
-                      {config.banner.image ? (
+                      {safeConfig.banner.image ? (
                         <img 
-                          src={config.banner.image} 
+                          src={safeConfig.banner.image} 
                           alt="Banner" 
                           className="w-full h-full object-cover rounded-lg"
                         />
                       ) : (
                         <span 
                           className="font-semibold text-xl"
-                          style={{ color: config.colors.primary }}
+                          style={{ color: safeConfig.colors.primary }}
                         >
                           Contenido del Banner
                         </span>
@@ -252,18 +317,18 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           )}
 
           {/* Values Section */}
-          {config.values && typeof config.values === 'object' && !Array.isArray(config.values) && (
+          {safeConfig.values && typeof safeConfig.values === 'object' && !Array.isArray(safeConfig.values) && (
             <section className="relative z-10 py-20 px-6">
               <div className="max-w-6xl mx-auto">
                 <div 
                   className="w-full h-px mb-16"
                   style={{ 
-                    background: `linear-gradient(to right, transparent, ${config.colors.primary}, transparent)` 
+                    background: `linear-gradient(to right, transparent, ${safeConfig.colors.primary}, transparent)` 
                   }}
                 ></div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                  {Object.entries(config.values)
+                  {Object.entries(safeConfig.values)
                     .filter(([, value]) => 
                       value && 
                       typeof value === 'object' && 
@@ -279,24 +344,24 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                           <div 
                             className="w-20 h-20 mx-auto mb-6 rounded-full flex items-center justify-center border group-hover:border-opacity-60 transition-all duration-300"
                             style={{ 
-                              backgroundColor: `${config.colors.primary}20`,
-                              borderColor: `${config.colors.primary}30`
+                              backgroundColor: `${safeConfig.colors.primary}20`,
+                              borderColor: `${safeConfig.colors.primary}30`
                             }}
                           >
                             <IconComponent 
                               className="w-10 h-10" 
-                              style={{ color: config.colors.primary }} 
+                              style={{ color: safeConfig.colors.primary }} 
                             />
                           </div>
                           <h3 
                             className="text-2xl font-bold mb-3"
-                            style={{ color: config.colors.text }}
+                            style={{ color: safeConfig.colors.text }}
                           >
                             {value.title || ''}
                           </h3>
                           <p 
                             className="text-lg"
-                            style={{ color: config.colors.text }}
+                            style={{ color: safeConfig.colors.text }}
                           >
                             {value.description || ''}
                           </p>
@@ -309,31 +374,31 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           )}
 
           {/* Product Gallery Section */}
-          {config.products && typeof config.products === 'object' && !Array.isArray(config.products) && (
+          {safeConfig.products && typeof safeConfig.products === 'object' && !Array.isArray(safeConfig.products) && (
             <section className="relative z-10 py-20 px-6">
               <div className="max-w-6xl mx-auto">
                 <h2 
                   className="text-4xl font-bold text-center mb-12"
-                  style={{ color: config.colors.text }}
+                  style={{ color: safeConfig.colors.text }}
                 >
-                  {config.products.title || 'Productos'}
+                  {safeConfig.products.title || 'Productos'}
                 </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {(Array.isArray(config.products.items) ? config.products.items : []).filter(item => item && item.enabled).map((product) => (
+                  {(Array.isArray(safeConfig.products.items) ? safeConfig.products.items : []).filter(item => item && item.enabled).map((product) => (
                   <div 
                     key={product.id}
                     className="border-2 rounded-lg p-6 backdrop-blur-sm group hover:border-opacity-100 transition-all duration-300"
                     style={{ 
                       backgroundColor: 'rgba(55, 65, 81, 0.5)',
-                      borderColor: `${config.colors.primary}50`
+                      borderColor: `${safeConfig.colors.primary}50`
                     }}
                   >
                     <div 
                       className="w-full h-48 rounded-lg mb-4 flex items-center justify-center border-2"
                       style={{ 
                         backgroundColor: '#4B5563',
-                        borderColor: config.colors.primary 
+                        borderColor: safeConfig.colors.primary 
                       }}
                     >
                       {product.image ? (
@@ -345,7 +410,7 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                       ) : (
                         <span 
                           className="font-semibold text-lg"
-                          style={{ color: config.colors.primary }}
+                          style={{ color: safeConfig.colors.primary }}
                         >
                           {product.name}
                         </span>
@@ -353,20 +418,20 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                     </div>
                     <h3 
                       className="text-xl font-bold mb-2"
-                      style={{ color: config.colors.text }}
+                      style={{ color: safeConfig.colors.text }}
                     >
                       {product.name}
                     </h3>
                     <p 
                       className="mb-4"
-                      style={{ color: config.colors.text }}
+                      style={{ color: safeConfig.colors.text }}
                     >
                       {product.description}
                     </p>
                     <Button 
                       className="w-full font-semibold py-2 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
                       style={{ 
-                        background: `linear-gradient(to right, ${config.colors.primary}, ${config.colors.secondary})`,
+                        background: `linear-gradient(to right, ${safeConfig.colors.primary}, ${safeConfig.colors.secondary})`,
                         color: '#000000'
                       }}
                     >
@@ -380,25 +445,25 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           )}
 
           {/* Contact Section */}
-          {config.contact.enabled && (
+          {safeConfig.contact.enabled && (
             <section className="relative z-10 py-20 px-6">
               <div className="max-w-4xl mx-auto text-center">
                 <h2 
                   className="text-4xl font-bold mb-8"
-                  style={{ color: config.colors.text }}
+                  style={{ color: safeConfig.colors.text }}
                 >
-                  {config.contact.title}
+                  {safeConfig.contact.title}
                 </h2>
                 <p 
                   className="text-xl mb-8"
-                  style={{ color: config.colors.text }}
+                  style={{ color: safeConfig.colors.text }}
                 >
-                  {config.contact.subtitle}
+                  {safeConfig.contact.subtitle}
                 </p>
                 <Button 
                   className="px-8 py-4 text-lg font-bold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
                   style={{ 
-                    background: `linear-gradient(to right, ${config.colors.primary}, ${config.colors.secondary})`,
+                    background: `linear-gradient(to right, ${safeConfig.colors.primary}, ${safeConfig.colors.secondary})`,
                     color: '#000000'
                   }}
                 >
