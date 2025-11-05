@@ -71,38 +71,64 @@ interface HomePreviewProps {
 }
 
 const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
+  // Validación defensiva: asegurar que config existe y es un objeto
+  const validConfig: HomeConfig = (!config || typeof config !== 'object' || Array.isArray(config))
+    ? {
+        banner: { title: '', subtitle: '', image: '', enabled: true, width: "100%", height: "400px" },
+        logo: { text: '', slogan: '', image: '', enabled: true, width: "200px", height: "auto" },
+        values: {
+          diseño: { title: '', description: '', icon: 'Star' },
+          calidad: { title: '', description: '', icon: 'Shield' },
+          proteccion: { title: '', description: '', icon: 'Zap' }
+        },
+        products: { title: 'Productos', items: [] },
+        contact: { title: '', subtitle: '', enabled: true },
+        colors: {
+          primary: '#06b6d4',
+          secondary: '#0891b2',
+          accent: '#0ea5e9',
+          background: '#000000',
+          text: '#e5e7eb'
+        }
+      }
+    : config;
+  
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    console.warn('⚠️ HomePreview recibió config inválido, usando valores por defecto');
+  }
+  
   // Validación defensiva de la configuración
   const safeConfig: HomeConfig = {
-    banner: config.banner && typeof config.banner === 'object' && !Array.isArray(config.banner)
+    banner: validConfig.banner && typeof validConfig.banner === 'object' && !Array.isArray(validConfig.banner)
       ? {
-          title: config.banner.title || '',
-          subtitle: config.banner.subtitle || '',
-          image: config.banner.image || '',
-          enabled: config.banner.enabled !== undefined ? config.banner.enabled : true,
-          width: config.banner.width || "100%",
-          height: config.banner.height || "400px"
+          title: validConfig.banner.title || '',
+          subtitle: validConfig.banner.subtitle || '',
+          image: validConfig.banner.image || '',
+          enabled: validConfig.banner.enabled !== undefined ? validConfig.banner.enabled : true,
+          width: validConfig.banner.width || "100%",
+          height: validConfig.banner.height || "400px"
         }
       : { title: '', subtitle: '', image: '', enabled: true, width: "100%", height: "400px" },
-    logo: config.logo && typeof config.logo === 'object' && !Array.isArray(config.logo)
+    logo: validConfig.logo && typeof validConfig.logo === 'object' && !Array.isArray(validConfig.logo)
       ? {
-          text: config.logo.text || '',
-          slogan: config.logo.slogan || '',
-          image: config.logo.image || '',
-          enabled: config.logo.enabled !== undefined ? config.logo.enabled : true,
-          width: config.logo.width || "200px",
-          height: config.logo.height || "auto"
+          text: validConfig.logo.text || '',
+          slogan: validConfig.logo.slogan || '',
+          image: validConfig.logo.image || '',
+          enabled: validConfig.logo.enabled !== undefined ? validConfig.logo.enabled : true,
+          width: validConfig.logo.width || "200px",
+          height: validConfig.logo.height || "auto"
         }
       : { text: '', slogan: '', image: '', enabled: true, width: "200px", height: "auto" },
-    values: config.values && typeof config.values === 'object' && !Array.isArray(config.values)
+    values: validConfig.values && typeof validConfig.values === 'object' && !Array.isArray(validConfig.values)
       ? {
-          diseño: (config.values.diseño && typeof config.values.diseño === 'object' && !Array.isArray(config.values.diseño))
-            ? config.values.diseño
+          diseño: (validConfig.values.diseño && typeof validConfig.values.diseño === 'object' && !Array.isArray(validConfig.values.diseño))
+            ? validConfig.values.diseño
             : { title: '', description: '', icon: 'Star' },
-          calidad: (config.values.calidad && typeof config.values.calidad === 'object' && !Array.isArray(config.values.calidad))
-            ? config.values.calidad
+          calidad: (validConfig.values.calidad && typeof validConfig.values.calidad === 'object' && !Array.isArray(validConfig.values.calidad))
+            ? validConfig.values.calidad
             : { title: '', description: '', icon: 'Shield' },
-          proteccion: (config.values.proteccion && typeof config.values.proteccion === 'object' && !Array.isArray(config.values.proteccion))
-            ? config.values.proteccion
+          proteccion: (validConfig.values.proteccion && typeof validConfig.values.proteccion === 'object' && !Array.isArray(validConfig.values.proteccion))
+            ? validConfig.values.proteccion
             : { title: '', description: '', icon: 'Zap' }
         }
       : {
@@ -110,26 +136,26 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           calidad: { title: '', description: '', icon: 'Shield' },
           proteccion: { title: '', description: '', icon: 'Zap' }
         },
-    products: config.products && typeof config.products === 'object' && !Array.isArray(config.products)
+    products: validConfig.products && typeof validConfig.products === 'object' && !Array.isArray(validConfig.products)
       ? {
-          title: config.products.title || 'Productos',
-          items: Array.isArray(config.products.items) ? config.products.items : []
+          title: validConfig.products.title || 'Productos',
+          items: Array.isArray(validConfig.products.items) ? validConfig.products.items : []
         }
       : { title: 'Productos', items: [] },
-    contact: config.contact && typeof config.contact === 'object' && !Array.isArray(config.contact)
+    contact: validConfig.contact && typeof validConfig.contact === 'object' && !Array.isArray(validConfig.contact)
       ? {
-          title: config.contact.title || '',
-          subtitle: config.contact.subtitle || '',
-          enabled: config.contact.enabled !== undefined ? config.contact.enabled : true
+          title: validConfig.contact.title || '',
+          subtitle: validConfig.contact.subtitle || '',
+          enabled: validConfig.contact.enabled !== undefined ? validConfig.contact.enabled : true
         }
       : { title: '', subtitle: '', enabled: true },
-    colors: config.colors && typeof config.colors === 'object' && !Array.isArray(config.colors)
+    colors: validConfig.colors && typeof validConfig.colors === 'object' && !Array.isArray(validConfig.colors)
       ? {
-          primary: config.colors.primary || '#06b6d4',
-          secondary: config.colors.secondary || '#0891b2',
-          accent: config.colors.accent || '#0ea5e9',
-          background: config.colors.background || '#000000',
-          text: config.colors.text || '#e5e7eb'
+          primary: validConfig.colors.primary || '#06b6d4',
+          secondary: validConfig.colors.secondary || '#0891b2',
+          accent: validConfig.colors.accent || '#0ea5e9',
+          background: validConfig.colors.background || '#000000',
+          text: validConfig.colors.text || '#e5e7eb'
         }
       : {
           primary: '#06b6d4',

@@ -674,48 +674,74 @@ const AdminHome: React.FC = () => {
         finalConfig = {
           ...configToSave,
           ...data.config,
-          banner: {
-            ...configToSave.banner,
-            ...(data.config.banner || {}),
-            // Priorizar imagen del backend (ya que ahora las retorna correctamente)
-            // El backend puede usar 'url' o 'image', normalizamos a 'image'
-            image: (() => {
-              const bannerUrl = data.config.banner?.url || data.config.banner?.image || '';
-              // Priorizar la respuesta del backend si tiene imagen válida
-              if (bannerUrl && bannerUrl.length > 100) {
-                return bannerUrl;
-              }
-              // Fallback: usar la imagen que enviamos si el backend no la retornó
-              if (configToSave.banner.image && configToSave.banner.image.length > 100) {
-                return configToSave.banner.image;
-              }
-              return '';
-            })(),
-            // Preservar width y height del backend si están presentes
-            width: data.config.banner?.width || configToSave.banner.width || "100%",
-            height: data.config.banner?.height || configToSave.banner.height || "400px"
-          },
-          logo: {
-            ...configToSave.logo,
-            ...(data.config.logo || {}),
-            // Priorizar imagen del backend (ya que ahora las retorna correctamente)
-            // El backend puede usar 'url' o 'image', normalizamos a 'image'
-            image: (() => {
-              const logoUrl = data.config.logo?.url || data.config.logo?.image || '';
-              // Priorizar la respuesta del backend si tiene imagen válida
-              if (logoUrl && logoUrl.length > 100) {
-                return logoUrl;
-              }
-              // Fallback: usar la imagen que enviamos si el backend no la retornó
-              if (configToSave.logo.image && configToSave.logo.image.length > 100) {
-                return configToSave.logo.image;
-              }
-              return '';
-            })(),
-            // Preservar width y height del backend si están presentes
-            width: data.config.logo?.width || configToSave.logo.width || "200px",
-            height: data.config.logo?.height || configToSave.logo.height || "auto"
-          },
+          banner: (() => {
+            const backendBanner = data.config.banner && typeof data.config.banner === 'object' && !Array.isArray(data.config.banner)
+              ? data.config.banner
+              : null;
+            const savedBanner = configToSave.banner && typeof configToSave.banner === 'object' && !Array.isArray(configToSave.banner)
+              ? configToSave.banner
+              : { title: '', subtitle: '', image: '', enabled: true, width: "100%", height: "400px" };
+            
+            return {
+              ...savedBanner,
+              ...(backendBanner || {}),
+              // Asegurar que title y subtitle siempre existan
+              title: backendBanner?.title ?? savedBanner.title ?? '',
+              subtitle: backendBanner?.subtitle ?? savedBanner.subtitle ?? '',
+              // Priorizar imagen del backend (ya que ahora las retorna correctamente)
+              // El backend puede usar 'url' o 'image', normalizamos a 'image'
+              image: (() => {
+                const bannerUrl = backendBanner?.url || backendBanner?.image || '';
+                // Priorizar la respuesta del backend si tiene imagen válida
+                if (bannerUrl && bannerUrl.length > 100) {
+                  return bannerUrl;
+                }
+                // Fallback: usar la imagen que enviamos si el backend no la retornó
+                if (savedBanner.image && savedBanner.image.length > 100) {
+                  return savedBanner.image;
+                }
+                return '';
+              })(),
+              enabled: backendBanner?.enabled !== undefined ? backendBanner.enabled : (savedBanner.enabled !== undefined ? savedBanner.enabled : true),
+              // Preservar width y height del backend si están presentes
+              width: backendBanner?.width ?? savedBanner.width ?? "100%",
+              height: backendBanner?.height ?? savedBanner.height ?? "400px"
+            };
+          })(),
+          logo: (() => {
+            const backendLogo = data.config.logo && typeof data.config.logo === 'object' && !Array.isArray(data.config.logo)
+              ? data.config.logo
+              : null;
+            const savedLogo = configToSave.logo && typeof configToSave.logo === 'object' && !Array.isArray(configToSave.logo)
+              ? configToSave.logo
+              : { text: '', slogan: '', image: '', enabled: true, width: "200px", height: "auto" };
+            
+            return {
+              ...savedLogo,
+              ...(backendLogo || {}),
+              // Asegurar que text y slogan siempre existan
+              text: backendLogo?.text ?? savedLogo.text ?? '',
+              slogan: backendLogo?.slogan ?? savedLogo.slogan ?? '',
+              // Priorizar imagen del backend (ya que ahora las retorna correctamente)
+              // El backend puede usar 'url' o 'image', normalizamos a 'image'
+              image: (() => {
+                const logoUrl = backendLogo?.url || backendLogo?.image || '';
+                // Priorizar la respuesta del backend si tiene imagen válida
+                if (logoUrl && logoUrl.length > 100) {
+                  return logoUrl;
+                }
+                // Fallback: usar la imagen que enviamos si el backend no la retornó
+                if (savedLogo.image && savedLogo.image.length > 100) {
+                  return savedLogo.image;
+                }
+                return '';
+              })(),
+              enabled: backendLogo?.enabled !== undefined ? backendLogo.enabled : (savedLogo.enabled !== undefined ? savedLogo.enabled : true),
+              // Preservar width y height del backend si están presentes
+              width: backendLogo?.width ?? savedLogo.width ?? "200px",
+              height: backendLogo?.height ?? savedLogo.height ?? "auto"
+            };
+          })(),
           products: (() => {
             // Validación defensiva: asegurar que products es un objeto válido
             const backendProducts = data.config.products && typeof data.config.products === 'object' && !Array.isArray(data.config.products)
@@ -743,13 +769,75 @@ const AdminHome: React.FC = () => {
               }))
             };
           })(),
-          // Asegurar que todos los campos requeridos estén presentes
-          values: data.config.values || configToSave.values,
-          contact: {
-            ...configToSave.contact,
-            ...(data.config.contact || {})
-          },
-          colors: data.config.colors || configToSave.colors,
+          // Asegurar que todos los campos requeridos estén presentes con validación defensiva
+          values: (() => {
+            const backendValues = data.config.values && typeof data.config.values === 'object' && !Array.isArray(data.config.values)
+              ? data.config.values
+              : null;
+            const savedValues = configToSave.values && typeof configToSave.values === 'object' && !Array.isArray(configToSave.values)
+              ? configToSave.values
+              : {
+                  diseño: { title: '', description: '', icon: 'Star' },
+                  calidad: { title: '', description: '', icon: 'Shield' },
+                  proteccion: { title: '', description: '', icon: 'Zap' }
+                };
+            
+            if (!backendValues) return savedValues;
+            
+            return {
+              diseño: (backendValues.diseño && typeof backendValues.diseño === 'object' && !Array.isArray(backendValues.diseño))
+                ? backendValues.diseño
+                : savedValues.diseño,
+              calidad: (backendValues.calidad && typeof backendValues.calidad === 'object' && !Array.isArray(backendValues.calidad))
+                ? backendValues.calidad
+                : savedValues.calidad,
+              proteccion: (backendValues.proteccion && typeof backendValues.proteccion === 'object' && !Array.isArray(backendValues.proteccion))
+                ? backendValues.proteccion
+                : savedValues.proteccion
+            };
+          })(),
+          contact: (() => {
+            const backendContact = data.config.contact && typeof data.config.contact === 'object' && !Array.isArray(data.config.contact)
+              ? data.config.contact
+              : null;
+            const savedContact = configToSave.contact && typeof configToSave.contact === 'object' && !Array.isArray(configToSave.contact)
+              ? configToSave.contact
+              : { title: '', subtitle: '', enabled: true };
+            
+            return {
+              ...savedContact,
+              ...(backendContact || {}),
+              // Asegurar que title y subtitle siempre existan
+              title: backendContact?.title ?? savedContact.title ?? '',
+              subtitle: backendContact?.subtitle ?? savedContact.subtitle ?? '',
+              enabled: backendContact?.enabled !== undefined ? backendContact.enabled : (savedContact.enabled !== undefined ? savedContact.enabled : true)
+            };
+          })(),
+          colors: (() => {
+            const backendColors = data.config.colors && typeof data.config.colors === 'object' && !Array.isArray(data.config.colors)
+              ? data.config.colors
+              : null;
+            const savedColors = configToSave.colors && typeof configToSave.colors === 'object' && !Array.isArray(configToSave.colors)
+              ? configToSave.colors
+              : {
+                  primary: '#06b6d4',
+                  secondary: '#0891b2',
+                  accent: '#0ea5e9',
+                  background: '#000000',
+                  text: '#e5e7eb'
+                };
+            
+            return {
+              ...savedColors,
+              ...(backendColors || {}),
+              // Asegurar que todos los colores siempre existan
+              primary: backendColors?.primary ?? savedColors.primary ?? '#06b6d4',
+              secondary: backendColors?.secondary ?? savedColors.secondary ?? '#0891b2',
+              accent: backendColors?.accent ?? savedColors.accent ?? '#0ea5e9',
+              background: backendColors?.background ?? savedColors.background ?? '#000000',
+              text: backendColors?.text ?? savedColors.text ?? '#e5e7eb'
+            };
+          })(),
           nosotros: data.config.nosotros || configToSave.nosotros,
           servicios: data.config.servicios || configToSave.servicios,
           typography: data.config.typography || configToSave.typography
