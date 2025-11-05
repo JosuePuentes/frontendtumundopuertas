@@ -214,12 +214,7 @@ const PedidosHerreria: React.FC = () => {
         setItemsIndividuales([]);
       }
       
-      // Cargar empleados en segundo plano (no crítico para mostrar los items)
-      fetchEmpleado(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/empleados/all/`)
-        .catch(err => {
-          console.warn('⚠️ Error al cargar empleados (no crítico):', err);
-        });
-      // console.log('✅ Datos recargados exitosamente usando nueva estructura');
+      // EMPLEADOS: Se cargan en paralelo en el useEffect inicial, no aquí
       
       // Limpiar cualquier error previo
       setError(null);
@@ -241,14 +236,17 @@ const PedidosHerreria: React.FC = () => {
 
 
   useEffect(() => {
-    recargarDatos();
-    
-    // Cargar empleados al montar el componente
+    // OPTIMIZACIÓN: Cargar pedidos y empleados en paralelo para mejor rendimiento
     const apiUrl = import.meta.env.VITE_API_URL?.replace('http://', 'https://') || 'https://crafteo.onrender.com';
-    fetchEmpleado(`${apiUrl}/empleados/all/`)
-      .catch(err => {
-        console.error('❌ Error al cargar empleados:', err);
-      });
+    
+    Promise.all([
+      // Cargar pedidos
+      recargarDatos(),
+      // Cargar empleados en paralelo
+      fetchEmpleado(`${apiUrl}/empleados/all/`)
+    ]).catch(err => {
+      console.error('❌ Error al cargar datos:', err);
+    });
   }, []);
   
   // NUEVO: Actualizar nombres de empleados cuando tanto itemsIndividuales como dataEmpleados estén disponibles
