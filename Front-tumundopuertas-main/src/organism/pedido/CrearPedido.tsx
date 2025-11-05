@@ -34,6 +34,7 @@ import { useClientes } from "@/hooks/useClientes";
 import { useItems } from "@/hooks/useItems";
 import api from "@/lib/api";
 import ImageDisplay from "@/upfile/ImageDisplay";
+import CrearClienteModal from "@/organism/clientes/CrearClienteModal";
 
 // Tipos locales para el payload
 interface PedidoItem {
@@ -127,6 +128,7 @@ const CrearPedido: React.FC = () => {
   const [nuevoAdicionalMetodoPago, setNuevoAdicionalMetodoPago] = useState<string>("");
   const [sucursal, setSucursal] = useState<string>("");
   const [modalSucursalOpen, setModalSucursalOpen] = useState<boolean>(true); // Abrir al entrar
+  const [modalCrearClienteOpen, setModalCrearClienteOpen] = useState<boolean>(false);
 
   const { fetchPedido } = usePedido();
   const {
@@ -144,6 +146,28 @@ const CrearPedido: React.FC = () => {
   useEffect(() => {
     fetchClientes(`${apiUrl}/clientes/all`);
   }, []);
+
+  // Función para manejar cuando se crea un cliente exitosamente
+  const handleClienteCreated = (cliente: { nombre: string; rif: string; direccion: string; telefono: string; _id?: string }) => {
+    // Recargar la lista de clientes
+    fetchClientes(`${apiUrl}/clientes/all`);
+    
+    // Seleccionar automáticamente el cliente recién creado
+    setClienteId(cliente.rif as any);
+    setClienteSearch("");
+    setShowClienteSuggestions(false);
+    
+    // Cerrar el modal
+    setModalCrearClienteOpen(false);
+    
+    // Mostrar mensaje de éxito
+    setMensaje(`Cliente "${cliente.nombre}" creado y seleccionado correctamente ✅`);
+    setMensajeTipo("success");
+    setTimeout(() => {
+      setMensaje("");
+      setMensajeTipo("");
+    }, 3000);
+  };
 
   useEffect(() => {
     // Solo cargar inventario si hay sucursal seleccionada
@@ -1044,18 +1068,30 @@ const CrearPedido: React.FC = () => {
                       </ScrollArea>
                     )}
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={!clienteId}
-                  onClick={() => {
-                    setClienteId(0);
-                    setClienteSearch("");
-                  }}
-                >
-                  Limpiar
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setModalCrearClienteOpen(true)}
+                    className="bg-green-500 hover:bg-green-600 text-white border-green-500"
+                  >
+                    <FaPlus className="w-3 h-3 mr-1" />
+                    Crear
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={!clienteId}
+                    onClick={() => {
+                      setClienteId(0);
+                      setClienteSearch("");
+                    }}
+                  >
+                    Limpiar
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -1798,6 +1834,13 @@ const CrearPedido: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Crear Cliente */}
+      <CrearClienteModal
+        open={modalCrearClienteOpen}
+        onClose={() => setModalCrearClienteOpen(false)}
+        onClienteCreated={handleClienteCreated}
+      />
     </div>
   );
 };
