@@ -85,16 +85,16 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           enabled: safeConfig.logo.enabled !== undefined ? safeConfig.logo.enabled : true
         }
       : { text: '', slogan: '', image: '', enabled: true },
-    values: safeConfig.values && typeof safeConfig.values === 'object' && !Array.isArray(safeConfig.values)
+    values: config.values && typeof config.values === 'object' && !Array.isArray(config.values)
       ? {
-          diseño: (safeConfig.values.diseño && typeof safeConfig.values.diseño === 'object' && !Array.isArray(safeConfig.values.diseño))
-            ? safeConfig.values.diseño
+          diseño: (config.values.diseño && typeof config.values.diseño === 'object' && !Array.isArray(config.values.diseño))
+            ? config.values.diseño
             : { title: '', description: '', icon: 'Star' },
-          calidad: (safeConfig.values.calidad && typeof safeConfig.values.calidad === 'object' && !Array.isArray(safeConfig.values.calidad))
-            ? safeConfig.values.calidad
+          calidad: (config.values.calidad && typeof config.values.calidad === 'object' && !Array.isArray(config.values.calidad))
+            ? config.values.calidad
             : { title: '', description: '', icon: 'Shield' },
-          proteccion: (safeConfig.values.proteccion && typeof safeConfig.values.proteccion === 'object' && !Array.isArray(safeConfig.values.proteccion))
-            ? safeConfig.values.proteccion
+          proteccion: (config.values.proteccion && typeof config.values.proteccion === 'object' && !Array.isArray(config.values.proteccion))
+            ? config.values.proteccion
             : { title: '', description: '', icon: 'Zap' }
         }
       : {
@@ -102,10 +102,10 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
           calidad: { title: '', description: '', icon: 'Shield' },
           proteccion: { title: '', description: '', icon: 'Zap' }
         },
-    products: safeConfig.products && typeof safeConfig.products === 'object' && !Array.isArray(safeConfig.products)
+    products: config.products && typeof config.products === 'object' && !Array.isArray(config.products)
       ? {
-          title: safeConfig.products.title || 'Productos',
-          items: Array.isArray(safeConfig.products.items) ? safeConfig.products.items : []
+          title: config.products.title || 'Productos',
+          items: Array.isArray(config.products.items) ? config.products.items : []
         }
       : { title: 'Productos', items: [] },
     contact: safeConfig.contact && typeof safeConfig.contact === 'object' && !Array.isArray(safeConfig.contact)
