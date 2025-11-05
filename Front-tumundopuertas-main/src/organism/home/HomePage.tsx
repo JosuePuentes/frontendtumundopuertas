@@ -241,7 +241,22 @@ const HomePage: React.FC = () => {
     };
 
     // Usar configuración guardada o por defecto
-    const currentConfig = config || defaultConfig;
+    const currentConfig: HomeConfig = config || defaultConfig;
+    
+    // Validar y asegurar que todos los campos requeridos existan
+    const safeConfig: HomeConfig = {
+        banner: currentConfig.banner || defaultConfig.banner,
+        logo: currentConfig.logo || defaultConfig.logo,
+        values: currentConfig.values || defaultConfig.values,
+        products: {
+            title: currentConfig.products?.title || defaultConfig.products.title,
+            items: Array.isArray(currentConfig.products?.items) 
+                ? currentConfig.products.items 
+                : defaultConfig.products.items
+        },
+        contact: currentConfig.contact || defaultConfig.contact,
+        colors: currentConfig.colors || defaultConfig.colors
+    };
 
     const modules: Array<{
         title: string;
@@ -349,34 +364,34 @@ const HomePage: React.FC = () => {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen overflow-hidden relative" style={{ backgroundColor: currentConfig.colors.background, color: currentConfig.colors.text }}>
+            <div className="min-h-screen overflow-hidden relative" style={{ backgroundColor: safeConfig.colors.background, color: safeConfig.colors.text }}>
                 {/* Futuristic Glitch Background - Crack Lines */}
                 <div className="absolute inset-0">
                     {/* Horizontal Crack Lines - Futuristic */}
                     <div className="absolute top-20 left-0 w-full h-px opacity-70" style={{
-                        backgroundColor: currentConfig.colors.primary,
+                        backgroundColor: safeConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 20% 0%, 25% 100%, 30% 0%, 45% 0%, 50% 100%, 55% 0%, 70% 0%, 75% 100%, 80% 0%, 100% 0%)'
                     }}></div>
                     <div className="absolute top-40 left-0 w-full h-px opacity-50" style={{
-                        backgroundColor: currentConfig.colors.primary,
+                        backgroundColor: safeConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 15% 0%, 20% 100%, 35% 0%, 40% 100%, 45% 0%, 60% 0%, 65% 100%, 70% 0%, 85% 0%, 100% 0%)'
                     }}></div>
                     <div className="absolute bottom-40 left-0 w-full h-px opacity-60" style={{
-                        backgroundColor: currentConfig.colors.primary,
+                        backgroundColor: safeConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 10% 0%, 15% 100%, 30% 0%, 35% 100%, 40% 0%, 55% 0%, 60% 100%, 65% 0%, 80% 0%, 85% 100%, 100% 0%)'
                     }}></div>
                     <div className="absolute bottom-20 left-0 w-full h-px opacity-40" style={{
-                        backgroundColor: currentConfig.colors.primary,
+                        backgroundColor: safeConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 25% 0%, 30% 100%, 35% 0%, 50% 0%, 55% 100%, 60% 0%, 75% 0%, 80% 100%, 100% 0%)'
                     }}></div>
                     
                     {/* Vertical Crack Lines - Futuristic */}
                     <div className="absolute left-20 top-0 w-px h-full opacity-50" style={{
-                        backgroundColor: currentConfig.colors.primary,
+                        backgroundColor: safeConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 100% 20%, 0% 25%, 100% 40%, 0% 45%, 100% 60%, 0% 65%, 100% 80%, 0% 100%)'
                     }}></div>
                     <div className="absolute right-20 top-0 w-px h-full opacity-40" style={{
-                        backgroundColor: currentConfig.colors.primary,
+                        backgroundColor: safeConfig.colors.primary,
                         clipPath: 'polygon(0% 0%, 100% 15%, 0% 20%, 100% 35%, 0% 40%, 100% 55%, 0% 60%, 100% 75%, 0% 80%, 100% 100%)'
                     }}></div>
                     
@@ -398,34 +413,34 @@ const HomePage: React.FC = () => {
                     <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center space-x-3 sm:space-x-6 w-full sm:w-auto justify-center sm:justify-start">
                             {/* Dynamic Logo */}
-                            {currentConfig.logo.enabled && (
+                            {safeConfig.logo.enabled && (
                                 <div className="relative">
-                                    <div className="w-20 h-20 rounded-full border-2 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg" style={{ borderColor: currentConfig.colors.primary, boxShadow: `0 0 20px ${currentConfig.colors.primary}30` }}>
+                                    <div className="w-20 h-20 rounded-full border-2 bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center shadow-lg" style={{ borderColor: safeConfig.colors.primary, boxShadow: `0 0 20px ${safeConfig.colors.primary}30` }}>
                                         <div className="w-16 h-16 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg flex items-center justify-center relative overflow-hidden">
                                             {/* TM Letters - Portal Style */}
                                             <div className="relative z-10">
-                                                <div className="font-bold text-lg leading-none" style={{ color: currentConfig.colors.primary }}>
+                                                <div className="font-bold text-lg leading-none" style={{ color: safeConfig.colors.primary }}>
                                                     <div className="text-sm font-black">T</div>
                                                     <div className="text-sm font-black">M</div>
                                                 </div>
                                             </div>
                                             {/* Portal effect lines */}
-                                            <div className="absolute inset-0 border rounded-lg" style={{ borderColor: `${currentConfig.colors.primary}30` }}></div>
-                                            <div className="absolute top-1 left-1 right-1 h-px" style={{ backgroundColor: `${currentConfig.colors.primary}50` }}></div>
-                                            <div className="absolute bottom-1 left-1 right-1 h-px" style={{ backgroundColor: `${currentConfig.colors.primary}50` }}></div>
+                                            <div className="absolute inset-0 border rounded-lg" style={{ borderColor: `${safeConfig.colors.primary}30` }}></div>
+                                            <div className="absolute top-1 left-1 right-1 h-px" style={{ backgroundColor: `${safeConfig.colors.primary}50` }}></div>
+                                            <div className="absolute bottom-1 left-1 right-1 h-px" style={{ backgroundColor: `${safeConfig.colors.primary}50` }}></div>
                                         </div>
                                     </div>
-                                    <div className="absolute inset-0 rounded-full border animate-pulse opacity-50" style={{ borderColor: currentConfig.colors.primary }}></div>
+                                    <div className="absolute inset-0 rounded-full border animate-pulse opacity-50" style={{ borderColor: safeConfig.colors.primary }}></div>
                             </div>
                             )}
                             
                             <div className="flex flex-col">
-                                <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-wide" style={{ color: currentConfig.colors.text }}>
-                                    {currentConfig.logo.text}
+                                <span className="text-xl sm:text-2xl md:text-3xl font-bold tracking-wide" style={{ color: safeConfig.colors.text }}>
+                                    {safeConfig.logo.text}
                                 </span>
-                                <div className="w-full h-px mt-1 sm:mt-2" style={{ background: `linear-gradient(to right, ${currentConfig.colors.primary}, transparent)` }}></div>
-                                <span className="text-xs sm:text-sm mt-1 sm:mt-2" style={{ color: currentConfig.colors.text }}>
-                                    {currentConfig.logo.slogan}
+                                <div className="w-full h-px mt-1 sm:mt-2" style={{ background: `linear-gradient(to right, ${safeConfig.colors.primary}, transparent)` }}></div>
+                                <span className="text-xs sm:text-sm mt-1 sm:mt-2" style={{ color: safeConfig.colors.text }}>
+                                    {safeConfig.logo.slogan}
                                 </span>
                             </div>
                         </div>
@@ -438,12 +453,12 @@ const HomePage: React.FC = () => {
                                     window.scrollTo({ top: 0, behavior: 'smooth' });
                                 }}
                                 className="transition-colors duration-300 relative group"
-                                style={{ color: currentConfig.colors.text }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
-                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
+                                style={{ color: safeConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = safeConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = safeConfig.colors.text}
                             >
                                 Inicio
-                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: safeConfig.colors.primary }}></div>
                             </a>
                             <a 
                                 href="#productos"
@@ -452,12 +467,12 @@ const HomePage: React.FC = () => {
                                     document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
                                 className="transition-colors duration-300 relative group"
-                                style={{ color: currentConfig.colors.text }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
-                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
+                                style={{ color: safeConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = safeConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = safeConfig.colors.text}
                             >
                                 Productos
-                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: safeConfig.colors.primary }}></div>
                             </a>
                             <a 
                                 href="#nosotros"
@@ -466,12 +481,12 @@ const HomePage: React.FC = () => {
                                     document.getElementById('nosotros')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
                                 className="transition-colors duration-300 relative group"
-                                style={{ color: currentConfig.colors.text }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
-                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
+                                style={{ color: safeConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = safeConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = safeConfig.colors.text}
                             >
                                 Nosotros
-                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: safeConfig.colors.primary }}></div>
                             </a>
                             <a 
                                 href="#servicios"
@@ -480,12 +495,12 @@ const HomePage: React.FC = () => {
                                     document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
                                 className="transition-colors duration-300 relative group"
-                                style={{ color: currentConfig.colors.text }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
-                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
+                                style={{ color: safeConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = safeConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = safeConfig.colors.text}
                             >
                                 Servicios
-                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: safeConfig.colors.primary }}></div>
                             </a>
                             <a 
                                 href="#contacto"
@@ -494,12 +509,12 @@ const HomePage: React.FC = () => {
                                     document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' });
                                 }}
                                 className="transition-colors duration-300 relative group"
-                                style={{ color: currentConfig.colors.text }}
-                                onMouseEnter={(e) => e.currentTarget.style.color = currentConfig.colors.primary}
-                                onMouseLeave={(e) => e.currentTarget.style.color = currentConfig.colors.text}
+                                style={{ color: safeConfig.colors.text }}
+                                onMouseEnter={(e) => e.currentTarget.style.color = safeConfig.colors.primary}
+                                onMouseLeave={(e) => e.currentTarget.style.color = safeConfig.colors.text}
                             >
                                 Contacto
-                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: currentConfig.colors.primary }}></div>
+                                <div className="absolute -bottom-1 left-0 w-0 h-px transition-all duration-300 group-hover:w-full" style={{ backgroundColor: safeConfig.colors.primary }}></div>
                             </a>
                         </nav>
                         
@@ -514,16 +529,16 @@ const HomePage: React.FC = () => {
                 </header>
 
                 {/* Dynamic Banner Section - Large Banner */}
-                {currentConfig.banner.enabled && (
+                {safeConfig.banner.enabled && (
                     <section className="relative z-10 py-12 sm:py-16 md:py-24 lg:py-32 px-4 sm:px-6">
                         <div className="max-w-7xl mx-auto">
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-16 lg:p-20 backdrop-blur-sm min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center justify-center" style={{ borderColor: currentConfig.colors.primary }}>
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-16 lg:p-20 backdrop-blur-sm min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex items-center justify-center" style={{ borderColor: safeConfig.colors.primary }}>
                                 <div className="text-center w-full">
-                                    <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 sm:mb-8 md:mb-10" style={{ color: currentConfig.colors.text }}>{currentConfig.banner.title}</h2>
-                                    <p className="mb-6 sm:mb-8 md:mb-12 text-lg sm:text-xl md:text-2xl" style={{ color: currentConfig.colors.text }}>{currentConfig.banner.subtitle}</p>
-                                    {currentConfig.banner.image && (
-                                        <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] bg-gradient-to-r from-gray-600 to-gray-700 border-2 rounded-lg flex items-center justify-center overflow-hidden" style={{ borderColor: currentConfig.colors.primary }}>
-                                            <img src={currentConfig.banner.image} alt="Banner" className="w-full h-full object-cover rounded-lg" />
+                                    <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-6 sm:mb-8 md:mb-10" style={{ color: safeConfig.colors.text }}>{safeConfig.banner.title}</h2>
+                                    <p className="mb-6 sm:mb-8 md:mb-12 text-lg sm:text-xl md:text-2xl" style={{ color: safeConfig.colors.text }}>{safeConfig.banner.subtitle}</p>
+                                    {safeConfig.banner.image && (
+                                        <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] bg-gradient-to-r from-gray-600 to-gray-700 border-2 rounded-lg flex items-center justify-center overflow-hidden" style={{ borderColor: safeConfig.colors.primary }}>
+                                            <img src={safeConfig.banner.image} alt="Banner" className="w-full h-full object-cover rounded-lg" />
                                         </div>
                                     )}
                                 </div>
@@ -535,21 +550,21 @@ const HomePage: React.FC = () => {
                 {/* Product Gallery Section */}
                 <section id="productos" className="relative z-10 py-10 sm:py-16 md:py-20 px-4 sm:px-6">
                     <div className="max-w-6xl mx-auto">
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-6 sm:mb-8 md:mb-12" style={{ color: currentConfig.colors.text }}>{currentConfig.products.title}</h2>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-6 sm:mb-8 md:mb-12" style={{ color: safeConfig.colors.text }}>{safeConfig.products.title}</h2>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
-                            {currentConfig.products.items.filter(item => item.enabled).map((product) => (
-                                <div key={product.id} className="bg-gray-700/50 border-2 rounded-lg p-6 backdrop-blur-sm group transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
-                                    <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2" style={{ borderColor: currentConfig.colors.primary }}>
+                            {(safeConfig.products.items || []).filter(item => item && item.enabled).map((product) => (
+                                <div key={product.id} className="bg-gray-700/50 border-2 rounded-lg p-6 backdrop-blur-sm group transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
+                                    <div className="w-full h-48 bg-gray-600 rounded-lg mb-4 flex items-center justify-center border-2" style={{ borderColor: safeConfig.colors.primary }}>
                                         {product.image ? (
                                             <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded-lg" />
                                         ) : (
-                                            <span className="font-semibold text-lg" style={{ color: currentConfig.colors.primary }}>{product.name}</span>
+                                            <span className="font-semibold text-lg" style={{ color: safeConfig.colors.primary }}>{product.name}</span>
                                         )}
                                     </div>
-                                    <h3 className="text-xl font-bold mb-2" style={{ color: currentConfig.colors.text }}>{product.name}</h3>
-                                    <p className="mb-4" style={{ color: currentConfig.colors.text }}>{product.description}</p>
-                                    <Button className="w-full font-semibold py-2 rounded-lg transition-all duration-300" style={{ background: `linear-gradient(to right, ${currentConfig.colors.primary}, ${currentConfig.colors.secondary})`, color: '#000000' }}>
+                                    <h3 className="text-xl font-bold mb-2" style={{ color: safeConfig.colors.text }}>{product.name}</h3>
+                                    <p className="mb-4" style={{ color: safeConfig.colors.text }}>{product.description}</p>
+                                    <Button className="w-full font-semibold py-2 rounded-lg transition-all duration-300" style={{ background: `linear-gradient(to right, ${safeConfig.colors.primary}, ${safeConfig.colors.secondary})`, color: '#000000' }}>
                                         Ver Más
                                     </Button>
                                 </div>
@@ -562,16 +577,16 @@ const HomePage: React.FC = () => {
                 <section id="nosotros" className="relative z-10 py-20 px-4 sm:px-6">
                     <div className="max-w-6xl mx-auto">
                         <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: currentConfig.colors.text }}>Nosotros</h2>
-                            <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${currentConfig.colors.primary}, transparent)` }}></div>
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: safeConfig.colors.text }}>Nosotros</h2>
+                            <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${safeConfig.colors.primary}, transparent)` }}></div>
                         </div>
                         
                         {/* Historia */}
-                        <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-12 mb-8 backdrop-blur-sm" style={{ borderColor: currentConfig.colors.primary }}>
-                            <h3 className="text-2xl sm:text-3xl font-bold mb-4 text-center" style={{ color: currentConfig.colors.primary }}>Nuestra Historia</h3>
-                            <p className="text-base sm:text-lg leading-relaxed text-center" style={{ color: currentConfig.colors.text }}>
+                        <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-12 mb-8 backdrop-blur-sm" style={{ borderColor: safeConfig.colors.primary }}>
+                            <h3 className="text-2xl sm:text-3xl font-bold mb-4 text-center" style={{ color: safeConfig.colors.primary }}>Nuestra Historia</h3>
+                            <p className="text-base sm:text-lg leading-relaxed text-center" style={{ color: safeConfig.colors.text }}>
                                 Todo comenzó como un sueño, una idea, pero con muchas ganas. Con el paso de los años, hemos logrado consolidarnos 
-                                como líderes en el mercado de puertas y ventanas, acumulando más de <strong style={{ color: currentConfig.colors.primary }}>10 años de experiencia</strong> 
+                                como líderes en el mercado de puertas y ventanas, acumulando más de <strong style={{ color: safeConfig.colors.primary }}>10 años de experiencia</strong> 
                                 en el sector. Nos hemos posicionado firmemente en nuestra región y estamos abriendo caminos en todo el territorio nacional.
                             </p>
                         </div>
@@ -579,12 +594,12 @@ const HomePage: React.FC = () => {
                         {/* Grid de Misión y Visión */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                             {/* Misión */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
                                 <div className="text-center mb-4">
-                                    <Shield className="w-16 h-16 mx-auto mb-4" style={{ color: currentConfig.colors.primary }} />
-                                    <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: currentConfig.colors.primary }}>Nuestra Misión</h3>
+                                    <Shield className="w-16 h-16 mx-auto mb-4" style={{ color: safeConfig.colors.primary }} />
+                                    <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: safeConfig.colors.primary }}>Nuestra Misión</h3>
                                 </div>
-                                <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
+                                <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
                                     Proporcionar puertas y ventanas de alta calidad a precios competitivos, fabricando productos personalizados 
                                     en tiempo récord. Nos comprometemos a ofrecer el mejor precio del mercado sin comprometer la excelencia en 
                                     calidad, asegurando que cada producto brinde seguridad y satisfacción a nuestros clientes.
@@ -592,12 +607,12 @@ const HomePage: React.FC = () => {
                             </div>
 
                             {/* Visión */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
                                 <div className="text-center mb-4">
-                                    <Star className="w-16 h-16 mx-auto mb-4" style={{ color: currentConfig.colors.primary }} />
-                                    <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: currentConfig.colors.primary }}>Nuestra Visión</h3>
+                                    <Star className="w-16 h-16 mx-auto mb-4" style={{ color: safeConfig.colors.primary }} />
+                                    <h3 className="text-2xl sm:text-3xl font-bold mb-4" style={{ color: safeConfig.colors.primary }}>Nuestra Visión</h3>
                                 </div>
-                                <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
+                                <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
                                     Ser la empresa líder en fabricación y distribución de puertas y ventanas a nivel nacional, reconocida por 
                                     nuestra capacidad de envío a todo el territorio, tiempos de fabricación récord, precios competitivos y, 
                                     sobre todo, por la calidad excepcional que garantiza la seguridad y confianza de nuestros clientes en 
@@ -608,20 +623,20 @@ const HomePage: React.FC = () => {
 
                         {/* Valores destacados */}
                         <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${currentConfig.colors.primary}50` }}>
-                                <Zap className="w-10 h-10 mx-auto mb-2" style={{ color: currentConfig.colors.primary }} />
-                                <h4 className="text-lg font-bold mb-2" style={{ color: currentConfig.colors.primary }}>Fabricación Rápida</h4>
-                                <p className="text-sm" style={{ color: currentConfig.colors.text }}>Tiempo récord en producción</p>
+                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${safeConfig.colors.primary}50` }}>
+                                <Zap className="w-10 h-10 mx-auto mb-2" style={{ color: safeConfig.colors.primary }} />
+                                <h4 className="text-lg font-bold mb-2" style={{ color: safeConfig.colors.primary }}>Fabricación Rápida</h4>
+                                <p className="text-sm" style={{ color: safeConfig.colors.text }}>Tiempo récord en producción</p>
                             </div>
-                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${currentConfig.colors.primary}50` }}>
-                                <Star className="w-10 h-10 mx-auto mb-2" style={{ color: currentConfig.colors.primary }} />
-                                <h4 className="text-lg font-bold mb-2" style={{ color: currentConfig.colors.primary }}>Mejor Precio</h4>
-                                <p className="text-sm" style={{ color: currentConfig.colors.text }}>Competitivos en el mercado</p>
+                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${safeConfig.colors.primary}50` }}>
+                                <Star className="w-10 h-10 mx-auto mb-2" style={{ color: safeConfig.colors.primary }} />
+                                <h4 className="text-lg font-bold mb-2" style={{ color: safeConfig.colors.primary }}>Mejor Precio</h4>
+                                <p className="text-sm" style={{ color: safeConfig.colors.text }}>Competitivos en el mercado</p>
                             </div>
-                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${currentConfig.colors.primary}50` }}>
-                                <Shield className="w-10 h-10 mx-auto mb-2" style={{ color: currentConfig.colors.primary }} />
-                                <h4 className="text-lg font-bold mb-2" style={{ color: currentConfig.colors.primary }}>Alta Calidad</h4>
-                                <p className="text-sm" style={{ color: currentConfig.colors.text }}>Seguridad garantizada</p>
+                            <div className="bg-gray-700/30 border rounded-lg p-4 text-center" style={{ borderColor: `${safeConfig.colors.primary}50` }}>
+                                <Shield className="w-10 h-10 mx-auto mb-2" style={{ color: safeConfig.colors.primary }} />
+                                <h4 className="text-lg font-bold mb-2" style={{ color: safeConfig.colors.primary }}>Alta Calidad</h4>
+                                <p className="text-sm" style={{ color: safeConfig.colors.text }}>Seguridad garantizada</p>
                             </div>
                         </div>
                     </div>
@@ -631,20 +646,20 @@ const HomePage: React.FC = () => {
                 <section id="servicios" className="relative z-10 py-20 px-4 sm:px-6 bg-gray-800/30">
                     <div className="max-w-6xl mx-auto">
                         <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: currentConfig.colors.text }}>Nuestros Servicios</h2>
-                            <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${currentConfig.colors.primary}, transparent)` }}></div>
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: safeConfig.colors.text }}>Nuestros Servicios</h2>
+                            <div className="w-24 h-1 mx-auto" style={{ background: `linear-gradient(to right, transparent, ${safeConfig.colors.primary}, transparent)` }}></div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                             {/* Servicio 1 */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
                                 <div className="flex items-start space-x-4">
                                     <div className="flex-shrink-0">
-                                        <ShoppingCart className="w-12 h-12" style={{ color: currentConfig.colors.primary }} />
+                                        <ShoppingCart className="w-12 h-12" style={{ color: safeConfig.colors.primary }} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: currentConfig.colors.primary }}>Venta de Puertas y Ventanas</h3>
-                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: safeConfig.colors.primary }}>Venta de Puertas y Ventanas</h3>
+                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
                                             Ofrecemos una amplia variedad de puertas y ventanas a los mejores precios del mercado. 
                                             Todos nuestros productos son seleccionados cuidadosamente para garantizar la mejor relación 
                                             calidad-precio para nuestros clientes.
@@ -654,14 +669,14 @@ const HomePage: React.FC = () => {
                             </div>
 
                             {/* Servicio 2 */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
                                 <div className="flex items-start space-x-4">
                                     <div className="flex-shrink-0">
-                                        <Package className="w-12 h-12" style={{ color: currentConfig.colors.primary }} />
+                                        <Package className="w-12 h-12" style={{ color: safeConfig.colors.primary }} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: currentConfig.colors.primary }}>Fabricación a Medida</h3>
-                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: safeConfig.colors.primary }}>Fabricación a Medida</h3>
+                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
                                             Si necesitas medidas especiales, las fabricamos para ti. Trabajamos en tiempo récord sin 
                                             comprometer la calidad. Cada producto personalizado es fabricado con los más altos estándares 
                                             de calidad y seguridad.
@@ -671,14 +686,14 @@ const HomePage: React.FC = () => {
                             </div>
 
                             {/* Servicio 3 */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
                                 <div className="flex items-start space-x-4">
                                     <div className="flex-shrink-0">
-                                        <Zap className="w-12 h-12" style={{ color: currentConfig.colors.primary }} />
+                                        <Zap className="w-12 h-12" style={{ color: safeConfig.colors.primary }} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: currentConfig.colors.primary }}>Tiempo Récord</h3>
-                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: safeConfig.colors.primary }}>Tiempo Récord</h3>
+                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
                                             Entendemos la urgencia de nuestros clientes. Por eso, fabricamos tus productos en el menor 
                                             tiempo posible, siempre manteniendo los más altos estándares de calidad y seguridad.
                                         </p>
@@ -687,14 +702,14 @@ const HomePage: React.FC = () => {
                             </div>
 
                             {/* Servicio 4 */}
-                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: currentConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = currentConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = currentConfig.colors.primary}>
+                            <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 backdrop-blur-sm transition-all duration-300" style={{ borderColor: safeConfig.colors.primary }} onMouseEnter={(e) => e.currentTarget.style.borderColor = safeConfig.colors.accent} onMouseLeave={(e) => e.currentTarget.style.borderColor = safeConfig.colors.primary}>
                                 <div className="flex items-start space-x-4">
                                     <div className="flex-shrink-0">
-                                        <Star className="w-12 h-12" style={{ color: currentConfig.colors.primary }} />
+                                        <Star className="w-12 h-12" style={{ color: safeConfig.colors.primary }} />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: currentConfig.colors.primary }}>Mejor Precio del Mercado</h3>
-                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: currentConfig.colors.text }}>
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-3" style={{ color: safeConfig.colors.primary }}>Mejor Precio del Mercado</h3>
+                                        <p className="text-base sm:text-lg leading-relaxed" style={{ color: safeConfig.colors.text }}>
                                             Ofrecemos los mejores precios sin sacrificar calidad. Nuestro compromiso es brindarte 
                                             productos de alta calidad a precios competitivos que se ajusten a tu presupuesto.
                                         </p>
@@ -709,60 +724,60 @@ const HomePage: React.FC = () => {
                 <section id="contacto" className="relative z-10 py-20 px-4 sm:px-6">
                     <div className="max-w-4xl mx-auto">
                         <div className="text-center mb-12">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: currentConfig.colors.text }}>{currentConfig.contact.title}</h2>
-                            <div className="w-24 h-1 mx-auto mb-6" style={{ background: `linear-gradient(to right, transparent, ${currentConfig.colors.primary}, transparent)` }}></div>
-                            <p className="text-lg" style={{ color: currentConfig.colors.text }}>{currentConfig.contact.subtitle}</p>
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: safeConfig.colors.text }}>{safeConfig.contact.title}</h2>
+                            <div className="w-24 h-1 mx-auto mb-6" style={{ background: `linear-gradient(to right, transparent, ${safeConfig.colors.primary}, transparent)` }}></div>
+                            <p className="text-lg" style={{ color: safeConfig.colors.text }}>{safeConfig.contact.subtitle}</p>
                         </div>
 
-                        <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-12 backdrop-blur-sm" style={{ borderColor: currentConfig.colors.primary }}>
+                        <div className="bg-gray-700/50 border-2 rounded-lg p-6 sm:p-8 md:p-12 backdrop-blur-sm" style={{ borderColor: safeConfig.colors.primary }}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
                                 {/* Información de Contacto */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: currentConfig.colors.primary }}>Información de Contacto</h3>
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: safeConfig.colors.primary }}>Información de Contacto</h3>
                                         <div className="space-y-4">
                                             <div className="flex items-start space-x-3">
                                                 <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-xl" style={{ color: currentConfig.colors.primary }}>📍</span>
+                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📍</span>
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold" style={{ color: currentConfig.colors.text }}>Dirección:</p>
-                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>Av. Principal, Zona Industrial</p>
-                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>San Francisco, Estado Zulia</p>
-                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>Venezuela</p>
+                                                    <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Dirección:</p>
+                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>Av. Principal, Zona Industrial</p>
+                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>San Francisco, Estado Zulia</p>
+                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>Venezuela</p>
                                                 </div>
                                             </div>
                                             
                                             <div className="flex items-start space-x-3">
                                                 <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-xl" style={{ color: currentConfig.colors.primary }}>📞</span>
+                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📞</span>
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold" style={{ color: currentConfig.colors.text }}>Teléfono:</p>
-                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>+58 412-123-4567</p>
-                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>+58 416-987-6543</p>
+                                                    <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Teléfono:</p>
+                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>+58 412-123-4567</p>
+                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>+58 416-987-6543</p>
                                                 </div>
                                             </div>
                                             
                                             <div className="flex items-start space-x-3">
                                                 <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-xl" style={{ color: currentConfig.colors.primary }}>✉️</span>
+                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>✉️</span>
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold" style={{ color: currentConfig.colors.text }}>Email:</p>
-                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>contacto@tumundopuertas.com</p>
-                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>ventas@tumundopuertas.com</p>
+                                                    <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Email:</p>
+                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>contacto@tumundopuertas.com</p>
+                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>ventas@tumundopuertas.com</p>
                                                 </div>
                                             </div>
                                             
                                             <div className="flex items-start space-x-3">
                                                 <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-xl" style={{ color: currentConfig.colors.primary }}>🕒</span>
+                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>🕒</span>
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold" style={{ color: currentConfig.colors.text }}>Horario de Atención:</p>
-                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>Lunes a Viernes: 8:00 AM - 6:00 PM</p>
-                                                    <p style={{ color: currentConfig.colors.text, opacity: 0.8 }}>Sábados: 8:00 AM - 2:00 PM</p>
+                                                    <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Horario de Atención:</p>
+                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>Lunes a Viernes: 8:00 AM - 6:00 PM</p>
+                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>Sábados: 8:00 AM - 2:00 PM</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -772,26 +787,26 @@ const HomePage: React.FC = () => {
                                 {/* Redes Sociales / Información Adicional */}
                                 <div className="space-y-6">
                                     <div>
-                                        <h3 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: currentConfig.colors.primary }}>Síguenos</h3>
+                                        <h3 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: safeConfig.colors.primary }}>Síguenos</h3>
                                         <div className="space-y-3">
                                             <div className="flex items-center space-x-3">
-                                                <span className="text-xl" style={{ color: currentConfig.colors.primary }}>📱</span>
-                                                <p style={{ color: currentConfig.colors.text }}>Instagram: @tumundopuertas</p>
+                                                <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📱</span>
+                                                <p style={{ color: safeConfig.colors.text }}>Instagram: @tumundopuertas</p>
                                             </div>
                                             <div className="flex items-center space-x-3">
-                                                <span className="text-xl" style={{ color: currentConfig.colors.primary }}>📘</span>
-                                                <p style={{ color: currentConfig.colors.text }}>Facebook: Tu Mundo Puertas</p>
+                                                <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📘</span>
+                                                <p style={{ color: safeConfig.colors.text }}>Facebook: Tu Mundo Puertas</p>
                                             </div>
                                             <div className="flex items-center space-x-3">
-                                                <span className="text-xl" style={{ color: currentConfig.colors.primary }}>💼</span>
-                                                <p style={{ color: currentConfig.colors.text }}>WhatsApp: +58 412-123-4567</p>
+                                                <span className="text-xl" style={{ color: safeConfig.colors.primary }}>💼</span>
+                                                <p style={{ color: safeConfig.colors.text }}>WhatsApp: +58 412-123-4567</p>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="border rounded-lg p-4" style={{ backgroundColor: `${currentConfig.colors.primary}10`, borderColor: `${currentConfig.colors.primary}30` }}>
-                                        <p className="text-sm sm:text-base" style={{ color: currentConfig.colors.text }}>
-                                            <strong style={{ color: currentConfig.colors.primary }}>¿Tienes una pregunta?</strong><br />
+                                    <div className="border rounded-lg p-4" style={{ backgroundColor: `${safeConfig.colors.primary}10`, borderColor: `${safeConfig.colors.primary}30` }}>
+                                        <p className="text-sm sm:text-base" style={{ color: safeConfig.colors.text }}>
+                                            <strong style={{ color: safeConfig.colors.primary }}>¿Tienes una pregunta?</strong><br />
                                             Estamos aquí para ayudarte. Contáctanos y te responderemos lo antes posible.
                                         </p>
                                     </div>
