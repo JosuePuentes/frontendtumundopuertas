@@ -66,62 +66,79 @@ const FacturacionPage: React.FC = () => {
       let pedidosOrden4: any[] = [];
       
       try {
-        // Intentar obtener pedidos con estado_general = "orden4"
+        // CRÍTICO: Primero obtener pedidos con estado_general = "orden4" (los que el backend ya movió automáticamente)
         const resOrden4 = await fetch(`${getApiUrl()}/pedidos/estado/?estado_general=orden4`);
         if (resOrden4.ok) {
           pedidosOrden4 = await resOrden4.json();
           pedidos = [...pedidosOrden4];
-          console.log(`✅ Pedidos con estado_general=orden4: ${pedidosOrden4.length}`);
+          console.log(`✅ Pedidos con estado_general=orden4 obtenidos: ${pedidosOrden4.length}`);
+        } else {
+          console.warn(`⚠️ No se pudieron obtener pedidos con orden4 (status: ${resOrden4.status})`);
         }
       } catch (e) {
-        console.warn('No se pudo obtener pedidos por estado, usando /all/');
+        console.warn('⚠️ Error al obtener pedidos por estado orden4:', e);
       }
       
-      // Si no hay pedidos con orden4, obtener todos los pedidos para buscar los que tengan items completados
-      if (pedidos.length === 0) {
-        try {
+      // CRÍTICO: También obtener todos los pedidos para buscar los que tengan items completados o estado_general=orden4
+      // Esto asegura que no se pierdan pedidos con orden4 si el endpoint anterior falla
+      try {
         const res = await fetch(`${getApiUrl()}/pedidos/all/`);
         if (!res.ok) throw new Error("Error al obtener pedidos");
-        pedidos = await res.json();
-          console.log(`📊 Pedidos obtenidos de /pedidos/all/: ${pedidos.length}`);
-          // Debug: Verificar adicionales en TODOS los pedidos
-          console.log(`🔍 DEBUG PEDIDO ALL - Verificando adicionales en ${pedidos.length} pedidos:`);
-          pedidos.forEach((pedido: any, idx: number) => {
-            if (pedido.adicionales !== null && pedido.adicionales !== undefined) {
-              console.log(`  📦 Pedido ${idx + 1} (${pedido._id?.slice(-8)}):`, {
-                tieneAdicionales: 'adicionales' in pedido,
-                adicionales: pedido.adicionales,
-                tipoAdicionales: typeof pedido.adicionales,
-                esArray: Array.isArray(pedido.adicionales),
-                esNull: pedido.adicionales === null,
-                esUndefined: pedido.adicionales === undefined,
-                cantidad: Array.isArray(pedido.adicionales) ? pedido.adicionales.length : 'N/A'
-              });
+        const todosLosPedidos = await res.json();
+        
+        // Combinar pedidos de orden4 con todos los pedidos, evitando duplicados
+        const pedidosIdsExistentes = new Set(pedidos.map((p: any) => p._id));
+        for (const pedido of todosLosPedidos) {
+          if (!pedidosIdsExistentes.has(pedido._id)) {
+            pedidos.push(pedido);
+          }
+        }
+        
+        // CRÍTICO: Asegurar que todos los pedidos con orden4 estén en la lista
+        const pedidosOrden4EnTodos = todosLosPedidos.filter((p: any) => p.estado_general === "orden4");
+        if (pedidosOrden4EnTodos.length > pedidosOrden4.length) {
+          console.log(`✅ Encontrados ${pedidosOrden4EnTodos.length} pedidos con orden4 en /all/ (vs ${pedidosOrden4.length} del endpoint específico)`);
+          // Agregar los que faltan
+          const idsOrden4Existentes = new Set(pedidosOrden4.map((p: any) => p._id));
+          for (const pedido of pedidosOrden4EnTodos) {
+            if (!idsOrden4Existentes.has(pedido._id)) {
+              pedidos.push(pedido);
+              pedidosOrden4.push(pedido);
             }
-          });
-          // También verificar el primer pedido en detalle
-          if (pedidos.length > 0) {
-            const primerPedido = pedidos[0];
-            console.log(`🔍 DEBUG PEDIDO ALL - Primer pedido detallado:`, {
-              pedidoId: primerPedido._id?.slice(-8),
-              tieneAdicionales: 'adicionales' in primerPedido,
-              adicionales: primerPedido.adicionales,
-              tipoAdicionales: typeof primerPedido.adicionales,
-              esArray: Array.isArray(primerPedido.adicionales),
-              keysPedido: Object.keys(primerPedido), // Ver todas las keys del pedido
-              pedidoCompleto: primerPedido
+          }
+        }
+        
+        console.log(`📊 Total pedidos obtenidos (incluyendo orden4): ${pedidos.length}`);
+        console.log(`📊 Pedidos con orden4 encontrados: ${pedidosOrden4.length}`);
+        
+        // Debug: Verificar adicionales en TODOS los pedidos
+        console.log(`🔍 DEBUG PEDIDO ALL - Verificando adicionales en ${pedidos.length} pedidos:`);
+        pedidos.forEach((pedido: any, idx: number) => {
+          if (pedido.adicionales !== null && pedido.adicionales !== undefined) {
+            console.log(`  📦 Pedido ${idx + 1} (${pedido._id?.slice(-8)}):`, {
+              tieneAdicionales: 'adicionales' in pedido,
+              adicionales: pedido.adicionales,
+              tipoAdicionales: typeof pedido.adicionales,
+              esArray: Array.isArray(pedido.adicionales),
+              esNull: pedido.adicionales === null,
+              esUndefined: pedido.adicionales === undefined,
+              cantidad: Array.isArray(pedido.adicionales) ? pedido.adicionales.length : 'N/A'
             });
           }
-          // IMPORTANTE: Verificar si el pedido específico está en esta lista
-          const pedidoEspecificoEnAll = pedidos.find((p: any) => p._id === '69042b91a9a8ebdaf861c3f0');
-          if (pedidoEspecificoEnAll) {
-            console.log(`✅ Pedido específico encontrado en /pedidos/all/`);
-          } else {
-            console.warn(`⚠️ Pedido específico NO encontrado en /pedidos/all/ (puede estar limitado a 100 pedidos)`);
-          }
-        } catch (err: any) {
-          console.error(`❌ Error al obtener todos los pedidos:`, err.message || err);
-          throw err;
+        });
+        
+        // IMPORTANTE: Verificar si el pedido específico está en esta lista
+        const pedidoEspecificoEnAll = pedidos.find((p: any) => p._id === '69042b91a9a8ebdaf861c3f0');
+        if (pedidoEspecificoEnAll) {
+          console.log(`✅ Pedido específico encontrado en /pedidos/all/`);
+        } else {
+          console.warn(`⚠️ Pedido específico NO encontrado en /pedidos/all/ (puede estar limitado a 100 pedidos)`);
+        }
+      } catch (err: any) {
+        console.error(`❌ Error al obtener todos los pedidos:`, err.message || err);
+        // No lanzar error, continuar con los pedidos que ya se obtuvieron
+        if (pedidos.length === 0) {
+          throw err; // Solo lanzar si no hay pedidos
         }
       }
       
@@ -233,12 +250,16 @@ const FacturacionPage: React.FC = () => {
         return fechaB - fechaA; // Más reciente primero
       });
       
-      // Aumentar el límite a 1000 pedidos para asegurar que no se pierdan pedidos al 100%
-      // Pero priorizar pedidos con items completados o orden4
-      const pedidosPrioritarios = pedidosOrdenados.filter((p: any) => 
-        p.estado_general === "orden4" || 
-        pedidosConItemsCompletados.find((pc: any) => pc._id === p._id)
-      );
+      // CRÍTICO: Priorizar TODOS los pedidos con estado_general === "orden4" (movedos automáticamente por el backend)
+      // También incluir pedidos con items completados que aún no tienen orden4
+      const pedidosPrioritarios = pedidosOrdenados.filter((p: any) => {
+        const esOrden4 = p.estado_general === "orden4";
+        const tieneItemsCompletados = pedidosConItemsCompletados.find((pc: any) => pc._id === p._id);
+        if (esOrden4) {
+          console.log(`✅ Pedido ${p._id.slice(-4)}: PRIORIZADO por tener estado_general=orden4`);
+        }
+        return esOrden4 || tieneItemsCompletados;
+      });
       
       const pedidosRestantes = pedidosOrdenados.filter((p: any) => 
         !pedidosPrioritarios.find((pp: any) => pp._id === p._id)
@@ -248,6 +269,8 @@ const FacturacionPage: React.FC = () => {
       
       console.log(`📅 Total pedidos para verificar: ${pedidosLimitados.length} de ${pedidos.length}`);
       console.log(`📅 Pedidos prioritarios (orden4 o items completados): ${pedidosPrioritarios.length}`);
+      const pedidosOrden4EnLimitados = pedidosLimitados.filter((p: any) => p.estado_general === "orden4");
+      console.log(`✅ Pedidos con estado_general=orden4 en lista para procesar: ${pedidosOrden4EnLimitados.length}`);
       
       // OPTIMIZACIÓN: Cargar todos los pedidos en paralelo con timeout
       // Si un pedido ya tiene estado_general = "orden4", asumimos que está al 100%
@@ -321,9 +344,15 @@ const FacturacionPage: React.FC = () => {
             const todosItemsEnProgreso = esPedidoClienteEspecialNuevo && tieneItems && 
               pedido.items.every((item: any) => item.estado_item !== undefined && item.estado_item !== null);
             
+            // CRÍTICO: Si el pedido tiene estado_general === "orden4", incluirlo SIEMPRE sin verificar nada más
+            // Esto es porque el backend ya verificó que todos los items están completados antes de moverlo a orden4
+            if (pedido.estado_general === "orden4") {
+              console.log(`✅ Pedido ${pedidoIdShort}: INCLUIDO automáticamente por tener estado_general=orden4`);
+              // Continuar con el procesamiento del pedido (no retornar null)
+            } 
             // CRÍTICO: El pedido específico o pedidos del cliente especial nuevos deben incluirse SIEMPRE
             // sin importar su progreso, estado_general o estado_item
-            if (!progresoEs100 && pedido.estado_general !== "orden4" && !todosItemsCompletados && !todosItemsPrepararOCompletados && !todosItemsEnProgreso && !esPedidoEspecifico && !esPedidoClienteEspecialNuevo) {
+            else if (!progresoEs100 && !todosItemsCompletados && !todosItemsPrepararOCompletados && !todosItemsEnProgreso && !esPedidoEspecifico && !esPedidoClienteEspecialNuevo) {
               if (pedido._id.includes('61c3f0') || pedidoIdShort === '3f0' || esClienteEspecial) {
                 console.log(`❌ PEDIDO ${pedidoIdShort} ${esClienteEspecial ? '(CLIENTE ESPECIAL)' : ''} EXCLUIDO:`, {
                   progresoEs100,
