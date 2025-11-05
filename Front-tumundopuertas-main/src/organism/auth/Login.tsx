@@ -128,23 +128,58 @@ const Login: React.FC = () => {
 					
 					{/* Desktop Navigation */}
 					<nav className="hidden md:flex space-x-8">
-						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
+						<a 
+							href="/"
+							onClick={(e) => {
+								e.preventDefault();
+								window.location.href = '/';
+							}}
+							className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+						>
 							Inicio
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
-						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
+						<a 
+							href="/#productos"
+							onClick={(e) => {
+								e.preventDefault();
+								window.location.href = '/#productos';
+							}}
+							className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+						>
 							Productos
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
-						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
-							Proyectos
+						<a 
+							href="/#nosotros"
+							onClick={(e) => {
+								e.preventDefault();
+								window.location.href = '/#nosotros';
+							}}
+							className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+						>
+							Nosotros
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
-						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
+						<a 
+							href="/#servicios"
+							onClick={(e) => {
+								e.preventDefault();
+								window.location.href = '/#servicios';
+							}}
+							className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+						>
 							Servicios
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
-						<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
+						<a 
+							href="/#contacto"
+							onClick={(e) => {
+								e.preventDefault();
+								window.location.href = '/#contacto';
+							}}
+							className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+						>
 							Contacto
 							<div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
 						</a>
@@ -155,11 +190,56 @@ const Login: React.FC = () => {
 				{isMenuOpen && (
 					<div className="md:hidden mt-4 bg-gray-800/50 backdrop-blur-sm rounded-lg p-4">
 						<nav className="flex flex-col space-y-4">
-							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Inicio</a>
-							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Productos</a>
-							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Proyectos</a>
-							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Servicios</a>
-							<a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300">Contacto</a>
+							<a 
+								href="/"
+								onClick={(e) => {
+									e.preventDefault();
+									window.location.href = '/';
+								}}
+								className="text-gray-200 hover:text-cyan-400 transition-colors duration-300"
+							>
+								Inicio
+							</a>
+							<a 
+								href="/#productos"
+								onClick={(e) => {
+									e.preventDefault();
+									window.location.href = '/#productos';
+								}}
+								className="text-gray-200 hover:text-cyan-400 transition-colors duration-300"
+							>
+								Productos
+							</a>
+							<a 
+								href="/#nosotros"
+								onClick={(e) => {
+									e.preventDefault();
+									window.location.href = '/#nosotros';
+								}}
+								className="text-gray-200 hover:text-cyan-400 transition-colors duration-300"
+							>
+								Nosotros
+							</a>
+							<a 
+								href="/#servicios"
+								onClick={(e) => {
+									e.preventDefault();
+									window.location.href = '/#servicios';
+								}}
+								className="text-gray-200 hover:text-cyan-400 transition-colors duration-300"
+							>
+								Servicios
+							</a>
+							<a 
+								href="/#contacto"
+								onClick={(e) => {
+									e.preventDefault();
+									window.location.href = '/#contacto';
+								}}
+								className="text-gray-200 hover:text-cyan-400 transition-colors duration-300"
+							>
+								Contacto
+							</a>
 						</nav>
 					</div>
 				)}

@@ -401,25 +401,57 @@ const HomePage: React.FC = () => {
                         
                         <nav className="hidden lg:flex space-x-4 md:space-x-8">
                             <a 
-                                href="https://www.tumundopuerta.com/"
+                                href="#inicio"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
                                 className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
                             >
                                 Inicio
                                 <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
                             </a>
-                            <a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
+                            <a 
+                                href="#productos"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                            >
                                 Productos
                                 <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
                             </a>
-                            <a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
-                                Proyectos
+                            <a 
+                                href="#nosotros"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    document.getElementById('nosotros')?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                            >
+                                Nosotros
                                 <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
                             </a>
-                            <a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
+                            <a 
+                                href="#servicios"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    document.getElementById('servicios')?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                            >
                                 Servicios
                                 <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
                             </a>
-                            <a href="#" className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group">
+                            <a 
+                                href="#contacto"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    document.getElementById('contacto')?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className="text-gray-200 hover:text-cyan-400 transition-colors duration-300 relative group"
+                            >
                                 Contacto
                                 <div className="absolute -bottom-1 left-0 w-0 h-px bg-cyan-400 transition-all duration-300 group-hover:w-full"></div>
                             </a>
@@ -496,7 +528,7 @@ const HomePage: React.FC = () => {
                 </section>
 
                 {/* Product Gallery Section */}
-                <section className="relative z-10 py-10 sm:py-16 md:py-20 px-4 sm:px-6">
+                <section id="productos" className="relative z-10 py-10 sm:py-16 md:py-20 px-4 sm:px-6">
                     <div className="max-w-6xl mx-auto">
                         <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-200 text-center mb-6 sm:mb-8 md:mb-12">{currentConfig.products.title}</h2>
                         
@@ -521,15 +553,248 @@ const HomePage: React.FC = () => {
                     </div>
                 </section>
 
-                {/* Dynamic Contact Section */}
-                {currentConfig.contact.enabled && (
-                    <section className="relative z-10 py-20 px-6">
-                        <div className="max-w-4xl mx-auto text-center">
-                            <h2 className="text-4xl font-bold text-gray-200 mb-6">{currentConfig.contact.title}</h2>
-                            <p className="text-gray-200 text-lg mb-8">{currentConfig.contact.subtitle}</p>
+                {/* Nosotros Section - Misión y Visión */}
+                <section id="nosotros" className="relative z-10 py-20 px-4 sm:px-6">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="text-center mb-12">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-200 mb-4">Nosotros</h2>
+                            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent mx-auto"></div>
                         </div>
-                    </section>
-                )}
+                        
+                        {/* Historia */}
+                        <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 md:p-12 mb-8 backdrop-blur-sm">
+                            <h3 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-4 text-center">Nuestra Historia</h3>
+                            <p className="text-gray-200 text-base sm:text-lg leading-relaxed text-center">
+                                Todo comenzó como un sueño, una idea, pero con muchas ganas. Con el paso de los años, hemos logrado consolidarnos 
+                                como líderes en el mercado de puertas y ventanas, acumulando más de <strong className="text-cyan-400">10 años de experiencia</strong> 
+                                en el sector. Nos hemos posicionado firmemente en nuestra región y estamos abriendo caminos en todo el territorio nacional.
+                            </p>
+                        </div>
+
+                        {/* Grid de Misión y Visión */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                            {/* Misión */}
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                                <div className="text-center mb-4">
+                                    <Shield className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
+                                    <h3 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-4">Nuestra Misión</h3>
+                                </div>
+                                <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                    Proporcionar puertas y ventanas de alta calidad a precios competitivos, fabricando productos personalizados 
+                                    en tiempo récord. Nos comprometemos a ofrecer el mejor precio del mercado sin comprometer la excelencia en 
+                                    calidad, asegurando que cada producto brinde seguridad y satisfacción a nuestros clientes.
+                                </p>
+                            </div>
+
+                            {/* Visión */}
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                                <div className="text-center mb-4">
+                                    <Star className="w-16 h-16 text-cyan-400 mx-auto mb-4" />
+                                    <h3 className="text-2xl sm:text-3xl font-bold text-cyan-400 mb-4">Nuestra Visión</h3>
+                                </div>
+                                <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                    Ser la empresa líder en fabricación y distribución de puertas y ventanas a nivel nacional, reconocida por 
+                                    nuestra capacidad de envío a todo el territorio, tiempos de fabricación récord, precios competitivos y, 
+                                    sobre todo, por la calidad excepcional que garantiza la seguridad y confianza de nuestros clientes en 
+                                    cada uno de nuestros productos.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Valores destacados */}
+                        <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                            <div className="bg-gray-700/30 border border-cyan-400/50 rounded-lg p-4 text-center">
+                                <Zap className="w-10 h-10 text-cyan-400 mx-auto mb-2" />
+                                <h4 className="text-lg font-bold text-cyan-400 mb-2">Fabricación Rápida</h4>
+                                <p className="text-gray-200 text-sm">Tiempo récord en producción</p>
+                            </div>
+                            <div className="bg-gray-700/30 border border-cyan-400/50 rounded-lg p-4 text-center">
+                                <Star className="w-10 h-10 text-cyan-400 mx-auto mb-2" />
+                                <h4 className="text-lg font-bold text-cyan-400 mb-2">Mejor Precio</h4>
+                                <p className="text-gray-200 text-sm">Competitivos en el mercado</p>
+                            </div>
+                            <div className="bg-gray-700/30 border border-cyan-400/50 rounded-lg p-4 text-center">
+                                <Shield className="w-10 h-10 text-cyan-400 mx-auto mb-2" />
+                                <h4 className="text-lg font-bold text-cyan-400 mb-2">Alta Calidad</h4>
+                                <p className="text-gray-200 text-sm">Seguridad garantizada</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Servicios Section */}
+                <section id="servicios" className="relative z-10 py-20 px-4 sm:px-6 bg-gray-800/30">
+                    <div className="max-w-6xl mx-auto">
+                        <div className="text-center mb-12">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-200 mb-4">Nuestros Servicios</h2>
+                            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent mx-auto"></div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                            {/* Servicio 1 */}
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                                <div className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0">
+                                        <ShoppingCart className="w-12 h-12 text-cyan-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-3">Venta de Puertas y Ventanas</h3>
+                                        <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                            Ofrecemos una amplia variedad de puertas y ventanas a los mejores precios del mercado. 
+                                            Todos nuestros productos son seleccionados cuidadosamente para garantizar la mejor relación 
+                                            calidad-precio para nuestros clientes.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Servicio 2 */}
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                                <div className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0">
+                                        <Package className="w-12 h-12 text-cyan-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-3">Fabricación a Medida</h3>
+                                        <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                            Si necesitas medidas especiales, las fabricamos para ti. Trabajamos en tiempo récord sin 
+                                            comprometer la calidad. Cada producto personalizado es fabricado con los más altos estándares 
+                                            de calidad y seguridad.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Servicio 3 */}
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                                <div className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0">
+                                        <Zap className="w-12 h-12 text-cyan-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-3">Tiempo Récord</h3>
+                                        <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                            Entendemos la urgencia de nuestros clientes. Por eso, fabricamos tus productos en el menor 
+                                            tiempo posible, siempre manteniendo los más altos estándares de calidad y seguridad.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Servicio 4 */}
+                            <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 backdrop-blur-sm hover:border-cyan-300 transition-all duration-300">
+                                <div className="flex items-start space-x-4">
+                                    <div className="flex-shrink-0">
+                                        <Star className="w-12 h-12 text-cyan-400" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-3">Mejor Precio del Mercado</h3>
+                                        <p className="text-gray-200 text-base sm:text-lg leading-relaxed">
+                                            Ofrecemos los mejores precios sin sacrificar calidad. Nuestro compromiso es brindarte 
+                                            productos de alta calidad a precios competitivos que se ajusten a tu presupuesto.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Contact Section */}
+                <section id="contacto" className="relative z-10 py-20 px-4 sm:px-6">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="text-center mb-12">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-gray-200 mb-4">{currentConfig.contact.title}</h2>
+                            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent mx-auto mb-6"></div>
+                            <p className="text-gray-200 text-lg">{currentConfig.contact.subtitle}</p>
+                        </div>
+
+                        <div className="bg-gray-700/50 border-2 border-cyan-400 rounded-lg p-6 sm:p-8 md:p-12 backdrop-blur-sm">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+                                {/* Información de Contacto */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-4">Información de Contacto</h3>
+                                        <div className="space-y-4">
+                                            <div className="flex items-start space-x-3">
+                                                <div className="flex-shrink-0 mt-1">
+                                                    <span className="text-cyan-400 text-xl">📍</span>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-200 font-semibold">Dirección:</p>
+                                                    <p className="text-gray-300">Av. Principal, Zona Industrial</p>
+                                                    <p className="text-gray-300">San Francisco, Estado Zulia</p>
+                                                    <p className="text-gray-300">Venezuela</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-start space-x-3">
+                                                <div className="flex-shrink-0 mt-1">
+                                                    <span className="text-cyan-400 text-xl">📞</span>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-200 font-semibold">Teléfono:</p>
+                                                    <p className="text-gray-300">+58 412-123-4567</p>
+                                                    <p className="text-gray-300">+58 416-987-6543</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-start space-x-3">
+                                                <div className="flex-shrink-0 mt-1">
+                                                    <span className="text-cyan-400 text-xl">✉️</span>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-200 font-semibold">Email:</p>
+                                                    <p className="text-gray-300">contacto@tumundopuertas.com</p>
+                                                    <p className="text-gray-300">ventas@tumundopuertas.com</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-start space-x-3">
+                                                <div className="flex-shrink-0 mt-1">
+                                                    <span className="text-cyan-400 text-xl">🕒</span>
+                                                </div>
+                                                <div>
+                                                    <p className="text-gray-200 font-semibold">Horario de Atención:</p>
+                                                    <p className="text-gray-300">Lunes a Viernes: 8:00 AM - 6:00 PM</p>
+                                                    <p className="text-gray-300">Sábados: 8:00 AM - 2:00 PM</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Redes Sociales / Información Adicional */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-4">Síguenos</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center space-x-3">
+                                                <span className="text-cyan-400 text-xl">📱</span>
+                                                <p className="text-gray-200">Instagram: @tumundopuertas</p>
+                                            </div>
+                                            <div className="flex items-center space-x-3">
+                                                <span className="text-cyan-400 text-xl">📘</span>
+                                                <p className="text-gray-200">Facebook: Tu Mundo Puertas</p>
+                                            </div>
+                                            <div className="flex items-center space-x-3">
+                                                <span className="text-cyan-400 text-xl">💼</span>
+                                                <p className="text-gray-200">WhatsApp: +58 412-123-4567</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-cyan-400/10 border border-cyan-400/30 rounded-lg p-4">
+                                        <p className="text-gray-200 text-sm sm:text-base">
+                                            <strong className="text-cyan-400">¿Tienes una pregunta?</strong><br />
+                                            Estamos aquí para ayudarte. Contáctanos y te responderemos lo antes posible.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
                 {/* Modales de Cliente */}
                 <ClienteLoginModal
