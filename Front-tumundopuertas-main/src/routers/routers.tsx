@@ -19,6 +19,7 @@ import ModificarItemPage from "@/organism/inventario/ModificarItemPage";
 import CargarInventarioExcel from "@/organism/inventario/CargarInventarioExcel";
 import ModificarUsuario from "@/organism/usuarios/ModificarUsuario";
 import DashboardAsignaciones from "@/organism/dashboard/DashboardAsignaciones";
+import DashboardItems from "@/organism/dashboard/DashboardItems";
 import ModificarCliente from "@/organism/clientes/ModificarCliente";
 import TerminarAsignacion from "@/organism/teminarasignacion/TerminarAsignacion";
 import MonitorPedidos from "@/organism/monitorped/MonitorPedidos";
@@ -100,6 +101,14 @@ function AppRouter() {
           element={
             <ProtectedRoute permiso="resumenVentaDiaria">
               <ResumenVentaDiaria />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="dashboard"
+          element={
+            <ProtectedRoute permiso="dashboard-asignaciones">
+              <DashboardItems />
             </ProtectedRoute>
           }
         />
