@@ -560,7 +560,7 @@ const AdminHome: React.FC = () => {
       if (data.config) {
         const savedBannerImage = data.config.banner?.image?.length || 0;
         const savedLogoImage = data.config.logo?.image?.length || 0;
-        const savedProductImages = data.config.products?.items?.filter(p => p.image && p.image.length > 100).length || 0;
+        const savedProductImages = data.config.products?.items?.filter((p: any) => p.image && p.image.length > 100).length || 0;
         
         console.log('📋 Configuración guardada en backend:');
         console.log('  Banner image:', savedBannerImage > 100 ? `✅ Guardada (${savedBannerImage} chars)` : '❌ No guardada');
