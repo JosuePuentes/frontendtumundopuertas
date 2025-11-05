@@ -555,22 +555,99 @@ const AdminHome: React.FC = () => {
 
       const data = await response.json();
       console.log('✅ Configuración guardada exitosamente');
+      console.log('📦 Estructura de respuesta:', {
+        tieneConfig: !!data.config,
+        tieneBanner: !!data.config?.banner,
+        tieneLogo: !!data.config?.logo,
+        tieneProducts: !!data.config?.products,
+        keys: data.config ? Object.keys(data.config) : 'No hay config'
+      });
       
       // Verificar que las imágenes se guardaron correctamente
-      if (data.config) {
+      if (data && data.config) {
         const savedBannerImage = data.config.banner?.image?.length || 0;
         const savedLogoImage = data.config.logo?.image?.length || 0;
         const savedProductImages = data.config.products?.items?.filter((p: any) => p.image && p.image.length > 100).length || 0;
         
         console.log('📋 Configuración guardada en backend:');
-        console.log('  Banner image:', savedBannerImage > 100 ? `✅ Guardada (${savedBannerImage} chars)` : '❌ No guardada');
-        console.log('  Logo image:', savedLogoImage > 100 ? `✅ Guardada (${savedLogoImage} chars)` : '❌ No guardada');
+        console.log('  Banner image:', savedBannerImage > 100 ? `✅ Guardada (${savedBannerImage} chars)` : `❌ No guardada (${savedBannerImage} chars)`);
+        console.log('  Logo image:', savedLogoImage > 100 ? `✅ Guardada (${savedLogoImage} chars)` : `❌ No guardada (${savedLogoImage} chars)`);
         console.log('  Productos con imagen:', savedProductImages);
+        
+        // Si las imágenes no están en la respuesta, usar las que enviamos
+        if (savedBannerImage < 100 && configToSave.banner.image && configToSave.banner.image.length > 100) {
+          console.warn('⚠️ Banner image no está en la respuesta del backend, usando la enviada');
+          if (!data.config.banner) data.config.banner = {};
+          data.config.banner.image = configToSave.banner.image;
+        }
+        if (savedLogoImage < 100 && configToSave.logo.image && configToSave.logo.image.length > 100) {
+          console.warn('⚠️ Logo image no está en la respuesta del backend, usando la enviada');
+          if (!data.config.logo) data.config.logo = {};
+          data.config.logo.image = configToSave.logo.image;
+        }
       }
       
       // Actualizar el estado local con la configuración guardada (usar la respuesta del backend)
       // Esto asegura que tengamos exactamente lo que el backend guardó (con merge inteligente aplicado)
-      const finalConfig = data.config || configToSave;
+      // Si la respuesta no tiene config completo, usar la que enviamos (merge manual)
+      let finalConfig: HomeConfig;
+      if (data && data.config && typeof data.config === 'object') {
+        // Hacer merge inteligente: usar la respuesta del backend pero preservar campos que puedan faltar
+        // IMPORTANTE: Preservar imágenes si el backend no las retorna (pueden ser muy grandes)
+        finalConfig = {
+          ...configToSave,
+          ...data.config,
+          banner: {
+            ...configToSave.banner,
+            ...(data.config.banner || {}),
+            // Preservar imagen si la respuesta no la tiene pero la enviamos
+            image: (data.config.banner?.image && data.config.banner.image.length > 100) 
+              ? data.config.banner.image 
+              : (configToSave.banner.image || '')
+          },
+          logo: {
+            ...configToSave.logo,
+            ...(data.config.logo || {}),
+            // Preservar imagen si la respuesta no la tiene pero la enviamos
+            image: (data.config.logo?.image && data.config.logo.image.length > 100) 
+              ? data.config.logo.image 
+              : (configToSave.logo.image || '')
+          },
+          products: {
+            title: data.config.products?.title || configToSave.products.title || 'Productos',
+            items: (data.config.products?.items || configToSave.products.items || []).map((item: any, index: number) => ({
+              ...item,
+              // Preservar imagen si la respuesta no la tiene pero la enviamos
+              image: (item.image && item.image.length > 100) 
+                ? item.image 
+                : (configToSave.products.items[index]?.image || '')
+            }))
+          },
+          // Asegurar que todos los campos requeridos estén presentes
+          values: data.config.values || configToSave.values,
+          contact: {
+            ...configToSave.contact,
+            ...(data.config.contact || {})
+          },
+          colors: data.config.colors || configToSave.colors,
+          nosotros: data.config.nosotros || configToSave.nosotros,
+          servicios: data.config.servicios || configToSave.servicios,
+          typography: data.config.typography || configToSave.typography
+        };
+      } else {
+        console.warn('⚠️ La respuesta del backend no tiene config, usando la configuración enviada');
+        finalConfig = configToSave;
+      }
+      
+      // Validación final: asegurar que todos los campos requeridos estén presentes
+      if (!finalConfig.products || !finalConfig.products.title) {
+        finalConfig.products = {
+          ...finalConfig.products,
+          title: finalConfig.products?.title || 'Productos',
+          items: finalConfig.products?.items || []
+        };
+      }
+      
       setConfig(finalConfig);
       
       // También guardar en localStorage como respaldo/cache
