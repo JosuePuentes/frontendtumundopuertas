@@ -12,12 +12,9 @@ import {
   AlertCircle, 
   CheckCircle,
   Calendar,
-  BarChart3,
-  PieChart,
   Activity,
   Warehouse,
-  Factory,
-  Target
+  Factory
 } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
 import {
@@ -746,12 +743,12 @@ const PanelControlLogistico: React.FC = () => {
                             cx="50%"
                             cy="50%"
                             labelLine={false}
-                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                            label={({ name, percent }: { name: string; percent: number }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                             outerRadius={80}
                             fill="#8884d8"
                             dataKey="value"
                           >
-                            {[0, 1, 2, 3].map((entry, index) => (
+                            {[0, 1, 2, 3].map((_, index) => (
                               <Cell key={`cell-${index}`} fill={COLORS[index]} />
                             ))}
                           </Pie>
