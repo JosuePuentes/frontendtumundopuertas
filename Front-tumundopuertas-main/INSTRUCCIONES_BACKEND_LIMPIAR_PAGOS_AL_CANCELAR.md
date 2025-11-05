@@ -8,6 +8,8 @@ Cuando se cancela un pedido desde MonitorPedidos, se deben **eliminar TODOS los 
 - Campo `total_abonado` debe quedar en 0
 - Campo `historial_pagos` debe quedar vacío `[]`
 
+**IMPORTANTE**: Los items del pedido ya se actualizan correctamente con `estado_item = 4`, lo que hace que NO aparezcan en PedidosHerreria. Solo falta limpiar los pagos.
+
 ---
 
 ## 🔧 CAMBIOS REQUERIDOS EN EL BACKEND
@@ -57,6 +59,7 @@ async def cancelar_pedido(
         fecha_cancelacion = datetime.now().isoformat()
         usuario_cancelacion = user.get("username", "usuario_desconocido")
         
+        # ACTUALIZAR: Limpiar pagos Y cancelar pedido en una sola operación
         result = pedidos_collection.update_one(
             {"_id": pedido_obj_id},
             {
@@ -73,6 +76,9 @@ async def cancelar_pedido(
                 }
             }
         )
+        
+        # NOTA: Los items ya se actualizan a estado_item = 4 más abajo en el código existente
+        # Esto hace que NO aparezcan en PedidosHerreria automáticamente
         
         print(f"✅ Pagos limpiados y pedido cancelado: {pedido_id}")
         
@@ -168,8 +174,11 @@ El frontend ya intenta limpiar los pagos antes de cancelar:
 - [ ] Verificar que `pago` se establece en "sin pago"
 - [ ] Verificar que `total_abonado` se establece en 0
 - [ ] Verificar que `historial_pagos` se establece en `[]`
+- [ ] Verificar que `estado_item` de todos los items se actualiza a 4 (ya implementado)
 - [ ] Probar cancelando un pedido con pagos
 - [ ] Verificar que los pagos desaparecen de Mis Pagos y Pagos
+- [ ] Verificar que los items NO aparecen en PedidosHerreria
+- [ ] Verificar que el pedido SÍ aparece en MonitorPedidos con filtro de cancelados
 - [ ] Verificar que el pedido queda cancelado correctamente
 
 ---
@@ -220,7 +229,18 @@ El frontend ya intenta limpiar los pagos antes de cancelar:
 Después de implementar los cambios:
 
 1. ✅ Al cancelar un pedido, todos sus pagos se eliminan automáticamente
-2. ✅ El pedido no aparece en módulos de pagos
-3. ✅ El pedido queda cancelado con estado "cancelado"
-4. ✅ No hay registros de pagos residuales en la base de datos
+2. ✅ El pedido no aparece en módulos de pagos (Mis Pagos, Pagos)
+3. ✅ Los items del pedido NO aparecen en PedidosHerreria (estado_item = 4)
+4. ✅ El pedido SÍ aparece en MonitorPedidos cuando se activa el filtro de cancelados
+5. ✅ El pedido queda cancelado con estado "cancelado"
+6. ✅ No hay registros de pagos residuales en la base de datos
+7. ✅ No hay items residuales en producción
+
+## 📝 NOTAS IMPORTANTES
+
+- **Los items ya se actualizan correctamente**: El código existente ya actualiza `estado_item` a 4 para todos los items cuando se cancela un pedido (línea ~3236 del backend). Esto hace que automáticamente NO aparezcan en PedidosHerreria porque el frontend filtra items con `estado_item < 4`.
+
+- **MonitorPedidos funciona correctamente**: El filtro de cancelados ya está implementado y funciona con la casilla "Mostrar Cancelados".
+
+- **Solo falta limpiar pagos**: El único cambio necesario es agregar la limpieza de pagos en el endpoint de cancelación.
 
