@@ -352,15 +352,13 @@ const CrearPedido: React.FC = () => {
       setMensajeTipo("error");
       return;
     }
-    if (!nuevoAdicionalMetodoPago) {
-      setMensaje("Debes seleccionar un método de pago para el adicional.");
-      setMensajeTipo("error");
-      return;
-    }
+    // Método de pago es OPCIONAL para adicionales
     
     const descripcionGuardada = nuevoAdicionalDescripcion.trim();
-    const metodoPagoSeleccionado = metodosPago.find((m: any) => (m._id || m.id) === nuevoAdicionalMetodoPago);
-    const metodoPagoNombre = metodoPagoSeleccionado?.nombre || 'Sin nombre';
+    const metodoPagoSeleccionado = nuevoAdicionalMetodoPago 
+      ? metodosPago.find((m: any) => (m._id || m.id) === nuevoAdicionalMetodoPago)
+      : null;
+    const metodoPagoNombre = metodoPagoSeleccionado?.nombre || null;
     
     // Guardar adicional con estructura: { descripcion?, precio, cantidad? }
     // cantidad default es 1
@@ -368,11 +366,14 @@ const CrearPedido: React.FC = () => {
       descripcion: descripcionGuardada,
       precio: nuevoAdicionalMonto, // El monto ingresado se guarda como precio
       cantidad: 1, // Por defecto cantidad es 1
-      metodoPago: nuevoAdicionalMetodoPago, // Solo para UI y registro de depósito
-      metodoPagoNombre: metodoPagoNombre // Solo para UI
+      metodoPago: nuevoAdicionalMetodoPago || undefined, // Opcional: solo para UI y registro de depósito
+      metodoPagoNombre: metodoPagoNombre || undefined // Opcional: solo para UI
     }]);
     
-    setMensaje(`✓ Adicional "${descripcionGuardada}" agregado exitosamente. Se registrará en ${metodoPagoNombre}.`);
+    const mensajeExito = metodoPagoNombre 
+      ? `✓ Adicional "${descripcionGuardada}" agregado exitosamente. Se registrará en ${metodoPagoNombre}.`
+      : `✓ Adicional "${descripcionGuardada}" agregado exitosamente.`;
+    setMensaje(mensajeExito);
     setMensajeTipo("success");
     setNuevoAdicionalDescripcion("");
     setNuevoAdicionalMonto(0);
@@ -791,15 +792,21 @@ const CrearPedido: React.FC = () => {
 
     // Validar método de pago y monto (EXCEPTO para TU MUNDO PUERTA)
     if (!esTumundoPuerta) {
-      if (!selectedMetodoPago) {
-        setMensaje("Debes seleccionar un método de pago antes de crear el pedido.");
-        setMensajeTipo("error");
-        return;
-      }
-      if (!abono || abono <= 0) {
-        setMensaje("Debes ingresar un monto de pago antes de crear el pedido.");
-        setMensajeTipo("error");
-        return;
+      // Verificar si hay pagos agregados O si hay un método y monto seleccionado
+      const hayPagosAgregados = pagos.length > 0;
+      const hayMetodoYMonto = selectedMetodoPago && abono > 0;
+      
+      if (!hayPagosAgregados && !hayMetodoYMonto) {
+        if (!selectedMetodoPago) {
+          setMensaje("Debes seleccionar un método de pago antes de crear el pedido.");
+          setMensajeTipo("error");
+          return;
+        }
+        if (!abono || abono <= 0) {
+          setMensaje("Debes ingresar un monto de pago antes de crear el pedido.");
+          setMensajeTipo("error");
+          return;
+        }
       }
     }
 
@@ -1493,14 +1500,14 @@ const CrearPedido: React.FC = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="adicionalMetodoPago" className="text-xs font-medium text-gray-600">
-                          Método de Pago
+                          Método de Pago <span className="text-gray-400 text-xs">(Opcional)</span>
                         </Label>
                         <Select 
                           value={nuevoAdicionalMetodoPago} 
                           onValueChange={setNuevoAdicionalMetodoPago}
                         >
                           <SelectTrigger className="text-sm focus:ring-2 focus:ring-yellow-400 border-2 bg-white">
-                            <SelectValue placeholder="Seleccionar método de pago" />
+                            <SelectValue placeholder="Seleccionar método de pago (opcional)" />
                           </SelectTrigger>
                           <SelectContent className="bg-white border-2 border-gray-200 shadow-lg max-h-60">
                             {metodosPago.length === 0 ? (
@@ -1527,7 +1534,7 @@ const CrearPedido: React.FC = () => {
                       <Button
                         type="button"
                         onClick={handleAgregarAdicional}
-                        disabled={!nuevoAdicionalDescripcion.trim() || nuevoAdicionalMonto <= 0 || !nuevoAdicionalMetodoPago}
+                        disabled={!nuevoAdicionalDescripcion.trim() || nuevoAdicionalMonto <= 0}
                         className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold text-sm"
                       >
                         <FaPlus className="mr-2" />
