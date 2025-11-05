@@ -8,6 +8,7 @@ Este documento contiene TODAS las modificaciones que necesitas hacer en el backe
 
 1. **Limpiar pagos al cancelar pedido** - Eliminar todos los pagos cuando se cancela un pedido
 2. **Filtrar pedidos de TU MUNDO PUERTA** - Excluir pedidos de este cliente en módulos de pagos
+3. **Filtrar pedidos cancelados** - Excluir pedidos cancelados en módulos de pagos (NO deben aparecer como "sin pago")
 
 ---
 
@@ -80,7 +81,99 @@ result = pedidos_collection.update_one(
 
 ---
 
-# 📝 CAMBIO 2: FILTRAR PEDIDOS DE TU MUNDO PUERTA EN MÓDULOS DE PAGOS
+# 📝 CAMBIO 2: FILTRAR PEDIDOS CANCELADOS EN MÓDULOS DE PAGOS
+
+## Objetivo
+Los pedidos **cancelados** NO deben aparecer en los módulos de pagos (Mis Pagos y Pagos) porque aparecen como "sin pago" y puede generar confusión. Los pedidos cancelados ya no tienen pagos pendientes.
+
+## Endpoints a Modificar
+
+### 2.1. Endpoint: `GET /pedidos/mis-pagos`
+
+**Ubicación**: `back-tumundopuertas/api/src/routes/pedidos.py`
+
+**Agregar filtro para excluir pedidos cancelados:**
+
+```python
+@router.get("/mis-pagos")
+async def get_mis_pagos(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None
+):
+    try:
+        # Construir filtro de fecha si se proporciona
+        filtro = {}
+        if fecha_inicio and fecha_fin:
+            filtro["fecha_creacion"] = {
+                "$gte": fecha_inicio,
+                "$lte": fecha_fin
+            }
+        
+        # ===== NUEVO: EXCLUIR pedidos cancelados =====
+        filtro["estado_general"] = {"$ne": "cancelado"}
+        # ===== FIN NUEVO =====
+        
+        # Obtener pedidos con filtro
+        pedidos = list(pedidos_collection.find(filtro))
+        
+        # Convertir _id a string
+        for pedido in pedidos:
+            pedido["_id"] = str(pedido["_id"])
+        
+        return pedidos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener mis pagos: {str(e)}")
+```
+
+---
+
+### 2.2. Endpoint: `GET /pedidos/all/`
+
+**Ubicación**: `back-tumundopuertas/api/src/routes/pedidos.py`
+
+**Agregar el mismo filtro:**
+
+```python
+@router.get("/all/")
+async def get_all_pedidos(
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    ordenar: str = "fecha_desc"
+):
+    try:
+        # Construir filtro de fecha si se proporciona
+        filtro = {}
+        if fecha_inicio and fecha_fin:
+            filtro["fecha_creacion"] = {
+                "$gte": fecha_inicio,
+                "$lte": fecha_fin
+            }
+        
+        # ===== NUEVO: EXCLUIR pedidos cancelados =====
+        filtro["estado_general"] = {"$ne": "cancelado"}
+        # ===== FIN NUEVO =====
+        
+        # Obtener pedidos con filtro
+        pedidos = list(pedidos_collection.find(filtro))
+        
+        # Ordenar según parámetro
+        if ordenar == "fecha_desc":
+            pedidos.sort(key=lambda x: x.get("fecha_creacion", ""), reverse=True)
+        elif ordenar == "fecha_asc":
+            pedidos.sort(key=lambda x: x.get("fecha_creacion", ""))
+        
+        # Convertir _id a string
+        for pedido in pedidos:
+            pedido["_id"] = str(pedido["_id"])
+        
+        return pedidos
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener pedidos: {str(e)}")
+```
+
+---
+
+# 📝 CAMBIO 3: FILTRAR PEDIDOS DE TU MUNDO PUERTA EN MÓDULOS DE PAGOS
 
 ## Objetivo
 Los pedidos del cliente **TU MUNDO PUERTA** (RIF: `J-507172554`) NO deben aparecer en los módulos de pagos.
@@ -114,6 +207,10 @@ async def get_mis_pagos(
                 "$gte": fecha_inicio,
                 "$lte": fecha_fin
             }
+        
+        # ===== NUEVO: EXCLUIR pedidos cancelados =====
+        filtro["estado_general"] = {"$ne": "cancelado"}
+        # ===== FIN NUEVO =====
         
         # ===== NUEVO: EXCLUIR pedidos de TU MUNDO PUERTA (RIF: J-507172554) =====
         # Buscar el cliente_id de TU MUNDO PUERTA
@@ -168,6 +265,10 @@ async def get_all_pedidos(
                 "$lte": fecha_fin
             }
         
+        # ===== NUEVO: EXCLUIR pedidos cancelados =====
+        filtro["estado_general"] = {"$ne": "cancelado"}
+        # ===== FIN NUEVO =====
+        
         # ===== NUEVO: EXCLUIR pedidos de TU MUNDO PUERTA (RIF: J-507172554) =====
         cliente_tumundo = clientes_collection.find_one({"rif": "J-507172554"})
         if cliente_tumundo:
@@ -218,7 +319,17 @@ from bson import ObjectId
 - [ ] Verificar que los items NO aparecen en PedidosHerreria (ya funciona)
 - [ ] Verificar que el pedido SÍ aparece en MonitorPedidos con filtro de cancelados
 
-## Cambio 2: Filtrar TU MUNDO PUERTA
+## Cambio 2: Filtrar Pedidos Cancelados
+- [ ] Encontrar endpoint `/pedidos/mis-pagos` en `pedidos.py`
+- [ ] Agregar filtro `estado_general: {"$ne": "cancelado"}` 
+- [ ] Encontrar endpoint `/pedidos/all/` en `pedidos.py`
+- [ ] Agregar el mismo filtro en `/pedidos/all/`
+- [ ] Probar cancelando un pedido
+- [ ] Verificar que NO aparece en Mis Pagos
+- [ ] Verificar que NO aparece en Pagos
+- [ ] Verificar que SÍ aparece en MonitorPedidos con filtro de cancelados
+
+## Cambio 3: Filtrar TU MUNDO PUERTA
 - [ ] Encontrar endpoint `/pedidos/mis-pagos` en `pedidos.py`
 - [ ] Agregar código para buscar cliente TU MUNDO PUERTA
 - [ ] Agregar filtro `cliente_id` para excluir pedidos de este cliente
@@ -284,6 +395,12 @@ from bson import ObjectId
 - ✅ El pedido SÍ aparece en MonitorPedidos cuando se activa el filtro de cancelados
 
 ## Después de implementar Cambio 2:
+- ✅ Los pedidos cancelados NO aparecen en Mis Pagos
+- ✅ Los pedidos cancelados NO aparecen en Pagos
+- ✅ Los pedidos cancelados SÍ aparecen en MonitorPedidos con filtro de cancelados
+- ✅ No hay confusión de pedidos cancelados como "sin pago"
+
+## Después de implementar Cambio 3:
 - ✅ Los pedidos de TU MUNDO PUERTA NO aparecen en Mis Pagos
 - ✅ Los pedidos de TU MUNDO PUERTA NO aparecen en Pagos
 - ✅ Los pedidos de TU MUNDO PUERTA SÍ aparecen en MonitorPedidos
@@ -302,7 +419,8 @@ Si hay otros endpoints que devuelven pedidos para módulos de pago, también deb
 # 🚀 ORDEN DE IMPLEMENTACIÓN RECOMENDADO
 
 1. **Primero**: Cambio 1 (Limpiar Pagos) - Es más simple y directo
-2. **Segundo**: Cambio 2 (Filtrar TU MUNDO PUERTA) - Requiere modificar 2 endpoints
+2. **Segundo**: Cambio 2 (Filtrar Pedidos Cancelados) - Solo agregar 1 línea por endpoint
+3. **Tercero**: Cambio 3 (Filtrar TU MUNDO PUERTA) - Requiere buscar cliente en BD
 
 ---
 
