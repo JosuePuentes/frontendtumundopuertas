@@ -579,7 +579,7 @@ const AdminHome: React.FC = () => {
       
       // Disparar evento personalizado para notificar cambios (misma pestaña)
       window.dispatchEvent(new CustomEvent('customStorageChange', {
-        detail: { key: 'home-config', value: configToSave }
+        detail: { key: 'home-config', value: finalConfig }
       }));
       
       alert('✅ Configuración guardada exitosamente!');
