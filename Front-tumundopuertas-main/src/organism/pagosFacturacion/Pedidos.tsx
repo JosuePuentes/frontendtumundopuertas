@@ -181,7 +181,14 @@ const Pedidos: React.FC = () => {
       const res = await fetch(endpoint);
       if (!res.ok) throw new Error("Error al obtener pedidos");
       const data = await res.json();
-      setPedidos(data);
+      
+      // Filtrar pedidos de TU MUNDO PUERTA (RIF: J-507172554)
+      const datosFiltrados = data.filter((pedido: Pedido) => {
+        const nombreCliente = (pedido.cliente_nombre || "").toUpperCase();
+        return !nombreCliente.includes("TU MUNDO PUERTA") && !nombreCliente.includes("TU MUNDO  PUERTA");
+      });
+      
+      setPedidos(datosFiltrados);
     } catch (err: any) {
       setError(err.message || "Error desconocido");
     } finally {

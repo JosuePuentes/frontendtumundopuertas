@@ -72,8 +72,17 @@ const MisPagos: React.FC = () => {
 
       const data = await res.json();
       
+      // Filtrar pedidos de TU MUNDO PUERTA (RIF: J-507172554)
+      // Necesitamos obtener el RIF del cliente para filtrar
+      const datosFiltrados = data.filter((pedido: PedidoConPagos) => {
+        // Si el pedido tiene cliente_id, buscar el cliente para obtener su RIF
+        // Por ahora, filtrar por cliente_nombre que contiene "TU MUNDO PUERTA"
+        const nombreCliente = (pedido.cliente_nombre || "").toUpperCase();
+        return !nombreCliente.includes("TU MUNDO PUERTA") && !nombreCliente.includes("TU MUNDO  PUERTA");
+      });
+      
       // Ordenar inmediatamente después de obtener los datos
-      const datosOrdenados = [...data].sort((a: PedidoConPagos, b: PedidoConPagos) => {
+      const datosOrdenados = [...datosFiltrados].sort((a: PedidoConPagos, b: PedidoConPagos) => {
         // Obtener fecha más reciente: primero del historial_pagos, sino de fecha_creacion
         const getFechaMasReciente = (pedido: PedidoConPagos): number => {
           // Si hay historial de pagos, usar la fecha más reciente del historial

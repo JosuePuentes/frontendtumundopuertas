@@ -781,12 +781,27 @@ const CrearPedido: React.FC = () => {
       return;
     }
 
-    // Regla: Cliente RIF J-507172554 => todo va a producción, sin validar existencias
+    // Regla: Cliente RIF J-507172554 => todo va a producción, sin validar existencias ni métodos de pago
     const clienteObj = Array.isArray(clientesData)
       ? (clientesData as any[]).find((c: any) => String(c.rif) === String(clienteId))
       : null;
     const rifNormalizado = (clienteObj?.rif || String(clienteId) || "").toUpperCase().replace(/\s+/g, "");
     const forzarProduccion = rifNormalizado === "J-507172554";
+    const esTumundoPuerta = rifNormalizado === "J-507172554";
+
+    // Validar método de pago y monto (EXCEPTO para TU MUNDO PUERTA)
+    if (!esTumundoPuerta) {
+      if (!selectedMetodoPago) {
+        setMensaje("Debes seleccionar un método de pago antes de crear el pedido.");
+        setMensajeTipo("error");
+        return;
+      }
+      if (!abono || abono <= 0) {
+        setMensaje("Debes ingresar un monto de pago antes de crear el pedido.");
+        setMensajeTipo("error");
+        return;
+      }
+    }
 
     if (forzarProduccion) {
       await crearPedido(selectedItems, false);
