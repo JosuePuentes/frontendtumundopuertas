@@ -317,6 +317,13 @@ const AdminHome: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.config) {
+            // Verificar imágenes en la respuesta del GET
+            const bannerImageLength = data.config.banner?.image?.length || 0;
+            const logoImageLength = data.config.logo?.image?.length || 0;
+            console.log('📥 Configuración cargada desde backend:');
+            console.log('  Banner image:', bannerImageLength > 100 ? `✅ Presente (${bannerImageLength} chars)` : `❌ No presente (${bannerImageLength} chars)`);
+            console.log('  Logo image:', logoImageLength > 100 ? `✅ Presente (${logoImageLength} chars)` : `❌ No presente (${logoImageLength} chars)`);
+            
             // Normalizar la configuración para asegurar que todos los campos existan
             const normalizedConfig: HomeConfig = {
               banner: data.config.banner && typeof data.config.banner === 'object' && !Array.isArray(data.config.banner)
@@ -555,13 +562,23 @@ const AdminHome: React.FC = () => {
 
       const data = await response.json();
       console.log('✅ Configuración guardada exitosamente');
-      console.log('📦 Estructura de respuesta:', {
+      console.log('📦 Estructura de respuesta del backend:', {
         tieneConfig: !!data.config,
         tieneBanner: !!data.config?.banner,
         tieneLogo: !!data.config?.logo,
         tieneProducts: !!data.config?.products,
+        tieneContact: !!data.config?.contact,
+        tieneColors: !!data.config?.colors,
         keys: data.config ? Object.keys(data.config) : 'No hay config'
       });
+      
+      // Calcular tamaño aproximado de la respuesta (para debugging)
+      const responseSize = JSON.stringify(data).length;
+      const responseSizeMB = (responseSize / (1024 * 1024)).toFixed(2);
+      console.log(`📊 Tamaño de respuesta: ${responseSizeMB} MB (${responseSize.toLocaleString()} caracteres)`);
+      if (parseFloat(responseSizeMB) > 10) {
+        console.warn('⚠️ La respuesta es muy grande (>10MB), podría haber problemas de serialización');
+      }
       
       // Verificar que las imágenes se guardaron correctamente
       if (data && data.config) {
