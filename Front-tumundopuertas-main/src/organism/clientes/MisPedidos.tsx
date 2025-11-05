@@ -185,11 +185,14 @@ const MisPedidos: React.FC = () => {
         } else {
           setFacturaPedido(null);
         }
+      } else if (res.status === 404) {
+        // No hay factura - completamente normal, no es un error
+        setFacturaPedido(null);
       } else {
         setFacturaPedido(null);
       }
     } catch (error) {
-      console.error("Error al cargar factura:", error);
+      // Silenciar errores 404 y de red - es normal que no todos los pedidos tengan factura
       setFacturaPedido(null);
     } finally {
       setCargandoFactura(false);

@@ -141,3 +141,4 @@ O simplemente:
 
 4. **Agrupación:** El endpoint `GET /mensajes/soporte` debe agrupar por `cliente_id` y retornar solo una entrada por cliente con el último mensaje y cantidad de no leídos.
 
+

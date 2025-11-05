@@ -332,3 +332,4 @@ Content-Type: application/json
 
 Este endpoint puede ser útil para mostrar un resumen rápido de abonos pendientes sin cargar toda la factura.
 
+

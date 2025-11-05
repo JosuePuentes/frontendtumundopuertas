@@ -385,11 +385,17 @@ const HomePage: React.FC = () => {
                         ? config.products.title 
                         : defaultConfig.products.title,
                     items: Array.isArray(config.products.items) 
-                        ? config.products.items.map((item: any) => ({
-                            ...item,
+                        ? config.products.items.map((item: any) => {
                             // El backend puede usar 'url' o 'image', normalizamos a 'image'
-                            image: item.url || item.image || ''
-                        }))
+                            const normalizedImage = item.url || item.image || '';
+                            if (item.url && !item.image) {
+                                console.log(`🔄 Producto "${item.name}": normalizando url a image (${normalizedImage.length} chars)`);
+                            }
+                            return {
+                                ...item,
+                                image: normalizedImage
+                            };
+                        })
                         : (defaultConfig.products.items || [])
                 }
                 : defaultConfig.products,

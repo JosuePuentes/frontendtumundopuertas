@@ -172,3 +172,4 @@ Después de implementar estos cambios:
 ## Nota Importante
 
 El frontend NO necesita cambios adicionales. Solo el backend necesita implementar estos filtros y marcadores de tipo de pedido.
+

@@ -165,3 +165,4 @@ update_fields = {
 3. Si un item no tiene `existencia2`, asumir que es 0
 4. Todas las operaciones deben actualizar el campo correcto según la sucursal seleccionada
 
+

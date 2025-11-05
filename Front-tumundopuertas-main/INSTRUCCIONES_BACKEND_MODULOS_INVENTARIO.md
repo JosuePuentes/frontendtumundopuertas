@@ -24,3 +24,4 @@ El frontend utiliza los siguientes endpoints que ya existen:
 ## Confirmación
 Si todo está funcionando correctamente, no necesitas hacer nada en el backend. Los módulos ahora estarán disponibles en `/inventario/cargar-excel` en lugar de `/facturacion`.
 
+

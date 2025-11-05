@@ -138,3 +138,4 @@ O simplemente:
 
 4. **Fechas:** Usar formato ISO8601 para todas las fechas.
 
+

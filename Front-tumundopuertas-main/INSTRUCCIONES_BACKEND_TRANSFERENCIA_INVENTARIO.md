@@ -146,3 +146,4 @@ El frontend ya está configurado para usar este endpoint. La funcionalidad de tr
 2. Luego carga en la sucursal destino
 
 Si alguna de las dos operaciones falla, el frontend intenta revertir la primera operación automáticamente.
+

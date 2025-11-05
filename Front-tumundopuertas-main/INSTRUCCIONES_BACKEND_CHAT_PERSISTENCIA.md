@@ -181,3 +181,4 @@ db.mensajes.countDocuments({
 - Los mensajes deben persistir indefinidamente (o según política de retención de datos)
 - El campo `pedido_id` debe coincidir exactamente con el ID del pedido (verificar formato string vs ObjectId)
 
+

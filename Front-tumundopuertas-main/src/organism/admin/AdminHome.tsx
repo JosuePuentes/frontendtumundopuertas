@@ -1091,10 +1091,10 @@ const AdminHome: React.FC = () => {
                     <div>
                       <Label className="text-gray-200">Imagen del Banner</Label>
                       <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                        {config.banner.image ? (
+                        {(config.banner.image || (config.banner as any).url) ? (
                           <div className="space-y-4">
                             <img 
-                              src={config.banner.image} 
+                              src={config.banner.image || (config.banner as any).url || ''} 
                               alt="Banner" 
                               className="max-w-full rounded-lg mx-auto"
                               style={{
@@ -1213,10 +1213,10 @@ const AdminHome: React.FC = () => {
                     <div>
                       <Label className="text-gray-200">Imagen del Logo</Label>
                       <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
-                        {config.logo.image ? (
+                        {(config.logo.image || (config.logo as any).url) ? (
                           <div className="space-y-4">
                             <img 
-                              src={config.logo.image} 
+                              src={config.logo.image || (config.logo as any).url || ''} 
                               alt="Logo" 
                               className="rounded-lg mx-auto"
                               style={{
@@ -1504,10 +1504,10 @@ const AdminHome: React.FC = () => {
                         <div>
                           <Label className="text-gray-200">Imagen</Label>
                           <div className="border-2 border-dashed border-gray-500 rounded-lg p-4 text-center">
-                            {product.image ? (
+                            {(product.image || (product as any).url) ? (
                               <div className="space-y-2">
                                 <img 
-                                  src={product.image} 
+                                  src={product.image || (product as any).url || ''} 
                                   alt={product.name} 
                                   className="max-w-full h-20 object-cover rounded-lg mx-auto"
                                 />
