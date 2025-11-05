@@ -318,11 +318,25 @@ const AdminHome: React.FC = () => {
           const data = await response.json();
           if (data.config) {
             // Verificar imágenes en la respuesta del GET
-            const bannerImageLength = data.config.banner?.image?.length || 0;
-            const logoImageLength = data.config.logo?.image?.length || 0;
+            // IMPORTANTE: El backend puede usar 'url' o 'image' como nombre del campo
+            const bannerImage = data.config.banner?.url || data.config.banner?.image || '';
+            const logoImage = data.config.logo?.url || data.config.logo?.image || '';
+            const bannerImageLength = bannerImage.length || 0;
+            const logoImageLength = logoImage.length || 0;
+            
             console.log('📥 Configuración cargada desde backend:');
-            console.log('  Banner image:', bannerImageLength > 100 ? `✅ Presente (${bannerImageLength} chars)` : `❌ No presente (${bannerImageLength} chars)`);
-            console.log('  Logo image:', logoImageLength > 100 ? `✅ Presente (${logoImageLength} chars)` : `❌ No presente (${logoImageLength} chars)`);
+            console.log('  Banner:', {
+              tieneUrl: !!data.config.banner?.url,
+              tieneImage: !!data.config.banner?.image,
+              longitud: bannerImageLength,
+              estado: bannerImageLength > 100 ? `✅ Presente (${bannerImageLength} chars)` : `❌ No presente (${bannerImageLength} chars)`
+            });
+            console.log('  Logo:', {
+              tieneUrl: !!data.config.logo?.url,
+              tieneImage: !!data.config.logo?.image,
+              longitud: logoImageLength,
+              estado: logoImageLength > 100 ? `✅ Presente (${logoImageLength} chars)` : `❌ No presente (${logoImageLength} chars)`
+            });
             
             // Normalizar la configuración para asegurar que todos los campos existan
             const normalizedConfig: HomeConfig = {
