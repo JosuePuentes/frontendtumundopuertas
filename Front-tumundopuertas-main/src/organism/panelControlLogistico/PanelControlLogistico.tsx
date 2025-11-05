@@ -14,7 +14,9 @@ import {
   Calendar,
   Activity,
   Warehouse,
-  Factory
+  Factory,
+  BarChart3,
+  Target
 } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
 import {
@@ -226,116 +228,185 @@ const PanelControlLogistico: React.FC = () => {
     setLoading(true);
     setError(null);
     
+    const errores: string[] = [];
+    
     try {
       const params = new URLSearchParams({
         fecha_inicio: fechaInicio,
         fecha_fin: fechaFin
       });
       
-      // Cargar resumen
-      const resResumen = await fetch(`${getApiUrl()}/pedidos/panel-control-logistico/resumen/?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      const token = localStorage.getItem('access_token');
+      const apiUrl = getApiUrl();
       
-      if (resResumen.ok) {
-        const dataResumen = await resResumen.json();
-        setResumen(dataResumen);
+      // Cargar resumen
+      try {
+        const resResumen = await fetch(`${apiUrl}/pedidos/panel-control-logistico/resumen/?${params}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resResumen.ok) {
+          const dataResumen = await resResumen.json();
+          setResumen(dataResumen);
+          console.log('✅ Resumen cargado:', dataResumen);
+        } else if (resResumen.status === 404) {
+          console.warn('⚠️ Endpoint /resumen/ no encontrado (404)');
+          errores.push('Endpoint de resumen no disponible');
+        } else {
+          console.error('❌ Error en resumen:', resResumen.status, resResumen.statusText);
+          errores.push(`Error en resumen: ${resResumen.status}`);
+        }
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar resumen:', e);
+        errores.push('Error al cargar resumen');
       }
       
       // Cargar items en producción
-      const resItems = await fetch(`${getApiUrl()}/pedidos/panel-control-logistico/items-produccion/?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
+      try {
+        const resItems = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-produccion/?${params}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resItems.ok) {
+          const dataItems = await resItems.json();
+          setItemsProduccion(dataItems.items || []);
+          console.log('✅ Items producción cargados:', dataItems.items?.length || 0);
+        } else if (resItems.status === 404) {
+          console.warn('⚠️ Endpoint /items-produccion/ no encontrado (404)');
         }
-      });
-      
-      if (resItems.ok) {
-        const dataItems = await resItems.json();
-        setItemsProduccion(dataItems.items || []);
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar items producción:', e);
       }
       
       // Cargar items sin movimiento
-      const resSinMov = await fetch(`${getApiUrl()}/pedidos/panel-control-logistico/items-sin-movimiento/?dias=7`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
+      try {
+        const resSinMov = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-sin-movimiento/?dias=7`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resSinMov.ok) {
+          const dataSinMov = await resSinMov.json();
+          setItemsSinMovimiento(dataSinMov.items || []);
+          console.log('✅ Items sin movimiento cargados:', dataSinMov.items?.length || 0);
+        } else if (resSinMov.status === 404) {
+          console.warn('⚠️ Endpoint /items-sin-movimiento/ no encontrado (404)');
         }
-      });
-      
-      if (resSinMov.ok) {
-        const dataSinMov = await resSinMov.json();
-        setItemsSinMovimiento(dataSinMov.items || []);
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar items sin movimiento:', e);
       }
       
       // Cargar items más movidos
-      const resMasMov = await fetch(`${getApiUrl()}/pedidos/panel-control-logistico/items-mas-movidos/?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
+      try {
+        const resMasMov = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-mas-movidos/?${params}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resMasMov.ok) {
+          const dataMasMov = await resMasMov.json();
+          setItemsMasMovidos(dataMasMov.items || []);
+          console.log('✅ Items más movidos cargados:', dataMasMov.items?.length || 0);
+        } else if (resMasMov.status === 404) {
+          console.warn('⚠️ Endpoint /items-mas-movidos/ no encontrado (404)');
         }
-      });
-      
-      if (resMasMov.ok) {
-        const dataMasMov = await resMasMov.json();
-        setItemsMasMovidos(dataMasMov.items || []);
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar items más movidos:', e);
       }
       
       // Cargar items existencia cero
-      const resCero = await fetch(`${getApiUrl()}/pedidos/panel-control-logistico/items-existencia-cero/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
+      try {
+        const resCero = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-existencia-cero/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resCero.ok) {
+          const dataCero = await resCero.json();
+          setItemsExistenciaCero(dataCero.items || []);
+          console.log('✅ Items existencia cero cargados:', dataCero.items?.length || 0);
+        } else if (resCero.status === 404) {
+          console.warn('⚠️ Endpoint /items-existencia-cero/ no encontrado (404)');
         }
-      });
-      
-      if (resCero.ok) {
-        const dataCero = await resCero.json();
-        setItemsExistenciaCero(dataCero.items || []);
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar items existencia cero:', e);
       }
       
       // Cargar sugerencias
-      const resSug = await fetch(`${getApiUrl()}/pedidos/panel-control-logistico/sugerencia-produccion/?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
+      try {
+        const resSug = await fetch(`${apiUrl}/pedidos/panel-control-logistico/sugerencia-produccion/?${params}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resSug.ok) {
+          const dataSug = await resSug.json();
+          setSugerencias(dataSug.sugerencias || []);
+          console.log('✅ Sugerencias cargadas:', dataSug.sugerencias?.length || 0);
+        } else if (resSug.status === 404) {
+          console.warn('⚠️ Endpoint /sugerencia-produccion/ no encontrado (404)');
         }
-      });
-      
-      if (resSug.ok) {
-        const dataSug = await resSug.json();
-        setSugerencias(dataSug.sugerencias || []);
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar sugerencias:', e);
       }
       
       // Cargar gráficas
-      const paramsGraficas = new URLSearchParams({
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin
-      });
-      
-      if (compararPeriodo) {
-        const fechaInicioAnterior = new Date(fechaInicio);
-        fechaInicioAnterior.setDate(fechaInicioAnterior.getDate() - (new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()) / (1000 * 60 * 60 * 24));
-        const fechaFinAnterior = new Date(fechaInicio);
-        fechaFinAnterior.setDate(fechaFinAnterior.getDate() - 1);
+      try {
+        const paramsGraficas = new URLSearchParams({
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin
+        });
         
-        paramsGraficas.append('comparar_con', fechaInicioAnterior.toISOString().split('T')[0]);
-        paramsGraficas.append('comparar_fin', fechaFinAnterior.toISOString().split('T')[0]);
+        if (compararPeriodo) {
+          const fechaInicioAnterior = new Date(fechaInicio);
+          fechaInicioAnterior.setDate(fechaInicioAnterior.getDate() - (new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()) / (1000 * 60 * 60 * 24));
+          const fechaFinAnterior = new Date(fechaInicio);
+          fechaFinAnterior.setDate(fechaFinAnterior.getDate() - 1);
+          
+          paramsGraficas.append('comparar_con', fechaInicioAnterior.toISOString().split('T')[0]);
+          paramsGraficas.append('comparar_fin', fechaFinAnterior.toISOString().split('T')[0]);
+        }
+        
+        const resGraf = await fetch(`${apiUrl}/pedidos/panel-control-logistico/graficas/?${paramsGraficas}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resGraf.ok) {
+          const dataGraf = await resGraf.json();
+          setGraficasData(dataGraf);
+          console.log('✅ Gráficas cargadas:', dataGraf);
+        } else if (resGraf.status === 404) {
+          console.warn('⚠️ Endpoint /graficas/ no encontrado (404)');
+          errores.push('Endpoint de gráficas no disponible');
+        } else {
+          console.error('❌ Error en gráficas:', resGraf.status, resGraf.statusText);
+          errores.push(`Error en gráficas: ${resGraf.status}`);
+        }
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar gráficas:', e);
+        errores.push('Error al cargar gráficas');
       }
       
-      const resGraf = await fetch(`${getApiUrl()}/pedidos/panel-control-logistico/graficas/?${paramsGraficas}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (resGraf.ok) {
-        const dataGraf = await resGraf.json();
-        setGraficasData(dataGraf);
+      // Si todos los endpoints fallaron, mostrar mensaje
+      if (errores.length > 0 && !resumen && !graficasData && itemsProduccion.length === 0) {
+        setError(`Los endpoints del backend aún no están implementados. Por favor, implementa los endpoints según las especificaciones en ESPECIFICACIONES_BACKEND_PANEL_CONTROL_LOGISTICO.md. Errores: ${errores.join(', ')}`);
       }
       
     } catch (err: any) {
@@ -566,21 +637,28 @@ const PanelControlLogistico: React.FC = () => {
                   <CardTitle>Items en Producción</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-gray-100 border-b-2 border-gray-300">
-                          <th className="p-3 text-left text-sm font-semibold">Item</th>
-                          <th className="p-3 text-left text-sm font-semibold">Código</th>
-                          <th className="p-3 text-left text-sm font-semibold">Cantidad Producción</th>
-                          <th className="p-3 text-left text-sm font-semibold">Existencia</th>
-                          <th className="p-3 text-left text-sm font-semibold">Estado</th>
-                          <th className="p-3 text-left text-sm font-semibold">Categoría</th>
-                          <th className="p-3 text-left text-sm font-semibold">Días Sin Mov.</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {itemsProduccion.map((item) => (
+                  {itemsProduccion.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 font-medium mb-2">No hay items en producción</p>
+                      <p className="text-sm text-gray-500">Los datos aparecerán cuando el backend implemente los endpoints</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100 border-b-2 border-gray-300">
+                            <th className="p-3 text-left text-sm font-semibold">Item</th>
+                            <th className="p-3 text-left text-sm font-semibold">Código</th>
+                            <th className="p-3 text-left text-sm font-semibold">Cantidad Producción</th>
+                            <th className="p-3 text-left text-sm font-semibold">Existencia</th>
+                            <th className="p-3 text-left text-sm font-semibold">Estado</th>
+                            <th className="p-3 text-left text-sm font-semibold">Categoría</th>
+                            <th className="p-3 text-left text-sm font-semibold">Días Sin Mov.</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {itemsProduccion.map((item) => (
                           <tr 
                             key={item.item_id}
                             className={`border-b border-gray-200 hover:bg-gray-50 ${getColorCategoria(item.categoria_movimiento)}`}
@@ -619,17 +697,28 @@ const PanelControlLogistico: React.FC = () => {
                               )}
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
             {/* Tab: Gráficas */}
             <TabsContent value="graficas" className="space-y-6">
-              {graficasData && (
+              {!graficasData ? (
+                <Card>
+                  <CardContent className="py-12">
+                    <div className="text-center">
+                      <BarChart3 className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 font-medium mb-2">No hay datos de gráficas disponibles</p>
+                      <p className="text-sm text-gray-500">Los datos aparecerán cuando el backend implemente el endpoint /graficas/</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
                 <>
                   {/* Comparación si está activada */}
                   {graficasData.comparacion && (
@@ -817,21 +906,28 @@ const PanelControlLogistico: React.FC = () => {
                   <CardTitle className="text-red-700">Items Sin Movimiento (7+ días)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-red-100 border-b-2 border-red-300">
-                          <th className="p-3 text-left text-sm font-semibold">Item</th>
-                          <th className="p-3 text-left text-sm font-semibold">Código</th>
-                          <th className="p-3 text-left text-sm font-semibold">Cantidad</th>
-                          <th className="p-3 text-left text-sm font-semibold">Días Sin Mov.</th>
-                          <th className="p-3 text-left text-sm font-semibold">Última Mov.</th>
-                          <th className="p-3 text-left text-sm font-semibold">Módulo</th>
-                          <th className="p-3 text-left text-sm font-semibold">Empleado</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {itemsSinMovimiento.map((item) => (
+                  {itemsSinMovimiento.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <AlertCircle className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 font-medium mb-2">No hay items sin movimiento</p>
+                      <p className="text-sm text-gray-500">Los datos aparecerán cuando el backend implemente los endpoints</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-red-100 border-b-2 border-red-300">
+                            <th className="p-3 text-left text-sm font-semibold">Item</th>
+                            <th className="p-3 text-left text-sm font-semibold">Código</th>
+                            <th className="p-3 text-left text-sm font-semibold">Cantidad</th>
+                            <th className="p-3 text-left text-sm font-semibold">Días Sin Mov.</th>
+                            <th className="p-3 text-left text-sm font-semibold">Última Mov.</th>
+                            <th className="p-3 text-left text-sm font-semibold">Módulo</th>
+                            <th className="p-3 text-left text-sm font-semibold">Empleado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {itemsSinMovimiento.map((item) => (
                           <tr key={item.item_id} className="border-b border-red-200 bg-red-50">
                             <td className="p-3 font-semibold">{item.item_nombre}</td>
                             <td className="p-3">
@@ -849,10 +945,11 @@ const PanelControlLogistico: React.FC = () => {
                             <td className="p-3 text-sm">{item.modulo_actual}</td>
                             <td className="p-3 text-sm">{item.empleado_asignado || 'Sin asignar'}</td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -864,22 +961,29 @@ const PanelControlLogistico: React.FC = () => {
                   <CardTitle className="text-green-700">Items Más Movidos (7 días)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-green-100 border-b-2 border-green-300">
-                          <th className="p-3 text-left text-sm font-semibold">Item</th>
-                          <th className="p-3 text-left text-sm font-semibold">Código</th>
-                          <th className="p-3 text-left text-sm font-semibold">Total Mov.</th>
-                          <th className="p-3 text-left text-sm font-semibold">Entradas</th>
-                          <th className="p-3 text-left text-sm font-semibold">Salidas</th>
-                          <th className="p-3 text-left text-sm font-semibold">Ventas</th>
-                          <th className="p-3 text-left text-sm font-semibold">Promedio/Día</th>
-                          <th className="p-3 text-left text-sm font-semibold">Tendencia</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {itemsMasMovidos.map((item) => (
+                  {itemsMasMovidos.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Activity className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 font-medium mb-2">No hay items más movidos</p>
+                      <p className="text-sm text-gray-500">Los datos aparecerán cuando el backend implemente los endpoints</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-green-100 border-b-2 border-green-300">
+                            <th className="p-3 text-left text-sm font-semibold">Item</th>
+                            <th className="p-3 text-left text-sm font-semibold">Código</th>
+                            <th className="p-3 text-left text-sm font-semibold">Total Mov.</th>
+                            <th className="p-3 text-left text-sm font-semibold">Entradas</th>
+                            <th className="p-3 text-left text-sm font-semibold">Salidas</th>
+                            <th className="p-3 text-left text-sm font-semibold">Ventas</th>
+                            <th className="p-3 text-left text-sm font-semibold">Promedio/Día</th>
+                            <th className="p-3 text-left text-sm font-semibold">Tendencia</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {itemsMasMovidos.map((item) => (
                           <tr key={item.item_id} className="border-b border-green-200 bg-green-50">
                             <td className="p-3 font-semibold">{item.item_nombre}</td>
                             <td className="p-3">
@@ -919,19 +1023,26 @@ const PanelControlLogistico: React.FC = () => {
                   <CardTitle className="text-orange-700">Items con Existencia en 0</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-orange-100 border-b-2 border-orange-300">
-                          <th className="p-3 text-left text-sm font-semibold">Item</th>
-                          <th className="p-3 text-left text-sm font-semibold">Código</th>
-                          <th className="p-3 text-left text-sm font-semibold">Días Sin Exist.</th>
-                          <th className="p-3 text-left text-sm font-semibold">Pedidos Pendientes</th>
-                          <th className="p-3 text-left text-sm font-semibold">Unidades Solicitadas</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {itemsExistenciaCero.map((item) => (
+                  {itemsExistenciaCero.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Warehouse className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 font-medium mb-2">No hay items con existencia en 0</p>
+                      <p className="text-sm text-gray-500">Los datos aparecerán cuando el backend implemente los endpoints</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-orange-100 border-b-2 border-orange-300">
+                            <th className="p-3 text-left text-sm font-semibold">Item</th>
+                            <th className="p-3 text-left text-sm font-semibold">Código</th>
+                            <th className="p-3 text-left text-sm font-semibold">Días Sin Exist.</th>
+                            <th className="p-3 text-left text-sm font-semibold">Pedidos Pendientes</th>
+                            <th className="p-3 text-left text-sm font-semibold">Unidades Solicitadas</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {itemsExistenciaCero.map((item) => (
                           <tr key={item.item_id} className="border-b border-orange-200 bg-orange-50">
                             <td className="p-3 font-semibold">{item.item_nombre}</td>
                             <td className="p-3">
@@ -947,10 +1058,11 @@ const PanelControlLogistico: React.FC = () => {
                               <Badge className="bg-red-600">{item.total_unidades_solicitadas}</Badge>
                             </td>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -960,8 +1072,15 @@ const PanelControlLogistico: React.FC = () => {
                   <CardTitle>Sugerencias de Producción</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {sugerencias.map((sug) => (
+                  {sugerencias.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-lg">
+                      <Target className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                      <p className="text-gray-600 font-medium mb-2">No hay sugerencias de producción</p>
+                      <p className="text-sm text-gray-500">Los datos aparecerán cuando el backend implemente los endpoints</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {sugerencias.map((sug) => (
                       <Card key={sug.item_id} className={`border-l-4 ${
                         sug.prioridad === 'alta' ? 'border-red-500' :
                         sug.prioridad === 'media' ? 'border-yellow-500' : 'border-blue-500'
@@ -1006,8 +1125,9 @@ const PanelControlLogistico: React.FC = () => {
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
