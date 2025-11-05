@@ -68,6 +68,20 @@ interface HomeConfig {
     title: string;
     subtitle: string;
     enabled: boolean;
+    direccion?: string;
+    ciudad?: string;
+    estado?: string;
+    pais?: string;
+    telefono1?: string;
+    telefono2?: string;
+    email1?: string;
+    email2?: string;
+    horarioLunesViernes?: string;
+    horarioSabados?: string;
+    instagram?: string;
+    facebook?: string;
+    whatsapp?: string;
+    mensajeAdicional?: string;
   };
   colors: {
     primary: string;
@@ -266,7 +280,21 @@ const HomePage: React.FC = () => {
         contact: {
             title: "Contáctanos",
             subtitle: "Para más información sobre nuestros productos",
-            enabled: true
+            enabled: true,
+            direccion: "Av. Principal, Zona Industrial",
+            ciudad: "San Francisco",
+            estado: "Estado Zulia",
+            pais: "Venezuela",
+            telefono1: "+58 412-123-4567",
+            telefono2: "+58 416-987-6543",
+            email1: "contacto@tumundopuertas.com",
+            email2: "ventas@tumundopuertas.com",
+            horarioLunesViernes: "Lunes a Viernes: 8:00 AM - 6:00 PM",
+            horarioSabados: "Sábados: 8:00 AM - 2:00 PM",
+            instagram: "@tumundopuertas",
+            facebook: "Tu Mundo Puertas",
+            whatsapp: "+58 412-123-4567",
+            mensajeAdicional: "¿Tienes una pregunta? Estamos aquí para ayudarte. Contáctanos y te responderemos lo antes posible."
         },
         colors: {
             primary: "#06b6d4",
@@ -363,7 +391,21 @@ const HomePage: React.FC = () => {
                 ? {
                     title: config.contact.title ?? defaultConfig.contact.title,
                     subtitle: config.contact.subtitle ?? defaultConfig.contact.subtitle,
-                    enabled: config.contact.enabled !== undefined ? config.contact.enabled : defaultConfig.contact.enabled
+                    enabled: config.contact.enabled !== undefined ? config.contact.enabled : defaultConfig.contact.enabled,
+                    direccion: config.contact.direccion ?? defaultConfig.contact.direccion ?? "",
+                    ciudad: config.contact.ciudad ?? defaultConfig.contact.ciudad ?? "",
+                    estado: config.contact.estado ?? defaultConfig.contact.estado ?? "",
+                    pais: config.contact.pais ?? defaultConfig.contact.pais ?? "",
+                    telefono1: config.contact.telefono1 ?? defaultConfig.contact.telefono1 ?? "",
+                    telefono2: config.contact.telefono2 ?? defaultConfig.contact.telefono2 ?? "",
+                    email1: config.contact.email1 ?? defaultConfig.contact.email1 ?? "",
+                    email2: config.contact.email2 ?? defaultConfig.contact.email2 ?? "",
+                    horarioLunesViernes: config.contact.horarioLunesViernes ?? defaultConfig.contact.horarioLunesViernes ?? "",
+                    horarioSabados: config.contact.horarioSabados ?? defaultConfig.contact.horarioSabados ?? "",
+                    instagram: config.contact.instagram ?? defaultConfig.contact.instagram ?? "",
+                    facebook: config.contact.facebook ?? defaultConfig.contact.facebook ?? "",
+                    whatsapp: config.contact.whatsapp ?? defaultConfig.contact.whatsapp ?? "",
+                    mensajeAdicional: config.contact.mensajeAdicional ?? defaultConfig.contact.mensajeAdicional ?? ""
                 }
                 : defaultConfig.contact,
             colors: config.colors && typeof config.colors === 'object' && !Array.isArray(config.colors)
@@ -864,7 +906,8 @@ const HomePage: React.FC = () => {
                 )}
 
                 {/* Contact Section */}
-                <section id="contacto" className="relative z-10 py-20 px-4 sm:px-6">
+                {safeConfig.contact && safeConfig.contact.enabled && (
+                    <section id="contacto" className="relative z-10 py-20 px-4 sm:px-6">
                     <div className="max-w-4xl mx-auto">
                         <div className="text-center mb-12">
                             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4" style={{ color: safeConfig.colors.text }}>{safeConfig.contact.title}</h2>
@@ -885,44 +928,67 @@ const HomePage: React.FC = () => {
                                                 </div>
                                                 <div>
                                                     <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Dirección:</p>
-                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>Av. Principal, Zona Industrial</p>
-                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>San Francisco, Estado Zulia</p>
-                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>Venezuela</p>
+                                                    {safeConfig.contact.direccion && (
+                                                        <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>{safeConfig.contact.direccion}</p>
+                                                    )}
+                                                    {(safeConfig.contact.ciudad || safeConfig.contact.estado || safeConfig.contact.pais) && (
+                                                        <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>
+                                                            {[safeConfig.contact.ciudad, safeConfig.contact.estado, safeConfig.contact.pais].filter(Boolean).join(', ')}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                             
-                                            <div className="flex items-start space-x-3">
-                                                <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📞</span>
+                                            {(safeConfig.contact.telefono1 || safeConfig.contact.telefono2) && (
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="flex-shrink-0 mt-1">
+                                                        <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📞</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Teléfono:</p>
+                                                        {safeConfig.contact.telefono1 && (
+                                                            <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>{safeConfig.contact.telefono1}</p>
+                                                        )}
+                                                        {safeConfig.contact.telefono2 && (
+                                                            <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>{safeConfig.contact.telefono2}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Teléfono:</p>
-                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>+58 412-123-4567</p>
-                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>+58 416-987-6543</p>
-                                                </div>
-                                            </div>
+                                            )}
                                             
-                                            <div className="flex items-start space-x-3">
-                                                <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>✉️</span>
+                                            {(safeConfig.contact.email1 || safeConfig.contact.email2) && (
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="flex-shrink-0 mt-1">
+                                                        <span className="text-xl" style={{ color: safeConfig.colors.primary }}>✉️</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Email:</p>
+                                                        {safeConfig.contact.email1 && (
+                                                            <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>{safeConfig.contact.email1}</p>
+                                                        )}
+                                                        {safeConfig.contact.email2 && (
+                                                            <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>{safeConfig.contact.email2}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Email:</p>
-                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>contacto@tumundopuertas.com</p>
-                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>ventas@tumundopuertas.com</p>
-                                                </div>
-                                            </div>
+                                            )}
                                             
-                                            <div className="flex items-start space-x-3">
-                                                <div className="flex-shrink-0 mt-1">
-                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>🕒</span>
+                                            {(safeConfig.contact.horarioLunesViernes || safeConfig.contact.horarioSabados) && (
+                                                <div className="flex items-start space-x-3">
+                                                    <div className="flex-shrink-0 mt-1">
+                                                        <span className="text-xl" style={{ color: safeConfig.colors.primary }}>🕒</span>
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Horario de Atención:</p>
+                                                        {safeConfig.contact.horarioLunesViernes && (
+                                                            <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>{safeConfig.contact.horarioLunesViernes}</p>
+                                                        )}
+                                                        {safeConfig.contact.horarioSabados && (
+                                                            <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>{safeConfig.contact.horarioSabados}</p>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="font-semibold" style={{ color: safeConfig.colors.text }}>Horario de Atención:</p>
-                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>Lunes a Viernes: 8:00 AM - 6:00 PM</p>
-                                                    <p style={{ color: safeConfig.colors.text, opacity: 0.8 }}>Sábados: 8:00 AM - 2:00 PM</p>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -932,32 +998,40 @@ const HomePage: React.FC = () => {
                                     <div>
                                         <h3 className="text-xl sm:text-2xl font-bold mb-4" style={{ color: safeConfig.colors.primary }}>Síguenos</h3>
                                         <div className="space-y-3">
-                                            <div className="flex items-center space-x-3">
-                                                <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📱</span>
-                                                <p style={{ color: safeConfig.colors.text }}>Instagram: @tumundopuertas</p>
-                                            </div>
-                                            <div className="flex items-center space-x-3">
-                                                <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📘</span>
-                                                <p style={{ color: safeConfig.colors.text }}>Facebook: Tu Mundo Puertas</p>
-                                            </div>
-                                            <div className="flex items-center space-x-3">
-                                                <span className="text-xl" style={{ color: safeConfig.colors.primary }}>💼</span>
-                                                <p style={{ color: safeConfig.colors.text }}>WhatsApp: +58 412-123-4567</p>
-                                            </div>
+                                            {safeConfig.contact.instagram && (
+                                                <div className="flex items-center space-x-3">
+                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📱</span>
+                                                    <p style={{ color: safeConfig.colors.text }}>Instagram: {safeConfig.contact.instagram}</p>
+                                                </div>
+                                            )}
+                                            {safeConfig.contact.facebook && (
+                                                <div className="flex items-center space-x-3">
+                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>📘</span>
+                                                    <p style={{ color: safeConfig.colors.text }}>Facebook: {safeConfig.contact.facebook}</p>
+                                                </div>
+                                            )}
+                                            {safeConfig.contact.whatsapp && (
+                                                <div className="flex items-center space-x-3">
+                                                    <span className="text-xl" style={{ color: safeConfig.colors.primary }}>💼</span>
+                                                    <p style={{ color: safeConfig.colors.text }}>WhatsApp: {safeConfig.contact.whatsapp}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
-                                    <div className="border rounded-lg p-4" style={{ backgroundColor: `${safeConfig.colors.primary}10`, borderColor: `${safeConfig.colors.primary}30` }}>
-                                        <p className="text-sm sm:text-base" style={{ color: safeConfig.colors.text }}>
-                                            <strong style={{ color: safeConfig.colors.primary }}>¿Tienes una pregunta?</strong><br />
-                                            Estamos aquí para ayudarte. Contáctanos y te responderemos lo antes posible.
-                                        </p>
-                                    </div>
+                                    {safeConfig.contact.mensajeAdicional && (
+                                        <div className="border rounded-lg p-4" style={{ backgroundColor: `${safeConfig.colors.primary}10`, borderColor: `${safeConfig.colors.primary}30` }}>
+                                            <p className="text-sm sm:text-base" style={{ color: safeConfig.colors.text }}>
+                                                {safeConfig.contact.mensajeAdicional}
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
+                )}
 
                 {/* Modales de Cliente */}
                 <ClienteLoginModal

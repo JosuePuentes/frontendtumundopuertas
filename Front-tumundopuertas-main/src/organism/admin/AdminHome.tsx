@@ -85,6 +85,20 @@ interface HomeConfig {
     title: string;
     subtitle: string;
     enabled: boolean;
+    direccion?: string;
+    ciudad?: string;
+    estado?: string;
+    pais?: string;
+    telefono1?: string;
+    telefono2?: string;
+    email1?: string;
+    email2?: string;
+    horarioLunesViernes?: string;
+    horarioSabados?: string;
+    instagram?: string;
+    facebook?: string;
+    whatsapp?: string;
+    mensajeAdicional?: string;
   };
   
   // Colores
@@ -201,7 +215,21 @@ const AdminHome: React.FC = () => {
     contact: {
       title: "¿Listo para tu próximo proyecto?",
       subtitle: "Contáctanos y descubre cómo podemos transformar tu espacio",
-      enabled: true
+      enabled: true,
+      direccion: "Av. Principal, Zona Industrial",
+      ciudad: "San Francisco",
+      estado: "Estado Zulia",
+      pais: "Venezuela",
+      telefono1: "+58 412-123-4567",
+      telefono2: "+58 416-987-6543",
+      email1: "contacto@tumundopuertas.com",
+      email2: "ventas@tumundopuertas.com",
+      horarioLunesViernes: "Lunes a Viernes: 8:00 AM - 6:00 PM",
+      horarioSabados: "Sábados: 8:00 AM - 2:00 PM",
+      instagram: "@tumundopuertas",
+      facebook: "Tu Mundo Puertas",
+      whatsapp: "+58 412-123-4567",
+      mensajeAdicional: "¿Tienes una pregunta? Estamos aquí para ayudarte. Contáctanos y te responderemos lo antes posible."
     },
     colors: {
       primary: "#06b6d4",
@@ -334,7 +362,21 @@ const AdminHome: React.FC = () => {
                 ? {
                     title: data.config.contact.title ?? config.contact.title,
                     subtitle: data.config.contact.subtitle ?? config.contact.subtitle,
-                    enabled: data.config.contact.enabled !== undefined ? data.config.contact.enabled : config.contact.enabled
+                    enabled: data.config.contact.enabled !== undefined ? data.config.contact.enabled : config.contact.enabled,
+                    direccion: data.config.contact.direccion ?? config.contact.direccion ?? "",
+                    ciudad: data.config.contact.ciudad ?? config.contact.ciudad ?? "",
+                    estado: data.config.contact.estado ?? config.contact.estado ?? "",
+                    pais: data.config.contact.pais ?? config.contact.pais ?? "",
+                    telefono1: data.config.contact.telefono1 ?? config.contact.telefono1 ?? "",
+                    telefono2: data.config.contact.telefono2 ?? config.contact.telefono2 ?? "",
+                    email1: data.config.contact.email1 ?? config.contact.email1 ?? "",
+                    email2: data.config.contact.email2 ?? config.contact.email2 ?? "",
+                    horarioLunesViernes: data.config.contact.horarioLunesViernes ?? config.contact.horarioLunesViernes ?? "",
+                    horarioSabados: data.config.contact.horarioSabados ?? config.contact.horarioSabados ?? "",
+                    instagram: data.config.contact.instagram ?? config.contact.instagram ?? "",
+                    facebook: data.config.contact.facebook ?? config.contact.facebook ?? "",
+                    whatsapp: data.config.contact.whatsapp ?? config.contact.whatsapp ?? "",
+                    mensajeAdicional: data.config.contact.mensajeAdicional ?? config.contact.mensajeAdicional ?? ""
                   }
                 : config.contact,
               colors: data.config.colors && typeof data.config.colors === 'object' && !Array.isArray(data.config.colors)
@@ -456,9 +498,18 @@ const AdminHome: React.FC = () => {
         }
       };
 
-      console.log('Guardando configuración en el backend:', JSON.stringify(configToSave, null, 2));
-      console.log('Banner image:', configToSave.banner.image ? 'Presente' : 'Vacio');
-      console.log('Logo image:', configToSave.logo.image ? 'Presente' : 'Vacio');
+      // Verificar que las imágenes estén incluidas (sin loguear el JSON completo porque puede ser muy grande con base64)
+      console.log('Guardando configuración en el backend');
+      console.log('Banner image:', configToSave.banner.image ? `Presente (${configToSave.banner.image.substring(0, 50)}...)` : 'Vacio');
+      console.log('Logo image:', configToSave.logo.image ? `Presente (${configToSave.logo.image.substring(0, 50)}...)` : 'Vacio');
+      console.log('Productos con imágenes:', configToSave.products.items.filter(p => p.image).length);
+      console.log('Contacto completo:', !!configToSave.contact);
+      
+      // Asegurar que todas las imágenes de productos estén incluidas
+      configToSave.products.items = configToSave.products.items.map(item => ({
+        ...item,
+        image: item.image || ''
+      }));
       
       const response = await fetch(`${apiUrl}/home/config`, {
         method: 'PUT',
@@ -1194,39 +1245,229 @@ const AdminHome: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
+                <div className="flex items-center space-x-2 mb-6">
+                  <input
+                    type="checkbox"
+                    id="contact-enabled"
+                    checked={config.contact.enabled}
+                    onChange={(e) => updateConfig('contact', 'enabled', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="contact-enabled" className="text-gray-200">Mostrar Sección de Contacto</Label>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold text-lg">Información General</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="contact-title" className="text-gray-200">Título</Label>
                       <Input
                         id="contact-title"
                         value={config.contact.title}
                         onChange={(e) => updateConfig('contact', 'title', e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-gray-200"
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
                       />
                     </div>
-                    
                     <div>
                       <Label htmlFor="contact-subtitle" className="text-gray-200">Subtítulo</Label>
-                      <Textarea
+                      <Input
                         id="contact-subtitle"
                         value={config.contact.subtitle}
                         onChange={(e) => updateConfig('contact', 'subtitle', e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-gray-200"
-                        rows={3}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
                       />
                     </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        id="contact-enabled"
-                        checked={config.contact.enabled}
-                        onChange={(e) => updateConfig('contact', 'enabled', e.target.checked)}
-                        className="rounded"
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold text-lg">Dirección</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="contact-direccion" className="text-gray-200">Dirección</Label>
+                      <Input
+                        id="contact-direccion"
+                        value={config.contact.direccion || ''}
+                        onChange={(e) => updateConfig('contact', 'direccion', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="Av. Principal, Zona Industrial"
                       />
-                      <Label htmlFor="contact-enabled" className="text-gray-200">Mostrar Sección de Contacto</Label>
                     </div>
+                    <div>
+                      <Label htmlFor="contact-ciudad" className="text-gray-200">Ciudad</Label>
+                      <Input
+                        id="contact-ciudad"
+                        value={config.contact.ciudad || ''}
+                        onChange={(e) => updateConfig('contact', 'ciudad', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="San Francisco"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contact-estado" className="text-gray-200">Estado</Label>
+                      <Input
+                        id="contact-estado"
+                        value={config.contact.estado || ''}
+                        onChange={(e) => updateConfig('contact', 'estado', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="Estado Zulia"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contact-pais" className="text-gray-200">País</Label>
+                      <Input
+                        id="contact-pais"
+                        value={config.contact.pais || ''}
+                        onChange={(e) => updateConfig('contact', 'pais', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="Venezuela"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold text-lg">Teléfonos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="contact-telefono1" className="text-gray-200">Teléfono 1</Label>
+                      <Input
+                        id="contact-telefono1"
+                        value={config.contact.telefono1 || ''}
+                        onChange={(e) => updateConfig('contact', 'telefono1', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="+58 412-123-4567"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contact-telefono2" className="text-gray-200">Teléfono 2</Label>
+                      <Input
+                        id="contact-telefono2"
+                        value={config.contact.telefono2 || ''}
+                        onChange={(e) => updateConfig('contact', 'telefono2', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="+58 416-987-6543"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold text-lg">Correos Electrónicos</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="contact-email1" className="text-gray-200">Email 1</Label>
+                      <Input
+                        id="contact-email1"
+                        type="email"
+                        value={config.contact.email1 || ''}
+                        onChange={(e) => updateConfig('contact', 'email1', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="contacto@tumundopuertas.com"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contact-email2" className="text-gray-200">Email 2</Label>
+                      <Input
+                        id="contact-email2"
+                        type="email"
+                        value={config.contact.email2 || ''}
+                        onChange={(e) => updateConfig('contact', 'email2', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="ventas@tumundopuertas.com"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold text-lg">Horarios</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="contact-horario-lunes-viernes" className="text-gray-200">Lunes a Viernes</Label>
+                      <Input
+                        id="contact-horario-lunes-viernes"
+                        value={config.contact.horarioLunesViernes || ''}
+                        onChange={(e) => updateConfig('contact', 'horarioLunesViernes', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="Lunes a Viernes: 8:00 AM - 6:00 PM"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contact-horario-sabados" className="text-gray-200">Sábados</Label>
+                      <Input
+                        id="contact-horario-sabados"
+                        value={config.contact.horarioSabados || ''}
+                        onChange={(e) => updateConfig('contact', 'horarioSabados', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="Sábados: 8:00 AM - 2:00 PM"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold text-lg">Redes Sociales</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="contact-instagram" className="text-gray-200">Instagram</Label>
+                      <Input
+                        id="contact-instagram"
+                        value={config.contact.instagram || ''}
+                        onChange={(e) => updateConfig('contact', 'instagram', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="@tumundopuertas"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contact-facebook" className="text-gray-200">Facebook</Label>
+                      <Input
+                        id="contact-facebook"
+                        value={config.contact.facebook || ''}
+                        onChange={(e) => updateConfig('contact', 'facebook', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="Tu Mundo Puertas"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="contact-whatsapp" className="text-gray-200">WhatsApp</Label>
+                      <Input
+                        id="contact-whatsapp"
+                        value={config.contact.whatsapp || ''}
+                        onChange={(e) => updateConfig('contact', 'whatsapp', e.target.value)}
+                        className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                        placeholder="+58 412-123-4567"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <h3 className="text-gray-200 font-semibold text-lg">Mensaje Adicional</h3>
+                  <div>
+                    <Label htmlFor="contact-mensaje-adicional" className="text-gray-200">Mensaje</Label>
+                    <Textarea
+                      id="contact-mensaje-adicional"
+                      value={config.contact.mensajeAdicional || ''}
+                      onChange={(e) => updateConfig('contact', 'mensajeAdicional', e.target.value)}
+                      className="bg-gray-700 border-gray-600 text-gray-200 mt-1"
+                      rows={3}
+                      placeholder="¿Tienes una pregunta? Estamos aquí para ayudarte..."
+                    />
                   </div>
                 </div>
               </CardContent>
