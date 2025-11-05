@@ -90,6 +90,7 @@ interface PedidoPayload {
   historial_pagos: RegistroPago[];
   total_abonado: number;
   adicionales?: Adicional[];
+  sucursal?: string; // Campo de sucursal
 }
 
 type SelectedItem = {
@@ -124,6 +125,8 @@ const CrearPedido: React.FC = () => {
   const [nuevoAdicionalDescripcion, setNuevoAdicionalDescripcion] = useState<string>("");
   const [nuevoAdicionalMonto, setNuevoAdicionalMonto] = useState<number>(0);
   const [nuevoAdicionalMetodoPago, setNuevoAdicionalMetodoPago] = useState<string>("");
+  const [sucursal, setSucursal] = useState<string>("");
+  const [modalSucursalOpen, setModalSucursalOpen] = useState<boolean>(true); // Abrir al entrar
 
   const { fetchPedido } = usePedido();
   const {
@@ -143,8 +146,11 @@ const CrearPedido: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchItems(`${apiUrl}/inventario/all`);
-  }, []);
+    // Solo cargar inventario si hay sucursal seleccionada
+    if (sucursal) {
+      fetchItems(`${apiUrl}/inventario/all?sucursal=${sucursal}`);
+    }
+  }, [sucursal]);
 
   useEffect(() => {
     const fetchMetodosPago = async () => {
@@ -377,7 +383,8 @@ const CrearPedido: React.FC = () => {
       if (!itemData) return;
 
       const cantidadSolicitada = item.cantidad || 0;
-      const cantidadDisponible = itemData.cantidad || 0;
+      // Usar existencia_sucursal si existe, sino usar cantidad
+      const cantidadDisponible = itemData.existencia_sucursal ?? itemData.cantidad ?? 0;
 
       if (cantidadSolicitada > cantidadDisponible) {
         todosTienenExistencia = false;
@@ -528,6 +535,7 @@ const CrearPedido: React.FC = () => {
       historial_pagos: pagos.length > 0 ? pagos : [],
       total_abonado: pagos.reduce((acc, p) => acc + p.monto, 0),
       todos_items_disponibles: todosTienenExistencia && !forzarProduccion, // Flag para el backend
+      sucursal: sucursal, // Agregar sucursal al payload
       // Enviar adicionales al backend con estructura: { descripcion?, precio, cantidad? }
       // NO incluir metodoPago ni metodoPagoNombre (son solo para UI)
       // Siempre incluir el campo adicionales, aunque sea un array vacío
@@ -707,7 +715,9 @@ const CrearPedido: React.FC = () => {
         setNuevoAdicionalMonto(0);
         setNuevoAdicionalMetodoPago("");
         // Refrescar la lista de items para mostrar las existencias actualizadas
-        fetchItems(`${apiUrl}/inventario/all`);
+        if (sucursal) {
+          fetchItems(`${apiUrl}/inventario/all?sucursal=${sucursal}`);
+        }
         
         // Disparar evento personalizado para notificar que se creó un pedido (reutilizar variables ya declaradas)
         window.dispatchEvent(new CustomEvent('pedidoCreado', {
@@ -732,6 +742,13 @@ const CrearPedido: React.FC = () => {
     e.preventDefault();
     setMensaje("");
     setMensajeTipo("");
+
+    if (!sucursal) {
+      setMensaje("Debes seleccionar una sucursal antes de crear el pedido.");
+      setMensajeTipo("error");
+      setModalSucursalOpen(true);
+      return;
+    }
 
     if (!clienteId || selectedItems.length === 0) {
       setMensaje("Seleccione un cliente y al menos un item.");
@@ -772,15 +789,115 @@ const CrearPedido: React.FC = () => {
     await crearPedido(selectedItems, validacion.todosTienenExistencia);
   };
 
+  // Función para ordenar items por existencia_sucursal de la sucursal seleccionada (mayor a menor)
+  const ordenarItemsPorExistencia = (items: any[]) => {
+    if (!sucursal) return items; // Si no hay sucursal, no ordenar
+    
+    return [...items].sort((a, b) => {
+      // Obtener existencia de la sucursal seleccionada
+      // Si existe existencia_sucursal, usarlo (es el valor correcto para la sucursal seleccionada)
+      // Si no, usar cantidad para sucursal1 o existencia2 para sucursal2
+      const existenciaA = a.existencia_sucursal !== undefined 
+        ? a.existencia_sucursal 
+        : (sucursal === "sucursal1" ? (a.cantidad ?? 0) : (a.existencia2 ?? 0));
+      const existenciaB = b.existencia_sucursal !== undefined 
+        ? b.existencia_sucursal 
+        : (sucursal === "sucursal1" ? (b.cantidad ?? 0) : (b.existencia2 ?? 0));
+      return existenciaB - existenciaA; // Orden descendente (mayor primero)
+    });
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto p-2 sm:p-4">
+      {/* Modal de selección de sucursal */}
+      <Dialog open={modalSucursalOpen} onOpenChange={(open) => {
+        if (!sucursal && !open) {
+          // No permitir cerrar si no hay sucursal seleccionada
+          return;
+        }
+        setModalSucursalOpen(open);
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Seleccionar Sucursal</DialogTitle>
+            <DialogDescription>
+              Selecciona la sucursal para crear el pedido. Los items se mostrarán ordenados por disponibilidad en esta sucursal.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Select
+              value={sucursal}
+              onValueChange={(value) => {
+                // Si hay items seleccionados, limpiarlos al cambiar de sucursal
+                if (selectedItems.length > 0) {
+                  setSelectedItems([]);
+                  setMensaje("Se han limpiado los items seleccionados al cambiar de sucursal.");
+                  setMensajeTipo("success");
+                  setTimeout(() => {
+                    setMensaje("");
+                    setMensajeTipo("");
+                  }, 3000);
+                }
+                setSucursal(value);
+                setModalSucursalOpen(false);
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecciona una sucursal" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sucursal1">Sucursal 1</SelectItem>
+                <SelectItem value="sucursal2">Sucursal 2</SelectItem>
+              </SelectContent>
+            </Select>
+            {sucursal && (
+              <p className="text-sm text-gray-600">
+                ✓ Los items se mostrarán ordenados por disponibilidad en {sucursal === "sucursal1" ? "Sucursal 1" : "Sucursal 2"}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                if (sucursal) {
+                  setModalSucursalOpen(false);
+                }
+              }}
+              disabled={!sucursal}
+            >
+              Continuar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Card className="shadow-xl border border-gray-100 rounded-2xl overflow-hidden">
         {/* Header */}
-        <CardHeader className="flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 sm:p-6">
-          <FaClipboardList className="text-xl sm:text-2xl" />
-          <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold">
-            Sistema de Ventas
-          </CardTitle>
+        <CardHeader className="flex items-center justify-between gap-2 sm:gap-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <FaClipboardList className="text-xl sm:text-2xl" />
+            <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold">
+              Sistema de Ventas
+              {sucursal && (
+                <Badge className="ml-3 bg-white text-blue-600">
+                  {sucursal === "sucursal1" ? "Sucursal 1" : "Sucursal 2"}
+                </Badge>
+              )}
+            </CardTitle>
+          </div>
+          {sucursal && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setModalSucursalOpen(true)}
+              className="bg-white text-blue-600 hover:bg-blue-50"
+            >
+              Cambiar Sucursal
+            </Button>
+          )}
         </CardHeader>
 
         <CardContent className="p-3 sm:p-4 md:p-6">
@@ -935,8 +1052,10 @@ const CrearPedido: React.FC = () => {
             <div className="space-y-4">
               {selectedItems.map((item, idx) => {
                 const filtered: any[] = Array.isArray(itemsData) 
-                  ? (itemsData as any[]).filter((it) =>
-                      it?.nombre?.toLowerCase().includes(item.search?.toLowerCase() || '')
+                  ? ordenarItemsPorExistencia(
+                      (itemsData as any[]).filter((it) =>
+                        it?.nombre?.toLowerCase().includes(item.search?.toLowerCase() || '')
+                      )
                     )
                   : [];
 
@@ -1006,14 +1125,53 @@ const CrearPedido: React.FC = () => {
                                     </div>
                                     <div className="col-span-1 text-right">
                                       <div className="space-y-2 mb-2">
-                                        <div className={`inline-block px-3 py-1 rounded-lg ${(f.cantidad !== undefined ? f.cantidad : (f.existencia || 0)) > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
-                                          <p className="text-xs font-semibold">Sucursal 1</p>
-                                          <p className="text-lg font-bold">{f.cantidad !== undefined ? f.cantidad : (f.existencia || 0)}</p>
-                                        </div>
-                                        <div className={`inline-block px-3 py-1 rounded-lg ${(f.existencia2 || 0) > 0 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
-                                          <p className="text-xs font-semibold">Sucursal 2</p>
-                                          <p className="text-lg font-bold">{f.existencia2 !== undefined ? f.existencia2 : 0}</p>
-                                        </div>
+                                        {/* Mostrar ambas existencias, destacando la sucursal seleccionada */}
+                                        {(() => {
+                                          // El backend devuelve existencia_sucursal para la sucursal seleccionada
+                                          // cantidad es la existencia de sucursal 1, existencia2 es sucursal 2
+                                          const existenciaSuc1 = f.cantidad ?? 0;
+                                          const existenciaSuc2 = f.existencia2 ?? 0;
+                                          
+                                          // Si hay existencia_sucursal, actualizar la de la sucursal correspondiente
+                                          let existenciaSuc1Mostrar = existenciaSuc1;
+                                          let existenciaSuc2Mostrar = existenciaSuc2;
+                                          
+                                          if (f.existencia_sucursal !== undefined) {
+                                            if (sucursal === "sucursal1") {
+                                              existenciaSuc1Mostrar = f.existencia_sucursal;
+                                            } else if (sucursal === "sucursal2") {
+                                              existenciaSuc2Mostrar = f.existencia_sucursal;
+                                            }
+                                          }
+                                          
+                                          return (
+                                            <>
+                                              {/* Sucursal 1 - destacada si está seleccionada */}
+                                              <div className={`inline-block px-3 py-1 rounded-lg ${
+                                                sucursal === "sucursal1" 
+                                                  ? 'border-2 border-blue-500 bg-blue-50 text-blue-800' 
+                                                  : existenciaSuc1Mostrar > 0 
+                                                    ? 'bg-blue-100 text-blue-700' 
+                                                    : 'bg-gray-100 text-gray-600'
+                                              }`}>
+                                                <p className="text-xs font-semibold">Sucursal 1</p>
+                                                <p className="text-lg font-bold">{existenciaSuc1Mostrar}</p>
+                                              </div>
+                                              
+                                              {/* Sucursal 2 - destacada si está seleccionada */}
+                                              <div className={`inline-block px-3 py-1 rounded-lg ${
+                                                sucursal === "sucursal2" 
+                                                  ? 'border-2 border-purple-500 bg-purple-50 text-purple-800' 
+                                                  : existenciaSuc2Mostrar > 0 
+                                                    ? 'bg-purple-100 text-purple-700' 
+                                                    : 'bg-gray-100 text-gray-600'
+                                              }`}>
+                                                <p className="text-xs font-semibold">Sucursal 2</p>
+                                                <p className="text-lg font-bold">{existenciaSuc2Mostrar}</p>
+                                              </div>
+                                            </>
+                                          );
+                                        })()}
                                       </div>
                                       <p className="text-xl font-bold text-blue-600">${f.precio}</p>
                                     </div>
