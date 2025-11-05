@@ -364,7 +364,13 @@ const AdminHome: React.FC = () => {
               products: data.config.products && typeof data.config.products === 'object' && !Array.isArray(data.config.products)
                 ? {
                     title: data.config.products.title ?? config.products.title,
-                    items: Array.isArray(data.config.products.items) ? data.config.products.items : config.products.items
+                    items: Array.isArray(data.config.products.items) 
+                      ? data.config.products.items.map((item: any) => ({
+                          ...item,
+                          // Normalizar: el backend puede usar 'url' o 'image', usamos 'image' internamente
+                          image: item.url || item.image || ''
+                        }))
+                      : config.products.items
                   }
                 : config.products,
               contact: data.config.contact && typeof data.config.contact === 'object' && !Array.isArray(data.config.contact)
