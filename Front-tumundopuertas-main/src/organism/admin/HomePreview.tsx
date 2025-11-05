@@ -264,7 +264,7 @@ const HomePreview: React.FC<HomePreviewProps> = ({ config, onClose }) => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                   {Object.entries(config.values)
-                    .filter(([key, value]) => 
+                    .filter(([, value]) => 
                       value && 
                       typeof value === 'object' && 
                       !Array.isArray(value) &&
