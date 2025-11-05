@@ -328,6 +328,13 @@ const AdminHome: React.FC = () => {
             const bannerImageLength = bannerImage.length || 0;
             const logoImageLength = logoImage.length || 0;
             
+            // Verificar productos en la respuesta del GET
+            const productosBackend = data.config.products?.items || [];
+            const productosConImagenCarga = productosBackend.filter((p: any) => {
+              const img = p.image || p.url || '';
+              return img && img.length > 100;
+            });
+            
             console.log('📥 Configuración cargada desde backend:');
             console.log('  Banner:', {
               tieneUrl: !!data.config.banner?.url,
@@ -340,6 +347,18 @@ const AdminHome: React.FC = () => {
               tieneImage: !!data.config.logo?.image,
               longitud: logoImageLength,
               estado: logoImageLength > 100 ? `✅ Presente (${logoImageLength} chars)` : `❌ No presente (${logoImageLength} chars)`
+            });
+            console.log('  Productos:', {
+              total: productosBackend.length,
+              conImagen: productosConImagenCarga.length,
+              items: productosBackend.map((p: any) => ({
+                id: p.id,
+                name: p.name,
+                tieneImage: !!(p.image && p.image.length > 100),
+                tieneUrl: !!(p.url && p.url.length > 100),
+                imageLength: (p.image || '').length,
+                urlLength: (p.url || '').length
+              }))
             });
             
             // Normalizar la configuración para asegurar que todos los campos existan
@@ -677,10 +696,12 @@ const AdminHome: React.FC = () => {
         const logoUrl = data.config.logo?.url || data.config.logo?.image || '';
         const savedLogoImage = logoUrl.length || 0;
         
-        const savedProductImages = data.config.products?.items?.filter((p: any) => {
+        // Verificar productos en la respuesta del PUT
+        const productosRespuesta = data.config.products?.items || [];
+        const productosConImagenRespuesta = productosRespuesta.filter((p: any) => {
           const productImage = p.image || p.url || '';
           return productImage && productImage.length > 100;
-        }).length || 0;
+        });
         
         console.log('📋 Configuración guardada en backend:');
         console.log('  Banner:', {
@@ -695,7 +716,18 @@ const AdminHome: React.FC = () => {
           longitud: savedLogoImage,
           estado: savedLogoImage > 100 ? `✅ Guardada (${savedLogoImage} chars)` : `❌ No guardada (${savedLogoImage} chars)`
         });
-        console.log('  Productos con imagen:', savedProductImages);
+        console.log('  Productos:', {
+          total: productosRespuesta.length,
+          conImagen: productosConImagenRespuesta.length,
+          items: productosRespuesta.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            tieneImage: !!(p.image && p.image.length > 100),
+            tieneUrl: !!(p.url && p.url.length > 100),
+            imageLength: (p.image || '').length,
+            urlLength: (p.url || '').length
+          }))
+        });
         
         // Normalizar: el backend puede usar 'url' o 'image', normalizamos a 'image' internamente
         // Ahora que el backend retorna las imágenes correctamente, priorizamos la respuesta del backend
@@ -736,9 +768,16 @@ const AdminHome: React.FC = () => {
           const productosEnviados = configToSave.products.items || [];
           const productosEnviadosMap = new Map();
           productosEnviados.forEach((item: any) => {
-            if (item.id && item.image && item.image.length > 100) {
-              productosEnviadosMap.set(item.id, item.image);
+            const itemImage = item.image || (item as any).url || '';
+            if (item.id && itemImage && itemImage.length > 100) {
+              productosEnviadosMap.set(item.id, itemImage);
             }
+          });
+          
+          console.log('🔧 Normalizando imágenes de productos:', {
+            productosEnviados: productosEnviados.length,
+            productosConImagenEnviados: productosEnviadosMap.size,
+            productosEnRespuesta: data.config.products.items.length
           });
           
           // Normalizar cada producto: usar url si existe, sino image, y preservar la enviada si el backend no la retornó
@@ -751,11 +790,26 @@ const AdminHome: React.FC = () => {
               ? backendImage 
               : (enviadaImage && enviadaImage.length > 100 ? enviadaImage : '');
             
+            // Si estamos usando la imagen enviada (porque el backend no la retornó), loguearlo
+            if (enviadaImage && enviadaImage.length > 100 && (!backendImage || backendImage.length <= 100)) {
+              console.log(`⚠️ Producto ${item.id} (${item.name}): El backend no retornó imagen, usando la enviada (${enviadaImage.length} chars)`);
+            }
+            
             return {
               ...item,
               image: finalImage,
               url: finalImage || item.url || item.image || '' // Mantener url para compatibilidad
             };
+          });
+          
+          // Verificar productos después de normalizar
+          const productosNormalizados = data.config.products.items.filter((p: any) => {
+            const img = p.image || p.url || '';
+            return img && img.length > 100;
+          });
+          console.log('✅ Productos después de normalizar:', {
+            total: data.config.products.items.length,
+            conImagen: productosNormalizados.length
           });
         }
       }
