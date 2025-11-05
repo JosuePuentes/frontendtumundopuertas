@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -240,65 +240,71 @@ const HomePage: React.FC = () => {
         }
     };
 
-    // Usar configuración guardada o por defecto
-    const currentConfig: HomeConfig = config || defaultConfig;
-    
     // Validar y asegurar que todos los campos requeridos existan con validación profunda
-    const safeConfig: HomeConfig = {
-        banner: currentConfig.banner && typeof currentConfig.banner === 'object'
-            ? {
-                title: currentConfig.banner.title || defaultConfig.banner.title,
-                subtitle: currentConfig.banner.subtitle || defaultConfig.banner.subtitle,
-                image: currentConfig.banner.image || defaultConfig.banner.image,
-                enabled: currentConfig.banner.enabled !== undefined ? currentConfig.banner.enabled : defaultConfig.banner.enabled
-            }
-            : defaultConfig.banner,
-        logo: currentConfig.logo && typeof currentConfig.logo === 'object'
-            ? {
-                text: currentConfig.logo.text || defaultConfig.logo.text,
-                slogan: currentConfig.logo.slogan || defaultConfig.logo.slogan,
-                image: currentConfig.logo.image || defaultConfig.logo.image,
-                enabled: currentConfig.logo.enabled !== undefined ? currentConfig.logo.enabled : defaultConfig.logo.enabled
-            }
-            : defaultConfig.logo,
-        values: currentConfig.values && typeof currentConfig.values === 'object'
-            ? {
-                diseño: currentConfig.values.diseño && typeof currentConfig.values.diseño === 'object'
-                    ? currentConfig.values.diseño
-                    : defaultConfig.values.diseño,
-                calidad: currentConfig.values.calidad && typeof currentConfig.values.calidad === 'object'
-                    ? currentConfig.values.calidad
-                    : defaultConfig.values.calidad,
-                proteccion: currentConfig.values.proteccion && typeof currentConfig.values.proteccion === 'object'
-                    ? currentConfig.values.proteccion
-                    : defaultConfig.values.proteccion
-            }
-            : defaultConfig.values,
-        products: currentConfig.products && typeof currentConfig.products === 'object'
-            ? {
-                title: currentConfig.products.title || defaultConfig.products.title,
-                items: Array.isArray(currentConfig.products.items) 
-                    ? currentConfig.products.items 
-                    : defaultConfig.products.items
-            }
-            : defaultConfig.products,
-        contact: currentConfig.contact && typeof currentConfig.contact === 'object'
-            ? {
-                title: currentConfig.contact.title || defaultConfig.contact.title,
-                subtitle: currentConfig.contact.subtitle || defaultConfig.contact.subtitle,
-                enabled: currentConfig.contact.enabled !== undefined ? currentConfig.contact.enabled : defaultConfig.contact.enabled
-            }
-            : defaultConfig.contact,
-        colors: currentConfig.colors && typeof currentConfig.colors === 'object'
-            ? {
-                primary: currentConfig.colors.primary || defaultConfig.colors.primary,
-                secondary: currentConfig.colors.secondary || defaultConfig.colors.secondary,
-                accent: currentConfig.colors.accent || defaultConfig.colors.accent,
-                background: currentConfig.colors.background || defaultConfig.colors.background,
-                text: currentConfig.colors.text || defaultConfig.colors.text
-            }
-            : defaultConfig.colors
-    };
+    // Usar useMemo para evitar recalcular en cada render
+    const safeConfig: HomeConfig = useMemo(() => {
+        // Si no hay config, usar directamente defaultConfig
+        if (!config) {
+            return defaultConfig;
+        }
+
+        // Validar cada propiedad con fallback a defaultConfig
+        return {
+            banner: config.banner && typeof config.banner === 'object' && !Array.isArray(config.banner)
+                ? {
+                    title: config.banner.title ?? defaultConfig.banner.title,
+                    subtitle: config.banner.subtitle ?? defaultConfig.banner.subtitle,
+                    image: config.banner.image ?? defaultConfig.banner.image,
+                    enabled: config.banner.enabled !== undefined ? config.banner.enabled : defaultConfig.banner.enabled
+                }
+                : defaultConfig.banner,
+            logo: config.logo && typeof config.logo === 'object' && !Array.isArray(config.logo)
+                ? {
+                    text: config.logo.text ?? defaultConfig.logo.text,
+                    slogan: config.logo.slogan ?? defaultConfig.logo.slogan,
+                    image: config.logo.image ?? defaultConfig.logo.image,
+                    enabled: config.logo.enabled !== undefined ? config.logo.enabled : defaultConfig.logo.enabled
+                }
+                : defaultConfig.logo,
+            values: config.values && typeof config.values === 'object' && !Array.isArray(config.values)
+                ? {
+                    diseño: (config.values.diseño && typeof config.values.diseño === 'object' && !Array.isArray(config.values.diseño))
+                        ? config.values.diseño
+                        : defaultConfig.values.diseño,
+                    calidad: (config.values.calidad && typeof config.values.calidad === 'object' && !Array.isArray(config.values.calidad))
+                        ? config.values.calidad
+                        : defaultConfig.values.calidad,
+                    proteccion: (config.values.proteccion && typeof config.values.proteccion === 'object' && !Array.isArray(config.values.proteccion))
+                        ? config.values.proteccion
+                        : defaultConfig.values.proteccion
+                }
+                : defaultConfig.values,
+            products: config.products && typeof config.products === 'object' && !Array.isArray(config.products)
+                ? {
+                    title: config.products.title ?? defaultConfig.products.title,
+                    items: Array.isArray(config.products.items) 
+                        ? config.products.items 
+                        : (defaultConfig.products.items || [])
+                }
+                : defaultConfig.products,
+            contact: config.contact && typeof config.contact === 'object' && !Array.isArray(config.contact)
+                ? {
+                    title: config.contact.title ?? defaultConfig.contact.title,
+                    subtitle: config.contact.subtitle ?? defaultConfig.contact.subtitle,
+                    enabled: config.contact.enabled !== undefined ? config.contact.enabled : defaultConfig.contact.enabled
+                }
+                : defaultConfig.contact,
+            colors: config.colors && typeof config.colors === 'object' && !Array.isArray(config.colors)
+                ? {
+                    primary: config.colors.primary ?? defaultConfig.colors.primary,
+                    secondary: config.colors.secondary ?? defaultConfig.colors.secondary,
+                    accent: config.colors.accent ?? defaultConfig.colors.accent,
+                    background: config.colors.background ?? defaultConfig.colors.background,
+                    text: config.colors.text ?? defaultConfig.colors.text
+                }
+                : defaultConfig.colors
+        };
+    }, [config]);
 
     const modules: Array<{
         title: string;
@@ -403,6 +409,17 @@ const HomePage: React.FC = () => {
         }
     ];
 
+
+    // No renderizar hasta que safeConfig esté listo
+    if (!safeConfig || !safeConfig.colors || !safeConfig.products) {
+        return (
+            <div className="min-h-screen bg-black text-gray-300 flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-lg">Cargando...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (!isAuthenticated) {
         return (
