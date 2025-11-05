@@ -640,11 +640,40 @@ const AdminHome: React.FC = () => {
       }
       
       // Validación final: asegurar que todos los campos requeridos estén presentes
-      if (!finalConfig.products || !finalConfig.products.title) {
+      if (!finalConfig.products) {
         finalConfig.products = {
-          ...finalConfig.products,
-          title: finalConfig.products?.title || 'Productos',
-          items: finalConfig.products?.items || []
+          title: 'Productos',
+          items: []
+        };
+      } else if (!finalConfig.products.title) {
+        finalConfig.products.title = 'Productos';
+      }
+      if (!finalConfig.products.items) {
+        finalConfig.products.items = [];
+      }
+      
+      // Validar otros campos requeridos
+      if (!finalConfig.values) {
+        finalConfig.values = {
+          diseño: { title: '', description: '', icon: 'Star' },
+          calidad: { title: '', description: '', icon: 'Shield' },
+          proteccion: { title: '', description: '', icon: 'Zap' }
+        };
+      }
+      if (!finalConfig.contact) {
+        finalConfig.contact = {
+          title: '',
+          subtitle: '',
+          enabled: true
+        };
+      }
+      if (!finalConfig.colors) {
+        finalConfig.colors = {
+          primary: '#06b6d4',
+          secondary: '#0891b2',
+          accent: '#0ea5e9',
+          background: '#000000',
+          text: '#e5e7eb'
         };
       }
       
