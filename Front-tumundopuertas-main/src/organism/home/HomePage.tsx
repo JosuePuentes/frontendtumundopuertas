@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import ClienteLoginModal from "@/organism/clientes/ClienteLoginModal";
 import ClienteRegisterModal from "@/organism/clientes/ClienteRegisterModal";
 import ClienteForgotPassword from "@/organism/clientes/ClienteForgotPassword";
+import { getApiUrl } from "@/lib/api";
 import { 
   Users, 
   Package, 
@@ -92,15 +93,44 @@ const HomePage: React.FC = () => {
         }
     };
 
-    // Cargar configuración desde localStorage
+    const apiUrl = getApiUrl();
+
+    // Cargar configuración desde el backend
     useEffect(() => {
-        const loadConfig = () => {
+        const loadConfig = async () => {
+            try {
+                // Intentar cargar desde el backend primero
+                const response = await fetch(`${apiUrl}/home/config`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.config) {
+                        console.log('Configuración cargada desde el backend:', data.config);
+                        setConfig(data.config);
+                        // Actualizar localStorage como cache
+                        localStorage.setItem('home-config', JSON.stringify(data.config));
+                        return;
+                    }
+                } else if (response.status === 404) {
+                    // No hay configuración en el backend, intentar desde localStorage como fallback
+                    console.log('No hay configuración en el backend, intentando desde localStorage...');
+                }
+            } catch (error) {
+                console.error('Error al cargar configuración del backend:', error);
+                // Continuar con localStorage como fallback
+            }
+
+            // Fallback: cargar desde localStorage si el backend no tiene configuración
             const savedConfig = localStorage.getItem('home-config');
             if (savedConfig) {
                 try {
                     const parsedConfig = JSON.parse(savedConfig);
-                    console.log('Configuración cargada:', parsedConfig);
-                    console.log('Banner habilitado:', parsedConfig.banner?.enabled);
+                    console.log('Configuración cargada desde localStorage:', parsedConfig);
                     setConfig(parsedConfig);
                 } catch (error) {
                     console.error('Error parsing home config:', error);
@@ -137,7 +167,7 @@ const HomePage: React.FC = () => {
             window.removeEventListener('storage', handleStorageChange);
             window.removeEventListener('customStorageChange', handleCustomStorageChange as EventListener);
         };
-    }, []);
+    }, [apiUrl]);
 
     // Configuración por defecto
     const defaultConfig: HomeConfig = {

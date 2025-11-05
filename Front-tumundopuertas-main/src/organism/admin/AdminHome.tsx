@@ -18,6 +18,7 @@ import {
   Plus 
 } from "lucide-react";
 import HomePreview from './HomePreview';
+import { getApiUrl } from "@/lib/api";
 
 interface HomeConfig {
   // Banner
@@ -157,40 +158,85 @@ const AdminHome: React.FC = () => {
 
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingConfig, setLoadingConfig] = useState(true);
 
-  // Cargar configuración guardada
+  const apiUrl = getApiUrl();
+  const token = localStorage.getItem('access_token');
+
+  // Cargar configuración desde el backend
   useEffect(() => {
-    const savedConfig = localStorage.getItem('home-config');
-    if (savedConfig) {
-      setConfig(JSON.parse(savedConfig));
-    }
-  }, []);
+    const loadConfig = async () => {
+      try {
+        setLoadingConfig(true);
+        const response = await fetch(`${apiUrl}/home/config`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token && { Authorization: `Bearer ${token}` })
+          }
+        });
 
-  // Guardar configuración
-  const saveConfig = () => {
+        if (response.ok) {
+          const data = await response.json();
+          if (data.config) {
+            setConfig(data.config);
+          }
+        } else if (response.status === 404) {
+          // No hay configuración guardada, usar la por defecto
+          console.log('No hay configuración guardada, usando valores por defecto');
+        } else {
+          console.error('Error al cargar configuración:', response.statusText);
+          // En caso de error, usar configuración por defecto
+        }
+      } catch (error) {
+        console.error('Error al cargar configuración:', error);
+        // En caso de error, usar configuración por defecto
+      } finally {
+        setLoadingConfig(false);
+      }
+    };
+
+    loadConfig();
+  }, [apiUrl, token]);
+
+  // Guardar configuración en el backend
+  const saveConfig = async () => {
     setLoading(true);
-    console.log('Guardando configuración:', config);
-    console.log('Banner habilitado:', config.banner.enabled);
-    
-    localStorage.setItem('home-config', JSON.stringify(config));
-    
-    // Disparar evento storage para notificar cambios (entre pestañas)
-    window.dispatchEvent(new StorageEvent('storage', {
-      key: 'home-config',
-      newValue: JSON.stringify(config),
-      oldValue: localStorage.getItem('home-config'),
-      storageArea: localStorage
-    }));
-    
-    // Disparar evento personalizado para notificar cambios (misma pestaña)
-    window.dispatchEvent(new CustomEvent('customStorageChange', {
-      detail: { key: 'home-config', value: config }
-    }));
-    
-    setTimeout(() => {
+    try {
+      console.log('Guardando configuración en el backend:', config);
+      
+      const response = await fetch(`${apiUrl}/home/config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` })
+        },
+        body: JSON.stringify({ config })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || 'Error al guardar la configuración');
+      }
+
+      const data = await response.json();
+      console.log('Configuración guardada exitosamente:', data);
+      
+      // También guardar en localStorage como respaldo/cache
+      localStorage.setItem('home-config', JSON.stringify(config));
+      
+      // Disparar evento personalizado para notificar cambios (misma pestaña)
+      window.dispatchEvent(new CustomEvent('customStorageChange', {
+        detail: { key: 'home-config', value: config }
+      }));
+      
+      alert('✅ Configuración guardada exitosamente!');
+    } catch (error: any) {
+      console.error('Error al guardar configuración:', error);
+      alert(`❌ Error al guardar: ${error.message || 'Error desconocido'}`);
+    } finally {
       setLoading(false);
-      alert('Configuración guardada exitosamente!');
-    }, 500);
+    }
   };
 
   // Actualizar configuración
@@ -227,6 +273,17 @@ const AdminHome: React.FC = () => {
     };
     reader.readAsDataURL(file);
   };
+
+  if (loadingConfig) {
+    return (
+      <div className="min-h-screen bg-black text-gray-200 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-cyan-400" />
+          <p className="text-gray-200">Cargando configuración...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-gray-200 p-6">
