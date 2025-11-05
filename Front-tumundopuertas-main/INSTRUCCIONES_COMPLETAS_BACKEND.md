@@ -81,10 +81,12 @@ result = pedidos_collection.update_one(
 
 ---
 
-# 📝 CAMBIO 2: FILTRAR PEDIDOS CANCELADOS EN MÓDULOS DE PAGOS
+# 📝 CAMBIO 2: FILTRAR TODOS LOS PEDIDOS CANCELADOS EN MÓDULOS DE PAGOS
 
 ## Objetivo
-Los pedidos **cancelados** NO deben aparecer en los módulos de pagos (Mis Pagos y Pagos) porque aparecen como "sin pago" y puede generar confusión. Los pedidos cancelados ya no tienen pagos pendientes.
+**TODOS los pedidos cancelados** (de cualquier cliente) NO deben aparecer en los módulos de pagos (Mis Pagos y Pagos) porque aparecen como "sin pago" y puede generar confusión. Los pedidos cancelados ya no tienen pagos pendientes, por lo que no deben aparecer en módulos de pagos.
+
+**IMPORTANTE**: Este filtro aplica a TODOS los pedidos cancelados, no solo a los de TU MUNDO PUERTA.
 
 ## Endpoints a Modificar
 
@@ -319,12 +321,12 @@ from bson import ObjectId
 - [ ] Verificar que los items NO aparecen en PedidosHerreria (ya funciona)
 - [ ] Verificar que el pedido SÍ aparece en MonitorPedidos con filtro de cancelados
 
-## Cambio 2: Filtrar Pedidos Cancelados
+## Cambio 2: Filtrar TODOS los Pedidos Cancelados
 - [ ] Encontrar endpoint `/pedidos/mis-pagos` en `pedidos.py`
-- [ ] Agregar filtro `estado_general: {"$ne": "cancelado"}` 
+- [ ] Agregar filtro `estado_general: {"$ne": "cancelado"}` (esto filtra TODOS los pedidos cancelados, de cualquier cliente)
 - [ ] Encontrar endpoint `/pedidos/all/` en `pedidos.py`
 - [ ] Agregar el mismo filtro en `/pedidos/all/`
-- [ ] Probar cancelando un pedido
+- [ ] Probar cancelando un pedido de cualquier cliente
 - [ ] Verificar que NO aparece en Mis Pagos
 - [ ] Verificar que NO aparece en Pagos
 - [ ] Verificar que SÍ aparece en MonitorPedidos con filtro de cancelados
@@ -395,10 +397,11 @@ from bson import ObjectId
 - ✅ El pedido SÍ aparece en MonitorPedidos cuando se activa el filtro de cancelados
 
 ## Después de implementar Cambio 2:
-- ✅ Los pedidos cancelados NO aparecen en Mis Pagos
-- ✅ Los pedidos cancelados NO aparecen en Pagos
+- ✅ **TODOS los pedidos cancelados** (de cualquier cliente) NO aparecen en Mis Pagos
+- ✅ **TODOS los pedidos cancelados** (de cualquier cliente) NO aparecen en Pagos
 - ✅ Los pedidos cancelados SÍ aparecen en MonitorPedidos con filtro de cancelados
 - ✅ No hay confusión de pedidos cancelados como "sin pago"
+- ✅ Este filtro aplica a TODOS los clientes, no solo a TU MUNDO PUERTA
 
 ## Después de implementar Cambio 3:
 - ✅ Los pedidos de TU MUNDO PUERTA NO aparecen en Mis Pagos
