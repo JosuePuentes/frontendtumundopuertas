@@ -266,7 +266,18 @@ const FacturacionPage: React.FC = () => {
         !pedidosPrioritarios.find((pp: any) => pp._id === p._id)
       ).slice(0, 500);
       
-      const pedidosLimitados = [...pedidosPrioritarios, ...pedidosRestantes];
+      // CRÍTICO: Eliminar duplicados antes de combinar
+      const pedidosLimitadosMap = new Map<string, any>();
+      [...pedidosPrioritarios, ...pedidosRestantes].forEach((pedido: any) => {
+        if (pedido && pedido._id) {
+          const pedidoId = String(pedido._id).trim();
+          if (!pedidosLimitadosMap.has(pedidoId)) {
+            pedidosLimitadosMap.set(pedidoId, pedido);
+          }
+        }
+      });
+      const pedidosLimitados = Array.from(pedidosLimitadosMap.values());
+      console.log(`🔍 DEBUG DUPLICADOS: Pedidos limitados antes: ${pedidosPrioritarios.length + pedidosRestantes.length}, después: ${pedidosLimitados.length}`);
       
       console.log(`📅 Total pedidos para verificar: ${pedidosLimitados.length} de ${pedidos.length}`);
       console.log(`📅 Pedidos prioritarios (orden4 o items completados): ${pedidosPrioritarios.length}`);
@@ -486,6 +497,26 @@ const FacturacionPage: React.FC = () => {
       // Filtrar nulos
       const pedidosParaFacturar = pedidosConProgreso.filter((p) => p !== null);
       
+      // CRÍTICO: Eliminar duplicados basándose en el _id del pedido
+      const pedidosUnicos = new Map<string, any>();
+      pedidosParaFacturar.forEach((pedido: any) => {
+        if (pedido && pedido._id) {
+          const pedidoId = String(pedido._id).trim();
+          // Si ya existe, mantener el primero (o el que tenga más información)
+          if (!pedidosUnicos.has(pedidoId)) {
+            pedidosUnicos.set(pedidoId, pedido);
+          } else {
+            // Si el pedido actual tiene más información (por ejemplo, tiene historialPagos), reemplazarlo
+            const pedidoExistente = pedidosUnicos.get(pedidoId);
+            if (pedido.historialPagos && pedido.historialPagos.length > (pedidoExistente.historialPagos?.length || 0)) {
+              pedidosUnicos.set(pedidoId, pedido);
+            }
+          }
+        }
+      });
+      const pedidosSinDuplicados = Array.from(pedidosUnicos.values());
+      console.log(`🔍 DEBUG DUPLICADOS: Pedidos antes de eliminar duplicados: ${pedidosParaFacturar.length}, después: ${pedidosSinDuplicados.length}`);
+      
       // Filtrar pedidos que ya fueron facturados usando el ESTADO actualizado (no solo localStorage)
       // Combinar datos del estado con localStorage como fallback
       const facturasConfirmadasIds: string[] = [];
@@ -551,8 +582,8 @@ const FacturacionPage: React.FC = () => {
       // NO filtrar los pedidos cargados al inventario - mantenerlos en la lista pero marcarlos
       // Solo filtrar los que ya fueron facturados
       console.log('🔍 DEBUG FILTRADO: Facturas confirmadas IDs normalizados:', facturasConfirmadasIds);
-      console.log('🔍 DEBUG FILTRADO: Total pedidos antes de filtrar:', pedidosParaFacturar.length);
-      const pedidosPendientes = pedidosParaFacturar
+      console.log('🔍 DEBUG FILTRADO: Total pedidos antes de filtrar:', pedidosSinDuplicados.length);
+      const pedidosPendientes = pedidosSinDuplicados
         .filter(p => {
           const pedidoIdNormalizado = normalizarId(p._id);
           const yaFacturado = facturasConfirmadasIds.includes(pedidoIdNormalizado);
