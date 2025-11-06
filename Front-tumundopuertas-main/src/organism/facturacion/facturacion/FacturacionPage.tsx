@@ -400,13 +400,27 @@ const FacturacionPage: React.FC = () => {
             const pagosRes = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/pagos`, {
               signal: AbortSignal.timeout(5000) // 5 segundos timeout
             });
-            let montoTotal = pedido.items?.reduce((acc: number, item: any) => acc + (item.precio || 0) * (item.cantidad || 0), 0) || 0;
+            
+            // Calcular total de items
+            let montoItems = pedido.items?.reduce((acc: number, item: any) => acc + (item.precio || 0) * (item.cantidad || 0), 0) || 0;
+            
+            // Calcular total de adicionales
+            const adicionalesRaw = pedido.adicionales;
+            const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
+            const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+              const cantidad = ad.cantidad || 1;
+              const precio = ad.precio || 0;
+              return acc + (precio * cantidad);
+            }, 0);
+            
+            // Total incluyendo items + adicionales
+            let montoTotal = montoItems + montoAdicionales;
             let montoAbonado = 0;
             let historialPagos: any[] = [];
             
             if (pagosRes.ok) {
               const pagosData = await pagosRes.json();
-              // Usar datos del backend que ya traen los totales calculados
+              // Si el backend ya incluye adicionales en total_pedido, usarlo; sino usar nuestro cálculo
               montoTotal = pagosData.total_pedido || montoTotal;
               montoAbonado = pagosData.total_abonado || 0;
               historialPagos = pagosData.historial_pagos || [];
@@ -423,27 +437,41 @@ const FacturacionPage: React.FC = () => {
               }
             }
             
+            // Verificar si puede facturar: total abonado >= total (items + adicionales)
+            const puedeFacturar = montoAbonado >= montoTotal;
+            
             return {
               ...pedido,
               montoTotal,
               montoAbonado,
               fecha100Porciento,
               historialPagos,
-              puedeFacturar: montoAbonado >= montoTotal
+              puedeFacturar
             };
           } catch (err: any) {
             // Si el pedido tiene estado_general = "orden4", incluirlo aunque haya errores
             if (pedido.estado_general === "orden4") {
               console.warn(`⚠️ Error al procesar pedido ${pedido._id.slice(-4)}, pero tiene estado_general=orden4, incluyéndolo con datos básicos:`, err.message);
               // Retornar el pedido con datos básicos
-              let montoTotal = pedido.items?.reduce((acc: number, item: any) => acc + (item.precio || 0) * (item.cantidad || 0), 0) || 0;
+              // Calcular total de items
+              let montoItems = pedido.items?.reduce((acc: number, item: any) => acc + (item.precio || 0) * (item.cantidad || 0), 0) || 0;
+              // Calcular total de adicionales
+              const adicionalesRaw = pedido.adicionales;
+              const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
+              const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+                const cantidad = ad.cantidad || 1;
+                const precio = ad.precio || 0;
+                return acc + (precio * cantidad);
+              }, 0);
+              const montoTotal = montoItems + montoAdicionales;
+              const montoAbonado = pedido.total_abonado || 0;
               return {
                 ...pedido,
                 montoTotal,
-                montoAbonado: pedido.total_abonado || 0,
+                montoAbonado,
                 fecha100Porciento: null,
                 historialPagos: pedido.historial_pagos || [],
-                puedeFacturar: (pedido.total_abonado || 0) >= montoTotal
+                puedeFacturar: montoAbonado >= montoTotal
               };
             }
             // Para otros errores, ignorar silenciosamente solo si son timeout
@@ -1793,6 +1821,59 @@ const FacturacionPage: React.FC = () => {
                           <p className="text-lg sm:text-xl font-bold text-blue-700">${(totalConAdicionales - (pedido.montoAbonado || 0)).toFixed(2)}</p>
                         </div>
                       </div>
+
+                      {/* Historial de Pagos */}
+                      {pedido.historialPagos && pedido.historialPagos.length > 0 && (
+                        <div className="mb-3">
+                          <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-2 flex items-center gap-2">
+                            <DollarSign className="w-4 h-4" /> Historial de Abonos
+                          </h4>
+                          <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 max-h-40 overflow-y-auto">
+                            <div className="space-y-2">
+                              {[...pedido.historialPagos]
+                                .sort((a: any, b: any) => {
+                                  const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
+                                  const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
+                                  return fechaB - fechaA; // Más reciente primero
+                                })
+                                .map((pago: any, idx: number) => (
+                                  <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 text-sm">
+                                        <span className="font-semibold text-green-700">${(pago.monto || 0).toFixed(2)}</span>
+                                        {pago.metodo && (
+                                          <>
+                                            <span className="text-gray-400">-</span>
+                                            <span className="text-gray-600">{pago.metodo}</span>
+                                          </>
+                                        )}
+                                      </div>
+                                      {pago.fecha && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          {new Date(pago.fecha).toLocaleDateString('es-ES', {
+                                            year: 'numeric',
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-gray-300">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600 font-semibold">Total Abonado:</span>
+                                <span className="text-sm font-bold text-green-700">
+                                  ${(pedido.montoAbonado || 0).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
                       {pedido.items && pedido.items.length > 0 && (
                         <div className="mb-3">
