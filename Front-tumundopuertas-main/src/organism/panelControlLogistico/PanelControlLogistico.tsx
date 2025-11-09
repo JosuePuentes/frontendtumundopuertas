@@ -17,9 +17,7 @@ import {
   Factory,
   BarChart3,
   Target,
-  Download,
-  Users,
-  ShoppingCart
+  Download
 } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
 import {
