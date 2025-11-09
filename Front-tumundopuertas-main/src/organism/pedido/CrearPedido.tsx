@@ -1040,10 +1040,13 @@ const CrearPedido: React.FC = () => {
                         (clientesData as any[]).length > 0 ? (
                           (clientesData as any[])
                             .filter((cliente: any) => {
+                              if (!cliente) return false;
                               const search = clienteSearch.toLowerCase();
+                              const nombre = cliente.nombre || '';
+                              const rif = cliente.rif || '';
                               return (
-                                cliente.nombre.toLowerCase().includes(search) ||
-                                String(cliente.rif)
+                                nombre.toLowerCase().includes(search) ||
+                                String(rif)
                                   .toLowerCase()
                                   .includes(search)
                               );
@@ -1145,9 +1148,11 @@ const CrearPedido: React.FC = () => {
               {selectedItems.map((item, idx) => {
                 const filtered: any[] = Array.isArray(itemsData) 
                   ? ordenarItemsPorExistencia(
-                      (itemsData as any[]).filter((it) =>
-                        it?.nombre?.toLowerCase().includes(item.search?.toLowerCase() || '')
-                      )
+                      (itemsData as any[]).filter((it) => {
+                        if (!it || !it.nombre) return false;
+                        const searchTerm = item.search?.toLowerCase() || '';
+                        return it.nombre.toLowerCase().includes(searchTerm);
+                      })
                     )
                   : [];
 
