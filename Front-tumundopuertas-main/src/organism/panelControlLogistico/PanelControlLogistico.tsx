@@ -16,7 +16,10 @@ import {
   Warehouse,
   Factory,
   BarChart3,
-  Target
+  Target,
+  Download,
+  Users,
+  ShoppingCart
 } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
 import {
@@ -200,6 +203,80 @@ interface GraficasData {
   };
 }
 
+interface ItemsProduccionPorEstado {
+  herreria: { cantidad: number; estado: string };
+  masillar: { cantidad: number; estado: string };
+  preparar: { cantidad: number; estado: string };
+  total: number;
+}
+
+interface AsignacionTerminada {
+  pedido_id: string;
+  item_id: string;
+  item_nombre: string;
+  codigo: string;
+  empleado_id: string;
+  empleado_nombre: string;
+  fecha_inicio: string;
+  fecha_fin: string;
+  modulo: string;
+}
+
+interface AsignacionesTerminadas {
+  herreria: { total: number; asignaciones: AsignacionTerminada[] };
+  masillar: { total: number; asignaciones: AsignacionTerminada[] };
+  preparar: { total: number; asignaciones: AsignacionTerminada[] };
+  total_general: number;
+}
+
+interface EmpleadoItemsTerminados {
+  empleado_id: string;
+  empleado_nombre: string;
+  herreria: number;
+  masillar: number;
+  preparar: number;
+  total: number;
+}
+
+interface ItemPorVentas {
+  item_id: string;
+  item_nombre: string;
+  codigo: string;
+  descripcion: string;
+  ventas: number;
+  sucursal1_creados: number;
+  sucursal2_creados: number;
+}
+
+interface InventarioPorSucursal {
+  sucursal1: { nombre: string; total_items: number };
+  sucursal2: { nombre: string; total_items: number };
+  total_general: number;
+}
+
+interface SugerenciaProduccionMejorada {
+  item_id: string;
+  item_nombre: string;
+  codigo: string;
+  descripcion: string;
+  existencia_actual: number;
+  ventas_periodo: number;
+  ventas_diarias: number;
+  necesidad_7_dias: number;
+  unidades_sugeridas: number;
+  prioridad: "alta" | "media" | "baja";
+  razon: string;
+}
+
+interface ItemSinVentas {
+  item_id: string;
+  item_nombre: string;
+  codigo: string;
+  descripcion: string;
+  existencia_total: number;
+  dias_sin_ventas: number;
+}
+
 const PanelControlLogistico: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -223,6 +300,15 @@ const PanelControlLogistico: React.FC = () => {
   const [itemsExistenciaCero, setItemsExistenciaCero] = useState<ItemExistenciaCero[]>([]);
   const [sugerencias, setSugerencias] = useState<SugerenciaProduccion[]>([]);
   const [graficasData, setGraficasData] = useState<GraficasData | null>(null);
+  
+  // Nuevos datos
+  const [itemsProduccionPorEstado, setItemsProduccionPorEstado] = useState<ItemsProduccionPorEstado | null>(null);
+  const [asignacionesTerminadas, setAsignacionesTerminadas] = useState<AsignacionesTerminadas | null>(null);
+  const [empleadosItemsTerminados, setEmpleadosItemsTerminados] = useState<EmpleadoItemsTerminados[]>([]);
+  const [itemsPorVentas, setItemsPorVentas] = useState<ItemPorVentas[]>([]);
+  const [inventarioPorSucursal, setInventarioPorSucursal] = useState<InventarioPorSucursal | null>(null);
+  const [sugerenciasMejoradas, setSugerenciasMejoradas] = useState<SugerenciaProduccionMejorada[]>([]);
+  const [itemsSinVentas, setItemsSinVentas] = useState<ItemSinVentas[]>([]);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -404,6 +490,115 @@ const PanelControlLogistico: React.FC = () => {
         errores.push('Error al cargar gráficas');
       }
       
+      // Cargar items en producción por estado
+      try {
+        const resItemsEstado = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-produccion-por-estado/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resItemsEstado.ok) {
+          const dataItemsEstado = await resItemsEstado.json();
+          setItemsProduccionPorEstado(dataItemsEstado);
+          console.log('✅ Items producción por estado cargados');
+        }
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar items producción por estado:', e);
+      }
+      
+      // Cargar asignaciones terminadas
+      try {
+        const resAsigTerm = await fetch(`${apiUrl}/pedidos/panel-control-logistico/asignaciones-terminadas/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resAsigTerm.ok) {
+          const dataAsigTerm = await resAsigTerm.json();
+          setAsignacionesTerminadas(dataAsigTerm);
+          console.log('✅ Asignaciones terminadas cargadas');
+        }
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar asignaciones terminadas:', e);
+      }
+      
+      // Cargar empleados con items terminados
+      try {
+        const resEmpleados = await fetch(`${apiUrl}/pedidos/panel-control-logistico/empleados-items-terminados/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resEmpleados.ok) {
+          const dataEmpleados = await resEmpleados.json();
+          setEmpleadosItemsTerminados(dataEmpleados.empleados || []);
+          console.log('✅ Empleados items terminados cargados');
+        }
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar empleados items terminados:', e);
+      }
+      
+      // Cargar items por ventas
+      try {
+        const resItemsVentas = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-por-ventas/?${params}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resItemsVentas.ok) {
+          const dataItemsVentas = await resItemsVentas.json();
+          setItemsPorVentas(dataItemsVentas.items || []);
+          console.log('✅ Items por ventas cargados');
+        }
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar items por ventas:', e);
+      }
+      
+      // Cargar inventario por sucursal
+      try {
+        const resInventario = await fetch(`${apiUrl}/pedidos/panel-control-logistico/inventario-por-sucursal/`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resInventario.ok) {
+          const dataInventario = await resInventario.json();
+          setInventarioPorSucursal(dataInventario);
+          console.log('✅ Inventario por sucursal cargado');
+        }
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar inventario por sucursal:', e);
+      }
+      
+      // Cargar sugerencias mejoradas
+      try {
+        const resSugMejoradas = await fetch(`${apiUrl}/pedidos/panel-control-logistico/sugerencia-produccion-mejorada/?dias=7`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (resSugMejoradas.ok) {
+          const dataSugMejoradas = await resSugMejoradas.json();
+          setSugerenciasMejoradas(dataSugMejoradas.sugerencias || []);
+          setItemsSinVentas(dataSugMejoradas.items_sin_ventas || []);
+          console.log('✅ Sugerencias mejoradas cargadas');
+        }
+      } catch (e: any) {
+        console.error('❌ Excepción al cargar sugerencias mejoradas:', e);
+      }
+      
       // Si todos los endpoints fallaron, mostrar mensaje
       if (errores.length > 0 && !resumen && !graficasData && itemsProduccion.length === 0) {
         setError(`Los endpoints del backend aún no están implementados. Por favor, implementa los endpoints según las especificaciones en ESPECIFICACIONES_BACKEND_PANEL_CONTROL_LOGISTICO.md. Errores: ${errores.join(', ')}`);
@@ -423,6 +618,197 @@ const PanelControlLogistico: React.FC = () => {
 
   const handleActualizar = () => {
     cargarDatos();
+  };
+
+  const handleExportarPDF = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      const apiUrl = getApiUrl();
+      const params = new URLSearchParams({
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin
+      });
+      
+      const response = await fetch(`${apiUrl}/pedidos/panel-control-logistico/exportar-pdf/?${params}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Crear contenido HTML para el PDF
+        const htmlContent = generarHTMLParaPDF(data);
+        
+        // Abrir ventana nueva con el contenido
+        const ventana = window.open('', '_blank');
+        if (ventana) {
+          ventana.document.write(htmlContent);
+          ventana.document.close();
+          
+          // Esperar a que se cargue y luego imprimir
+          setTimeout(() => {
+            ventana.print();
+          }, 500);
+        }
+      } else {
+        alert('Error al exportar el PDF');
+      }
+    } catch (error) {
+      console.error('Error al exportar PDF:', error);
+      alert('Error al exportar el PDF');
+    }
+  };
+
+  const generarHTMLParaPDF = (data: any): string => {
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Panel de Control Logístico - ${new Date().toLocaleDateString()}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
+            h2 { color: #666; margin-top: 30px; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            .card { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+            .total { font-weight: bold; font-size: 1.2em; }
+            @media print {
+              body { padding: 10px; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Panel de Control Logístico</h1>
+          <p><strong>Fecha de Exportación:</strong> ${new Date(data.fecha_exportacion).toLocaleString()}</p>
+          <p><strong>Período:</strong> ${data.periodo.fecha_inicio || 'N/A'} - ${data.periodo.fecha_fin || 'N/A'}</p>
+          
+          <h2>Items en Producción por Estado</h2>
+          <div class="card">
+            <p><strong>Herrería:</strong> ${data.items_produccion_por_estado?.herreria?.cantidad || 0}</p>
+            <p><strong>Masillar:</strong> ${data.items_produccion_por_estado?.masillar?.cantidad || 0}</p>
+            <p><strong>Preparar:</strong> ${data.items_produccion_por_estado?.preparar?.cantidad || 0}</p>
+            <p class="total"><strong>Total:</strong> ${data.items_produccion_por_estado?.total || 0}</p>
+          </div>
+          
+          <h2>Inventario por Sucursal</h2>
+          <div class="card">
+            <p><strong>Sucursal 1:</strong> ${data.inventario_por_sucursal?.sucursal1?.total_items || 0} items</p>
+            <p><strong>Sucursal 2:</strong> ${data.inventario_por_sucursal?.sucursal2?.total_items || 0} items</p>
+            <p class="total"><strong>Total General:</strong> ${data.inventario_por_sucursal?.total_general || 0} items</p>
+          </div>
+          
+          <h2>Asignaciones Terminadas</h2>
+          <div class="card">
+            <p><strong>Herrería:</strong> ${data.asignaciones_terminadas?.herreria?.total || 0}</p>
+            <p><strong>Masillar:</strong> ${data.asignaciones_terminadas?.masillar?.total || 0}</p>
+            <p><strong>Preparar:</strong> ${data.asignaciones_terminadas?.preparar?.total || 0}</p>
+            <p class="total"><strong>Total General:</strong> ${data.asignaciones_terminadas?.total_general || 0}</p>
+          </div>
+          
+          <h2>Empleados con Items Terminados</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Empleado</th>
+                <th>Herrería</th>
+                <th>Masillar</th>
+                <th>Preparar</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(data.empleados_items_terminados?.empleados || []).map((emp: any) => `
+                <tr>
+                  <td>${emp.empleado_nombre}</td>
+                  <td>${emp.herreria}</td>
+                  <td>${emp.masillar}</td>
+                  <td>${emp.preparar}</td>
+                  <td>${emp.total}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <h2>Items por Ventas (Top 20)</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Item</th>
+                <th>Ventas</th>
+                <th>Sucursal 1</th>
+                <th>Sucursal 2</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(data.items_por_ventas?.items || []).slice(0, 20).map((item: any) => `
+                <tr>
+                  <td>${item.codigo}</td>
+                  <td>${item.item_nombre}</td>
+                  <td>${item.ventas}</td>
+                  <td>${item.sucursal1_creados}</td>
+                  <td>${item.sucursal2_creados}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <h2>Sugerencias de Producción</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Item</th>
+                <th>Existencia</th>
+                <th>Ventas (7 días)</th>
+                <th>Unidades Sugeridas</th>
+                <th>Prioridad</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(data.sugerencias_produccion?.sugerencias || []).map((sug: any) => `
+                <tr>
+                  <td>${sug.codigo}</td>
+                  <td>${sug.item_nombre}</td>
+                  <td>${sug.existencia_actual}</td>
+                  <td>${sug.ventas_periodo}</td>
+                  <td>${sug.unidades_sugeridas}</td>
+                  <td>${sug.prioridad}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          <h2>Items Sin Ventas</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Item</th>
+                <th>Existencia</th>
+                <th>Días Sin Ventas</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(data.sugerencias_produccion?.items_sin_ventas || []).map((item: any) => `
+                <tr>
+                  <td>${item.codigo}</td>
+                  <td>${item.item_nombre}</td>
+                  <td>${item.existencia_total}</td>
+                  <td>${item.dias_sin_ventas}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
   };
 
   // Colores para gráficas
@@ -497,14 +883,25 @@ const PanelControlLogistico: React.FC = () => {
                 <span className="text-sm">Comparar con período anterior</span>
               </label>
             </div>
-            <Button
-              onClick={handleActualizar}
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Actualizar
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleActualizar}
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                Actualizar
+              </Button>
+              <Button
+                onClick={handleExportarPDF}
+                disabled={loading}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Exportar PDF
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -620,14 +1017,113 @@ const PanelControlLogistico: React.FC = () => {
             </div>
           )}
 
+          {/* Nuevos Resúmenes */}
+          {itemsProduccionPorEstado && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <Card className="border-blue-300 bg-blue-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-blue-700">Herrería</p>
+                      <p className="text-2xl font-bold text-blue-800">{itemsProduccionPorEstado.herreria.cantidad}</p>
+                    </div>
+                    <Factory className="w-8 h-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-purple-300 bg-purple-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-purple-700">Masillar</p>
+                      <p className="text-2xl font-bold text-purple-800">{itemsProduccionPorEstado.masillar.cantidad}</p>
+                    </div>
+                    <Package className="w-8 h-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-orange-300 bg-orange-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-orange-700">Preparar</p>
+                      <p className="text-2xl font-bold text-orange-800">{itemsProduccionPorEstado.preparar.cantidad}</p>
+                    </div>
+                    <CheckCircle className="w-8 h-8 text-orange-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-green-300 bg-green-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-green-700">Total Producción</p>
+                      <p className="text-2xl font-bold text-green-800">{itemsProduccionPorEstado.total}</p>
+                    </div>
+                    <Activity className="w-8 h-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {inventarioPorSucursal && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card className="border-blue-300 bg-blue-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-blue-700">Sucursal 1</p>
+                      <p className="text-2xl font-bold text-blue-800">{inventarioPorSucursal.sucursal1.total_items}</p>
+                      <p className="text-xs text-blue-600 mt-1">items</p>
+                    </div>
+                    <Warehouse className="w-8 h-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-purple-300 bg-purple-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-purple-700">Sucursal 2</p>
+                      <p className="text-2xl font-bold text-purple-800">{inventarioPorSucursal.sucursal2.total_items}</p>
+                      <p className="text-xs text-purple-600 mt-1">items</p>
+                    </div>
+                    <Warehouse className="w-8 h-8 text-purple-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-green-300 bg-green-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-green-700">Total Inventario</p>
+                      <p className="text-2xl font-bold text-green-800">{inventarioPorSucursal.total_general}</p>
+                      <p className="text-xs text-green-600 mt-1">items</p>
+                    </div>
+                    <Package className="w-8 h-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
           {/* Tabs para diferentes vistas */}
           <Tabs defaultValue="produccion" className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="produccion">Producción</TabsTrigger>
+              <TabsTrigger value="produccion-estado">Por Estado</TabsTrigger>
+              <TabsTrigger value="asignaciones">Asignaciones</TabsTrigger>
+              <TabsTrigger value="empleados">Empleados</TabsTrigger>
+              <TabsTrigger value="ventas">Ventas</TabsTrigger>
               <TabsTrigger value="graficas">Gráficas</TabsTrigger>
-              <TabsTrigger value="sin-movimiento">Sin Movimiento</TabsTrigger>
-              <TabsTrigger value="mas-movidos">Más Movidos</TabsTrigger>
               <TabsTrigger value="sugerencias">Sugerencias</TabsTrigger>
+              <TabsTrigger value="sin-ventas">Sin Ventas</TabsTrigger>
             </TabsList>
 
             {/* Tab: Items en Producción */}
@@ -1125,6 +1621,268 @@ const PanelControlLogistico: React.FC = () => {
                       </Card>
                       ))}
                     </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Tab: Producción por Estado */}
+            <TabsContent value="produccion-estado" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Items en Producción por Estado</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {itemsProduccionPorEstado ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Card className="border-blue-300">
+                        <CardContent className="pt-6">
+                          <h3 className="font-semibold text-blue-700 mb-2">Herrería</h3>
+                          <p className="text-3xl font-bold text-blue-800">{itemsProduccionPorEstado.herreria.cantidad}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="border-purple-300">
+                        <CardContent className="pt-6">
+                          <h3 className="font-semibold text-purple-700 mb-2">Masillar</h3>
+                          <p className="text-3xl font-bold text-purple-800">{itemsProduccionPorEstado.masillar.cantidad}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="border-orange-300">
+                        <CardContent className="pt-6">
+                          <h3 className="font-semibold text-orange-700 mb-2">Preparar</h3>
+                          <p className="text-3xl font-bold text-orange-800">{itemsProduccionPorEstado.preparar.cantidad}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">Cargando datos...</div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Tab: Asignaciones Terminadas */}
+            <TabsContent value="asignaciones" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Asignaciones Terminadas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {asignacionesTerminadas ? (
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="border-blue-300">
+                          <CardContent className="pt-6">
+                            <h3 className="font-semibold text-blue-700 mb-2">Herrería</h3>
+                            <p className="text-3xl font-bold text-blue-800">{asignacionesTerminadas.herreria.total}</p>
+                          </CardContent>
+                        </Card>
+                        <Card className="border-purple-300">
+                          <CardContent className="pt-6">
+                            <h3 className="font-semibold text-purple-700 mb-2">Masillar</h3>
+                            <p className="text-3xl font-bold text-purple-800">{asignacionesTerminadas.masillar.total}</p>
+                          </CardContent>
+                        </Card>
+                        <Card className="border-orange-300">
+                          <CardContent className="pt-6">
+                            <h3 className="font-semibold text-orange-700 mb-2">Preparar</h3>
+                            <p className="text-3xl font-bold text-orange-800">{asignacionesTerminadas.preparar.total}</p>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        <strong>Total General:</strong> {asignacionesTerminadas.total_general} asignaciones terminadas
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">Cargando datos...</div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Tab: Empleados */}
+            <TabsContent value="empleados" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Empleados con Items Terminados</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {empleadosItemsTerminados.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100 border-b-2 border-gray-300">
+                            <th className="p-3 text-left text-sm font-semibold">Empleado</th>
+                            <th className="p-3 text-left text-sm font-semibold">Herrería</th>
+                            <th className="p-3 text-left text-sm font-semibold">Masillar</th>
+                            <th className="p-3 text-left text-sm font-semibold">Preparar</th>
+                            <th className="p-3 text-left text-sm font-semibold">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {empleadosItemsTerminados.map((emp) => (
+                            <tr key={emp.empleado_id} className="border-b border-gray-200 hover:bg-gray-50">
+                              <td className="p-3 font-semibold">{emp.empleado_nombre}</td>
+                              <td className="p-3">
+                                <Badge className="bg-blue-600">{emp.herreria}</Badge>
+                              </td>
+                              <td className="p-3">
+                                <Badge className="bg-purple-600">{emp.masillar}</Badge>
+                              </td>
+                              <td className="p-3">
+                                <Badge className="bg-orange-600">{emp.preparar}</Badge>
+                              </td>
+                              <td className="p-3">
+                                <Badge className="bg-green-600">{emp.total}</Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">No hay datos disponibles</div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Tab: Ventas */}
+            <TabsContent value="ventas" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Items por Ventas (Más Vendido a Menos Vendido)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {itemsPorVentas.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100 border-b-2 border-gray-300">
+                            <th className="p-3 text-left text-sm font-semibold">Código</th>
+                            <th className="p-3 text-left text-sm font-semibold">Item</th>
+                            <th className="p-3 text-left text-sm font-semibold">Descripción</th>
+                            <th className="p-3 text-left text-sm font-semibold">Ventas</th>
+                            <th className="p-3 text-left text-sm font-semibold">Sucursal 1</th>
+                            <th className="p-3 text-left text-sm font-semibold">Sucursal 2</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {itemsPorVentas.map((item) => (
+                            <tr key={item.item_id} className="border-b border-gray-200 hover:bg-gray-50">
+                              <td className="p-3">
+                                <Badge variant="outline" className="font-mono">{item.codigo}</Badge>
+                              </td>
+                              <td className="p-3 font-semibold">{item.item_nombre}</td>
+                              <td className="p-3 text-sm text-gray-600">{item.descripcion}</td>
+                              <td className="p-3">
+                                <Badge className="bg-green-600">{item.ventas}</Badge>
+                              </td>
+                              <td className="p-3">{item.sucursal1_creados}</td>
+                              <td className="p-3">{item.sucursal2_creados}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">No hay datos disponibles</div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Tab: Sin Ventas */}
+            <TabsContent value="sin-ventas" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Items Sin Ventas o con Ventas Bajas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {sugerenciasMejoradas.length > 0 || itemsSinVentas.length > 0 ? (
+                    <div className="space-y-6">
+                      {sugerenciasMejoradas.length > 0 && (
+                        <div>
+                          <h3 className="font-semibold mb-4">Sugerencias de Producción (Stock Bajo)</h3>
+                          <div className="space-y-4">
+                            {sugerenciasMejoradas.map((sug) => (
+                              <Card key={sug.item_id} className={`border-l-4 ${
+                                sug.prioridad === 'alta' ? 'border-red-500' :
+                                sug.prioridad === 'media' ? 'border-yellow-500' : 'border-blue-500'
+                              }`}>
+                                <CardContent className="pt-6">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-3 mb-2">
+                                        <Badge className={getColorPrioridad(sug.prioridad)}>
+                                          {sug.prioridad.toUpperCase()}
+                                        </Badge>
+                                        <h3 className="font-bold text-lg">{sug.item_nombre}</h3>
+                                        <Badge variant="outline" className="font-mono">{sug.codigo}</Badge>
+                                      </div>
+                                      <p className="text-sm text-gray-600 mb-3">{sug.razon}</p>
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                        <div>
+                                          <p className="text-gray-600">Existencia:</p>
+                                          <p className="font-bold">{sug.existencia_actual}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-gray-600">Ventas (7 días):</p>
+                                          <p className="font-bold">{sug.ventas_periodo}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-gray-600">Necesidad (7 días):</p>
+                                          <p className="font-bold">{sug.necesidad_7_dias.toFixed(1)}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-gray-600">Sugeridas:</p>
+                                          <p className="font-bold text-blue-600">{sug.unidades_sugeridas}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {itemsSinVentas.length > 0 && (
+                        <div>
+                          <h3 className="font-semibold mb-4">Items Sin Ventas</h3>
+                          <div className="overflow-x-auto">
+                            <table className="w-full border-collapse">
+                              <thead>
+                                <tr className="bg-gray-100 border-b-2 border-gray-300">
+                                  <th className="p-3 text-left text-sm font-semibold">Código</th>
+                                  <th className="p-3 text-left text-sm font-semibold">Item</th>
+                                  <th className="p-3 text-left text-sm font-semibold">Existencia</th>
+                                  <th className="p-3 text-left text-sm font-semibold">Días Sin Ventas</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {itemsSinVentas.map((item) => (
+                                  <tr key={item.item_id} className="border-b border-gray-200 hover:bg-gray-50">
+                                    <td className="p-3">
+                                      <Badge variant="outline" className="font-mono">{item.codigo}</Badge>
+                                    </td>
+                                    <td className="p-3 font-semibold">{item.item_nombre}</td>
+                                    <td className="p-3">{item.existencia_total}</td>
+                                    <td className="p-3">
+                                      <Badge className="bg-red-600">{item.dias_sin_ventas}</Badge>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">No hay datos disponibles</div>
                   )}
                 </CardContent>
               </Card>
