@@ -167,11 +167,16 @@ const ModificarCliente: React.FC = () => {
               onChange={(e) => handleSelectCliente(e.target.value)}
             >
               <option value="">-- Selecciona --</option>
-              {clientes.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.nombre} ({c.rif})
-                </option>
-              ))}
+              {clientes.map((c) => {
+                const nombreMostrar = c.nombre || "Sin nombre";
+                const rifMostrar = c.rif || "Sin RIF";
+                console.log(`Cliente en select: ${c._id} - nombre: "${c.nombre}", rif: "${c.rif}"`);
+                return (
+                  <option key={c._id} value={c._id}>
+                    {nombreMostrar} ({rifMostrar})
+                  </option>
+                );
+              })}
             </select>
           )}
         </div>
