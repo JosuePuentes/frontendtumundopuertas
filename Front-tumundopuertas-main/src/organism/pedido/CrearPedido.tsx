@@ -32,7 +32,6 @@ import {
 import { usePedido } from "@/hooks/usePedido";
 import { useClientes } from "@/hooks/useClientes";
 import { useItems } from "@/hooks/useItems";
-import api from "@/lib/api";
 import ImageDisplay from "@/upfile/ImageDisplay";
 import CrearClienteModal from "@/organism/clientes/CrearClienteModal";
 
