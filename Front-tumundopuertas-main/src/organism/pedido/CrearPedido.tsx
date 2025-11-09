@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import {
   FaPlus,
   FaClipboardList,
@@ -143,8 +143,26 @@ const CrearPedido: React.FC = () => {
   const blurTimeouts = useRef<Record<number, number>>({});
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
 
+  // OPTIMIZACIÓN: Cargar clientes y métodos de pago en paralelo
   useEffect(() => {
-    fetchClientes(`${apiUrl}/clientes/all`);
+    // Cargar clientes y métodos de pago en paralelo para mejor rendimiento
+    Promise.all([
+      fetchClientes(`${apiUrl}/clientes/all`),
+      // Cargar métodos de pago también en paralelo
+      fetch(`${apiUrl}/metodos-pago/all/`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json'
+        }
+      }).then(res => res.json()).then(data => {
+        setMetodosPago(data || []);
+      }).catch(err => {
+        console.error('Error cargando métodos de pago:', err);
+        setMetodosPago([]);
+      })
+    ]).catch(err => {
+      console.error('Error cargando datos iniciales:', err);
+    });
   }, []);
 
   // Función para manejar cuando se crea un cliente exitosamente
@@ -195,38 +213,36 @@ const CrearPedido: React.FC = () => {
     };
   }, [sucursal, apiUrl, fetchItems]);
 
-  useEffect(() => {
-    const fetchMetodosPago = async () => {
-      try {
-        const response = await api("/metodos-pago");
-        console.log("Métodos de pago cargados:", response);
-        setMetodosPago(response);
-      } catch (error) {
-        console.error("Error fetching payment methods:", error);
-      }
-    };
-    fetchMetodosPago();
-  }, []);
+  // === Helpers de totales - OPTIMIZADOS con useMemo ===
+  const totalItems = useMemo(() => {
+    return selectedItems.reduce(
+      (acc, item) => acc + (item.confirmed ? item.cantidad : 0),
+      0
+    );
+  }, [selectedItems]);
 
-  // === Helpers de totales ===
-  const totalItems = selectedItems.reduce(
-    (acc, item) => acc + (item.confirmed ? item.cantidad : 0),
-    0
-  );
-  const totalMontoItems = selectedItems.reduce(
-    (acc, item) =>
-      acc + (item.confirmed && item.precio ? item.cantidad * item.precio : 0),
-    0
-  );
-  const totalAdicionales = adicionales.reduce(
-    (acc, adicional) => {
-      const cantidad = adicional.cantidad || 1;
-      const precio = adicional.precio || 0;
-      return acc + (precio * cantidad);
-    },
-    0
-  );
-  const totalMonto = totalMontoItems + totalAdicionales;
+  const totalMontoItems = useMemo(() => {
+    return selectedItems.reduce(
+      (acc, item) =>
+        acc + (item.confirmed && item.precio ? item.cantidad * item.precio : 0),
+      0
+    );
+  }, [selectedItems]);
+
+  const totalAdicionales = useMemo(() => {
+    return adicionales.reduce(
+      (acc, adicional) => {
+        const cantidad = adicional.cantidad || 1;
+        const precio = adicional.precio || 0;
+        return acc + (precio * cantidad);
+      },
+      0
+    );
+  }, [adicionales]);
+
+  const totalMonto = useMemo(() => {
+    return totalMontoItems + totalAdicionales;
+  }, [totalMontoItems, totalAdicionales]);
 
   // === Handlers ===
   // @ts-ignore - Function is used in JSX but TypeScript doesn't detect it

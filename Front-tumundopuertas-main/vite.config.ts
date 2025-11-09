@@ -14,6 +14,7 @@ export default defineConfig({
   // Configuración para PWA
   publicDir: 'public',
   build: {
+    // Code splitting automático
     rollupOptions: {
       output: {
         // Asegurar que el service worker se copie al build
@@ -23,7 +24,33 @@ export default defineConfig({
           }
           return 'assets/[name].[ext]';
         },
+        // Separar vendor chunks para mejor caching
+        manualChunks: {
+          // Separar vendor chunks
+          'vendor-react': ['react', 'react-dom', 'react-router'],
+          'vendor-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-select',
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-label',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-tooltip',
+          ],
+          'vendor-charts': ['recharts'],
+          'vendor-icons': ['lucide-react', 'react-icons'],
+        },
       },
     },
+    // Optimizar chunks
+    chunkSizeWarningLimit: 1000,
+  },
+  // Optimizar dependencias
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router'],
   },
 })

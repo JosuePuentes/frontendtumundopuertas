@@ -177,7 +177,8 @@ const PedidoRow: React.FC<{ pedido: PedidoRuta; now: number; isProduccion: boole
   );
 };
 
-const PedidoGroup: React.FC<{ title: string; pedidos: PedidoRuta[]; now: number; progresoPedidos: Record<string, number> }> = ({ title, pedidos, now, progresoPedidos }) => (
+// Memoizar el componente para evitar re-renderizados innecesarios
+const PedidoGroup: React.FC<{ title: string; pedidos: PedidoRuta[]; now: number; progresoPedidos: Record<string, number> }> = React.memo(({ title, pedidos, now, progresoPedidos }) => (
   <Card className="overflow-hidden border-gray-200 shadow-lg rounded-2xl">
     <CardHeader className="bg-gray-50 border-b border-gray-200 px-6 py-4">
       <CardTitle className="flex items-center gap-3 text-lg font-bold text-gray-900">
@@ -222,7 +223,7 @@ const PedidoGroup: React.FC<{ title: string; pedidos: PedidoRuta[]; now: number;
       )}
     </CardContent>
   </Card>
-);
+));
 
 const DashboardPedidos: React.FC = () => {
   const [pedidos, setPedidos] = useState<PedidoRuta[]>([]);

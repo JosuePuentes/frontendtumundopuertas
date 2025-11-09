@@ -125,4 +125,5 @@ const DetalleHerreria: React.FC<DetalleHerreriaProps> = ({ pedido, onClose }) =>
   );
 }
 
-export default DetalleHerreria;
+// Memoizar el componente para evitar re-renderizados innecesarios
+export default React.memo(DetalleHerreria);
