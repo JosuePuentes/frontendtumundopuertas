@@ -996,16 +996,21 @@ const CrearPedido: React.FC = () => {
                     type="text"
                     value={
                       clienteId && Array.isArray(clientesData)
-                        ? `${clienteId} - ${
-                            (clientesData as any[]).find(
-                              (c: any) => c.rif === clienteId
-                            )?.nombre || ""
-                          }`
+                        ? (() => {
+                            const clienteSeleccionado = (clientesData as any[]).find(
+                              (c: any) => String(c.rif) === String(clienteId)
+                            );
+                            return clienteSeleccionado?.nombre || clienteSearch || "";
+                          })()
                         : clienteSearch || ""
                     }
                     onChange={(e) => {
                       setClienteSearch(e.target.value);
                       setShowClienteSuggestions(true);
+                      // Si se borra el texto, limpiar la selección
+                      if (e.target.value === "") {
+                        setClienteId(0);
+                      }
                     }}
                     onFocus={() => setShowClienteSuggestions(true)}
                     onBlur={() =>
