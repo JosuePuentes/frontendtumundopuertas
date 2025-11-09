@@ -36,11 +36,27 @@ const ModificarCliente: React.FC = () => {
         if (!response.ok) throw new Error("Error al obtener clientes");
         return response.json();
       })
-      .then((data: Cliente[]) => {
-        setClientes(data);
+      .then((data: any) => {
+        console.log('Datos recibidos del API:', data);
+        // Verificar si los datos vienen en un formato diferente
+        const clientesArray = Array.isArray(data) ? data : (data.clientes || data.data || []);
+        console.log('Clientes procesados:', clientesArray);
+        
+        // Mapear los datos para asegurar que tengan el formato correcto
+        const clientesMapeados: Cliente[] = clientesArray.map((c: any) => ({
+          _id: c._id || c.id,
+          nombre: c.nombre || "",
+          rif: c.rif || "",
+          direccion: c.direccion || "",
+          telefono: c.telefono || "",
+        }));
+        
+        console.log('Clientes mapeados:', clientesMapeados);
+        setClientes(clientesMapeados);
         setLoading(false);
       })
       .catch((err) => {
+        console.error('Error al cargar clientes:', err);
         setError(`No se pudieron cargar los clientes: ${err.message}`);
         setLoading(false);
       });
@@ -48,17 +64,45 @@ const ModificarCliente: React.FC = () => {
 
   useEffect(() => {
     if (clienteSeleccionado) {
+      console.log('Cliente seleccionado:', clienteSeleccionado);
       setForm({
         nombre: clienteSeleccionado.nombre || "",
         rif: clienteSeleccionado.rif || "",
         direccion: clienteSeleccionado.direccion || "",
         telefono: clienteSeleccionado.telefono || "",
       });
+      console.log('Form actualizado:', {
+        nombre: clienteSeleccionado.nombre || "",
+        rif: clienteSeleccionado.rif || "",
+        direccion: clienteSeleccionado.direccion || "",
+        telefono: clienteSeleccionado.telefono || "",
+      });
+    } else {
+      // Limpiar el formulario si no hay cliente seleccionado
+      setForm({
+        nombre: "",
+        rif: "",
+        direccion: "",
+        telefono: "",
+      });
     }
   }, [clienteSeleccionado]);
 
   const handleSelectCliente = (id: string) => {
-    const cliente = clientes.find((c) => c._id === id) || null;
+    console.log('Buscando cliente con ID:', id);
+    console.log('Clientes disponibles:', clientes);
+    const cliente = clientes.find((c) => {
+      const found = String(c._id) === String(id);
+      if (found) {
+        console.log('Cliente encontrado:', c);
+      }
+      return found;
+    }) || null;
+    
+    if (!cliente) {
+      console.error('Cliente no encontrado con ID:', id);
+    }
+    
     setClienteSeleccionado(cliente);
     setMensaje("");
   };
