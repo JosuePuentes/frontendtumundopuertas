@@ -323,278 +323,155 @@ const PanelControlLogistico: React.FC = () => {
       const token = localStorage.getItem('access_token');
       const apiUrl = getApiUrl();
       
-      // Cargar resumen
-      try {
-        const resResumen = await fetch(`${apiUrl}/pedidos/panel-control-logistico/resumen/?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+      // Preparar parámetros para gráficas
+      const paramsGraficas = new URLSearchParams({
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin
+      });
+      
+      if (compararPeriodo) {
+        const fechaInicioAnterior = new Date(fechaInicio);
+        fechaInicioAnterior.setDate(fechaInicioAnterior.getDate() - (new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()) / (1000 * 60 * 60 * 24));
+        const fechaFinAnterior = new Date(fechaInicio);
+        fechaFinAnterior.setDate(fechaFinAnterior.getDate() - 1);
         
-        if (resResumen.ok) {
-          const dataResumen = await resResumen.json();
-          setResumen(dataResumen);
-          console.log('✅ Resumen cargado:', dataResumen);
-        } else if (resResumen.status === 404) {
-          console.warn('⚠️ Endpoint /resumen/ no encontrado (404)');
-          errores.push('Endpoint de resumen no disponible');
-        } else {
-          console.error('❌ Error en resumen:', resResumen.status, resResumen.statusText);
-          errores.push(`Error en resumen: ${resResumen.status}`);
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar resumen:', e);
-        errores.push('Error al cargar resumen');
+        paramsGraficas.append('comparar_con', fechaInicioAnterior.toISOString().split('T')[0]);
+        paramsGraficas.append('comparar_fin', fechaFinAnterior.toISOString().split('T')[0]);
       }
       
-      // Cargar items en producción
-      try {
-        const resItems = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-produccion/?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resItems.ok) {
-          const dataItems = await resItems.json();
-          setItemsProduccion(dataItems.items || []);
-          console.log('✅ Items producción cargados:', dataItems.items?.length || 0);
-        } else if (resItems.status === 404) {
-          console.warn('⚠️ Endpoint /items-produccion/ no encontrado (404)');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar items producción:', e);
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      };
+      
+      // OPTIMIZACIÓN: Cargar todos los endpoints en paralelo con Promise.allSettled
+      const resultados = await Promise.allSettled([
+        // Resumen
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/resumen/?${params}`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Items en producción
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/items-produccion/?${params}`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Items sin movimiento
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/items-sin-movimiento/?dias=7`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Items más movidos
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/items-mas-movidos/?${params}`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Items existencia cero
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/items-existencia-cero/`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Sugerencias
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/sugerencia-produccion/?${params}`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Gráficas
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/graficas/?${paramsGraficas}`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Items producción por estado
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/items-produccion-por-estado/`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Asignaciones terminadas
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/asignaciones-terminadas/`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Empleados items terminados
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/empleados-items-terminados/`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Items por ventas
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/items-por-ventas/?${params}`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Inventario por sucursal
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/inventario-por-sucursal/`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+        // Sugerencias mejoradas
+        fetch(`${apiUrl}/pedidos/panel-control-logistico/sugerencia-produccion-mejorada/?dias=7`, { headers }).then(res => res.ok ? res.json() : null).catch(() => null),
+      ]);
+      
+      // Procesar resultados
+      const [
+        resResumen,
+        resItems,
+        resSinMov,
+        resMasMov,
+        resCero,
+        resSug,
+        resGraf,
+        resItemsEstado,
+        resAsigTerm,
+        resEmpleados,
+        resItemsVentas,
+        resInventario,
+        resSugMejoradas
+      ] = resultados;
+      
+      // Procesar resumen
+      if (resResumen.status === 'fulfilled' && resResumen.value) {
+        setResumen(resResumen.value);
+        console.log('✅ Resumen cargado');
+      } else {
+        errores.push('Endpoint de resumen no disponible');
       }
       
-      // Cargar items sin movimiento
-      try {
-        const resSinMov = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-sin-movimiento/?dias=7`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resSinMov.ok) {
-          const dataSinMov = await resSinMov.json();
-          setItemsSinMovimiento(dataSinMov.items || []);
-          console.log('✅ Items sin movimiento cargados:', dataSinMov.items?.length || 0);
-        } else if (resSinMov.status === 404) {
-          console.warn('⚠️ Endpoint /items-sin-movimiento/ no encontrado (404)');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar items sin movimiento:', e);
+      // Procesar items producción
+      if (resItems.status === 'fulfilled' && resItems.value) {
+        setItemsProduccion(resItems.value.items || []);
+        console.log('✅ Items producción cargados:', resItems.value.items?.length || 0);
       }
       
-      // Cargar items más movidos
-      try {
-        const resMasMov = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-mas-movidos/?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resMasMov.ok) {
-          const dataMasMov = await resMasMov.json();
-          setItemsMasMovidos(dataMasMov.items || []);
-          console.log('✅ Items más movidos cargados:', dataMasMov.items?.length || 0);
-        } else if (resMasMov.status === 404) {
-          console.warn('⚠️ Endpoint /items-mas-movidos/ no encontrado (404)');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar items más movidos:', e);
+      // Procesar items sin movimiento
+      if (resSinMov.status === 'fulfilled' && resSinMov.value) {
+        setItemsSinMovimiento(resSinMov.value.items || []);
+        console.log('✅ Items sin movimiento cargados:', resSinMov.value.items?.length || 0);
       }
       
-      // Cargar items existencia cero
-      try {
-        const resCero = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-existencia-cero/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resCero.ok) {
-          const dataCero = await resCero.json();
-          setItemsExistenciaCero(dataCero.items || []);
-          console.log('✅ Items existencia cero cargados:', dataCero.items?.length || 0);
-        } else if (resCero.status === 404) {
-          console.warn('⚠️ Endpoint /items-existencia-cero/ no encontrado (404)');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar items existencia cero:', e);
+      // Procesar items más movidos
+      if (resMasMov.status === 'fulfilled' && resMasMov.value) {
+        setItemsMasMovidos(resMasMov.value.items || []);
+        console.log('✅ Items más movidos cargados:', resMasMov.value.items?.length || 0);
       }
       
-      // Cargar sugerencias
-      try {
-        const resSug = await fetch(`${apiUrl}/pedidos/panel-control-logistico/sugerencia-produccion/?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resSug.ok) {
-          const dataSug = await resSug.json();
-          setSugerencias(dataSug.sugerencias || []);
-          console.log('✅ Sugerencias cargadas:', dataSug.sugerencias?.length || 0);
-        } else if (resSug.status === 404) {
-          console.warn('⚠️ Endpoint /sugerencia-produccion/ no encontrado (404)');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar sugerencias:', e);
+      // Procesar items existencia cero
+      if (resCero.status === 'fulfilled' && resCero.value) {
+        setItemsExistenciaCero(resCero.value.items || []);
+        console.log('✅ Items existencia cero cargados:', resCero.value.items?.length || 0);
       }
       
-      // Cargar gráficas
-      try {
-        const paramsGraficas = new URLSearchParams({
-          fecha_inicio: fechaInicio,
-          fecha_fin: fechaFin
-        });
-        
-        if (compararPeriodo) {
-          const fechaInicioAnterior = new Date(fechaInicio);
-          fechaInicioAnterior.setDate(fechaInicioAnterior.getDate() - (new Date(fechaFin).getTime() - new Date(fechaInicio).getTime()) / (1000 * 60 * 60 * 24));
-          const fechaFinAnterior = new Date(fechaInicio);
-          fechaFinAnterior.setDate(fechaFinAnterior.getDate() - 1);
-          
-          paramsGraficas.append('comparar_con', fechaInicioAnterior.toISOString().split('T')[0]);
-          paramsGraficas.append('comparar_fin', fechaFinAnterior.toISOString().split('T')[0]);
-        }
-        
-        const resGraf = await fetch(`${apiUrl}/pedidos/panel-control-logistico/graficas/?${paramsGraficas}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resGraf.ok) {
-          const dataGraf = await resGraf.json();
-          setGraficasData(dataGraf);
-          console.log('✅ Gráficas cargadas:', dataGraf);
-        } else if (resGraf.status === 404) {
-          console.warn('⚠️ Endpoint /graficas/ no encontrado (404)');
-          errores.push('Endpoint de gráficas no disponible');
-        } else {
-          console.error('❌ Error en gráficas:', resGraf.status, resGraf.statusText);
-          errores.push(`Error en gráficas: ${resGraf.status}`);
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar gráficas:', e);
-        errores.push('Error al cargar gráficas');
+      // Procesar sugerencias
+      if (resSug.status === 'fulfilled' && resSug.value) {
+        setSugerencias(resSug.value.sugerencias || []);
+        console.log('✅ Sugerencias cargadas:', resSug.value.sugerencias?.length || 0);
       }
       
-      // Cargar items en producción por estado
-      try {
-        const resItemsEstado = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-produccion-por-estado/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resItemsEstado.ok) {
-          const dataItemsEstado = await resItemsEstado.json();
-          setItemsProduccionPorEstado(dataItemsEstado);
-          console.log('✅ Items producción por estado cargados');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar items producción por estado:', e);
+      // Procesar gráficas
+      if (resGraf.status === 'fulfilled' && resGraf.value) {
+        setGraficasData(resGraf.value);
+        console.log('✅ Gráficas cargadas');
+      } else {
+        errores.push('Endpoint de gráficas no disponible');
       }
       
-      // Cargar asignaciones terminadas
-      try {
-        const resAsigTerm = await fetch(`${apiUrl}/pedidos/panel-control-logistico/asignaciones-terminadas/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resAsigTerm.ok) {
-          const dataAsigTerm = await resAsigTerm.json();
-          setAsignacionesTerminadas(dataAsigTerm);
-          console.log('✅ Asignaciones terminadas cargadas');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar asignaciones terminadas:', e);
+      // Procesar items producción por estado
+      if (resItemsEstado.status === 'fulfilled' && resItemsEstado.value) {
+        setItemsProduccionPorEstado(resItemsEstado.value);
+        console.log('✅ Items producción por estado cargados');
       }
       
-      // Cargar empleados con items terminados
-      try {
-        const resEmpleados = await fetch(`${apiUrl}/pedidos/panel-control-logistico/empleados-items-terminados/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resEmpleados.ok) {
-          const dataEmpleados = await resEmpleados.json();
-          setEmpleadosItemsTerminados(dataEmpleados.empleados || []);
-          console.log('✅ Empleados items terminados cargados');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar empleados items terminados:', e);
+      // Procesar asignaciones terminadas
+      if (resAsigTerm.status === 'fulfilled' && resAsigTerm.value) {
+        setAsignacionesTerminadas(resAsigTerm.value);
+        console.log('✅ Asignaciones terminadas cargadas');
       }
       
-      // Cargar items por ventas
-      try {
-        const resItemsVentas = await fetch(`${apiUrl}/pedidos/panel-control-logistico/items-por-ventas/?${params}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resItemsVentas.ok) {
-          const dataItemsVentas = await resItemsVentas.json();
-          setItemsPorVentas(dataItemsVentas.items || []);
-          console.log('✅ Items por ventas cargados');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar items por ventas:', e);
+      // Procesar empleados items terminados
+      if (resEmpleados.status === 'fulfilled' && resEmpleados.value) {
+        setEmpleadosItemsTerminados(resEmpleados.value.empleados || []);
+        console.log('✅ Empleados items terminados cargados');
       }
       
-      // Cargar inventario por sucursal
-      try {
-        const resInventario = await fetch(`${apiUrl}/pedidos/panel-control-logistico/inventario-por-sucursal/`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resInventario.ok) {
-          const dataInventario = await resInventario.json();
-          setInventarioPorSucursal(dataInventario);
-          console.log('✅ Inventario por sucursal cargado');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar inventario por sucursal:', e);
+      // Procesar items por ventas
+      if (resItemsVentas.status === 'fulfilled' && resItemsVentas.value) {
+        setItemsPorVentas(resItemsVentas.value.items || []);
+        console.log('✅ Items por ventas cargados');
       }
       
-      // Cargar sugerencias mejoradas
-      try {
-        const resSugMejoradas = await fetch(`${apiUrl}/pedidos/panel-control-logistico/sugerencia-produccion-mejorada/?dias=7`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (resSugMejoradas.ok) {
-          const dataSugMejoradas = await resSugMejoradas.json();
-          setSugerenciasMejoradas(dataSugMejoradas.sugerencias || []);
-          setItemsSinVentas(dataSugMejoradas.items_sin_ventas || []);
-          console.log('✅ Sugerencias mejoradas cargadas');
-        }
-      } catch (e: any) {
-        console.error('❌ Excepción al cargar sugerencias mejoradas:', e);
+      // Procesar inventario por sucursal
+      if (resInventario.status === 'fulfilled' && resInventario.value) {
+        setInventarioPorSucursal(resInventario.value);
+        console.log('✅ Inventario por sucursal cargado');
+      }
+      
+      // Procesar sugerencias mejoradas
+      if (resSugMejoradas.status === 'fulfilled' && resSugMejoradas.value) {
+        setSugerenciasMejoradas(resSugMejoradas.value.sugerencias || []);
+        setItemsSinVentas(resSugMejoradas.value.items_sin_ventas || []);
+        console.log('✅ Sugerencias mejoradas cargadas');
       }
       
       // Si todos los endpoints fallaron, mostrar mensaje
