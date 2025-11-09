@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,8 +45,8 @@ const DashboardAsignaciones: React.FC = () => {
   const [mensaje, setMensaje] = useState("");
   const [tipoMensaje, setTipoMensaje] = useState<'success' | 'error' | 'manillar'>('success');
 
-  // Función para cargar empleados
-  const cargarEmpleados = async () => {
+  // OPTIMIZACIÓN: Función memoizada para cargar empleados
+  const cargarEmpleados = useCallback(async () => {
     try {
       // console.log('🔄 Cargando empleados...');
       const response = await fetch(`${getApiUrl()}/empleados/all/`);
@@ -78,10 +78,10 @@ const DashboardAsignaciones: React.FC = () => {
       // console.error('❌ Error al cargar empleados:', error);
       setEmpleados([]);
     }
-  };
+  }, []);
 
-  // Función optimizada para cargar asignaciones usando endpoint /pedidos/all/
-  const cargarAsignaciones = async () => {
+  // OPTIMIZACIÓN: Función memoizada para cargar asignaciones usando endpoint /pedidos/all/
+  const cargarAsignaciones = useCallback(async () => {
     setLoading(true);
     setError(null);
     
@@ -265,7 +265,7 @@ const DashboardAsignaciones: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Función helper para obtener módulo por estado_item
   const obtenerModuloPorEstadoItem = (estadoItem: number): string => {
@@ -294,11 +294,18 @@ const DashboardAsignaciones: React.FC = () => {
     console.log('🔍 ESTADO ASIGNACIONES CAMBIÓ:', asignaciones.length, asignaciones);
   }, [asignaciones]);
 
-  // Cargar datos al montar el componente
+  // OPTIMIZACIÓN: Cargar datos en paralelo al montar el componente
   useEffect(() => {
-    cargarAsignaciones();
-    cargarEmpleados();
-  }, []);
+    // Cargar empleados y asignaciones en paralelo para mejor rendimiento
+    Promise.all([
+      cargarEmpleados().catch((err) => {
+        console.error('Error al cargar empleados:', err);
+      }),
+      cargarAsignaciones().catch((err) => {
+        console.error('Error al cargar asignaciones:', err);
+      })
+    ]);
+  }, [cargarEmpleados, cargarAsignaciones]);
 
   // Actualización automática cada 5 minutos
   useEffect(() => {

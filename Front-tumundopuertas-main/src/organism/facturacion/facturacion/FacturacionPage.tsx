@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -61,31 +61,29 @@ const FacturacionPage: React.FC = () => {
     setLoading(true);
     setError("");
     try {
-      // Primero intentar buscar pedidos con estado_general = "orden4" (listos para facturación)
-      // También buscar pedidos que tengan todos los items terminados (estado_item = 4)
+      // OPTIMIZACIÓN: Cargar pedidos orden4 y todos los pedidos en paralelo
       let pedidos: any[] = [];
       let pedidosOrden4: any[] = [];
       
-      try {
-        // CRÍTICO: Primero obtener pedidos con estado_general = "orden4" (los que el backend ya movió automáticamente)
-        const resOrden4 = await fetch(`${getApiUrl()}/pedidos/estado/?estado_general=orden4`);
-        if (resOrden4.ok) {
-          pedidosOrden4 = await resOrden4.json();
-          pedidos = [...pedidosOrden4];
-          console.log(`✅ Pedidos con estado_general=orden4 obtenidos: ${pedidosOrden4.length}`);
-        } else {
-          console.warn(`⚠️ No se pudieron obtener pedidos con orden4 (status: ${resOrden4.status})`);
-        }
-      } catch (e) {
-        console.warn('⚠️ Error al obtener pedidos por estado orden4:', e);
+      // Cargar ambas peticiones en paralelo para mejor rendimiento
+      const [resOrden4, resAll] = await Promise.allSettled([
+        fetch(`${getApiUrl()}/pedidos/estado/?estado_general=orden4`),
+        fetch(`${getApiUrl()}/pedidos/all/`)
+      ]);
+      
+      // Procesar respuesta de pedidos orden4
+      if (resOrden4.status === 'fulfilled' && resOrden4.value.ok) {
+        pedidosOrden4 = await resOrden4.value.json();
+        pedidos = [...pedidosOrden4];
+        console.log(`✅ Pedidos con estado_general=orden4 obtenidos: ${pedidosOrden4.length}`);
+      } else {
+        console.warn(`⚠️ No se pudieron obtener pedidos con orden4`);
       }
       
-      // CRÍTICO: También obtener todos los pedidos para buscar los que tengan items completados o estado_general=orden4
-      // Esto asegura que no se pierdan pedidos con orden4 si el endpoint anterior falla
-      try {
-        const res = await fetch(`${getApiUrl()}/pedidos/all/`);
-        if (!res.ok) throw new Error("Error al obtener pedidos");
-        const todosLosPedidos = await res.json();
+      // Procesar respuesta de todos los pedidos
+      if (resAll.status === 'fulfilled' && resAll.value.ok) {
+        try {
+          const todosLosPedidos = await resAll.value.json();
         
         // Combinar pedidos de orden4 con todos los pedidos, evitando duplicados
         const pedidosIdsExistentes = new Set(pedidos.map((p: any) => p._id));
@@ -135,11 +133,18 @@ const FacturacionPage: React.FC = () => {
         } else {
           console.warn(`⚠️ Pedido específico NO encontrado en /pedidos/all/ (puede estar limitado a 100 pedidos)`);
         }
-      } catch (err: any) {
-        console.error(`❌ Error al obtener todos los pedidos:`, err.message || err);
-        // No lanzar error, continuar con los pedidos que ya se obtuvieron
+        } catch (err: any) {
+          console.error(`❌ Error al procesar todos los pedidos:`, err.message || err);
+          // No lanzar error, continuar con los pedidos que ya se obtuvieron
+          if (pedidos.length === 0) {
+            throw err; // Solo lanzar si no hay pedidos
+          }
+        }
+      } else {
+        console.warn(`⚠️ No se pudieron obtener todos los pedidos`);
+        // Si no hay pedidos y falló, lanzar error
         if (pedidos.length === 0) {
-          throw err; // Solo lanzar si no hay pedidos
+          throw new Error("Error al obtener pedidos");
         }
       }
       
