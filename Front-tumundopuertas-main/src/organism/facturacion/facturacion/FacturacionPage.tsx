@@ -412,6 +412,14 @@ const FacturacionPage: React.FC = () => {
               console.log(`✅ Incluyendo pedido ${pedido._id.slice(-4)} con estado_general=orden4 aunque no se pudo verificar progreso`);
             }
             
+            // Debug: Verificar datos del pedido antes de llamar al endpoint
+            console.log(`🔍 DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Datos iniciales:`, {
+              tiene_historial_pagos: !!pedido.historial_pagos,
+              historial_pagos_length: pedido.historial_pagos?.length || 0,
+              total_abonado: pedido.total_abonado || 0,
+              historial_pagos: pedido.historial_pagos
+            });
+            
             // Obtener información de pagos del pedido (NUEVO ENDPOINT) con timeout
             const pagosRes = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/pagos`, {
               signal: AbortSignal.timeout(5000) // 5 segundos timeout
@@ -436,10 +444,38 @@ const FacturacionPage: React.FC = () => {
             
             if (pagosRes.ok) {
               const pagosData = await pagosRes.json();
+              console.log(`✅ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Respuesta del endpoint /pagos:`, {
+                total_abonado: pagosData.total_abonado,
+                historial_pagos_length: pagosData.historial_pagos?.length || 0,
+                total_pedido: pagosData.total_pedido,
+                historial_pagos: pagosData.historial_pagos
+              });
+              
               // Si el backend ya incluye adicionales en total_pedido, usarlo; sino usar nuestro cálculo
               montoTotal = pagosData.total_pedido || montoTotal;
               montoAbonado = pagosData.total_abonado || 0;
               historialPagos = pagosData.historial_pagos || [];
+              
+              // Debug: Verificar que se obtuvo el total_abonado correctamente
+              if (montoAbonado === 0 && historialPagos.length > 0) {
+                const calculadoDesdeHistorial = historialPagos.reduce((sum, pago) => sum + (pago.monto || 0), 0);
+                if (calculadoDesdeHistorial > 0) {
+                  console.log(`⚠️ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - total_abonado del endpoint es 0, pero historial_pagos tiene ${calculadoDesdeHistorial}, usando calculado`);
+                  montoAbonado = calculadoDesdeHistorial;
+                }
+              }
+            } else {
+              // Si el endpoint falla, intentar calcular desde historial_pagos del pedido
+              const historialDelPedido = pedido.historial_pagos || [];
+              if (historialDelPedido.length > 0) {
+                montoAbonado = historialDelPedido.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                historialPagos = historialDelPedido;
+                console.log(`⚠️ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Endpoint /pagos falló, calculando desde historial_pagos del pedido: ${montoAbonado}`);
+              } else {
+                // Último fallback: usar total_abonado del pedido si existe
+                montoAbonado = pedido.total_abonado || 0;
+                console.log(`⚠️ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Usando total_abonado del pedido: ${montoAbonado}`);
+              }
             }
             
             // Buscar fecha de finalización (último seguimiento con fecha_fin)
@@ -480,13 +516,24 @@ const FacturacionPage: React.FC = () => {
                 return acc + (precio * cantidad);
               }, 0);
               const montoTotal = montoItems + montoAdicionales;
-              const montoAbonado = pedido.total_abonado || 0;
+              
+              // Calcular monto abonado desde historial_pagos si está disponible
+              const historialDelPedido = pedido.historial_pagos || [];
+              let montoAbonado = 0;
+              if (historialDelPedido.length > 0) {
+                montoAbonado = historialDelPedido.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                console.log(`⚠️ DEBUG FACTURACION ERROR: Pedido ${pedido._id.slice(-4)} - Calculando desde historial_pagos: ${montoAbonado}`);
+              } else {
+                montoAbonado = pedido.total_abonado || 0;
+                console.log(`⚠️ DEBUG FACTURACION ERROR: Pedido ${pedido._id.slice(-4)} - Usando total_abonado: ${montoAbonado}`);
+              }
+              
               return {
                 ...pedido,
                 montoTotal,
                 montoAbonado,
                 fecha100Porciento: null,
-                historialPagos: pedido.historial_pagos || [],
+                historialPagos: historialDelPedido,
                 puedeFacturar: montoAbonado >= montoTotal
               };
             }
