@@ -41,6 +41,11 @@ interface PedidoConPagos {
   pago?: string;
   historial_pagos?: Pago[];
   items: any[]; // Assuming items are part of the pedido
+  adicionales?: Array<{
+    descripcion?: string;
+    precio: number;
+    cantidad?: number;
+  }>;
   total_abonado: number; // Assuming this field exists
   fecha_creacion?: string; // Fecha de creación del pedido
   createdAt?: string; // Alternativa de fecha
@@ -153,7 +158,18 @@ const MisPagos: React.FC = () => {
 
 
   const calculateTotalPedido = (pedido: PedidoConPagos) => {
-    return (pedido.items || []).reduce((sum, item) => sum + ((item.precio || 0) * (item.cantidad || 0)), 0);
+    // Calcular total de items
+    const totalItems = (pedido.items || []).reduce((sum, item) => sum + ((item.precio || 0) * (item.cantidad || 0)), 0);
+    
+    // Calcular total de adicionales
+    const adicionales = pedido.adicionales || [];
+    const totalAdicionales = adicionales.reduce((sum, ad) => {
+      const cantidad = ad.cantidad || 1;
+      const precio = ad.precio || 0;
+      return sum + (precio * cantidad);
+    }, 0);
+    
+    return totalItems + totalAdicionales;
   };
 
   // Calcular el estado del pedido basado en totalPedido vs montoAbonado
@@ -161,7 +177,14 @@ const MisPagos: React.FC = () => {
     const totalPedido = calculateTotalPedido(pedido);
     const montoAbonado = pedido.total_abonado || 0;
     
-    if (totalPedido > 0 && montoAbonado >= totalPedido) {
+    // Lógica correcta:
+    // - Si monto_abonado == 0 → "sin_pago"
+    // - Si monto_abonado == total_pedido → "pagado"
+    // - Si monto_abonado > 0 y monto_abonado < total_pedido → "abonado"
+    
+    if (montoAbonado === 0) {
+      return "sin_pago";
+    } else if (montoAbonado >= totalPedido && totalPedido > 0) {
       return "pagado";
     } else if (montoAbonado > 0 && montoAbonado < totalPedido) {
       return "abonado";
@@ -189,13 +212,13 @@ const MisPagos: React.FC = () => {
       const montoAbonado = pedido.total_abonado || 0;
       
       if (filtroEstadoPago === "pagado") {
-        // Pagado: totalPedido === montoAbonado
+        // Pagado: monto_abonado == total_pedido
         return totalPedido > 0 && montoAbonado >= totalPedido;
       } else if (filtroEstadoPago === "abonado") {
-        // Abonado: montoAbonado > 0 pero < totalPedido
+        // Abonado: monto_abonado > 0 y monto_abonado < total_pedido
         return montoAbonado > 0 && montoAbonado < totalPedido;
       } else if (filtroEstadoPago === "sin_pago") {
-        // Sin pago: montoAbonado === 0
+        // Sin pago: monto_abonado == 0
         return montoAbonado === 0;
       }
       
