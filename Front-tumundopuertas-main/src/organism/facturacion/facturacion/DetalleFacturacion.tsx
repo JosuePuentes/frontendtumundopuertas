@@ -35,6 +35,18 @@ interface Pedido {
   estado_general: string;
   items: PedidoItem[];
   seguimiento: PedidoSeguimiento[];
+  total_abonado?: number;
+  historial_pagos?: Array<{
+    fecha: string;
+    monto: number;
+    metodo?: string;
+    estado: string;
+  }>;
+  adicionales?: Array<{
+    descripcion?: string;
+    precio: number;
+    cantidad?: number;
+  }>;
 }
 
 interface DetalleFacturacionProps {
@@ -116,6 +128,86 @@ const DetalleFacturacion: React.FC<DetalleFacturacionProps> = ({ pedido }) => {
             ))}
           </div>
         </div>
+        
+        {/* Información de Pagos y Totales */}
+        <div className="mt-6 border-t pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Totales */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-lg mb-3">Resumen Financiero</h3>
+              <div className="space-y-2">
+                {(() => {
+                  // Calcular total de items
+                  const totalItems = pedido.items.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+                  
+                  // Calcular total de adicionales
+                  const adicionales = pedido.adicionales || [];
+                  const totalAdicionales = adicionales.reduce((sum, ad) => {
+                    const cantidad = ad.cantidad || 1;
+                    const precio = ad.precio || 0;
+                    return sum + (precio * cantidad);
+                  }, 0);
+                  
+                  const totalPedido = totalItems + totalAdicionales;
+                  const montoAbonado = pedido.total_abonado || 0;
+                  const saldoPendiente = totalPedido - montoAbonado;
+                  
+                  return (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Items:</span>
+                        <span className="font-semibold">${totalItems.toFixed(2)}</span>
+                      </div>
+                      {totalAdicionales > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Adicionales:</span>
+                          <span className="font-semibold">${totalAdicionales.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="text-gray-700 font-semibold">Total Pedido:</span>
+                        <span className="font-bold text-lg text-blue-700">${totalPedido.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Total Abonado:</span>
+                        <span className="font-semibold text-green-700">${montoAbonado.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-2">
+                        <span className="text-gray-700 font-semibold">Saldo Pendiente:</span>
+                        <span className={`font-bold text-lg ${saldoPendiente > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          ${saldoPendiente.toFixed(2)}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+            
+            {/* Historial de Pagos */}
+            {pedido.historial_pagos && pedido.historial_pagos.length > 0 && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-lg mb-3">Historial de Pagos</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {pedido.historial_pagos.map((pago, index) => (
+                    <div key={index} className="flex justify-between items-center border-b pb-2 last:border-0">
+                      <div className="flex flex-col">
+                        <span className="text-sm text-gray-600">
+                          {new Date(pago.fecha).toLocaleDateString()}
+                        </span>
+                        {pago.metodo && (
+                          <span className="text-xs text-gray-500">Método: {pago.metodo}</span>
+                        )}
+                      </div>
+                      <span className="font-semibold text-green-700">${pago.monto.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
         <div className="mt-8">
           <NotaEntrega pedido={pedido} />
         </div>
