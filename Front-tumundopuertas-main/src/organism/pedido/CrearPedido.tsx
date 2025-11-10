@@ -266,7 +266,7 @@ const CrearPedido: React.FC = () => {
       monto: abono,
       metodo: selectedMetodoPago,
       fecha: new Date().toISOString(),
-      estado: 'confirmado'
+      estado: 'abonado' // Estado correcto según el modelo del backend
     };
     
     // Calcular el total abonado actual
