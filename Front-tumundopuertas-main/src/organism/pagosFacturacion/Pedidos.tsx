@@ -129,6 +129,11 @@ interface Pedido {
   fecha_creacion?: string;
   pago?: string; // "sin pago" | "abonado" | "pagado"
   items?: PedidoItem[];
+  adicionales?: Array<{
+    descripcion?: string;
+    precio: number;
+    cantidad?: number;
+  }>;
   historial_pagos?: RegistroPago[];
   total_abonado?: number; // Total abonado del pedido
 }
@@ -296,11 +301,18 @@ const Pedidos: React.FC = () => {
                     if (!pasaFiltroCliente) return false;
                     
                     // Filtrar pedidos completamente pagados
-                    // Calcular el total del pedido
-                    const totalPedido = (pedido.items || []).reduce(
+                    // Calcular el total del pedido incluyendo adicionales
+                    const totalItems = (pedido.items || []).reduce(
                       (acc, item) => acc + (item.precio || 0) * (item.cantidad || 0),
                       0
                     );
+                    const adicionales = pedido.adicionales || [];
+                    const totalAdicionales = adicionales.reduce((sum, ad) => {
+                      const cantidad = ad.cantidad || 1;
+                      const precio = ad.precio || 0;
+                      return sum + (precio * cantidad);
+                    }, 0);
+                    const totalPedido = totalItems + totalAdicionales;
                     
                     // Calcular el monto abonado
                     const montoAbonado = pedido.total_abonado || (pedido.historial_pagos || []).reduce(
@@ -312,11 +324,6 @@ const Pedidos: React.FC = () => {
                     return !(totalPedido > 0 && montoAbonado >= totalPedido);
                   })
                   .map((pedido) => {
-                  // Calcular el total del pedido
-                  const total = (pedido.items || []).reduce(
-                    (acc, item) => acc + (item.precio || 0) * (item.cantidad || 0),
-                    0
-                  );
                   return (
                     <TableRow key={pedido._id} className="hover:bg-gray-50">
                       <TableCell className="font-medium break-all max-w-[120px]">
@@ -340,16 +347,97 @@ const Pedidos: React.FC = () => {
                             onSuccess={refreshData}
                             metodosPago={metodosPago}
                           />
+                          {/* Información de pagos: Abonado, Total, Resta */}
+                          <div className="flex flex-col gap-0.5 text-[10px] sm:text-xs mt-1">
+                            {(() => {
+                              // Calcular total incluyendo adicionales
+                              const totalItems = (pedido.items || []).reduce(
+                                (acc, item) => acc + (item.precio || 0) * (item.cantidad || 0),
+                                0
+                              );
+                              const adicionales = pedido.adicionales || [];
+                              const totalAdicionales = adicionales.reduce((sum, ad) => {
+                                const cantidad = ad.cantidad || 1;
+                                const precio = ad.precio || 0;
+                                return sum + (precio * cantidad);
+                              }, 0);
+                              const totalPedido = totalItems + totalAdicionales;
+                              
+                              // Calcular monto abonado
+                              const montoAbonado = pedido.total_abonado || (pedido.historial_pagos || []).reduce(
+                                (acc, pago) => acc + (pago.monto || 0),
+                                0
+                              );
+                              
+                              // Calcular resta
+                              const resta = totalPedido - montoAbonado;
+                              
+                              return (
+                                <>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Abonado:</span>
+                                    <span className="font-semibold text-green-700">${montoAbonado.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-600">Total:</span>
+                                    <span className="font-semibold text-gray-900">${totalPedido.toFixed(2)}</span>
+                                  </div>
+                                  <div className="flex justify-between border-t pt-0.5">
+                                    <span className="text-gray-600">Resta:</span>
+                                    <span className={`font-semibold ${resta > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                      ${resta.toFixed(2)}
+                                    </span>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          {pedido.historial_pagos && pedido.historial_pagos.length > 0 && (
-                            <span className="text-xs text-green-700 font-semibold">
-                              Pagos: {pedido.historial_pagos.reduce((a, pago) => a + (pago.monto || 0), 0).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
-                            </span>
-                          )}
-                        {total.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
+                        <div className="flex flex-col gap-1 text-[10px] sm:text-xs">
+                          {(() => {
+                            // Calcular total incluyendo adicionales
+                            const totalItems = (pedido.items || []).reduce(
+                              (acc, item) => acc + (item.precio || 0) * (item.cantidad || 0),
+                              0
+                            );
+                            const adicionales = pedido.adicionales || [];
+                            const totalAdicionales = adicionales.reduce((sum, ad) => {
+                              const cantidad = ad.cantidad || 1;
+                              const precio = ad.precio || 0;
+                              return sum + (precio * cantidad);
+                            }, 0);
+                            const totalPedido = totalItems + totalAdicionales;
+                            
+                            // Calcular monto abonado
+                            const montoAbonado = pedido.total_abonado || (pedido.historial_pagos || []).reduce(
+                              (acc, pago) => acc + (pago.monto || 0),
+                              0
+                            );
+                            
+                            // Calcular resta
+                            const resta = totalPedido - montoAbonado;
+                            
+                            return (
+                              <>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Total:</span>
+                                  <span className="font-semibold text-gray-900">${totalPedido.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-600">Abonado:</span>
+                                  <span className="font-semibold text-green-700">${montoAbonado.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between border-t pt-0.5">
+                                  <span className="text-gray-600">Resta:</span>
+                                  <span className={`font-semibold ${resta > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                    ${resta.toFixed(2)}
+                                  </span>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </TableCell>
                     </TableRow>
