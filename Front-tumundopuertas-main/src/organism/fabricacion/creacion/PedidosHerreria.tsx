@@ -536,7 +536,7 @@ const PedidosHerreria: React.FC = () => {
         return estadoValido;
       })
       .filter((item) => {
-        // Filtro por búsqueda SOLO por nombre del cliente - BUSQUEDA EN TIEMPO REAL
+        // Filtro por búsqueda por nombre del cliente Y nombre del item - BUSQUEDA EN TIEMPO REAL
         if (searchTerm && searchTerm.trim() !== "") {
           const searchLower = searchTerm.toLowerCase().trim();
           
@@ -549,10 +549,22 @@ const PedidosHerreria: React.FC = () => {
             ''
           );
           
-          console.log('🔍 FILTRO BUSQUEDA - item:', item.id, 'cliente:', clienteNombre, 'search:', searchLower, 'match:', clienteNombre.includes(searchLower));
+          // Buscar en el nombre del item
+          const itemNombre = item.nombre?.toLowerCase() || '';
           
-          // Buscar SOLO en el nombre del cliente
-          return clienteNombre.includes(searchLower);
+          // Buscar también en la descripción del item
+          const itemDescripcion = item.descripcion?.toLowerCase() || '';
+          
+          // Buscar también en el código del item
+          const itemCodigo = item.codigo?.toLowerCase() || '';
+          
+          console.log('🔍 FILTRO BUSQUEDA - item:', item.id, 'cliente:', clienteNombre, 'item:', itemNombre, 'search:', searchLower);
+          
+          // Buscar en nombre del cliente, nombre del item, descripción o código
+          return clienteNombre.includes(searchLower) || 
+                 itemNombre.includes(searchLower) || 
+                 itemDescripcion.includes(searchLower) ||
+                 itemCodigo.includes(searchLower);
         }
         return true;
       })
@@ -637,12 +649,12 @@ const PedidosHerreria: React.FC = () => {
               <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-              Buscar por Nombre del Cliente
+              Buscar por Cliente o Item
             </Label>
             <Input
               id="buscar-cliente"
               type="text"
-              placeholder="🔍 Escribe el nombre del cliente..."
+              placeholder="🔍 Buscar por nombre de cliente, nombre de item, descripción o código..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full bg-white border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
