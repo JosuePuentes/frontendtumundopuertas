@@ -158,31 +158,6 @@ const ResumenVentaDiaria: React.FC = () => {
     }
   };
 
-  // Función para probar diferentes endpoints y formatos de fecha
-  const probarEndpoints = async () => {
-    console.log('🔍 Probando diferentes endpoints y formatos de fecha...');
-    
-    const fechaPrueba = '2025-09-15'; // Usar una fecha que sabemos que tiene datos
-    
-    const endpoints = [
-      `/pedidos/venta-diaria`,
-      `/pedidos/venta-diaria?fecha_inicio=${fechaPrueba}&fecha_fin=${fechaPrueba}`,
-      `/pedidos/venta-diaria?fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}`
-    ];
-    
-    for (const endpoint of endpoints) {
-      try {
-        console.log(`📡 Probando: ${endpoint}`);
-        const response = await api(endpoint);
-        console.log(`✅ ${endpoint} - Respuesta:`, {
-          total_ingresos: response.total_ingresos,
-          cantidad_abonos: response.abonos?.length || 0
-        });
-      } catch (error) {
-        console.log(`❌ ${endpoint} - Error:`, error);
-      }
-    }
-  };
 
   const exportToPDF = () => {
     if (!data) {
