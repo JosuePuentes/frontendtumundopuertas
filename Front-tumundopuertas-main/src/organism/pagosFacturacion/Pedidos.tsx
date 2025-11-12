@@ -114,6 +114,7 @@ interface PedidoItem {
   id: string;
   precio: number;
   cantidad: number;
+  descuento?: number; // Descuento en monto ($)
 }
 
 interface RegistroPago {
@@ -301,9 +302,14 @@ const Pedidos: React.FC = () => {
                     if (!pasaFiltroCliente) return false;
                     
                     // Filtrar pedidos completamente pagados
-                    // Calcular el total del pedido incluyendo adicionales
+                    // Calcular el total del pedido incluyendo adicionales y descuentos
                     const totalItems = (pedido.items || []).reduce(
-                      (acc, item) => acc + (item.precio || 0) * (item.cantidad || 0),
+                      (acc, item) => {
+                        const precioBase = item.precio || 0;
+                        const descuento = item.descuento || 0;
+                        const precioConDescuento = Math.max(0, precioBase - descuento);
+                        return acc + (precioConDescuento * (item.cantidad || 0));
+                      },
                       0
                     );
                     const adicionales = pedido.adicionales || [];

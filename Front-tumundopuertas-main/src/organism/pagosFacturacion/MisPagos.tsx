@@ -158,8 +158,13 @@ const MisPagos: React.FC = () => {
 
 
   const calculateTotalPedido = (pedido: PedidoConPagos) => {
-    // Calcular total de items
-    const totalItems = (pedido.items || []).reduce((sum, item) => sum + ((item.precio || 0) * (item.cantidad || 0)), 0);
+    // Calcular total de items considerando descuentos
+    const totalItems = (pedido.items || []).reduce((sum, item) => {
+      const precioBase = item.precio || 0;
+      const descuento = item.descuento || 0;
+      const precioConDescuento = Math.max(0, precioBase - descuento);
+      return sum + (precioConDescuento * (item.cantidad || 0));
+    }, 0);
     
     // Calcular total de adicionales
     const adicionales = pedido.adicionales || [];

@@ -1801,8 +1801,13 @@ const FacturacionPage: React.FC = () => {
                   const adicionalesRaw = pedido.adicionales;
                   const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
                   
-                  // Calcular monto de items
-                  const montoItems = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+                  // Calcular monto de items considerando descuentos
+                  const montoItems = pedido.items?.reduce((acc: number, item: any) => {
+                    const precioBase = item.precio || 0;
+                    const descuento = item.descuento || 0;
+                    const precioConDescuento = Math.max(0, precioBase - descuento);
+                    return acc + (precioConDescuento * (item.cantidad || 0));
+                  }, 0) || 0;
                   // Calcular monto de adicionales (precio * cantidad, default cantidad = 1)
                   const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
                     const cantidad = ad.cantidad || 1;

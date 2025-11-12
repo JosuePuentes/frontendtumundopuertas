@@ -137,8 +137,13 @@ const DetalleFacturacion: React.FC<DetalleFacturacionProps> = ({ pedido }) => {
               <h3 className="font-semibold text-lg mb-3">Resumen Financiero</h3>
               <div className="space-y-2">
                 {(() => {
-                  // Calcular total de items
-                  const totalItems = pedido.items.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+                  // Calcular total de items considerando descuentos
+                  const totalItems = pedido.items.reduce((sum, item) => {
+                    const precioBase = item.precio || 0;
+                    const descuento = (item as any).descuento || 0;
+                    const precioConDescuento = Math.max(0, precioBase - descuento);
+                    return sum + (precioConDescuento * item.cantidad);
+                  }, 0);
                   
                   // Calcular total de adicionales
                   const adicionales = pedido.adicionales || [];

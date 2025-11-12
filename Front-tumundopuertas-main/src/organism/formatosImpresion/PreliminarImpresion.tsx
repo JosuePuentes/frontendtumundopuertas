@@ -677,12 +677,14 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         {/* Totales */}
         <div className="flex justify-end">
           <div className="w-48 space-y-1 text-sm">
-            {/* Calcular subtotal desde los items */}
+            {/* Calcular subtotal desde los items considerando descuentos */}
             {(() => {
               const subtotal = pedido.items?.reduce((sum: number, item: any) => {
                 const cantidad = item.cantidad || 1;
-                const precio = item.precio || 0;
-                return sum + (precio * cantidad);
+                const precioBase = item.precio || 0;
+                const descuento = item.descuento || 0;
+                const precioConDescuento = Math.max(0, precioBase - descuento);
+                return sum + (precioConDescuento * cantidad);
               }, 0) || 0;
               
               const totalFactura = subtotal;
