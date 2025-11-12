@@ -166,8 +166,9 @@ const MisPagos: React.FC = () => {
       return sum + (precioConDescuento * (item.cantidad || 0));
     }, 0);
     
-    // Calcular total de adicionales
-    const adicionales = pedido.adicionales || [];
+    // Calcular total de adicionales (normalizar si es null, undefined o no es array)
+    const adicionalesRaw = pedido.adicionales;
+    const adicionales = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
     const totalAdicionales = adicionales.reduce((sum, ad) => {
       const cantidad = ad.cantidad || 1;
       const precio = ad.precio || 0;
