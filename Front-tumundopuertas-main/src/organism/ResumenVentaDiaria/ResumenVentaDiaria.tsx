@@ -76,39 +76,40 @@ const ResumenVentaDiaria: React.FC = () => {
       const responseData: VentaDiariaResponse = await api(url);
       console.log('📊 Datos recibidos del backend:', responseData);
       
+      // Filtrar abonos por rango de fechas en el frontend (por si el backend no lo hace correctamente)
       if (responseData && responseData.abonos) {
-        console.log('✅ Datos procesados:', {
-          total_ingresos: responseData.total_ingresos,
-          cantidad_abonos: responseData.abonos?.length || 0,
-          metodos_pago: Object.keys(responseData.ingresos_por_metodo || {}).length
-        });
-        
-        // Verificar las fechas de los primeros 5 abonos para debugging
-        console.log('🔍 Fechas de los primeros 5 abonos:');
-        responseData.abonos.slice(0, 5).forEach((abono, index) => {
-          const fechaAbono = new Date(abono.fecha);
-          const fechaISO = fechaAbono.toISOString().split('T')[0];
-          const fechaLatino = `${fechaAbono.getDate().toString().padStart(2, '0')}/${(fechaAbono.getMonth() + 1).toString().padStart(2, '0')}/${fechaAbono.getFullYear()}`;
-          console.log(`  ${index + 1}. ${fechaISO} (${fechaLatino}) - ${abono.cliente_nombre} - $${abono.monto}`);
-        });
-        
-        // Verificar si las fechas están en el rango solicitado
+        // Crear fechas de inicio y fin con hora para comparación correcta
         const fechaInicioDate = new Date(fechaInicio);
-        const fechaFinDate = new Date(fechaFin);
-        console.log('🎯 Rango solicitado:', {
-          inicio: fechaInicioDate.toISOString().split('T')[0],
-          fin: fechaFinDate.toISOString().split('T')[0]
-        });
+        fechaInicioDate.setHours(0, 0, 0, 0); // Inicio del día
         
-        const abonosEnRango = responseData.abonos.filter(abono => {
+        const fechaFinDate = new Date(fechaFin);
+        fechaFinDate.setHours(23, 59, 59, 999); // Fin del día (incluir todo el día)
+        
+        // Filtrar abonos que estén dentro del rango
+        const abonosFiltrados = responseData.abonos.filter(abono => {
           const fechaAbono = new Date(abono.fecha);
           return fechaAbono >= fechaInicioDate && fechaAbono <= fechaFinDate;
         });
         
-        console.log('📊 Análisis de filtrado:', {
-          total_abonos: responseData.abonos.length,
-          abonos_en_rango_solicitado: abonosEnRango.length,
-          filtro_funciona: abonosEnRango.length === responseData.abonos.length ? '❌ NO' : '✅ SÍ'
+        // Recalcular total_ingresos y ingresos_por_metodo con los abonos filtrados
+        const totalIngresosFiltrado = abonosFiltrados.reduce((sum, abono) => sum + (abono.monto || 0), 0);
+        
+        const ingresosPorMetodoFiltrado: { [key: string]: number } = {};
+        abonosFiltrados.forEach(abono => {
+          const metodo = abono.metodo || 'Sin método';
+          ingresosPorMetodoFiltrado[metodo] = (ingresosPorMetodoFiltrado[metodo] || 0) + (abono.monto || 0);
+        });
+        
+        // Actualizar responseData con los datos filtrados
+        responseData.abonos = abonosFiltrados;
+        responseData.total_ingresos = totalIngresosFiltrado;
+        responseData.ingresos_por_metodo = ingresosPorMetodoFiltrado;
+        
+        console.log('✅ Datos filtrados:', {
+          total_abonos_originales: responseData.abonos.length,
+          total_abonos_filtrados: abonosFiltrados.length,
+          total_ingresos: totalIngresosFiltrado,
+          rango: `${fechaInicio} - ${fechaFin}`
         });
       }
       
@@ -350,16 +351,9 @@ const ResumenVentaDiaria: React.FC = () => {
               placeholder="Fecha fin"
             />
           </div>
-          <div className="sm:w-auto w-full flex flex-col gap-2">
-            <Button onClick={fetchVentaDiaria} className="w-full" disabled={loading || !fechaInicio || !fechaFin}>
-              Buscar
-            </Button>
-            {fechaInicio && fechaFin && (
-              <p className="text-xs text-gray-500 text-center">
-                Rango: {new Date(fechaInicio).toLocaleDateString('es-ES')} - {new Date(fechaFin).toLocaleDateString('es-ES')}
-              </p>
-            )}
-          </div>
+          <Button onClick={fetchVentaDiaria} className="sm:w-auto w-full" disabled={loading || !fechaInicio || !fechaFin}>
+            Buscar
+          </Button>
           <Button 
             onClick={fetchTodosLosDatos}
             variant="outline" 
@@ -371,15 +365,6 @@ const ResumenVentaDiaria: React.FC = () => {
             Ver Todos
           </Button>
         </div>
-        
-        {/* Mensaje informativo sobre el rango de fechas */}
-        {fechaInicio && fechaFin && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>ℹ️ Rango de fechas seleccionado:</strong> Se mostrarán todas las ventas desde el <strong>{new Date(fechaInicio).toLocaleDateString('es-ES')}</strong> hasta el <strong>{new Date(fechaFin).toLocaleDateString('es-ES')}</strong> (ambos días incluidos).
-            </p>
-          </div>
-        )}
 
         {loading ? (
           <div className="flex justify-center items-center py-8 text-gray-600">
