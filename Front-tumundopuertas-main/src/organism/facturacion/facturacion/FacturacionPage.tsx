@@ -1906,7 +1906,9 @@ const FacturacionPage: React.FC = () => {
                           <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
                             <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Saldo Pendiente
                           </p>
-                          <p className="text-lg sm:text-xl font-bold text-blue-700">${(totalConAdicionales - (pedido.montoAbonado || 0)).toFixed(2)}</p>
+                          <p className="text-lg sm:text-xl font-bold text-blue-700">
+                            ${Math.max(0, totalConAdicionales - (pedido.montoAbonado || 0)).toFixed(2)}
+                          </p>
                         </div>
                       </div>
 

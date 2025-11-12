@@ -155,7 +155,8 @@ const DetalleFacturacion: React.FC<DetalleFacturacionProps> = ({ pedido }) => {
                   
                   const totalPedido = totalItems + totalAdicionales;
                   const montoAbonado = pedido.total_abonado || 0;
-                  const saldoPendiente = totalPedido - montoAbonado;
+                  // El saldo pendiente no puede ser negativo (el descuento ya está aplicado al total)
+                  const saldoPendiente = Math.max(0, totalPedido - montoAbonado);
                   
                   return (
                     <>
