@@ -77,40 +77,70 @@ const ResumenVentaDiaria: React.FC = () => {
       console.log('📊 Datos recibidos del backend:', responseData);
       
       // Filtrar abonos por rango de fechas en el frontend (por si el backend no lo hace correctamente)
-      if (responseData && responseData.abonos) {
-        // Crear fechas de inicio y fin con hora para comparación correcta
-        const fechaInicioDate = new Date(fechaInicio);
-        fechaInicioDate.setHours(0, 0, 0, 0); // Inicio del día
+      if (responseData && responseData.abonos && Array.isArray(responseData.abonos) && responseData.abonos.length > 0) {
+        console.log('🔍 Filtrado de fechas:', {
+          fechaInicio: fechaInicio,
+          fechaFin: fechaFin,
+          total_abonos_recibidos: responseData.abonos.length
+        });
         
-        const fechaFinDate = new Date(fechaFin);
-        fechaFinDate.setHours(23, 59, 59, 999); // Fin del día (incluir todo el día)
-        
-        // Filtrar abonos que estén dentro del rango
+        // Filtrar abonos que estén dentro del rango (comparar solo la fecha, no la hora)
         const abonosFiltrados = responseData.abonos.filter(abono => {
-          const fechaAbono = new Date(abono.fecha);
-          return fechaAbono >= fechaInicioDate && fechaAbono <= fechaFinDate;
+          if (!abono.fecha) {
+            console.warn('⚠️ Abono sin fecha:', abono);
+            return false;
+          }
+          
+          try {
+            const fechaAbono = new Date(abono.fecha);
+            // Verificar que la fecha sea válida
+            if (isNaN(fechaAbono.getTime())) {
+              console.warn('⚠️ Fecha inválida en abono:', abono.fecha);
+              return false;
+            }
+            
+            // Comparar solo las fechas (sin hora) para evitar problemas de zona horaria
+            const fechaAbonoStr = fechaAbono.toISOString().split('T')[0];
+            const fechaInicioStr = fechaInicio;
+            const fechaFinStr = fechaFin;
+            
+            const estaEnRango = fechaAbonoStr >= fechaInicioStr && fechaAbonoStr <= fechaFinStr;
+            
+            return estaEnRango;
+          } catch (error) {
+            console.error('❌ Error al procesar fecha del abono:', error, abono);
+            return false;
+          }
+        });
+        
+        console.log('✅ Resultado del filtrado:', {
+          total_abonos_originales: responseData.abonos.length,
+          total_abonos_filtrados: abonosFiltrados.length
         });
         
         // Recalcular total_ingresos y ingresos_por_metodo con los abonos filtrados
-        const totalIngresosFiltrado = abonosFiltrados.reduce((sum, abono) => sum + (abono.monto || 0), 0);
+        // Si no hay abonos filtrados pero hay originales, usar los originales (el backend ya los filtró)
+        const abonosOriginales = responseData.abonos;
+        const abonosAUsar = abonosFiltrados.length > 0 ? abonosFiltrados : abonosOriginales;
+        
+        const totalIngresosFiltrado = abonosAUsar.reduce((sum, abono) => sum + (abono.monto || 0), 0);
         
         const ingresosPorMetodoFiltrado: { [key: string]: number } = {};
-        abonosFiltrados.forEach(abono => {
+        abonosAUsar.forEach(abono => {
           const metodo = abono.metodo || 'Sin método';
           ingresosPorMetodoFiltrado[metodo] = (ingresosPorMetodoFiltrado[metodo] || 0) + (abono.monto || 0);
         });
         
-        // Actualizar responseData con los datos filtrados
-        responseData.abonos = abonosFiltrados;
+        // Actualizar responseData con los datos
+        responseData.abonos = abonosAUsar;
         responseData.total_ingresos = totalIngresosFiltrado;
         responseData.ingresos_por_metodo = ingresosPorMetodoFiltrado;
         
-        console.log('✅ Datos filtrados:', {
-          total_abonos_originales: responseData.abonos.length,
-          total_abonos_filtrados: abonosFiltrados.length,
-          total_ingresos: totalIngresosFiltrado,
-          rango: `${fechaInicio} - ${fechaFin}`
-        });
+        if (abonosFiltrados.length === 0 && abonosOriginales.length > 0) {
+          console.log('ℹ️ El backend ya filtró los datos. Usando los recibidos del backend.');
+        }
+      } else {
+        console.warn('⚠️ No hay abonos en la respuesta o no es un array:', responseData);
       }
       
       setData(responseData);
