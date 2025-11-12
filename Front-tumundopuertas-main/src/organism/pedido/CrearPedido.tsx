@@ -51,6 +51,7 @@ interface PedidoItem {
   detalleitem?: string;
   estado_item?: number; // 0 = pendiente, 4 = terminado
   imagenes?: string[]; // Imágenes del item
+  descuento?: number; // Descuento en monto ($)
 }
 
 interface PedidoSeguimiento {
@@ -101,6 +102,7 @@ type SelectedItem = {
   detalleitem?: string;
   showSuggestions?: boolean;
   confirmed?: boolean;
+  descuento?: number; // Descuento en monto ($)
 };
 
 const CrearPedido: React.FC = () => {
@@ -222,8 +224,13 @@ const CrearPedido: React.FC = () => {
 
   const totalMontoItems = useMemo(() => {
     return selectedItems.reduce(
-      (acc, item) =>
-        acc + (item.confirmed && item.precio ? item.cantidad * item.precio : 0),
+      (acc, item) => {
+        if (!item.confirmed || !item.precio) return acc;
+        const precioBase = item.precio;
+        const descuento = item.descuento || 0;
+        const precioConDescuento = Math.max(0, precioBase - descuento); // Precio no puede ser negativo
+        return acc + (item.cantidad * precioConDescuento);
+      },
       0
     );
   }, [selectedItems]);
@@ -317,7 +324,7 @@ const CrearPedido: React.FC = () => {
 
   const handleItemChange = (
     index: number,
-    field: "itemId" | "cantidad" | "search" | "precio" | "detalleitem",
+    field: "itemId" | "cantidad" | "search" | "precio" | "detalleitem" | "descuento",
     value: number | string
   ) => {
     setSelectedItems((prev) => {
@@ -536,6 +543,7 @@ const CrearPedido: React.FC = () => {
           detalleitem: item.detalleitem || "",
           imagenes: itemData.imagenes ?? [],
           estado_item: 0,
+          descuento: item.descuento || 0,
         });
         return;
       }
@@ -557,6 +565,7 @@ const CrearPedido: React.FC = () => {
           detalleitem: item.detalleitem || "",
           imagenes: itemData.imagenes ?? [],
           estado_item: 4,
+          descuento: item.descuento || 0,
         });
       }
 
@@ -578,6 +587,7 @@ const CrearPedido: React.FC = () => {
           detalleitem: item.detalleitem || "",
           imagenes: itemData.imagenes ?? [],
           estado_item: 0,
+          descuento: item.descuento || 0,
         });
       }
     });
@@ -1171,7 +1181,7 @@ const CrearPedido: React.FC = () => {
                     className="grid grid-cols-1 md:grid-cols-12 gap-4 items-start border p-4 rounded-xl bg-gray-50 shadow-sm hover:shadow-md transition"
                   >
                     {/* Buscador */}
-                    <div className="col-span-1 md:col-span-7 relative">
+                    <div className="col-span-1 md:col-span-5 relative">
                       <div className="relative">
                         <FaSearch className="absolute left-3 top-3 text-gray-400" />
                         <Input
@@ -1332,6 +1342,39 @@ const CrearPedido: React.FC = () => {
                       />
                     </div>
 
+                    {/* Descuento */}
+                    <div className="col-span-1 md:col-span-2">
+                      <Label className="block text-xs text-gray-600 mb-1">
+                        Descuento ($)
+                      </Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min={0}
+                          step="0.01"
+                          max={item.precio || 0}
+                          value={item.descuento ?? ""}
+                          onChange={(e) => {
+                            const descuentoValue = Number(e.target.value);
+                            const precioMax = item.precio || 0;
+                            // Limitar el descuento al precio máximo
+                            const descuentoFinal = Math.min(descuentoValue, precioMax);
+                            handleItemChange(idx, "descuento", descuentoFinal);
+                          }}
+                          disabled={!item.confirmed}
+                          className="w-24 focus:ring-2 focus:ring-orange-400"
+                          placeholder="0.00"
+                        />
+                        {item.confirmed && item.precio && item.precio > 0 && (
+                          <span className="text-xs text-gray-500 whitespace-nowrap">
+                            {item.descuento && item.descuento > 0
+                              ? `(${((item.descuento / item.precio) * 100).toFixed(1)}%)`
+                              : "(0%)"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
                     {/* Quitar */}
                     <div className="col-span-1 md:col-span-1 flex justify-end">
                       <Button
@@ -1344,6 +1387,29 @@ const CrearPedido: React.FC = () => {
                         <FaTrashRestore />
                       </Button>
                     </div>
+
+                    {/* Precio con descuento aplicado - Información */}
+                    {item.confirmed && item.precio && (
+                      <div className="col-span-1 md:col-span-12">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-gray-600">Precio original:</span>
+                          <span className="font-semibold text-gray-800">${item.precio.toFixed(2)}</span>
+                          {item.descuento && item.descuento > 0 && (
+                            <>
+                              <span className="text-gray-400">-</span>
+                              <span className="text-red-600 font-semibold">${item.descuento.toFixed(2)}</span>
+                              <span className="text-gray-400">=</span>
+                              <span className="font-bold text-green-600">
+                                ${(item.precio - item.descuento).toFixed(2)} c/u
+                              </span>
+                              <span className="text-gray-500">
+                                (Total: ${((item.precio - item.descuento) * item.cantidad).toFixed(2)})
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Detalle */}
                     <div className="col-span-1 md:col-span-12">
@@ -1718,16 +1784,30 @@ const CrearPedido: React.FC = () => {
                           const itemData = Array.isArray(itemsData)
                             ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
                             : undefined;
+                          const precioBase = item.precio || 0;
+                          const descuento = item.descuento || 0;
+                          const precioConDescuento = Math.max(0, precioBase - descuento);
+                          const totalItem = precioConDescuento * item.cantidad;
                           return (
                             <div key={idx} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <p className="text-sm font-semibold text-gray-800">{itemData?.nombre || item.search}</p>
                                   <p className="text-xs text-gray-600">Cód: {itemData?.codigo}</p>
+                                  {descuento > 0 && (
+                                    <p className="text-xs text-red-600 mt-1">
+                                      Descuento: ${descuento.toFixed(2)} ({((descuento / precioBase) * 100).toFixed(1)}%)
+                                    </p>
+                                  )}
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-sm font-bold text-blue-700">${((item.precio || 0) * item.cantidad).toFixed(2)}</p>
+                                  <p className="text-sm font-bold text-blue-700">${totalItem.toFixed(2)}</p>
                                   <p className="text-xs text-gray-500">x{item.cantidad}</p>
+                                  {descuento > 0 && (
+                                    <p className="text-xs text-gray-400 line-through">
+                                      ${(precioBase * item.cantidad).toFixed(2)}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                             </div>
