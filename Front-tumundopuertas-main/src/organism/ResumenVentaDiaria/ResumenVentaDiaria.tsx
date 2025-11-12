@@ -50,6 +50,15 @@ const ResumenVentaDiaria: React.FC = () => {
       return;
     }
     
+    // Validar que la fecha fin sea mayor o igual a la fecha inicio
+    const fechaInicioDate = new Date(fechaInicio);
+    const fechaFinDate = new Date(fechaFin);
+    
+    if (fechaFinDate < fechaInicioDate) {
+      setError("La fecha 'Hasta' debe ser mayor o igual a la fecha 'Desde'.");
+      return;
+    }
+    
     console.log('🔍 Iniciando consulta de resumen de venta diaria...');
     console.log('📅 Fechas seleccionadas (ISO):', { fechaInicio, fechaFin });
     
@@ -326,23 +335,56 @@ const ResumenVentaDiaria: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-          <Input
-            type="date"
-            value={fechaInicio}
-            onChange={(e) => setFechaInicio(e.target.value)}
-            className="sm:w-1/3"
-            placeholder="Fecha inicio"
-          />
-          <Input
-            type="date"
-            value={fechaFin}
-            onChange={(e) => setFechaFin(e.target.value)}
-            className="sm:w-1/3"
-            placeholder="Fecha fin"
-          />
-          <Button onClick={fetchVentaDiaria} className="sm:w-auto w-full">
-            Buscar
-          </Button>
+          <div className="sm:w-1/3 w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Desde
+            </label>
+            <Input
+              type="date"
+              value={fechaInicio}
+              onChange={(e) => {
+                setFechaInicio(e.target.value);
+                // Si la fecha fin es menor que la nueva fecha inicio, ajustarla
+                if (fechaFin && e.target.value && new Date(e.target.value) > new Date(fechaFin)) {
+                  setFechaFin(e.target.value);
+                }
+              }}
+              max={fechaFin || undefined}
+              className="w-full"
+              placeholder="Fecha inicio"
+            />
+          </div>
+          <div className="sm:w-1/3 w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Hasta
+            </label>
+            <Input
+              type="date"
+              value={fechaFin}
+              onChange={(e) => {
+                setFechaFin(e.target.value);
+                // Validar que la fecha fin sea mayor o igual a fecha inicio
+                if (fechaInicio && e.target.value && new Date(e.target.value) < new Date(fechaInicio)) {
+                  setError("La fecha 'Hasta' debe ser mayor o igual a la fecha 'Desde'.");
+                } else {
+                  setError(null);
+                }
+              }}
+              min={fechaInicio || undefined}
+              className="w-full"
+              placeholder="Fecha fin"
+            />
+          </div>
+          <div className="sm:w-auto w-full flex flex-col gap-2">
+            <Button onClick={fetchVentaDiaria} className="w-full" disabled={loading || !fechaInicio || !fechaFin}>
+              Buscar
+            </Button>
+            {fechaInicio && fechaFin && (
+              <p className="text-xs text-gray-500 text-center">
+                Rango: {new Date(fechaInicio).toLocaleDateString('es-ES')} - {new Date(fechaFin).toLocaleDateString('es-ES')}
+              </p>
+            )}
+          </div>
           <Button 
             onClick={fetchTodosLosDatos}
             variant="outline" 
@@ -353,16 +395,16 @@ const ResumenVentaDiaria: React.FC = () => {
             <Search className="w-4 h-4 mr-2" />
             Ver Todos
           </Button>
-          <Button 
-            onClick={probarEndpoints} 
-            variant="outline" 
-            className="sm:w-auto w-full"
-            title="Probar diferentes formatos de fecha"
-          >
-            <Search className="w-4 h-4 mr-2" />
-            Probar Formatos
-          </Button>
         </div>
+        
+        {/* Mensaje informativo sobre el rango de fechas */}
+        {fechaInicio && fechaFin && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>ℹ️ Rango de fechas seleccionado:</strong> Se mostrarán todas las ventas desde el <strong>{new Date(fechaInicio).toLocaleDateString('es-ES')}</strong> hasta el <strong>{new Date(fechaFin).toLocaleDateString('es-ES')}</strong> (ambos días incluidos).
+            </p>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex justify-center items-center py-8 text-gray-600">
