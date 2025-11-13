@@ -36,6 +36,8 @@ const DashboardAsignaciones: React.FC = () => {
   const [empleados, setEmpleados] = useState<any[]>([]);
   // Ref para mantener referencia actualizada de empleados sin causar re-renders
   const empleadosRef = useRef<any[]>([]);
+  // Ref para controlar si es la carga inicial (mostrar loading) o actualización silenciosa
+  const isInitialLoad = useRef(true);
   
   // Estados para el modal de PIN
   const [pinModal, setPinModal] = useState<{
@@ -77,8 +79,11 @@ const DashboardAsignaciones: React.FC = () => {
   }, []);
 
   // OPTIMIZACIÓN: Función memoizada para cargar asignaciones usando endpoint /pedidos/all/
-  const cargarAsignaciones = useCallback(async () => {
-    setLoading(true);
+  const cargarAsignaciones = useCallback(async (silent = false) => {
+    // Solo mostrar loading en la carga inicial, no en actualizaciones silenciosas
+    if (!silent && isInitialLoad.current) {
+      setLoading(true);
+    }
     setError(null);
     
     try {
@@ -231,6 +236,8 @@ const DashboardAsignaciones: React.FC = () => {
         });
         
         setAsignaciones(asignaciones);
+        // Marcar que la carga inicial ya terminó
+        isInitialLoad.current = false;
       } else {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
@@ -238,8 +245,12 @@ const DashboardAsignaciones: React.FC = () => {
     } catch (err: any) {
       setError(`Error al cargar asignaciones: ${err.message}`);
       setAsignaciones([]);
+      isInitialLoad.current = false;
     } finally {
-      setLoading(false);
+      // Solo ocultar loading si no es una actualización silenciosa
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, []); // Sin dependencias para evitar loops infinitos
 
@@ -267,27 +278,28 @@ const DashboardAsignaciones: React.FC = () => {
 
   // OPTIMIZACIÓN: Cargar datos en paralelo al montar el componente
   useEffect(() => {
-    // Cargar empleados primero, luego asignaciones
+    // Cargar empleados primero, luego asignaciones (carga inicial con loading)
     cargarEmpleados().then(() => {
-      // Después de cargar empleados, cargar asignaciones
-      cargarAsignaciones().catch(() => {
+      // Después de cargar empleados, cargar asignaciones (mostrar loading solo en inicial)
+      cargarAsignaciones(false).catch(() => {
         // Error silenciado para mejor rendimiento
       });
     }).catch(() => {
       // Si falla cargar empleados, intentar cargar asignaciones de todas formas
-      cargarAsignaciones().catch(() => {
+      cargarAsignaciones(false).catch(() => {
         // Error silenciado para mejor rendimiento
       });
     });
   }, []); // Solo ejecutar una vez al montar
 
   // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
+  // ACTUALIZACIÓN SILENCIOSA - sin mostrar loading
   useEffect(() => {
     const interval = setInterval(() => {
       cargarEmpleados().then(() => {
-        cargarAsignaciones();
+        cargarAsignaciones(true); // Actualización silenciosa
       }).catch(() => {
-        cargarAsignaciones(); // Intentar cargar asignaciones aunque falle empleados
+        cargarAsignaciones(true); // Actualización silenciosa aunque falle empleados
       });
     }, 10 * 60 * 1000); // 10 minutos en milisegundos
 
@@ -296,10 +308,11 @@ const DashboardAsignaciones: React.FC = () => {
   }, []); // Sin dependencias para evitar recrear el intervalo
 
   // NUEVO: Escuchar eventos de asignación realizada
+  // ACTUALIZACIÓN SILENCIOSA - sin mostrar loading
   useEffect(() => {
     const handleAsignacionRealizada = () => {
-      // Recargar asignaciones para mostrar la nueva asignación
-      cargarAsignaciones();
+      // Recargar asignaciones silenciosamente para mostrar la nueva asignación
+      cargarAsignaciones(true); // Actualización silenciosa
     };
 
     window.addEventListener('asignacionRealizada', handleAsignacionRealizada);
@@ -441,8 +454,8 @@ Verifica en el backend:
       setPinModal({ isOpen: false, asignacion: null });
       setPin("");
       
-      // Recargar asignaciones para actualizar la lista
-      await cargarAsignaciones();
+      // Recargar asignaciones silenciosamente para actualizar la lista
+      await cargarAsignaciones(true);
       
     } catch (error: any) {
       setMensaje("❌ Error al terminar la asignación: " + error.message);
@@ -460,13 +473,12 @@ Verifica en el backend:
         </div>
         <div className="flex gap-2">
           <Button
-            onClick={cargarAsignaciones}
-            disabled={loading}
+            onClick={() => cargarAsignaciones(true)}
             variant="outline"
             size="sm"
             className="flex items-center gap-2"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className="w-4 h-4" />
             Refrescar
           </Button>
         </div>
