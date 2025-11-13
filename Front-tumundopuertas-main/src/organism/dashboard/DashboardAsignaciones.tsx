@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,8 @@ const DashboardAsignaciones: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [empleados, setEmpleados] = useState<any[]>([]);
+  // Ref para mantener referencia actualizada de empleados sin causar re-renders
+  const empleadosRef = useRef<any[]>([]);
   
   // Estados para el modal de PIN
   const [pinModal, setPinModal] = useState<{
@@ -59,14 +61,18 @@ const DashboardAsignaciones: React.FC = () => {
         if (Array.isArray(empleadosArray)) {
           const empleadosActivos = empleadosArray.filter(emp => emp.activo !== false);
           setEmpleados(empleadosActivos);
+          empleadosRef.current = empleadosActivos; // Actualizar ref
         } else {
           setEmpleados([]);
+          empleadosRef.current = [];
         }
     } else {
         setEmpleados([]);
+        empleadosRef.current = [];
       }
     } catch (error) {
       setEmpleados([]);
+      empleadosRef.current = [];
     }
   }, []);
 
@@ -124,8 +130,9 @@ const DashboardAsignaciones: React.FC = () => {
                 // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada, tiene empleado asignado Y el módulo coincide
                 if (asignacion.estado === "en_proceso" && !estaTerminada && asignacion.empleadoId && moduloCoincide) {
                   
-                  // OPTIMIZACIÓN: Buscar empleado directamente (Map se crea una vez fuera del loop)
-                  const empleado = empleados.find(emp => 
+                  // OPTIMIZACIÓN: Usar ref para acceder a empleados sin causar re-renders
+                  // Esto evita loops infinitos de actualización
+                  const empleado = empleadosRef.current.find(emp => 
                     emp._id === asignacion.empleadoId || 
                     emp.identificador === asignacion.empleadoId ||
                     String(emp.identificador) === String(asignacion.empleadoId)
@@ -234,7 +241,7 @@ const DashboardAsignaciones: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [empleados]);
+  }, []); // Sin dependencias para evitar loops infinitos
 
   // Función helper para obtener módulo por estado_item
   const obtenerModuloPorEstadoItem = (estadoItem: number): string => {
@@ -260,27 +267,33 @@ const DashboardAsignaciones: React.FC = () => {
 
   // OPTIMIZACIÓN: Cargar datos en paralelo al montar el componente
   useEffect(() => {
-    // Cargar empleados y asignaciones en paralelo para mejor rendimiento
-    Promise.all([
-      cargarEmpleados().catch(() => {
-        // Error silenciado para mejor rendimiento
-      }),
+    // Cargar empleados primero, luego asignaciones
+    cargarEmpleados().then(() => {
+      // Después de cargar empleados, cargar asignaciones
       cargarAsignaciones().catch(() => {
         // Error silenciado para mejor rendimiento
-      })
-    ]);
-  }, [cargarEmpleados, cargarAsignaciones]);
+      });
+    }).catch(() => {
+      // Si falla cargar empleados, intentar cargar asignaciones de todas formas
+      cargarAsignaciones().catch(() => {
+        // Error silenciado para mejor rendimiento
+      });
+    });
+  }, []); // Solo ejecutar una vez al montar
 
   // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
   useEffect(() => {
     const interval = setInterval(() => {
-      cargarAsignaciones();
-      cargarEmpleados();
+      cargarEmpleados().then(() => {
+        cargarAsignaciones();
+      }).catch(() => {
+        cargarAsignaciones(); // Intentar cargar asignaciones aunque falle empleados
+      });
     }, 10 * 60 * 1000); // 10 minutos en milisegundos
 
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
-  }, [cargarAsignaciones, cargarEmpleados]);
+  }, []); // Sin dependencias para evitar recrear el intervalo
 
   // NUEVO: Escuchar eventos de asignación realizada
   useEffect(() => {
@@ -294,7 +307,7 @@ const DashboardAsignaciones: React.FC = () => {
     return () => {
       window.removeEventListener('asignacionRealizada', handleAsignacionRealizada);
     };
-  }, [cargarAsignaciones]);
+  }, []); // Sin dependencias - cargarAsignaciones es estable (sin dependencias)
 
   // Función para obtener color del módulo
   const obtenerColorModulo = (modulo: string) => {
