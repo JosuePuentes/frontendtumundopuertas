@@ -114,7 +114,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       }
 
       const data = await res.json();
-      console.log('📋 Asignaciones disponibles cargadas:', data);
       // Si funciona, asegurar que el endpoint está disponible
       setEndpointDisponible(true);
       return data;
@@ -248,7 +247,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       }
 
       const resultado = await res.json();
-      console.log('✅ Unidad asignada:', resultado);
 
       // Sincronizar con el backend (pero sin recargar la página)
       const data = await fetchAsignacionesDisponibles();
@@ -269,7 +267,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       // NO llamar a cargarEstadosItems() para evitar recargar toda la página
       setMessage(`✅ Unidad ${unidadIndex} asignada a ${empleadoNombre}`);
     } catch (err: any) {
-      console.error("❌ Error al asignar unidad:", err);
       setMessage(`❌ Error al asignar unidad: ${err.message}`);
       
       // Revertir actualización optimista en caso de error
@@ -317,7 +314,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       }
 
       const result = await res.json();
-      console.log("✅ Asignación terminada:", result);
 
       // Disparar evento para que PedidosHerreria recargue datos
       window.dispatchEvent(new CustomEvent('asignacionTerminada', {
@@ -339,7 +335,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       setMessage("✅ Asignación terminada exitosamente. El artículo ha avanzado al siguiente módulo.");
     } catch (err: any) {
       setMessage("❌ Error al terminar la asignación: " + (err.message || "Error desconocido"));
-      console.error("❌ Error al terminar asignación:", err);
     } finally {
       setLoading(false);
     }
@@ -377,7 +372,6 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
     
     // Si no se encuentra el empleado, intentar cargarlo del backend si es necesario
     // Por ahora, retornar el ID como fallback pero con un mensaje más claro
-    console.warn('⚠️ Empleado no encontrado en lista local:', empleadoId, 'Total empleados:', empleados?.length || 0);
     return empleadoId; // Devolver el ID si no se encuentra
   };
 
@@ -618,8 +612,8 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
       
       <GestorEmpleadosAutomatico 
         empleados={empleados}
-        onEmpleadosChange={(nuevosEmpleados) => {
-          console.log('🔄 Empleados actualizados automáticamente:', nuevosEmpleados);
+        onEmpleadosChange={() => {
+          // Empleados actualizados automáticamente
         }}
       />
     </div>

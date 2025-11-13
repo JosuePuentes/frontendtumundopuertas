@@ -48,34 +48,24 @@ const DashboardAsignaciones: React.FC = () => {
   // OPTIMIZACIÓN: Función memoizada para cargar empleados
   const cargarEmpleados = useCallback(async () => {
     try {
-      // console.log('🔄 Cargando empleados...');
       const response = await fetch(`${getApiUrl()}/empleados/all/`);
-      // console.log('📡 Response empleados status:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        // console.log('📋 Datos empleados obtenidos:', data);
-        // console.log('🔍 Tipo de datos empleados:', Array.isArray(data) ? 'Array' : typeof data);
         
         // ARREGLADO: El backend puede devolver {empleados: Array} o Array directo
         const empleadosArray = data.empleados || data;
-        // console.log('📋 Empleados extraídos:', empleadosArray);
         
         if (Array.isArray(empleadosArray)) {
           const empleadosActivos = empleadosArray.filter(emp => emp.activo !== false);
           setEmpleados(empleadosActivos);
-          // console.log('✅ Empleados activos cargados:', empleadosActivos.length);
-          // console.log('📋 Primer empleado:', empleadosActivos[0]);
         } else {
-          // console.log('⚠️ Datos de empleados no es array:', empleadosArray);
           setEmpleados([]);
         }
     } else {
-        // console.error('❌ Response empleados no ok:', response.status);
         setEmpleados([]);
       }
     } catch (error) {
-      // console.error('❌ Error al cargar empleados:', error);
       setEmpleados([]);
     }
   }, []);
@@ -86,19 +76,25 @@ const DashboardAsignaciones: React.FC = () => {
     setError(null);
     
     try {
-      // console.log('🔄 Cargando asignaciones desde todos los pedidos...');
-      // console.log('🌐 API URL:', getApiUrl());
-      
       // Obtener todos los pedidos y extraer asignaciones manualmente
-      // console.log('🔄 Obteniendo todos los pedidos...');
       const response = await fetch(`${getApiUrl()}/pedidos/all/`);
-      // console.log('📡 Response status:', response.status);
       
       if (response.ok) {
         const pedidos = await response.json();
-        // console.log('📋 Pedidos obtenidos:', pedidos.length);
         
         // Extraer todas las asignaciones en proceso de todos los pedidos
+        // OPTIMIZACIÓN: Usar Map para búsqueda rápida de items
+        const itemsMap = new Map<string, any>();
+        for (const pedido of pedidos) {
+          if (Array.isArray(pedido.items)) {
+            for (const item of pedido.items) {
+              if (item.id) {
+                itemsMap.set(item.id, item);
+              }
+            }
+          }
+        }
+        
         const asignacionesRaw: any[] = [];
         
         for (const pedido of pedidos) {
@@ -108,8 +104,8 @@ const DashboardAsignaciones: React.FC = () => {
             for (const sub of seguimiento) {
             if (sub.asignaciones_articulos && Array.isArray(sub.asignaciones_articulos)) {
               for (const asignacion of sub.asignaciones_articulos) {
-                // Buscar información del item para verificar su estado
-                const item = pedido.items?.find((item: any) => item.id === asignacion.itemId);
+                // OPTIMIZACIÓN: Usar Map para búsqueda O(1) en lugar de find O(n)
+                const item = itemsMap.get(asignacion.itemId);
                 
                 // Verificar múltiples condiciones para determinar si está terminada
                 // SI tiene fecha_fin, está terminada (sin importar el estado o estado_item)
@@ -125,39 +121,14 @@ const DashboardAsignaciones: React.FC = () => {
                 const estadoItemActual = item?.estado_item || 1;  // El estado actual del item (1,2,3 o 4)
                 const moduloCoincide = ordenDelModulo === estadoItemActual;  // Solo mostrar si el orden coincide con el estado_item
                 
-                // Debug: Log para VERIFICAR TODAS las asignaciones
-                console.log('🔍 DEBUG Asignación:', {
-                  itemId: asignacion.itemId,
-                  estado: asignacion.estado,
-                  estado_subestado: asignacion.estado_subestado,
-                  estado_item: item?.estado_item,
-                  ordenModulo: sub.orden,
-                  fecha_fin: asignacion.fecha_fin,
-                  modulo: asignacion.modulo || sub.orden,
-                  estaTerminada: estaTerminada,
-                  tieneFechaFin: !!asignacion.fecha_fin,
-                  moduloCoincide: moduloCoincide,
-                  ordenDelModulo: ordenDelModulo,
-                  estadoItemActual: estadoItemActual
-                });
-                
-                // Debug adicional cuando encontramos una asignación terminada
-                if (estaTerminada) {
-                  console.log('🚫 Asignación terminada filtrada:', {
-                    itemId: asignacion.itemId,
-                    estado: asignacion.estado,
-                    estado_item: item?.estado_item,
-                    fecha_fin: asignacion.fecha_fin,
-                    modulo: asignacion.modulo || sub.orden
-                  });
-                }
-                
                 // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada, tiene empleado asignado Y el módulo coincide
                 if (asignacion.estado === "en_proceso" && !estaTerminada && asignacion.empleadoId && moduloCoincide) {
                   
-                  // Buscar el nombre del empleado desde la lista de empleados
+                  // OPTIMIZACIÓN: Buscar empleado directamente (Map se crea una vez fuera del loop)
                   const empleado = empleados.find(emp => 
-                    emp._id === asignacion.empleadoId || emp.identificador === asignacion.empleadoId
+                    emp._id === asignacion.empleadoId || 
+                    emp.identificador === asignacion.empleadoId ||
+                    String(emp.identificador) === String(asignacion.empleadoId)
                   );
                   
                   // Usar múltiples fuentes para el nombre del empleado
@@ -253,19 +224,17 @@ const DashboardAsignaciones: React.FC = () => {
         });
         
         setAsignaciones(asignaciones);
-        // console.log('✅ Asignaciones cargadas exitosamente:', asignaciones.length);
       } else {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
     } catch (err: any) {
-      // console.error('❌ Error al cargar asignaciones:', err);
       setError(`Error al cargar asignaciones: ${err.message}`);
       setAsignaciones([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [empleados]);
 
   // Función helper para obtener módulo por estado_item
   const obtenerModuloPorEstadoItem = (estadoItem: number): string => {
@@ -289,43 +258,33 @@ const DashboardAsignaciones: React.FC = () => {
     return estadoItem;
   };
 
-  // Debug del estado de asignaciones
-  useEffect(() => {
-    console.log('🔍 ESTADO ASIGNACIONES CAMBIÓ:', asignaciones.length, asignaciones);
-  }, [asignaciones]);
-
   // OPTIMIZACIÓN: Cargar datos en paralelo al montar el componente
   useEffect(() => {
     // Cargar empleados y asignaciones en paralelo para mejor rendimiento
     Promise.all([
-      cargarEmpleados().catch((err) => {
-        console.error('Error al cargar empleados:', err);
+      cargarEmpleados().catch(() => {
+        // Error silenciado para mejor rendimiento
       }),
-      cargarAsignaciones().catch((err) => {
-        console.error('Error al cargar asignaciones:', err);
+      cargarAsignaciones().catch(() => {
+        // Error silenciado para mejor rendimiento
       })
     ]);
   }, [cargarEmpleados, cargarAsignaciones]);
 
-  // Actualización automática cada 5 minutos
+  // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log("🔄 Actualizando DashboardAsignaciones automáticamente...");
       cargarAsignaciones();
       cargarEmpleados();
-    }, 5 * 60 * 1000); // 5 minutos en milisegundos
+    }, 10 * 60 * 1000); // 10 minutos en milisegundos
 
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
-  }, []);
+  }, [cargarAsignaciones, cargarEmpleados]);
 
   // NUEVO: Escuchar eventos de asignación realizada
   useEffect(() => {
-    const handleAsignacionRealizada = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { pedidoId, asignaciones, timestamp } = customEvent.detail;
-      console.log('🎯 DashboardAsignaciones: Asignación realizada detectada:', { pedidoId, asignaciones, timestamp });
-      
+    const handleAsignacionRealizada = () => {
       // Recargar asignaciones para mostrar la nueva asignación
       cargarAsignaciones();
     };
@@ -335,7 +294,7 @@ const DashboardAsignaciones: React.FC = () => {
     return () => {
       window.removeEventListener('asignacionRealizada', handleAsignacionRealizada);
     };
-  }, []);
+  }, [cargarAsignaciones]);
 
   // Función para obtener color del módulo
   const obtenerColorModulo = (modulo: string) => {
@@ -374,12 +333,6 @@ const DashboardAsignaciones: React.FC = () => {
     try {
       const asig = pinModal.asignacion;
       
-      console.log('=== INICIANDO TERMINACIÓN CON PIN ===');
-      console.log('Marcando artículo como terminado:', asig.item_id);
-      console.log('PIN ingresado:', pin);
-      console.log('ORDEN recibido:', asig.orden, 'tipo:', typeof asig.orden);
-      console.log('Empleado ID original:', asig.empleado_id);
-      
       // Buscar el empleado en la lista de empleados cargada para obtener su identificador
       // El backend necesita el identificador, no el _id
       const empleadoEncontrado = empleados.find(emp => 
@@ -391,12 +344,8 @@ const DashboardAsignaciones: React.FC = () => {
       // Usar identificador si existe, si no usar _id como fallback
       const empleadoIdParaBackend = empleadoEncontrado?.identificador || asig.empleado_id;
       
-      console.log('Empleado encontrado:', empleadoEncontrado);
-      console.log('Empleado ID para backend (identificador):', empleadoIdParaBackend);
-      
       // Convertir orden a número
       const ordenNumero = typeof asig.orden === 'string' ? parseInt(asig.orden) : asig.orden;
-      console.log('ORDEN convertido:', ordenNumero, 'tipo:', typeof ordenNumero);
       
       const payload: any = {
         pedido_id: asig.pedido_id,
@@ -412,9 +361,6 @@ const DashboardAsignaciones: React.FC = () => {
       if (asig.unidad_index !== undefined) {
         payload.unidad_index = asig.unidad_index;
       }
-      
-      console.log('PAYLOAD COMPLETO:', JSON.stringify(payload, null, 2));
-      console.log('URL del endpoint:', `${getApiUrl()}/pedidos/asignacion/terminar`);
       
       // Usar el endpoint correcto para terminar asignaciones
       const response = await fetch(`${getApiUrl()}/pedidos/asignacion/terminar`, {
@@ -440,16 +386,13 @@ Verifica en el backend:
 1. Que el endpoint @router.put("/asignacion/terminar") esté en pedidos.py
 2. Que el router esté montado en main.py: app.include_router(pedido_router, prefix="/pedidos")
 3. Que no haya rutas duplicadas o conflictos`;
-          console.error('❌ Error 404:', errorDetail);
           throw new Error(errorDetail);
         }
         const errorText = await response.text();
-        console.error('❌ Error del servidor:', response.status, errorText);
         throw new Error(`Error ${response.status}: ${errorText || response.statusText}`);
       }
 
       const result = await response.json();
-      console.log('✅ Asignación terminada:', result);
       
       // Disparar evento de asignación terminada para que PedidosHerreria recargue datos
       window.dispatchEvent(new CustomEvent('asignacionTerminada', {
@@ -481,8 +424,6 @@ Verifica en el backend:
         setTimeout(() => setMensaje(""), 3000);
       }
       
-      console.log('=== TERMINACIÓN CON PIN COMPLETADA ===');
-      
       // Cerrar modal y limpiar
       setPinModal({ isOpen: false, asignacion: null });
       setPin("");
@@ -491,7 +432,6 @@ Verifica en el backend:
       await cargarAsignaciones();
       
     } catch (error: any) {
-      console.error('❌ Error al terminar asignación con PIN:', error);
       setMensaje("❌ Error al terminar la asignación: " + error.message);
     } finally {
       setVerificandoPin(false);

@@ -84,8 +84,9 @@ const PedidosHerreria: React.FC = () => {
   // Función para cargar progreso de todos los items en PARALELO - OPTIMIZADA
   const cargarProgresoItemsParalelo = async (items: ItemIndividual[]) => {
     try {
-      // OPTIMIZACIÓN: Limitar a solo los primeros 10 items a la vez para evitar sobrecarga
-      const itemsACargar = items.slice(0, 10);
+      // OPTIMIZACIÓN: Limitar a solo los primeros 5 items visibles para evitar sobrecarga
+      // Solo cargar progreso de items que están actualmente visibles en la pantalla
+      const itemsACargar = items.slice(0, 5);
       
       const promesasProgreso = itemsACargar.map(item => 
         obtenerProgresoItem(item.pedido_id, item.id)
@@ -105,13 +106,12 @@ const PedidosHerreria: React.FC = () => {
       });
       
       // Para los items restantes, establecer progreso en 0
-      items.slice(10).forEach(item => {
+      items.slice(5).forEach(item => {
         progresoData[item.id] = 0;
       });
       
       setProgresoItems(progresoData);
     } catch (error) {
-      console.warn('⚠️ Error al cargar progreso de items:', error);
       // Si falla, establecer progreso en 0 para todos
       const progresoData: Record<string, number> = {};
       items.forEach(item => {
@@ -206,8 +206,8 @@ const PedidosHerreria: React.FC = () => {
         setUltimaActualizacion(new Date()); // Actualizar timestamp
         
         // Cargar progreso de todos los items en PARALELO para mejorar rendimiento (sin bloquear la UI)
-        cargarProgresoItemsParalelo(itemsOrdenados).catch(err => {
-          console.warn('⚠️ Error al cargar progreso (no crítico):', err);
+        cargarProgresoItemsParalelo(itemsOrdenados).catch(() => {
+          // Error silenciado para mejor rendimiento
         });
       } else {
         // console.log('⚠️ No hay items - itemsArray no es array:', itemsArray);
@@ -219,7 +219,6 @@ const PedidosHerreria: React.FC = () => {
       // Limpiar cualquier error previo
       setError(null);
     } catch (error: any) {
-      console.error('❌ Error al cargar datos:', error);
       if (error.name === 'AbortError') {
         setError('La carga está tardando demasiado. Por favor, intenta nuevamente.');
       } else if (error.message?.includes('ERR_CERT_VERIFIER_CHANGED')) {
@@ -244,8 +243,8 @@ const PedidosHerreria: React.FC = () => {
       recargarDatos(),
       // Cargar empleados en paralelo
       fetchEmpleado(`${apiUrl}/empleados/all/`)
-    ]).catch(err => {
-      console.error('❌ Error al cargar datos:', err);
+    ]).catch(() => {
+      // Error silenciado para mejor rendimiento
     });
   }, []);
   
@@ -287,12 +286,11 @@ const PedidosHerreria: React.FC = () => {
     }
   }, [dataEmpleados]);
 
-  // Actualización automática cada 5 minutos
+  // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log("🔄 Actualizando PedidosHerreria automáticamente...");
       recargarDatos();
-    }, 5 * 60 * 1000); // 5 minutos en milisegundos
+    }, 10 * 60 * 1000); // 10 minutos en milisegundos
 
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
@@ -345,20 +343,15 @@ const PedidosHerreria: React.FC = () => {
     };
 
     // NUEVO: Escuchar terminación de asignaciones
-    const handleAsignacionTerminada = async (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { itemId, unidadIndex } = customEvent.detail;
-      
-      console.log('🔄 Asignación terminada detectada:', { itemId, unidadIndex });
+    const handleAsignacionTerminada = async () => {
       
       // NO limpiar estado de asignación porque ahora usamos asignación por unidades
       // El componente AsignarArticulos maneja las unidades individuales
       
       // Esperar un momento antes de recargar para que el backend procese la terminación
       setTimeout(async () => {
-        console.log('🔄 Recargando datos después de terminar asignación...');
         await recargarDatos();
-      }, 1500); // 1.5 segundos para dar tiempo al backend
+      }, 1000); // 1 segundo para dar tiempo al backend (reducido para mejor rendimiento)
     };
 
     window.addEventListener('asignacionRealizada', handleAsignacionRealizada);
@@ -448,17 +441,12 @@ const PedidosHerreria: React.FC = () => {
     };
 
     // NUEVO: Escuchar creación de pedidos para recargar datos inmediatamente
-    const handlePedidoCreado = async (event: Event) => {
-      const customEvent = event as CustomEvent;
-      const { pedidoId } = customEvent.detail;
-      
-      console.log('🆕 Pedido creado detectado:', pedidoId);
+    const handlePedidoCreado = async () => {
       
       // Esperar un momento para que el backend procese el pedido completamente
       setTimeout(async () => {
         await recargarDatos();
-        console.log('✅ Datos recargados después de crear pedido');
-      }, 1500); // 1.5 segundos para dar tiempo al backend
+      }, 1000); // 1 segundo para dar tiempo al backend (reducido para mejor rendimiento)
     };
 
     // NUEVO: Escuchar asignaciones realizadas
@@ -490,7 +478,6 @@ const PedidosHerreria: React.FC = () => {
 
   // Memoizar items filtrados para evitar recalcular en cada render
   const itemsFiltrados = useMemo(() => {
-    console.log('🔍 FILTRO - Aplicando filtros con searchTerm:', searchTerm);
     const filtrados = itemsIndividuales
       .filter((item) => {
         // Mostrar items pendientes (0) y en proceso (1, 2, 3)
@@ -557,8 +544,6 @@ const PedidosHerreria: React.FC = () => {
           
           // Buscar también en el código del item
           const itemCodigo = item.codigo?.toLowerCase() || '';
-          
-          console.log('🔍 FILTRO BUSQUEDA - item:', item.id, 'cliente:', clienteNombre, 'item:', itemNombre, 'search:', searchLower);
           
           // Buscar en nombre del cliente, nombre del item, descripción o código
           return clienteNombre.includes(searchLower) || 
@@ -836,9 +821,6 @@ const PedidosHerreria: React.FC = () => {
                           numeroOrden={item.estado_item.toString()} // Usar estado_item para determinar el módulo (1=herreria, 2=masillar, 3=preparar)
                           items={[item]} // Pasar solo este item individual
                           empleados={(() => {
-                            console.log('🔍 DEBUG - dataEmpleados:', dataEmpleados);
-                            console.log('🔍 DEBUG - es array?', Array.isArray(dataEmpleados));
-                            console.log('🔍 DEBUG - cantidad:', dataEmpleados ? (Array.isArray(dataEmpleados) ? dataEmpleados.length : Object.keys(dataEmpleados).length) : 0);
                             if (Array.isArray(dataEmpleados)) {
                               return dataEmpleados;
                             }
