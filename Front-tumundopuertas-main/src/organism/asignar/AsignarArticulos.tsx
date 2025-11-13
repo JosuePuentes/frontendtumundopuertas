@@ -246,7 +246,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         throw new Error(`Error ${res.status}: ${errorText}`);
       }
 
-      const resultado = await res.json();
+      await res.json(); // Respuesta del servidor
 
       // Sincronizar con el backend (pero sin recargar la página)
       const data = await fetchAsignacionesDisponibles();
@@ -313,7 +313,7 @@ const AsignarArticulos: React.FC<AsignarArticulosProps> = ({
         throw new Error(`Error ${res.status}: ${errorText}`);
       }
 
-      const result = await res.json();
+      await res.json(); // Respuesta del servidor
 
       // Disparar evento para que PedidosHerreria recargue datos
       window.dispatchEvent(new CustomEvent('asignacionTerminada', {
