@@ -425,8 +425,13 @@ const FacturacionPage: React.FC = () => {
               signal: AbortSignal.timeout(5000) // 5 segundos timeout
             });
             
-            // Calcular total de items
-            let montoItems = pedido.items?.reduce((acc: number, item: any) => acc + (item.precio || 0) * (item.cantidad || 0), 0) || 0;
+            // Calcular total de items considerando descuentos
+            let montoItems = pedido.items?.reduce((acc: number, item: any) => {
+              const precioBase = item.precio || 0;
+              const descuento = item.descuento || 0;
+              const precioConDescuento = Math.max(0, precioBase - descuento);
+              return acc + (precioConDescuento * (item.cantidad || 0));
+            }, 0) || 0;
             
             // Calcular total de adicionales
             const adicionalesRaw = pedido.adicionales;
@@ -451,8 +456,9 @@ const FacturacionPage: React.FC = () => {
                 historial_pagos: pagosData.historial_pagos
               });
               
-              // Si el backend ya incluye adicionales en total_pedido, usarlo; sino usar nuestro cálculo
-              montoTotal = pagosData.total_pedido || montoTotal;
+              // Usar siempre nuestro cálculo local que considera descuentos por item
+              // El backend podría no estar considerando descuentos en total_pedido
+              // montoTotal ya está calculado arriba considerando descuentos, mantenerlo
               montoAbonado = pagosData.total_abonado || 0;
               historialPagos = pagosData.historial_pagos || [];
               
@@ -2094,10 +2100,16 @@ const FacturacionPage: React.FC = () => {
                       <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                       <span className="text-center leading-tight">
                         {(() => {
-                          // Calcular el total incluyendo adicionales (mismo cálculo que Saldo Pendiente)
+                          // Calcular el total incluyendo adicionales y descuentos (mismo cálculo que Saldo Pendiente)
                           const adicionalesRawBtn = pedido.adicionales;
                           const adicionalesNormalizadosBtn = (adicionalesRawBtn && Array.isArray(adicionalesRawBtn)) ? adicionalesRawBtn : [];
-                          const montoItemsBtn = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+                          // Calcular items considerando descuentos
+                          const montoItemsBtn = pedido.items?.reduce((acc: number, item: any) => {
+                            const precioBase = item.precio || 0;
+                            const descuento = item.descuento || 0;
+                            const precioConDescuento = Math.max(0, precioBase - descuento);
+                            return acc + (precioConDescuento * (item.cantidad || 0));
+                          }, 0) || 0;
                           const montoAdicionalesBtn = adicionalesNormalizadosBtn.reduce((acc: number, ad: any) => {
                             const cantidad = ad.cantidad || 1;
                             const precio = ad.precio || 0;
