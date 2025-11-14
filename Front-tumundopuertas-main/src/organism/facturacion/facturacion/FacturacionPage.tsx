@@ -2114,23 +2114,11 @@ const FacturacionPage: React.FC = () => {
                       <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                       <span className="text-center leading-tight">
                         {(() => {
-                          // Calcular el total incluyendo adicionales y descuentos (mismo cálculo que Saldo Pendiente)
-                          const adicionalesRawBtn = pedido.adicionales;
-                          const adicionalesNormalizadosBtn = (adicionalesRawBtn && Array.isArray(adicionalesRawBtn)) ? adicionalesRawBtn : [];
-                          // Calcular items considerando descuentos
-                          const montoItemsBtn = pedido.items?.reduce((acc: number, item: any) => {
-                            const precioBase = item.precio || 0;
-                            const descuento = item.descuento || 0;
-                            const precioConDescuento = Math.max(0, precioBase - descuento);
-                            return acc + (precioConDescuento * (item.cantidad || 0));
-                          }, 0) || 0;
-                          const montoAdicionalesBtn = adicionalesNormalizadosBtn.reduce((acc: number, ad: any) => {
-                            const cantidad = ad.cantidad || 1;
-                            const precio = ad.precio || 0;
-                            return acc + (precio * cantidad);
-                          }, 0);
-                          const totalConAdicionalesBtn = montoItemsBtn + montoAdicionalesBtn;
-                          const saldoPendienteBtn = totalConAdicionalesBtn - (pedido.montoAbonado || 0);
+                          // Usar montoTotal del pedido que ya incluye descuentos y adicionales
+                          // Esto asegura consistencia con el cálculo de puedeFacturar
+                          const montoTotalPedido = pedido.montoTotal || 0;
+                          const montoAbonadoPedido = pedido.montoAbonado || 0;
+                          const saldoPendienteBtn = Math.max(0, montoTotalPedido - montoAbonadoPedido);
                           return pedido.puedeFacturar ? '✓ LISTO PARA FACTURAR' : `⚠️ Pendiente pago ($${saldoPendienteBtn.toFixed(2)})`;
                         })()}
                       </span>
