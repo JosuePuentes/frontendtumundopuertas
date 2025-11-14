@@ -76,7 +76,6 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
   const fetchProgresoPreciso = async () => {
     try {
       setLoadingProgreso(true);
-      console.log(`🔍 Obteniendo progreso preciso para pedido ${pedido._id}...`);
       
       const response = await fetch(`${getApiUrl()}/pedidos/progreso-pedido/${pedido._id}`, {
         method: 'GET',
@@ -92,7 +91,6 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       }
       
       const data = await response.json();
-      console.log('📊 Progreso preciso obtenido del backend:', data);
       
       // Agregar campos de compatibilidad si no existen
       const dataCompatible = {
@@ -104,11 +102,6 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       setProgresoBackend(dataCompatible);
       
     } catch (err: any) {
-      if (err.name === 'AbortError') {
-        console.warn(`⏰ Timeout al obtener progreso del pedido ${pedido._id} - usando progreso del hook`);
-      } else {
-        console.error('❌ Error al obtener progreso preciso:', err);
-      }
       // Mantener progreso del hook como fallback
     } finally {
       setLoadingProgreso(false);
@@ -126,18 +119,13 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
     setMensaje("");
 
     try {
-      console.log(`🚫 Cancelando pedido ${pedido._id} con motivo: ${motivoCancelacion}`);
-      
       // Verificar que el token existe
       const token = localStorage.getItem('access_token');
       if (!token) {
         throw new Error('No hay token de autenticación. Por favor, inicia sesión nuevamente.');
       }
       
-      console.log('🔑 Token encontrado');
-      
       // PASO 1: Limpiar todos los pagos del pedido antes de cancelar
-      console.log('🧹 Limpiando pagos del pedido...');
       try {
         const limpiarPagosResponse = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/limpiar-pagos`, {
           method: 'DELETE',
@@ -148,11 +136,9 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
         });
         
         if (limpiarPagosResponse.ok) {
-          const limpiarResult = await limpiarPagosResponse.json();
-          console.log('✅ Pagos limpiados:', limpiarResult);
+          await limpiarPagosResponse.json();
         } else {
           // Si el endpoint no existe, intentar limpiar manualmente
-          console.warn('⚠️ Endpoint de limpiar pagos no disponible, intentando limpiar manualmente...');
           const limpiarManualResponse = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/pago`, {
             method: 'PATCH',
             headers: {
@@ -165,24 +151,18 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
             })
           });
           
-          if (limpiarManualResponse.ok) {
-            console.log('✅ Pagos limpiados manualmente');
-          } else {
-            console.warn('⚠️ No se pudieron limpiar los pagos, pero continuando con la cancelación');
+          if (!limpiarManualResponse.ok) {
+            // Continuar con cancelación aunque no se pudieron limpiar pagos
           }
         }
       } catch (error) {
-        console.warn('⚠️ Error al limpiar pagos (continuando con cancelación):', error);
+        // Continuar con cancelación aunque haya error al limpiar pagos
       }
       
       // PASO 2: Cancelar el pedido
-      console.log('📤 Cancelando pedido...');
       const requestBody = {
         motivo_cancelacion: motivoCancelacion
       };
-      
-      console.log('📤 Datos enviados:', requestBody);
-      console.log('📤 URL:', `${getApiUrl()}/pedidos/cancelar/${pedido._id}`);
       
       const response = await fetch(`${getApiUrl()}/pedidos/cancelar/${pedido._id}`, {
         method: 'PUT',
@@ -192,16 +172,12 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
         },
         body: JSON.stringify(requestBody)
       });
-      
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         // Obtener detalles del error del backend
         let errorDetails = '';
         try {
           const errorData = await response.json();
-          console.log('📋 Error details from backend:', errorData);
           
           // Manejar diferentes formatos de error del backend
           if (errorData.detail) {
@@ -221,17 +197,14 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
           } else if (errorData.error) {
             errorDetails = errorData.error;
           }
-          
-          console.log('🔍 Error details parsed:', errorDetails);
         } catch (e) {
-          console.log('⚠️ No se pudo parsear el error del backend');
+          // No se pudo parsear el error del backend
         }
         
         throw new Error(`Error ${response.status}: ${response.statusText}${errorDetails ? ' - ' + errorDetails : ''}`);
       }
 
-      const result = await response.json();
-      console.log('✅ Pedido cancelado exitosamente:', result);
+      await response.json();
       
       setMensaje("✅ Pedido cancelado exitosamente");
       setCancelModal(false);
@@ -252,13 +225,10 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       }));
       
     } catch (error: any) {
-      console.error('❌ Error al cancelar pedido:', error);
       if (error.message.includes('401') || error.message.includes('Unauthorized')) {
         setMensaje('❌ Error de autenticación. Verifica tu sesión o contacta al administrador.');
-        console.log('🔍 Token actual:', localStorage.getItem('access_token')?.substring(0, 20) + '...');
       } else if (error.message.includes('422')) {
         setMensaje('❌ Error 422: Datos inválidos. Verifica que el motivo de cancelación no esté vacío y que el pedido sea cancelable.');
-        console.log('🔍 Posibles causas: motivo vacío, pedido no cancelable, formato incorrecto');
       } else if (error.message.includes('400')) {
         setMensaje('❌ Este pedido no se puede cancelar en su estado actual');
       } else if (error.message.includes('403')) {
@@ -286,7 +256,6 @@ const PedidoConProgreso: React.FC<PedidoConProgresoProps> = ({
       
       // Solo actualizar si el cambio es relevante para este pedido
       if (evento.pedidoId === pedido._id) {
-        console.log(`🔄 PedidoConProgreso: Cambio de estado detectado para pedido ${pedido._id}`, evento);
         await fetchProgresoPreciso();
       }
     };
