@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,9 +56,14 @@ const FacturacionPage: React.FC = () => {
   const [busquedaCliente, setBusquedaCliente] = useState<string>("");
   const [busquedaFacturas, setBusquedaFacturas] = useState<string>("");
   const [dropdownFacturasOpen, setDropdownFacturasOpen] = useState<boolean>(false);
+  // Ref para controlar si es la carga inicial (mostrar loading) o actualización silenciosa
+  const isInitialLoad = useRef(true);
 
-  const fetchPedidosFacturacion = async () => {
-    setLoading(true);
+  const fetchPedidosFacturacion = async (silent = false) => {
+    // Solo mostrar loading en la carga inicial, no en actualizaciones silenciosas
+    if (!silent && isInitialLoad.current) {
+      setLoading(true);
+    }
     setError("");
     try {
       // OPTIMIZACIÓN: Cargar pedidos orden4 y todos los pedidos en paralelo
@@ -684,10 +689,16 @@ const FacturacionPage: React.FC = () => {
       console.log('📊 Pedidos ordenados por fecha (más reciente primero):', pedidosOrdenadosPorFecha.length);
       
       setFacturacion(pedidosOrdenadosPorFecha);
+      // Marcar que la carga inicial ya terminó
+      isInitialLoad.current = false;
     } catch (err: any) {
       setError(err.message || "Error desconocido");
+      isInitialLoad.current = false;
     } finally {
-      setLoading(false);
+      // Solo ocultar loading si no es una actualización silenciosa
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -848,16 +859,19 @@ const FacturacionPage: React.FC = () => {
 
   // Refetch pedidos cuando cambien las facturas confirmadas o pedidos cargados
   // para asegurar que el filtrado esté actualizado
+  // ACTUALIZACIÓN SILENCIOSA - sin mostrar loading (excepto primera vez)
   useEffect(() => {
-    fetchPedidosFacturacion();
+    // Si es la primera carga, mostrar loading; si no, actualización silenciosa
+    const isFirstLoad = isInitialLoad.current;
+    fetchPedidosFacturacion(!isFirstLoad); // Silenciosa solo si no es primera carga
   }, [facturasConfirmadas, pedidosCargadosInventario]);
 
-  // Actualización automática cada 5 minutos para "Pendientes de Facturar"
+  // Actualización automática cada 10 minutos para "Pendientes de Facturar"
+  // ACTUALIZACIÓN SILENCIOSA - sin mostrar loading
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log("🔄 Actualizando Facturación (Pendientes de Facturar) automáticamente...");
-      fetchPedidosFacturacion();
-    }, 5 * 60 * 1000); // 5 minutos en milisegundos
+      fetchPedidosFacturacion(true); // Actualización silenciosa
+    }, 10 * 60 * 1000); // 10 minutos en milisegundos
 
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
