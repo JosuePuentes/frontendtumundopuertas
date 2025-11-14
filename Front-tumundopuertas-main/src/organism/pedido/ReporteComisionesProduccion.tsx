@@ -74,10 +74,21 @@ const ReporteComisionesProduccion: React.FC = () => {
     fetchEmpleados();
   }, []);
 
+  // OPTIMIZACIÓN: Filtrar permisos para mostrar solo los módulos relevantes
+  // Solo mostrar: herreria, masillar, preparar, ayudante
   const permisosUnicos = useMemo(() => {
-    return Array.from(
+    const todosPermisos = Array.from(
       new Set(empleados.flatMap((empleado) => empleado.permisos || []))
     );
+    // Filtrar solo los permisos relevantes para producción
+    const permisosRelevantes = todosPermisos.filter(permiso => {
+      const permisoLower = permiso.toLowerCase();
+      return permisoLower === 'herreria' || 
+             permisoLower === 'masillar' || 
+             permisoLower === 'preparar' || 
+             permisoLower === 'ayudante';
+    });
+    return permisosRelevantes;
   }, [empleados]);
   
   const [permisosSeleccionados, setPermisosSeleccionados] = useState<string[]>([]);
