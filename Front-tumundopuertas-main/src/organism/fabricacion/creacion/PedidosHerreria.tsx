@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -42,6 +42,8 @@ const PedidosHerreria: React.FC = () => {
   const [ultimaActualizacion, setUltimaActualizacion] = useState<Date>(new Date());
   const [loading, setLoading] = useState<boolean>(false);
   const { dataEmpleados, fetchEmpleado } = useEmpleado();
+  // Ref para controlar si es la carga inicial (mostrar loading) o actualización silenciosa
+  const isInitialLoad = useRef(true);
   
   // Estado para mostrar notificaciones de asignación
   const [notificacionAsignacion, setNotificacionAsignacion] = useState<{
@@ -142,8 +144,11 @@ const PedidosHerreria: React.FC = () => {
   };
 
   // Función para recargar datos - NUEVA ESTRUCTURA: Items individuales
-  const recargarDatos = async () => {
-    setLoading(true);
+  const recargarDatos = async (silent = false) => {
+    // Solo mostrar loading en la carga inicial, no en actualizaciones silenciosas
+    if (!silent && isInitialLoad.current) {
+      setLoading(true);
+    }
     try {
       const urlFiltro = construirUrlFiltro();
       
@@ -209,9 +214,12 @@ const PedidosHerreria: React.FC = () => {
         cargarProgresoItemsParalelo(itemsOrdenados).catch(() => {
           // Error silenciado para mejor rendimiento
         });
+        // Marcar que la carga inicial ya terminó
+        isInitialLoad.current = false;
       } else {
         // console.log('⚠️ No hay items - itemsArray no es array:', itemsArray);
         setItemsIndividuales([]);
+        isInitialLoad.current = false;
       }
       
       // EMPLEADOS: Se cargan en paralelo en el useEffect inicial, no aquí
@@ -219,6 +227,7 @@ const PedidosHerreria: React.FC = () => {
       // Limpiar cualquier error previo
       setError(null);
     } catch (error: any) {
+      isInitialLoad.current = false;
       if (error.name === 'AbortError') {
         setError('La carga está tardando demasiado. Por favor, intenta nuevamente.');
       } else if (error.message?.includes('ERR_CERT_VERIFIER_CHANGED')) {
@@ -229,7 +238,10 @@ const PedidosHerreria: React.FC = () => {
         setError('Error al cargar los datos. Por favor, intenta nuevamente.');
       }
     } finally {
-      setLoading(false);
+      // Solo ocultar loading si no es una actualización silenciosa
+      if (!silent) {
+        setLoading(false);
+      }
     }
   };
 
@@ -287,9 +299,10 @@ const PedidosHerreria: React.FC = () => {
   }, [dataEmpleados]);
 
   // Actualización automática cada 10 minutos (reducido para mejor rendimiento)
+  // ACTUALIZACIÓN SILENCIOSA - sin mostrar loading
   useEffect(() => {
     const interval = setInterval(() => {
-      recargarDatos();
+      recargarDatos(true); // Actualización silenciosa
     }, 10 * 60 * 1000); // 10 minutos en milisegundos
 
     // Limpiar el intervalo cuando el componente se desmonte
@@ -338,8 +351,8 @@ const PedidosHerreria: React.FC = () => {
         return nuevosItems;
       });
       
-      // También recargar datos del backend para sincronizar
-      await recargarDatos();
+      // También recargar datos del backend para sincronizar (silenciosa)
+      await recargarDatos(true); // Actualización silenciosa
     };
 
     // NUEVO: Escuchar terminación de asignaciones
@@ -348,9 +361,9 @@ const PedidosHerreria: React.FC = () => {
       // NO limpiar estado de asignación porque ahora usamos asignación por unidades
       // El componente AsignarArticulos maneja las unidades individuales
       
-      // Esperar un momento antes de recargar para que el backend procese la terminación
+      // Esperar un momento antes de recargar para que el backend procese la terminación (silenciosa)
       setTimeout(async () => {
-        await recargarDatos();
+        await recargarDatos(true); // Actualización silenciosa
       }, 1000); // 1 segundo para dar tiempo al backend (reducido para mejor rendimiento)
     };
 
@@ -407,8 +420,8 @@ const PedidosHerreria: React.FC = () => {
       );
       
       if (esRelevante) {
-        // Recargar datos cuando hay un cambio de estado relevante
-        await recargarDatos();
+        // Recargar datos cuando hay un cambio de estado relevante (silenciosa)
+        await recargarDatos(true); // Actualización silenciosa
       }
     };
 
@@ -421,8 +434,8 @@ const PedidosHerreria: React.FC = () => {
       const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
       
       if (itemsDelPedido.length > 0) {
-        // Recargar datos para que los items del pedido cancelado desaparezcan
-        await recargarDatos();
+        // Recargar datos para que los items del pedido cancelado desaparezcan (silenciosa)
+        await recargarDatos(true); // Actualización silenciosa
       }
     };
 
@@ -435,17 +448,17 @@ const PedidosHerreria: React.FC = () => {
       const itemsDelPedido = itemsIndividuales.filter(item => item.pedido_id === pedidoId);
       
       if (itemsDelPedido.length > 0) {
-        // Recargar datos para que los items del pedido eliminado desaparezcan
-        await recargarDatos();
+        // Recargar datos para que los items del pedido eliminado desaparezcan (silenciosa)
+        await recargarDatos(true); // Actualización silenciosa
       }
     };
 
     // NUEVO: Escuchar creación de pedidos para recargar datos inmediatamente
     const handlePedidoCreado = async () => {
       
-      // Esperar un momento para que el backend procese el pedido completamente
+      // Esperar un momento para que el backend procese el pedido completamente (silenciosa)
       setTimeout(async () => {
-        await recargarDatos();
+        await recargarDatos(true); // Actualización silenciosa
       }, 1000); // 1 segundo para dar tiempo al backend (reducido para mejor rendimiento)
     };
 
