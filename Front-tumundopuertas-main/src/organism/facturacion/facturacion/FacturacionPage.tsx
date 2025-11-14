@@ -877,6 +877,23 @@ const FacturacionPage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Escuchar eventos de abono realizado para actualizar la lista
+  // ACTUALIZACIÓN SILENCIOSA - sin mostrar loading
+  useEffect(() => {
+    const handleAbonoRealizado = () => {
+      // Recargar pedidos silenciosamente cuando se hace un abono
+      fetchPedidosFacturacion(true); // Actualización silenciosa
+    };
+
+    window.addEventListener('abonoRealizado', handleAbonoRealizado);
+    window.addEventListener('pagoRealizado', handleAbonoRealizado);
+    
+    return () => {
+      window.removeEventListener('abonoRealizado', handleAbonoRealizado);
+      window.removeEventListener('pagoRealizado', handleAbonoRealizado);
+    };
+  }, []); // Sin dependencias - fetchPedidosFacturacion es estable
+
   // Filtrar pedidos por nombre de cliente en tiempo real y mantener orden por fecha más reciente
   const facturacionFiltrada = useMemo(() => {
     let pedidos = facturacion;
