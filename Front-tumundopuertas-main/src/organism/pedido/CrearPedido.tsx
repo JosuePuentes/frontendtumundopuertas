@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useMemo } from "react";
+import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import {
   FaPlus,
   FaClipboardList,
@@ -157,12 +157,11 @@ const CrearPedido: React.FC = () => {
         }
       }).then(res => res.json()).then(data => {
         setMetodosPago(data || []);
-      }).catch(err => {
-        console.error('Error cargando métodos de pago:', err);
+      }).catch(() => {
         setMetodosPago([]);
       })
-    ]).catch(err => {
-      console.error('Error cargando datos iniciales:', err);
+    ]).catch(() => {
+      // Error silencioso
     });
   }, []);
 
@@ -195,18 +194,14 @@ const CrearPedido: React.FC = () => {
     }
   }, [sucursal]);
 
-  // Actualización automática del inventario cada 5 minutos
+  // Actualización automática del inventario cada 10 minutos (silenciosa)
   useEffect(() => {
     if (!sucursal) return; // No hacer nada si no hay sucursal seleccionada
 
-    // Función para actualizar inventario
-    const actualizarInventario = () => {
-      console.log("🔄 Actualizando inventario automáticamente...");
+    // Configurar intervalo de 10 minutos (600000 ms) - reducido para mejor rendimiento
+    const intervalo = setInterval(() => {
       fetchItems(`${apiUrl}/inventario/all?sucursal=${sucursal}`);
-    };
-
-    // Configurar intervalo de 5 minutos (300000 ms)
-    const intervalo = setInterval(actualizarInventario, 5 * 60 * 1000);
+    }, 10 * 60 * 1000);
 
     // Limpiar intervalo al desmontar el componente o cambiar de sucursal
     return () => {
@@ -250,13 +245,40 @@ const CrearPedido: React.FC = () => {
     return totalMontoItems + totalAdicionales;
   }, [totalMontoItems, totalAdicionales]);
 
+  // OPTIMIZACIÓN: Memoizar clientes filtrados para búsqueda
+  const clientesFiltrados = useMemo(() => {
+    if (!Array.isArray(clientesData) || !clienteSearch.trim()) {
+      return [];
+    }
+    const search = clienteSearch.toLowerCase();
+    return (clientesData as any[]).filter((cliente: any) => {
+      if (!cliente) return false;
+      const nombre = cliente.nombre || '';
+      const rif = cliente.rif || '';
+      return (
+        nombre.toLowerCase().includes(search) ||
+        String(rif).toLowerCase().includes(search)
+      );
+    });
+  }, [clientesData, clienteSearch]);
+
+  // OPTIMIZACIÓN: Memoizar items como array para evitar conversiones repetidas
+  const itemsArray = useMemo(() => {
+    return Array.isArray(itemsData) ? (itemsData as any[]) : [];
+  }, [itemsData]);
+
+  // OPTIMIZACIÓN: Función para ordenar items por existencia (mayor existencia primero)
+  const ordenarItemsPorExistencia = useCallback((items: any[]) => {
+    return [...items].sort((a, b) => {
+      const existenciaA = a.existencia_sucursal ?? a.cantidad ?? 0;
+      const existenciaB = b.existencia_sucursal ?? b.cantidad ?? 0;
+      return existenciaB - existenciaA; // Mayor existencia primero
+    });
+  }, []);
+
   // === Handlers ===
   // @ts-ignore - Function is used in JSX but TypeScript doesn't detect it
-  const handleAddPago = () => {
-    console.log("handleAddPago llamado");
-    console.log("abono:", abono);
-    console.log("selectedMetodoPago:", selectedMetodoPago);
-    
+  const handleAddPago = useCallback(() => {
     if (abono <= 0) {
       setMensaje("El monto del abono debe ser mayor a cero.");
       setMensajeTipo("error");
@@ -289,12 +311,11 @@ const CrearPedido: React.FC = () => {
     // Agregar el pago al array
     setPagos([...pagos, newPago]);
     
-    console.log("Abono procesado:", { monto: abono, metodo: selectedMetodoPago });
     setMensaje(`✓ Pago de $${abono.toFixed(2)} agregado exitosamente. Total abonado: $${(totalAbonadoActual + abono).toFixed(2)}`);
     setMensajeTipo("success");
     setAbono(0);
     setSelectedMetodoPago("");
-  };
+  }, [abono, selectedMetodoPago, pagos, totalMonto]);
 
   // === Handlers ===
   const handleAddItem = () => {
@@ -442,9 +463,7 @@ const CrearPedido: React.FC = () => {
     let todosTienenExistencia = true;
 
     selectedItems.forEach((item) => {
-      const itemData = Array.isArray(itemsData)
-        ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
-        : undefined;
+      const itemData = itemsArray.find((it: any) => it._id === item.itemId);
       
       if (!itemData) return;
 
@@ -518,9 +537,7 @@ const CrearPedido: React.FC = () => {
 
     // Agregar los items al pedido
     itemsParaUsar.forEach((item) => {
-      const itemData = Array.isArray(itemsData)
-        ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
-        : undefined;
+      const itemData = itemsArray.find((it: any) => it._id === item.itemId);
       if (!itemData) return;
 
       const itemIdFinal = itemData._id ?? item.itemId;
@@ -615,61 +632,6 @@ const CrearPedido: React.FC = () => {
       })) : [],
     };
 
-    // Debug: Log del payload completo
-    console.log("🔍 DEBUG CREAR PEDIDO: Payload completo -", {
-      total_items: itemsPedido.length,
-      items_con_estado_4: itemsPedido.filter(i => i.estado_item === 4).length,
-      adicionales_count: adicionales.length,
-      adicionales_originales: adicionales, // Ver los adicionales originales
-      adicionales_en_payload: pedidoPayload.adicionales, // Ver qué se envía
-      items_con_estado_0: itemsPedido.filter(i => i.estado_item === 0).length,
-      items: itemsPedido.map(i => ({
-        nombre: i.nombre,
-        codigo: i.codigo,
-        id: i.id,
-        _id: i._id,
-        cantidad: i.cantidad,
-        estado_item: i.estado_item
-      })),
-      todos_items_disponibles: todosTienenExistencia
-    });
-
-    // Debug: Log del JSON serializado para ver exactamente qué se envía
-    const payloadSerializado = JSON.stringify(pedidoPayload, null, 2);
-    console.log("🔍 DEBUG CREAR PEDIDO: Payload serializado (JSON) -", payloadSerializado);
-    
-    // Debug específico para adicionales
-    if (adicionales.length > 0) {
-      console.log("💰 DEBUG CREAR PEDIDO: Adicionales detallados -", {
-        cantidad_adicionales: adicionales.length,
-        adicionales_originales: adicionales.map(ad => ({
-          descripcion: ad.descripcion,
-          precio: ad.precio,
-          cantidad: ad.cantidad || 1,
-          metodoPago: ad.metodoPago,
-          metodoPagoNombre: ad.metodoPagoNombre
-        })),
-        adicionales_para_enviar: pedidoPayload.adicionales?.map((ad: any) => ({
-          descripcion: ad.descripcion,
-          precio: ad.precio,
-          cantidad: ad.cantidad
-        })),
-        payload_tiene_adicionales: pedidoPayload.adicionales !== undefined,
-        payload_adicionales_count: pedidoPayload.adicionales?.length || 0
-      });
-    } else {
-      console.log("⚠️ DEBUG CREAR PEDIDO: No hay adicionales para enviar");
-    }
-    console.log("DEBUG CREAR PEDIDO: Items con estado_item = 4 (deben restarse del inventario):", 
-      itemsPedido.filter(i => i.estado_item === 4).map(i => ({
-        nombre: i.nombre,
-        codigo: i.codigo,
-        _id: i._id,
-        id: i.id,
-        cantidad: i.cantidad,
-        estado_item: i.estado_item
-      }))
-    );
 
     try {
       const resultado = await fetchPedido(`/pedidos/`, {
@@ -682,17 +644,6 @@ const CrearPedido: React.FC = () => {
         const pedidoData = resultado?.data || resultado;
         const pedidoId = pedidoData?._id || pedidoData?.id || pedidoData?.pedido?._id || pedidoData?.pedido?.id;
         
-        // Debug: Verificar qué devolvió el backend
-        console.log("✅ DEBUG CREAR PEDIDO: Respuesta del backend -", {
-          success: resultado?.success,
-          pedidoId: pedidoId,
-          pedidoData_completo: pedidoData,
-          adicionales_en_respuesta: pedidoData?.adicionales,
-          tipo_adicionales_respuesta: typeof pedidoData?.adicionales,
-          es_array_adicionales: Array.isArray(pedidoData?.adicionales),
-          cantidad_adicionales_respuesta: Array.isArray(pedidoData?.adicionales) ? pedidoData.adicionales.length : 'N/A'
-        });
-        
         // Registrar depósitos en métodos de pago para cada adicional
         if (adicionales.length > 0 && pedidoId) {
           const depositosPromesas = adicionales.map(async (adicional) => {
@@ -704,10 +655,6 @@ const CrearPedido: React.FC = () => {
               try {
                 // Concepto mejorado con ID del pedido para identificación en historial
                 const concepto = `Pedido ${pedidoId?.slice(-8) || 'N/A'} - Adicional: ${adicional.descripcion || 'Sin descripción'}`;
-                
-                console.log(`📝 Registrando depósito: $${montoAdicional.toFixed(2)} (precio: $${adicional.precio.toFixed(2)} x cantidad: ${cantidad}) en método ${adicional.metodoPago} (${adicional.metodoPagoNombre})`);
-                console.log(`📝 Concepto: ${concepto}`);
-                console.log(`📝 Pedido ID: ${pedidoId}`);
                 
                 const depositoRes = await fetch(`${apiUrl}/metodos-pago/${adicional.metodoPago}/deposito`, {
                   method: "POST",
@@ -722,54 +669,24 @@ const CrearPedido: React.FC = () => {
                 });
                 
                 if (depositoRes.ok) {
-                  const depositoData = await depositoRes.json();
-                  console.log(`✓ Adicional "${adicional.descripcion || 'Sin descripción'}" ($${montoAdicional.toFixed(2)}) registrado en método de pago ${adicional.metodoPagoNombre}`);
-                  console.log(`✓ Respuesta del backend:`, depositoData);
+                  await depositoRes.json();
                   return { success: true, adicional: adicional.descripcion || 'Sin descripción', monto: montoAdicional };
                 } else {
                   const errorText = await depositoRes.text();
-                  console.error(`✗ Error al registrar adicional "${adicional.descripcion || 'Sin descripción'}" en método de pago:`, depositoRes.status, errorText);
                   return { success: false, adicional: adicional.descripcion || 'Sin descripción', error: errorText };
                 }
               } catch (error: any) {
-                console.error(`✗ Error al registrar adicional "${adicional.descripcion || 'Sin descripción'}" en método de pago:`, error.message || error);
                 return { success: false, adicional: adicional.descripcion || 'Sin descripción', error: error.message || error };
               }
             } else {
-              console.warn(`⚠ Adicional "${adicional.descripcion || 'Sin descripción'}" no tiene método de pago o monto válido`);
               return null;
             }
           });
           
-          const resultadosDepositos = await Promise.all(depositosPromesas);
-          const exitosos = resultadosDepositos.filter(r => r !== null && r.success).length;
-          const fallidos = resultadosDepositos.filter(r => r !== null && !r.success).length;
-          const totalDepositado = resultadosDepositos
-            .filter(r => r !== null && r.success)
-            .reduce((acc, r) => acc + ((r?.monto || 0) || 0), 0);
-          
-          if (fallidos > 0) {
-            console.warn(`⚠ ${fallidos} adicional(es) no pudo(eron) registrarse en métodos de pago`);
-          } else if (exitosos > 0) {
-            console.log(`✓ ${exitosos} adicional(es) registrado(s) en métodos de pago (Total: $${totalDepositado.toFixed(2)})`);
-          }
+          await Promise.all(depositosPromesas);
         }
         
-        // Variable para acumular mensajes
-        const mensajesPartes: string[] = [];
-        
-        // Nota: El backend ahora registra automáticamente los pagos iniciales en el historial
-        // cuando se crea el pedido, por lo que no es necesario hacerlo manualmente aquí
-        if (pagos.length > 0) {
-          console.log(`✓ ${pagos.length} pago(s) inicial(es) procesado(s) por el backend`);
-        }
-        
-        // Construir mensaje final consolidado
-        let mensajeFinal = "✅ Pedido creado correctamente.";
-        if (mensajesPartes.length > 0) {
-          mensajeFinal = `✅ Pedido creado. ${mensajesPartes.join(', ')}.`;
-        }
-        setMensaje(mensajeFinal);
+        setMensaje("✅ Pedido creado correctamente.");
         setMensajeTipo("success");
         setClienteId(0);
         setClienteSearch("");
@@ -1051,22 +968,8 @@ const CrearPedido: React.FC = () => {
                             Error al cargar clientes
                           </div>
                         )}
-                        {Array.isArray(clientesData) &&
-                        (clientesData as any[]).length > 0 ? (
-                          (clientesData as any[])
-                            .filter((cliente: any) => {
-                              if (!cliente) return false;
-                              const search = clienteSearch.toLowerCase();
-                              const nombre = cliente.nombre || '';
-                              const rif = cliente.rif || '';
-                              return (
-                                nombre.toLowerCase().includes(search) ||
-                                String(rif)
-                                  .toLowerCase()
-                                  .includes(search)
-                              );
-                            })
-                            .map((cliente: any, idx: number) => (
+                        {clientesFiltrados.length > 0 ? (
+                          clientesFiltrados.map((cliente: any, idx: number) => (
                               <div
                                 key={`${cliente.rif}-${idx}`}
                                 onMouseDown={(ev) => {
@@ -1161,20 +1064,17 @@ const CrearPedido: React.FC = () => {
 
             <div className="space-y-4">
               {selectedItems.map((item, idx) => {
-                const filtered: any[] = Array.isArray(itemsData) 
-                  ? ordenarItemsPorExistencia(
-                      (itemsData as any[]).filter((it) => {
-                        if (!it || !it.nombre) return false;
-                        const searchTerm = item.search?.toLowerCase() || '';
-                        return it.nombre.toLowerCase().includes(searchTerm);
-                      })
-                    )
-                  : [];
+                // OPTIMIZACIÓN: Usar itemsArray memoizado en lugar de convertir repetidamente
+                const filtered: any[] = ordenarItemsPorExistencia(
+                  itemsArray.filter((it) => {
+                    if (!it || !it.nombre) return false;
+                    const searchTerm = item.search?.toLowerCase() || '';
+                    return it.nombre.toLowerCase().includes(searchTerm);
+                  })
+                );
 
                 // Buscar el itemData para mostrar imágenes
-                const itemData = Array.isArray(itemsData)
-                  ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
-                  : undefined;
+                const itemData = itemsArray.find((it: any) => it._id === item.itemId);
                 return (
                   <div
                     key={idx}
