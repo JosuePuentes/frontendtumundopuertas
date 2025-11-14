@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import PedidoConProgreso from "@/components/ui/PedidoConProgreso";
 
@@ -29,6 +29,7 @@ const MonitorPedidos: React.FC = () => {
   const [fechaFin, setFechaFin] = useState<string>("");
   const [shouldSearch, setShouldSearch] = useState(true); // Cargar automáticamente al inicio
   const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:8002").replace('http://', 'https://');
+  const isInitialLoad = useRef(true);
 
   const ordenMap: Record<string, string> = {
     orden1: "Herreria",
@@ -44,40 +45,51 @@ const MonitorPedidos: React.FC = () => {
   const [mostrarCompletados, setMostrarCompletados] = useState<boolean>(false);
   const [mostrarCancelados, setMostrarCancelados] = useState<boolean>(false);
 
+  // OPTIMIZACIÓN: fetchPedidos con useCallback para evitar recreaciones
+  const fetchPedidos = useCallback(async (silent = false) => {
+    // Solo mostrar loading en la carga inicial, no en actualizaciones silenciosas
+    if (!silent && isInitialLoad.current) {
+      setLoading(true);
+    }
+    try {
+      // NUEVO: Usar el endpoint optimizado para todos los pedidos
+      let url = `${apiUrl}/pedidos/all/?`;
+      if (fechaInicio && fechaFin) {
+        url += `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&`;
+      }
+      url += `ordenar=fecha_desc&`;
+      
+      const res = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const data = await res.json();
+      
+      setPedidos(Array.isArray(data) ? data : []);
+      isInitialLoad.current = false;
+    } catch (error) {
+      setPedidos([]);
+      isInitialLoad.current = false;
+    } finally {
+      if (!silent) {
+        setLoading(false);
+      }
+    }
+    setShouldSearch(false);
+  }, [apiUrl, fechaInicio, fechaFin]);
+
   useEffect(() => {
     if (!shouldSearch) return;
-    const fetchPedidos = async () => {
-      setLoading(true);
-      try {
-        // NUEVO: Usar el endpoint optimizado para todos los pedidos
-        let url = `${apiUrl}/pedidos/all/?`;
-        if (fechaInicio && fechaFin) {
-          url += `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&`;
-        }
-        url += `ordenar=fecha_desc&`;
-        
-              const res = await fetch(url, {
-                headers: {
-                  'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-                  'Content-Type': 'application/json'
-                }
-              });
-        const data = await res.json();
-        
-        setPedidos(Array.isArray(data) ? data : []);
-      } catch (error) {
-        setPedidos([]);
-      }
-      setLoading(false);
-      setShouldSearch(false);
-    };
-    fetchPedidos();
-  }, [shouldSearch, apiUrl, fechaInicio, fechaFin]);
+    const isFirstLoad = isInitialLoad.current;
+    fetchPedidos(!isFirstLoad); // Silenciosa después de carga inicial
+  }, [shouldSearch, fetchPedidos]);
 
   // Escuchar eventos de cancelación para actualizar la lista
   useEffect(() => {
     const handlePedidoCancelado = () => {
-      setShouldSearch(true);
+      fetchPedidos(true); // Actualización silenciosa
     };
 
     const handleActualizarPedido = (event: CustomEvent) => {
@@ -92,10 +104,10 @@ const MonitorPedidos: React.FC = () => {
         )
       );
       
-      // También recargar la lista completa después de un breve delay
+      // También recargar la lista completa después de un breve delay (silenciosa)
       setTimeout(() => {
-        setShouldSearch(true);
-      }, 1000);
+        fetchPedidos(true); // Actualización silenciosa
+      }, 500); // Reducido de 1000ms a 500ms
     };
 
     window.addEventListener('pedidoCancelado', handlePedidoCancelado);
@@ -105,47 +117,58 @@ const MonitorPedidos: React.FC = () => {
       window.removeEventListener('pedidoCancelado', handlePedidoCancelado);
       window.removeEventListener('actualizarPedido', handleActualizarPedido as EventListener);
     };
-  }, []);
+  }, [fetchPedidos]);
+
+  // OPTIMIZACIÓN: Memoizar contadores para evitar recalcular en cada render
+  const contadores = useMemo(() => {
+    const completados = pedidos.filter(p => p.estado_general === "orden6" || p.estado_general === "completado").length;
+    const cancelados = pedidos.filter(p => p.estado_general === "cancelado").length;
+    const activos = pedidos.filter(p => p.estado_general !== "orden6" && p.estado_general !== "completado" && p.estado_general !== "cancelado").length;
+    return { completados, cancelados, activos };
+  }, [pedidos]);
 
 
-  const pedidosFiltrados = pedidos
-    .filter((p) => {
-      // Filtro por búsqueda de texto (incluye nombre de items, descripción y código)
-      const searchLower = search.toLowerCase();
-      const coincideBusqueda = 
-        (p.cliente_nombre?.toLowerCase?.().includes(searchLower) || false) ||
-        (p.estado_general?.toLowerCase?.().includes(searchLower) || false) ||
-        (p._id?.includes(search) || false) ||
-        // Buscar en nombres, descripciones y códigos de items
-        (p.items?.some(item => {
-          const itemNombre = item.nombre?.toLowerCase?.() || '';
-          const itemDescripcion = item.descripcion?.toLowerCase?.() || '';
-          const itemCodigo = (item as any).codigo?.toLowerCase?.() || '';
-          return itemNombre.includes(searchLower) || 
-                 itemDescripcion.includes(searchLower) ||
-                 itemCodigo.includes(searchLower);
-        }) || false);
+  // OPTIMIZACIÓN: Memoizar pedidos filtrados para evitar recalcular en cada render
+  const pedidosFiltrados = useMemo(() => {
+    return pedidos
+      .filter((p) => {
+        // Filtro por búsqueda de texto (incluye nombre de items, descripción y código)
+        const searchLower = search.toLowerCase();
+        const coincideBusqueda = 
+          (p.cliente_nombre?.toLowerCase?.().includes(searchLower) || false) ||
+          (p.estado_general?.toLowerCase?.().includes(searchLower) || false) ||
+          (p._id?.includes(search) || false) ||
+          // Buscar en nombres, descripciones y códigos de items
+          (p.items?.some(item => {
+            const itemNombre = item.nombre?.toLowerCase?.() || '';
+            const itemDescripcion = item.descripcion?.toLowerCase?.() || '';
+            const itemCodigo = (item as any).codigo?.toLowerCase?.() || '';
+            return itemNombre.includes(searchLower) || 
+                   itemDescripcion.includes(searchLower) ||
+                   itemCodigo.includes(searchLower);
+          }) || false);
 
-      // Filtro por estado específico si está seleccionado
-      const coincideEstado = ordenFilter === "" || p.estado_general === ordenFilter;
+        // Filtro por estado específico si está seleccionado
+        const coincideEstado = ordenFilter === "" || p.estado_general === ordenFilter;
 
-      // Filtro automático: excluir completados y cancelados por defecto
-      const esCompletado = p.estado_general === "orden6" || p.estado_general === "completado";
-      const esCancelado = p.estado_general === "cancelado";
-      
-      // Si no se quiere mostrar completados/cancelados, excluirlos
-      const mostrarEstePedido = 
-        (!esCompletado || mostrarCompletados) && 
-        (!esCancelado || mostrarCancelados);
+        // Filtro automático: excluir completados y cancelados por defecto
+        const esCompletado = p.estado_general === "orden6" || p.estado_general === "completado";
+        const esCancelado = p.estado_general === "cancelado";
+        
+        // Si no se quiere mostrar completados/cancelados, excluirlos
+        const mostrarEstePedido = 
+          (!esCompletado || mostrarCompletados) && 
+          (!esCancelado || mostrarCancelados);
 
-      return coincideBusqueda && coincideEstado && mostrarEstePedido;
-    })
-    .sort((a, b) => {
-      // Ordenar por fecha más reciente primero
-      const fechaA = new Date(a.fecha_creacion || 0).getTime();
-      const fechaB = new Date(b.fecha_creacion || 0).getTime();
-      return fechaB - fechaA; // Más reciente primero
-    });
+        return coincideBusqueda && coincideEstado && mostrarEstePedido;
+      })
+      .sort((a, b) => {
+        // Ordenar por fecha más reciente primero
+        const fechaA = new Date(a.fecha_creacion || 0).getTime();
+        const fechaB = new Date(b.fecha_creacion || 0).getTime();
+        return fechaB - fechaA; // Más reciente primero
+      });
+  }, [pedidos, search, ordenFilter, mostrarCompletados, mostrarCancelados]);
 
   return (
     <div className="max-w-4xl mx-auto mt-8">
@@ -240,9 +263,7 @@ const MonitorPedidos: React.FC = () => {
               </span>
             </div>
             <div className="text-xs text-blue-600">
-              {pedidos.filter(p => p.estado_general === "orden6" || p.estado_general === "completado").length} completados • 
-              {pedidos.filter(p => p.estado_general === "cancelado").length} cancelados • 
-              {pedidos.filter(p => p.estado_general !== "orden6" && p.estado_general !== "completado" && p.estado_general !== "cancelado").length} activos
+              {contadores.completados} completados • {contadores.cancelados} cancelados • {contadores.activos} activos
             </div>
           </div>
         </div>
