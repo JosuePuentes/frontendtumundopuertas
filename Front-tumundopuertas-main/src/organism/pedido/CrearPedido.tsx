@@ -267,15 +267,6 @@ const CrearPedido: React.FC = () => {
     return Array.isArray(itemsData) ? (itemsData as any[]) : [];
   }, [itemsData]);
 
-  // OPTIMIZACIÓN: Función para ordenar items por existencia (mayor existencia primero)
-  const ordenarItemsPorExistencia = useCallback((items: any[]) => {
-    return [...items].sort((a, b) => {
-      const existenciaA = a.existencia_sucursal ?? a.cantidad ?? 0;
-      const existenciaB = b.existencia_sucursal ?? b.cantidad ?? 0;
-      return existenciaB - existenciaA; // Mayor existencia primero
-    });
-  }, []);
-
   // === Handlers ===
   // @ts-ignore - Function is used in JSX but TypeScript doesn't detect it
   const handleAddPago = useCallback(() => {
@@ -796,8 +787,8 @@ const CrearPedido: React.FC = () => {
     await crearPedido(selectedItems, validacion.todosTienenExistencia);
   };
 
-  // Función para ordenar items por existencia_sucursal de la sucursal seleccionada (mayor a menor)
-  const ordenarItemsPorExistencia = (items: any[]) => {
+  // OPTIMIZACIÓN: Función para ordenar items por existencia_sucursal de la sucursal seleccionada (mayor a menor)
+  const ordenarItemsPorExistencia = useCallback((items: any[]) => {
     if (!sucursal) return items; // Si no hay sucursal, no ordenar
     
     return [...items].sort((a, b) => {
@@ -812,7 +803,7 @@ const CrearPedido: React.FC = () => {
         : (sucursal === "sucursal1" ? (b.cantidad ?? 0) : (b.existencia2 ?? 0));
       return existenciaB - existenciaA; // Orden descendente (mayor primero)
     });
-  };
+  }, [sucursal]);
 
   return (
     <div className="w-full max-w-7xl mx-auto p-2 sm:p-4">
