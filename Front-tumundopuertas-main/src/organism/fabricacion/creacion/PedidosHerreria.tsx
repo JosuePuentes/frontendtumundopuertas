@@ -67,7 +67,7 @@ const PedidosHerreria: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        signal: AbortSignal.timeout(10000) // Aumentado a 10 segundos timeout
+        signal: AbortSignal.timeout(5000) // Reducido a 5 segundos timeout para mejor rendimiento
       });
       
       if (!response.ok) {
@@ -84,9 +84,9 @@ const PedidosHerreria: React.FC = () => {
   // Función para cargar progreso de todos los items en PARALELO - OPTIMIZADA
   const cargarProgresoItemsParalelo = async (items: ItemIndividual[]) => {
     try {
-      // OPTIMIZACIÓN: Limitar a solo los primeros 5 items visibles para evitar sobrecarga
-      // Solo cargar progreso de items que están actualmente visibles en la pantalla
-      const itemsACargar = items.slice(0, 5);
+      // OPTIMIZACIÓN: Limitar a solo los primeros 3 items visibles para evitar sobrecarga
+      // Reducido de 5 a 3 para mejor rendimiento
+      const itemsACargar = items.slice(0, 3);
       
       const promesasProgreso = itemsACargar.map(item => 
         obtenerProgresoItem(item.pedido_id, item.id)
@@ -106,7 +106,7 @@ const PedidosHerreria: React.FC = () => {
       });
       
       // Para los items restantes, establecer progreso en 0
-      items.slice(5).forEach(item => {
+      items.slice(3).forEach(item => {
         progresoData[item.id] = 0;
       });
       
@@ -154,7 +154,7 @@ const PedidosHerreria: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`
         },
-        signal: AbortSignal.timeout(30000) // Aumentado a 30 segundos timeout para carga principal
+        signal: AbortSignal.timeout(15000) // Reducido a 15 segundos timeout para mejor rendimiento
       });
       
       if (!response.ok) {

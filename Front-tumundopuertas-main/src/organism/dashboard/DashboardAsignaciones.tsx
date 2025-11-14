@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -87,16 +87,20 @@ const DashboardAsignaciones: React.FC = () => {
     setError(null);
     
     try {
-      // Obtener todos los pedidos y extraer asignaciones manualmente
-      const response = await fetch(`${getApiUrl()}/pedidos/all/`);
+      // OPTIMIZACIÓN: Usar endpoint con límite para evitar cargar demasiados pedidos
+      // Obtener pedidos con límite para mejor rendimiento
+      const response = await fetch(`${getApiUrl()}/pedidos/all/?limite=200&ordenar=fecha_desc`);
       
       if (response.ok) {
         const pedidos = await response.json();
         
+        // OPTIMIZACIÓN: Limitar procesamiento a los primeros 200 pedidos para mejor rendimiento
+        const pedidosLimitados = Array.isArray(pedidos) ? pedidos.slice(0, 200) : [];
+        
         // Extraer todas las asignaciones en proceso de todos los pedidos
         // OPTIMIZACIÓN: Usar Map para búsqueda rápida de items
         const itemsMap = new Map<string, any>();
-        for (const pedido of pedidos) {
+        for (const pedido of pedidosLimitados) {
           if (Array.isArray(pedido.items)) {
             for (const item of pedido.items) {
               if (item.id) {
@@ -108,7 +112,7 @@ const DashboardAsignaciones: React.FC = () => {
         
         const asignacionesRaw: any[] = [];
         
-        for (const pedido of pedidos) {
+        for (const pedido of pedidosLimitados) {
           const pedido_id = pedido._id;
           const seguimiento = pedido.seguimiento || [];
           
@@ -346,6 +350,13 @@ const DashboardAsignaciones: React.FC = () => {
     }
   };
 
+  // OPTIMIZACIÓN: Memoizar contadores para evitar recalcular en cada render
+  const estadisticas = useMemo(() => {
+    const enProceso = asignaciones.filter(a => a.estado === "en_proceso").length;
+    const terminadas = asignaciones.filter(a => a.estado === "terminado").length;
+    return { enProceso, terminadas };
+  }, [asignaciones]);
+
 
   // Función para manejar la terminación con PIN
   const handleConfirmarPin = async () => {
@@ -527,7 +538,7 @@ Verifica en el backend:
               <div>
                 <p className="text-sm font-medium text-gray-600">En Proceso</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  {asignaciones.filter(a => a.estado === "en_proceso").length}
+                  {estadisticas.enProceso}
                 </p>
               </div>
             </div>
@@ -540,7 +551,7 @@ Verifica en el backend:
               <div>
                 <p className="text-sm font-medium text-gray-600">Terminadas</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {asignaciones.filter(a => a.estado === "terminado").length}
+                  {estadisticas.terminadas}
                 </p>
               </div>
             </div>
