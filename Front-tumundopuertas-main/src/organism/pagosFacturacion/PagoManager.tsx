@@ -21,6 +21,8 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId }) => {
   const [loading, setLoading] = useState(false);
   const [metodosPago, setMetodosPago] = useState<any[]>([]);
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
+  const [descripcion, setDescripcion] = useState<string>("");
+  const [nombreQuienEnvía, setNombreQuienEnvía] = useState<string>("");
 
   useEffect(() => {
     const fetchMetodosPago = async () => {
@@ -41,14 +43,19 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId }) => {
 
     setLoading(true);
     try {
-      // Registrar el abono (solo monto y método, el estado se calcula automáticamente)
+      // Registrar el abono con descripción y nombre de quien envía
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
         headers: { 
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem('access_token')}`
         },
-        body: JSON.stringify({ monto, metodo: selectedMetodoPago }),
+        body: JSON.stringify({ 
+          monto, 
+          metodo: selectedMetodoPago,
+          descripcion: descripcion || undefined,
+          nombre_quien_envia: nombreQuienEnvía || undefined
+        }),
       });
 
       if (!res.ok) throw new Error("Error registrando pago");
@@ -58,6 +65,8 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId }) => {
       
       setMonto(0); // reset campo monto
       setSelectedMetodoPago(""); // reset metodo de pago
+      setDescripcion(""); // reset descripción
+      setNombreQuienEnvía(""); // reset nombre quien envía
       
       // Refrescar métodos de pago para actualizar saldos
       const refreshResponse = await api("/metodos-pago");
@@ -73,7 +82,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId }) => {
   };
 
   return (
-    <div className="flex flex-col gap-2 w-64 border p-3 rounded-xl shadow-sm">
+    <div className="flex flex-col gap-2 w-80 border p-3 rounded-xl shadow-sm">
       <Input
         type="number"
         placeholder="Monto"
@@ -103,6 +112,22 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId }) => {
           })()}
         </SelectContent>
       </Select>
+
+      <Input
+        type="text"
+        placeholder="Descripción (opcional)"
+        value={descripcion}
+        onChange={(e) => setDescripcion(e.target.value)}
+        disabled={loading}
+      />
+
+      <Input
+        type="text"
+        placeholder="Nombre de quien envía (opcional)"
+        value={nombreQuienEnvía}
+        onChange={(e) => setNombreQuienEnvía(e.target.value)}
+        disabled={loading}
+      />
 
       <Button onClick={actualizarPago} disabled={loading}>
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Registrar Pago"}

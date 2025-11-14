@@ -27,6 +27,8 @@ interface Abono {
   fecha: string;
   monto: number;
   metodo?: string;
+  descripcion?: string;
+  nombre_quien_envia?: string;
 }
 
 interface VentaDiariaResponse {
@@ -236,12 +238,14 @@ const ResumenVentaDiaria: React.FC = () => {
       abono.cliente_nombre,
       new Date(abono.fecha).toLocaleDateString(),
       abono.metodo || "N/A",
-      `$${abono.monto.toFixed(2)}`
+      `$${abono.monto.toFixed(2)}`,
+      abono.descripcion || "-",
+      abono.nombre_quien_envia || "-"
     ]);
     
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 25,
-      head: [['ID Pedido', 'Cliente', 'Fecha', 'Método', 'Monto']],
+      head: [['ID Pedido', 'Cliente', 'Fecha', 'Método', 'Monto', 'Descripción', 'Quien Envía']],
       body: abonosData,
       theme: 'grid',
       headStyles: { fillColor: [66, 139, 202] },
@@ -283,7 +287,7 @@ const ResumenVentaDiaria: React.FC = () => {
     
     // Hoja 2: Detalle de abonos
     const abonosData = [
-      ['ID Pedido', 'Cliente', 'Fecha', 'Método', 'Monto']
+      ['ID Pedido', 'Cliente', 'Fecha', 'Método', 'Monto', 'Descripción', 'Quien Envía']
     ];
     
     (data.abonos || []).forEach(abono => {
@@ -292,7 +296,9 @@ const ResumenVentaDiaria: React.FC = () => {
         abono.cliente_nombre,
         new Date(abono.fecha).toLocaleDateString(),
         abono.metodo || "N/A",
-        abono.monto.toFixed(2)
+        abono.monto.toFixed(2),
+        abono.descripcion || "-",
+        abono.nombre_quien_envia || "-"
       ]);
     });
     
@@ -457,6 +463,8 @@ const ResumenVentaDiaria: React.FC = () => {
                     <TableHead>Fecha</TableHead>
                     <TableHead>Método</TableHead>
                     <TableHead>Monto</TableHead>
+                    <TableHead>Descripción</TableHead>
+                    <TableHead>Quien Envía</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -471,6 +479,8 @@ const ResumenVentaDiaria: React.FC = () => {
                       </TableCell>
                       <TableCell>{abono.metodo || "N/A"}</TableCell>
                       <TableCell>${(abono.monto || 0).toFixed(2)}</TableCell>
+                      <TableCell>{abono.descripcion || "-"}</TableCell>
+                      <TableCell>{abono.nombre_quien_envia || "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
