@@ -42,8 +42,8 @@ const MonitorPedidos: React.FC = () => {
   };
 
   const [ordenFilter, setOrdenFilter] = useState<string>("");
-  const [mostrarCompletados, setMostrarCompletados] = useState<boolean>(false);
-  const [mostrarCancelados, setMostrarCancelados] = useState<boolean>(false);
+  const [mostrarCompletados, setMostrarCompletados] = useState<boolean>(true); // Mostrar completados por defecto
+  const [mostrarCancelados, setMostrarCancelados] = useState<boolean>(true); // Mostrar cancelados por defecto
 
   // OPTIMIZACIÓN: fetchPedidos con useCallback para evitar recreaciones
   const fetchPedidos = useCallback(async (silent = false) => {
@@ -276,9 +276,9 @@ const MonitorPedidos: React.FC = () => {
           <div className="text-center">
             <p className="text-lg font-medium mb-2">No hay pedidos para mostrar</p>
             <p className="text-sm">
-              {mostrarCompletados || mostrarCancelados 
-                ? "Intenta ajustar los filtros de búsqueda o fechas"
-                : "Los pedidos completados y cancelados están ocultos por defecto. Usa las casillas de arriba para mostrarlos."
+              {pedidos.length === 0
+                ? "No se encontraron pedidos en la base de datos. Verifica la conexión con el servidor."
+                : "Intenta ajustar los filtros de búsqueda o fechas para encontrar pedidos."
               }
             </p>
           </div>
