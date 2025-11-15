@@ -78,71 +78,44 @@ const ResumenVentaDiaria: React.FC = () => {
       const responseData: VentaDiariaResponse = await api(url);
       console.log('📊 Datos recibidos del backend:', responseData);
       
-      // Filtrar abonos por rango de fechas en el frontend (por si el backend no lo hace correctamente)
-      if (responseData && responseData.abonos && Array.isArray(responseData.abonos) && responseData.abonos.length > 0) {
-        console.log('🔍 Filtrado de fechas:', {
+      // IMPORTANTE: Confiar en el backend y mostrar TODOS los abonos que envía
+      // No hacer filtrado adicional en el frontend para evitar perder abonos
+      if (responseData && responseData.abonos && Array.isArray(responseData.abonos)) {
+        console.log('✅ Abonos recibidos del backend:', {
+          total_abonos: responseData.abonos.length,
           fechaInicio: fechaInicio,
-          fechaFin: fechaFin,
-          total_abonos_recibidos: responseData.abonos.length
+          fechaFin: fechaFin
         });
         
-        // Filtrar abonos que estén dentro del rango (comparar solo la fecha, no la hora)
-        const abonosFiltrados = responseData.abonos.filter(abono => {
-          if (!abono.fecha) {
-            console.warn('⚠️ Abono sin fecha:', abono);
-            return false;
-          }
-          
-          try {
-            const fechaAbono = new Date(abono.fecha);
-            // Verificar que la fecha sea válida
-            if (isNaN(fechaAbono.getTime())) {
-              console.warn('⚠️ Fecha inválida en abono:', abono.fecha);
-              return false;
-            }
-            
-            // Comparar solo las fechas (sin hora) para evitar problemas de zona horaria
-            const fechaAbonoStr = fechaAbono.toISOString().split('T')[0];
-            const fechaInicioStr = fechaInicio;
-            const fechaFinStr = fechaFin;
-            
-            const estaEnRango = fechaAbonoStr >= fechaInicioStr && fechaAbonoStr <= fechaFinStr;
-            
-            return estaEnRango;
-          } catch (error) {
-            console.error('❌ Error al procesar fecha del abono:', error, abono);
-            return false;
-          }
-        });
+        // Mostrar todos los abonos que el backend envía
+        // El backend ya hizo el filtrado por fechas si se proporcionaron
+        // Si no se proporcionaron fechas, el backend debe enviar todos los abonos
         
-        console.log('✅ Resultado del filtrado:', {
-          total_abonos_originales: responseData.abonos.length,
-          total_abonos_filtrados: abonosFiltrados.length
-        });
-        
-        // Recalcular total_ingresos y ingresos_por_metodo con los abonos filtrados
-        // Si no hay abonos filtrados pero hay originales, usar los originales (el backend ya los filtró)
-        const abonosOriginales = responseData.abonos;
-        const abonosAUsar = abonosFiltrados.length > 0 ? abonosFiltrados : abonosOriginales;
-        
-        const totalIngresosFiltrado = abonosAUsar.reduce((sum, abono) => sum + (abono.monto || 0), 0);
-        
-        const ingresosPorMetodoFiltrado: { [key: string]: number } = {};
-        abonosAUsar.forEach(abono => {
-          const metodo = abono.metodo || 'Sin método';
-          ingresosPorMetodoFiltrado[metodo] = (ingresosPorMetodoFiltrado[metodo] || 0) + (abono.monto || 0);
-        });
-        
-        // Actualizar responseData con los datos
-        responseData.abonos = abonosAUsar;
-        responseData.total_ingresos = totalIngresosFiltrado;
-        responseData.ingresos_por_metodo = ingresosPorMetodoFiltrado;
-        
-        if (abonosFiltrados.length === 0 && abonosOriginales.length > 0) {
-          console.log('ℹ️ El backend ya filtró los datos. Usando los recibidos del backend.');
+        // Asegurarse de que total_ingresos esté calculado correctamente
+        if (!responseData.total_ingresos || responseData.total_ingresos === 0) {
+          responseData.total_ingresos = responseData.abonos.reduce((sum, abono) => sum + (abono.monto || 0), 0);
         }
+        
+        // Asegurarse de que ingresos_por_metodo esté calculado
+        if (!responseData.ingresos_por_metodo || Object.keys(responseData.ingresos_por_metodo).length === 0) {
+          const ingresosPorMetodo: { [key: string]: number } = {};
+          responseData.abonos.forEach(abono => {
+            const metodo = abono.metodo || 'Sin método';
+            ingresosPorMetodo[metodo] = (ingresosPorMetodo[metodo] || 0) + (abono.monto || 0);
+          });
+          responseData.ingresos_por_metodo = ingresosPorMetodo;
+        }
+        
+        console.log('✅ Datos procesados:', {
+          total_abonos: responseData.abonos.length,
+          total_ingresos: responseData.total_ingresos
+        });
       } else {
         console.warn('⚠️ No hay abonos en la respuesta o no es un array:', responseData);
+        // Asegurar que siempre haya un array vacío
+        if (!responseData.abonos) {
+          responseData.abonos = [];
+        }
       }
       
       setData(responseData);
@@ -161,11 +134,35 @@ const ResumenVentaDiaria: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      // Llamar al endpoint sin parámetros de fecha para obtener TODOS los abonos
       const url = `/pedidos/venta-diaria`;
       console.log('🌐 URL de consulta (sin filtros):', url);
 
       const responseData: VentaDiariaResponse = await api(url);
-      console.log('📊 TODOS los datos recibidos:', responseData);
+      console.log('📊 TODOS los datos recibidos del backend:', responseData);
+      
+      // Asegurarse de que todos los abonos se muestren
+      if (responseData && responseData.abonos && Array.isArray(responseData.abonos)) {
+        console.log('✅ Total de abonos recibidos (sin filtro):', responseData.abonos.length);
+        
+        // Calcular totales si no vienen del backend
+        if (!responseData.total_ingresos || responseData.total_ingresos === 0) {
+          responseData.total_ingresos = responseData.abonos.reduce((sum, abono) => sum + (abono.monto || 0), 0);
+        }
+        
+        if (!responseData.ingresos_por_metodo || Object.keys(responseData.ingresos_por_metodo).length === 0) {
+          const ingresosPorMetodo: { [key: string]: number } = {};
+          responseData.abonos.forEach(abono => {
+            const metodo = abono.metodo || 'Sin método';
+            ingresosPorMetodo[metodo] = (ingresosPorMetodo[metodo] || 0) + (abono.monto || 0);
+          });
+          responseData.ingresos_por_metodo = ingresosPorMetodo;
+        }
+      } else {
+        if (!responseData.abonos) {
+          responseData.abonos = [];
+        }
+      }
       
       if (responseData && responseData.abonos) {
         console.log('📅 Fechas disponibles en los datos:');
