@@ -52,12 +52,24 @@ const MonitorPedidos: React.FC = () => {
       setLoading(true);
     }
     try {
-      // NUEVO: Usar el endpoint optimizado para todos los pedidos
-      let url = `${apiUrl}/pedidos/all/?`;
+      // Usar el endpoint optimizado para todos los pedidos
+      // Si no hay fechas, cargar TODOS los pedidos sin filtro
+      const params = new URLSearchParams();
+      
+      // Solo agregar fechas si ambas están presentes
       if (fechaInicio && fechaFin) {
-        url += `fecha_inicio=${fechaInicio}&fecha_fin=${fechaFin}&`;
+        params.append('fecha_inicio', fechaInicio);
+        params.append('fecha_fin', fechaFin);
       }
-      url += `ordenar=fecha_desc&`;
+      
+      // Agregar ordenamiento
+      params.append('ordenar', 'fecha_desc');
+      
+      // Construir URL con parámetros
+      const queryString = params.toString();
+      const url = `${apiUrl}/pedidos/all/${queryString ? `?${queryString}` : ''}`;
+      
+      console.log('🔍 Cargando pedidos desde:', url);
       
       const res = await fetch(url, {
         headers: {
@@ -65,11 +77,18 @@ const MonitorPedidos: React.FC = () => {
           'Content-Type': 'application/json'
         }
       });
+      
+      if (!res.ok) {
+        throw new Error(`Error ${res.status}: ${res.statusText}`);
+      }
+      
       const data = await res.json();
+      console.log('✅ Pedidos recibidos:', Array.isArray(data) ? data.length : 0);
       
       setPedidos(Array.isArray(data) ? data : []);
       isInitialLoad.current = false;
     } catch (error) {
+      console.error('❌ Error al cargar pedidos:', error);
       setPedidos([]);
       isInitialLoad.current = false;
     } finally {
