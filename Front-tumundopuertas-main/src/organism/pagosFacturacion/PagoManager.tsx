@@ -40,6 +40,7 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId }) => {
   const actualizarPago = async () => {
     if (monto <= 0) return alert("Ingresa un monto válido");
     if (!selectedMetodoPago) return alert("Selecciona un método de pago");
+    if (!nombreQuienEnvía.trim()) return alert("Debe ingresar el nombre del titular");
 
     setLoading(true);
     try {
@@ -123,13 +124,14 @@ const PagoManager: React.FC<PagoManagerProps> = ({ pedidoId }) => {
 
       <Input
         type="text"
-        placeholder="Nombre de quien envía (opcional)"
+        placeholder="Nombre del titular *"
         value={nombreQuienEnvía}
         onChange={(e) => setNombreQuienEnvía(e.target.value)}
         disabled={loading}
+        required
       />
 
-      <Button onClick={actualizarPago} disabled={loading}>
+      <Button onClick={actualizarPago} disabled={loading || !nombreQuienEnvía.trim()}>
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Registrar Pago"}
       </Button>
     </div>

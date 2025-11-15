@@ -464,7 +464,7 @@ const ResumenVentaDiaria: React.FC = () => {
                     <TableHead>Método</TableHead>
                     <TableHead>Monto</TableHead>
                     <TableHead>Descripción</TableHead>
-                    <TableHead>Quien Envía</TableHead>
+                    <TableHead>Nombre del Titular</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

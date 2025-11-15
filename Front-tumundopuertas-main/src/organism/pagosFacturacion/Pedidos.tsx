@@ -22,6 +22,7 @@ const PagoManager: React.FC<{
 }> = ({ pedidoId, onSuccess, metodosPago }) => {
   const [monto, setMonto] = useState("");
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
+  const [nombreTitular, setNombreTitular] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -38,6 +39,11 @@ const PagoManager: React.FC<{
         setLoading(false);
         return;
       }
+      if (!nombreTitular.trim()) {
+        setError("Debe ingresar el nombre del titular");
+        setLoading(false);
+        return;
+      }
 
       const res = await fetch(`${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/${pedidoId}/pago`, {
         method: "PATCH",
@@ -45,7 +51,8 @@ const PagoManager: React.FC<{
         body: JSON.stringify({ 
           pago: "abonado", // Campo requerido por el backend
           monto: montoNumero, 
-          metodo: selectedMetodoPago 
+          metodo: selectedMetodoPago,
+          nombre_quien_envia: nombreTitular.trim()
         }),
       });
       
@@ -57,6 +64,7 @@ const PagoManager: React.FC<{
       setSuccess("Abono registrado");
       setMonto("");
       setSelectedMetodoPago("");
+      setNombreTitular("");
       
       // Refrescar métodos de pago para actualizar saldos
       // Nota: Los métodos de pago se refrescan desde el componente padre
@@ -99,11 +107,20 @@ const PagoManager: React.FC<{
           size="sm"
           className="text-xs px-2 py-1"
           onClick={registrarAbono}
-          disabled={loading || !monto || isNaN(Number(monto)) || !selectedMetodoPago}
+          disabled={loading || !monto || isNaN(Number(monto)) || !selectedMetodoPago || !nombreTitular.trim()}
         >
           Abonar
         </Button>
       </div>
+      <Input
+        type="text"
+        placeholder="Nombre del titular *"
+        value={nombreTitular}
+        onChange={e => setNombreTitular(e.target.value)}
+        className="text-xs"
+        disabled={loading}
+        required
+      />
       {error && <span className="text-xs text-red-600">{error}</span>}
       {success && <span className="text-xs text-green-600">{success}</span>}
     </div>
@@ -188,8 +205,11 @@ const Pedidos: React.FC = () => {
       if (!res.ok) throw new Error("Error al obtener pedidos");
       const data = await res.json();
       
+      // Asegurar que siempre sea un array
+      const pedidosArray = Array.isArray(data) ? data : (data.pedidos || []);
+      
       // Filtrar pedidos de TU MUNDO PUERTA (RIF: J-507172554)
-      const datosFiltrados = data.filter((pedido: Pedido) => {
+      const datosFiltrados = pedidosArray.filter((pedido: Pedido) => {
         const nombreCliente = (pedido.cliente_nombre || "").toUpperCase();
         return !nombreCliente.includes("TU MUNDO PUERTA") && !nombreCliente.includes("TU MUNDO  PUERTA");
       });
