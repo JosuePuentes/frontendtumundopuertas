@@ -112,15 +112,17 @@ const PagoManager: React.FC<{
           Abonar
         </Button>
       </div>
-      <Input
-        type="text"
-        placeholder="Nombre del titular *"
-        value={nombreTitular}
-        onChange={e => setNombreTitular(e.target.value)}
-        className="text-xs"
-        disabled={loading}
-        required
-      />
+      {selectedMetodoPago && (
+        <Input
+          type="text"
+          placeholder="Nombre del titular *"
+          value={nombreTitular}
+          onChange={e => setNombreTitular(e.target.value)}
+          className="text-xs mt-1"
+          disabled={loading}
+          required
+        />
+      )}
       {error && <span className="text-xs text-red-600">{error}</span>}
       {success && <span className="text-xs text-green-600">{success}</span>}
     </div>
