@@ -69,6 +69,7 @@ interface RegistroPago {
   monto: number;
   estado: string;
   metodo: string;
+  nombre_quien_envia?: string;
 }
 
 interface Adicional {
@@ -118,6 +119,7 @@ const CrearPedido: React.FC = () => {
   const [mensajeTipo, setMensajeTipo] = useState<"error" | "success" | "">("");
   const [enviando, setEnviando] = useState(false);
   const [selectedMetodoPago, setSelectedMetodoPago] = useState<string>("");
+  const [nombreTitular, setNombreTitular] = useState<string>("");
   const [abono, setAbono] = useState<number>(0);
   const [pagos, setPagos] = useState<RegistroPago[]>([]);
   const [modalFaltaExistenciaOpen, setModalFaltaExistenciaOpen] = useState(false);
@@ -280,13 +282,19 @@ const CrearPedido: React.FC = () => {
       setMensajeTipo("error");
       return;
     }
+    if (!nombreTitular.trim()) {
+      setMensaje("Debe ingresar el nombre del titular.");
+      setMensajeTipo("error");
+      return;
+    }
     
     // Crear el nuevo pago
     const newPago: RegistroPago = {
       monto: abono,
       metodo: selectedMetodoPago,
       fecha: new Date().toISOString(),
-      estado: 'abonado' // Estado correcto según el modelo del backend
+      estado: 'abonado', // Estado correcto según el modelo del backend
+      nombre_quien_envia: nombreTitular.trim()
     };
     
     // Calcular el total abonado actual
@@ -306,7 +314,8 @@ const CrearPedido: React.FC = () => {
     setMensajeTipo("success");
     setAbono(0);
     setSelectedMetodoPago("");
-  }, [abono, selectedMetodoPago, pagos, totalMonto]);
+    setNombreTitular("");
+  }, [abono, selectedMetodoPago, nombreTitular, pagos, totalMonto]);
 
   // === Handlers ===
   const handleAddItem = () => {
@@ -1425,11 +1434,30 @@ const CrearPedido: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Nombre del Titular - aparece solo cuando se selecciona un método de pago */}
+                    {selectedMetodoPago && (
+                      <div className="space-y-2">
+                        <Label htmlFor="nombreTitular" className="text-sm font-semibold text-gray-700">
+                          Nombre del Titular <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          id="nombreTitular"
+                          type="text"
+                          value={nombreTitular}
+                          onChange={(e) => setNombreTitular(e.target.value)}
+                          placeholder="Ingrese el nombre del titular"
+                          className="w-full focus:ring-2 focus:ring-blue-400 border-2"
+                          disabled={!selectedMetodoPago}
+                          required
+                        />
+                      </div>
+                    )}
+
                     {/* Botón Agregar Pago */}
                     <Button
                       type="button"
                       onClick={handleAddPago}
-                      disabled={abono <= 0 || !selectedMetodoPago}
+                      disabled={abono <= 0 || !selectedMetodoPago || !nombreTitular.trim()}
                       className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
                     >
                       <FaMoneyBillWave className="mr-2" />
