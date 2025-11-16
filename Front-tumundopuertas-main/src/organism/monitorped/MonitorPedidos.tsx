@@ -13,6 +13,7 @@ interface Pedido {
     descripcion: string;
     cantidad: number;
     costoProduccion?: string;
+    estado_item?: number; // 0=pendiente, 1=herreria, 2=masillar, 3=preparar, 4=terminado
   }>;
   adicionales?: Array<{
     descripcion?: string;
@@ -83,9 +84,14 @@ const MonitorPedidos: React.FC = () => {
       }
       
       const data = await res.json();
-      console.log('✅ Pedidos recibidos:', Array.isArray(data) ? data.length : 0);
       
-      setPedidos(Array.isArray(data) ? data : []);
+      // El backend /pedidos/all/ retorna un objeto con { pedidos: [...], total: ... }
+      // El backend /pedidos/filtrar/por-fecha/ retorna un array directo
+      const pedidosArray = Array.isArray(data) ? data : (data.pedidos || []);
+      
+      console.log('✅ Pedidos recibidos:', pedidosArray.length, 'de', data.total || 'N/A', 'totales');
+      
+      setPedidos(pedidosArray);
       isInitialLoad.current = false;
     } catch (error) {
       console.error('❌ Error al cargar pedidos:', error);

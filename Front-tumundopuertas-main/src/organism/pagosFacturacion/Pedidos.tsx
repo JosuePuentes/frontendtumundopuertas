@@ -132,6 +132,7 @@ interface PedidoItem {
   precio: number;
   cantidad: number;
   descuento?: number; // Descuento en monto ($)
+  estado_item?: number; // 0=pendiente, 1=herreria, 2=masillar, 3=preparar, 4=terminado
 }
 
 interface RegistroPago {
@@ -236,10 +237,10 @@ const Pedidos: React.FC = () => {
     <Card className="w-full shadow-md rounded-2xl max-w-5xl mx-auto px-1 sm:px-4">
       <CardHeader className="px-2 sm:px-6">
         <CardTitle className="text-lg sm:text-xl font-bold text-gray-800">
-          Pedidos en Proceso
+          Pedidos Listos para Facturación
         </CardTitle>
         <p className="text-xs sm:text-sm text-gray-500">
-          Estados: orden1 a orden6 y pendiente
+          Solo se muestran pedidos con todos los items completados (estado_item = 4/4)
         </p>
         <div className="mt-2 text-xs sm:text-sm text-green-700 font-semibold">
           Suma de pagos realizados: {sumaPagos.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
@@ -321,33 +322,17 @@ const Pedidos: React.FC = () => {
                     
                     if (!pasaFiltroCliente) return false;
                     
-                    // Filtrar pedidos completamente pagados
-                    // Calcular el total del pedido incluyendo adicionales y descuentos
-                    const totalItems = (pedido.items || []).reduce(
-                      (acc, item) => {
-                        const precioBase = item.precio || 0;
-                        const descuento = item.descuento || 0;
-                        const precioConDescuento = Math.max(0, precioBase - descuento);
-                        return acc + (precioConDescuento * (item.cantidad || 0));
-                      },
-                      0
-                    );
-                    const adicionales = pedido.adicionales || [];
-                    const totalAdicionales = adicionales.reduce((sum, ad) => {
-                      const cantidad = ad.cantidad || 1;
-                      const precio = ad.precio || 0;
-                      return sum + (precio * cantidad);
-                    }, 0);
-                    const totalPedido = totalItems + totalAdicionales;
+                    // FILTRO PRINCIPAL: Solo mostrar pedidos donde TODOS los items tienen estado_item = 4 (100% completados)
+                    const items = pedido.items || [];
+                    if (items.length === 0) return false; // No mostrar pedidos sin items
                     
-                    // Calcular el monto abonado
-                    const montoAbonado = pedido.total_abonado || (pedido.historial_pagos || []).reduce(
-                      (acc, pago) => acc + (pago.monto || 0),
-                      0
-                    );
+                    // Verificar que todos los items estén completados (estado_item = 4)
+                    const todosItemsCompletados = items.every((item) => {
+                      const estadoItem = item.estado_item ?? 0;
+                      return estadoItem >= 4; // estado_item = 4 significa completado
+                    });
                     
-                    // Excluir pedidos completamente pagados (monto abonado >= total del pedido)
-                    return !(totalPedido > 0 && montoAbonado >= totalPedido);
+                    return todosItemsCompletados;
                   })
                   .map((pedido) => {
                   return (
@@ -376,9 +361,14 @@ const Pedidos: React.FC = () => {
                           {/* Información de pagos: Abonado, Total, Resta */}
                           <div className="flex flex-col gap-0.5 text-[10px] sm:text-xs mt-1">
                             {(() => {
-                              // Calcular total incluyendo adicionales
+                              // Calcular total incluyendo adicionales y descuentos
                               const totalItems = (pedido.items || []).reduce(
-                                (acc, item) => acc + (item.precio || 0) * (item.cantidad || 0),
+                                (acc, item) => {
+                                  const precioBase = item.precio || 0;
+                                  const descuento = item.descuento || 0;
+                                  const precioConDescuento = Math.max(0, precioBase - descuento);
+                                  return acc + (precioConDescuento * (item.cantidad || 0));
+                                },
                                 0
                               );
                               const adicionales = pedido.adicionales || [];
@@ -423,9 +413,14 @@ const Pedidos: React.FC = () => {
                       <TableCell>
                         <div className="flex flex-col gap-1 text-[10px] sm:text-xs">
                           {(() => {
-                            // Calcular total incluyendo adicionales
+                            // Calcular total incluyendo adicionales y descuentos
                             const totalItems = (pedido.items || []).reduce(
-                              (acc, item) => acc + (item.precio || 0) * (item.cantidad || 0),
+                              (acc, item) => {
+                                const precioBase = item.precio || 0;
+                                const descuento = item.descuento || 0;
+                                const precioConDescuento = Math.max(0, precioBase - descuento);
+                                return acc + (precioConDescuento * (item.cantidad || 0));
+                              },
                               0
                             );
                             const adicionales = pedido.adicionales || [];
