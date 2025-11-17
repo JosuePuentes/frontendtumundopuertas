@@ -190,6 +190,21 @@ const Pedidos: React.FC = () => {
   useEffect(() => {
     fetchPedidos();
     fetchMetodosPago();
+    
+    // Escuchar evento de pago realizado para actualizar datos
+    const handlePagoRealizado = (event: CustomEvent) => {
+      console.log('🔄 PAGOS: Evento pagoRealizado recibido, actualizando datos...');
+      // Esperar un poco para que el backend procese el pago
+      setTimeout(() => {
+        refreshData();
+      }, 500);
+    };
+    
+    window.addEventListener('pagoRealizado', handlePagoRealizado as EventListener);
+    
+    return () => {
+      window.removeEventListener('pagoRealizado', handlePagoRealizado as EventListener);
+    };
   }, []);
 
   const refreshData = async () => {
