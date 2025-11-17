@@ -358,11 +358,14 @@ const Pedidos: React.FC = () => {
                     }, 0);
                     const totalPedido = totalItems + totalAdicionales;
                     
-                    // Calcular monto abonado desde múltiples fuentes
+                    // Calcular monto abonado desde múltiples fuentes (prioridad: total_abonado > historial_pagos)
                     let montoAbonado = 0;
-                    if (pedido.total_abonado && pedido.total_abonado > 0) {
+                    if (pedido.total_abonado !== undefined && pedido.total_abonado !== null) {
                       montoAbonado = pedido.total_abonado;
-                    } else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                    }
+                    
+                    // Si total_abonado es 0 o no existe, calcular desde historial_pagos
+                    if (montoAbonado === 0 && pedido.historial_pagos && pedido.historial_pagos.length > 0) {
                       montoAbonado = pedido.historial_pagos.reduce(
                         (acc, pago) => acc + (pago.monto || 0),
                         0
@@ -374,15 +377,19 @@ const Pedidos: React.FC = () => {
                     
                     // Mostrar pedidos que:
                     // 1. Tienen saldo pendiente > 0 (total > abonado y aún resta)
-                    // 2. O tienen abonos pero aún no están completamente pagados
-                    // Excluir solo los que están completamente pagados (saldo pendiente <= 0)
-                    if (totalPedido > 0 && saldoPendiente <= 0) {
-                      // Pedido completamente pagado, no mostrar
+                    // 2. Tienen abonos (montoAbonado > 0) pero aún no están completamente pagados
+                    // Excluir SOLO los que están completamente pagados (saldo pendiente <= 0.01 para tolerancia de redondeo)
+                    
+                    // Si el pedido tiene un total válido y está completamente pagado, excluirlo
+                    if (totalPedido > 0 && saldoPendiente <= 0.01) {
+                      // Pedido completamente pagado (con tolerancia de redondeo), no mostrar
                       return false;
                     }
                     
-                    // Si el total es 0 o negativo, incluir por seguridad (puede ser un error de cálculo)
-                    // Si tiene saldo pendiente > 0, siempre mostrar
+                    // Incluir todos los demás casos:
+                    // - Tiene saldo pendiente > 0
+                    // - Tiene abonos pero aún resta
+                    // - Total es 0 o negativo (incluir por seguridad, puede ser error de cálculo)
                     return true;
                   })
                   .map((pedido) => {
