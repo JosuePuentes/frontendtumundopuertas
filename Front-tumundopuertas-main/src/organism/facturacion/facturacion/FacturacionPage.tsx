@@ -980,10 +980,12 @@ const FacturacionPage: React.FC = () => {
       console.log(`🔄 FACTURACION: Evento pagoRealizado recibido${pedidoId ? ` para pedido ${pedidoId.slice(-4)}` : ''}`);
       
       // Recargar pedidos silenciosamente cuando se hace un abono
-      // Usar un pequeño delay para asegurar que el backend haya procesado el pago
+      // Usar un delay más largo para asegurar que el backend haya procesado el pago
+      // y actualizado el total_abonado en el endpoint /pedidos/{pedido_id}/pagos
       setTimeout(() => {
+        console.log(`🔄 FACTURACION: Recargando datos después de pago...`);
         fetchPedidosFacturacion(true); // Actualización silenciosa
-      }, 500); // 500ms de delay para dar tiempo al backend
+      }, 1000); // 1000ms (1 segundo) de delay para dar tiempo al backend de actualizar total_abonado
     };
 
     window.addEventListener('abonoRealizado', handleAbonoRealizado as EventListener);
