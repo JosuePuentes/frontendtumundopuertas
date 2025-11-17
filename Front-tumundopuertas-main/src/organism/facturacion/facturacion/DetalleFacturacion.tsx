@@ -154,7 +154,8 @@ const DetalleFacturacion: React.FC<DetalleFacturacionProps> = ({ pedido }) => {
                   }, 0);
                   
                   const totalPedido = totalItems + totalAdicionales;
-                  const montoAbonado = pedido.total_abonado || 0;
+                  // Usar montoAbonado si está disponible (viene del endpoint /pagos), sino usar total_abonado
+                  const montoAbonado = (pedido as any).montoAbonado || pedido.total_abonado || 0;
                   // El saldo pendiente no puede ser negativo (el descuento ya está aplicado al total)
                   const saldoPendiente = Math.max(0, totalPedido - montoAbonado);
                   
@@ -191,11 +192,11 @@ const DetalleFacturacion: React.FC<DetalleFacturacionProps> = ({ pedido }) => {
             </div>
             
             {/* Historial de Pagos */}
-            {pedido.historial_pagos && pedido.historial_pagos.length > 0 && (
+            {((pedido as any).historialPagos || pedido.historial_pagos) && ((pedido as any).historialPagos || pedido.historial_pagos).length > 0 && (
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h3 className="font-semibold text-lg mb-3">Historial de Pagos</h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {pedido.historial_pagos.map((pago, index) => (
+                  {((pedido as any).historialPagos || pedido.historial_pagos).map((pago: any, index: number) => (
                     <div key={index} className="flex justify-between items-center border-b pb-2 last:border-0">
                       <div className="flex flex-col">
                         <span className="text-sm text-gray-600">

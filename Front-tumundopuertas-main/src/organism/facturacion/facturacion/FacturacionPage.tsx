@@ -522,15 +522,31 @@ const FacturacionPage: React.FC = () => {
             const puedeFacturar = montoAbonado >= montoTotal - 0.01;
             
             console.log(`✅ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Puede facturar: ${puedeFacturar} (Abonado: ${montoAbonado.toFixed(2)}, Total: ${montoTotal.toFixed(2)})`);
+            console.log(`📊 DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Valores finales asignados:`, {
+              montoAbonado,
+              montoTotal,
+              historialPagos_length: historialPagos.length,
+              puedeFacturar
+            });
             
-            return {
+            // Retornar el pedido con los valores calculados
+            const pedidoConPagos = {
               ...pedido,
               montoTotal,
-              montoAbonado,
+              montoAbonado, // CRÍTICO: Este valor debe estar presente
               fecha100Porciento,
-              historialPagos,
+              historialPagos, // CRÍTICO: Este array debe estar presente
               puedeFacturar
             };
+            
+            // Verificación final antes de retornar
+            if (!pedidoConPagos.montoAbonado && historialPagos.length > 0) {
+              const calculadoFinal = historialPagos.reduce((sum, pago) => sum + (pago.monto || 0), 0);
+              console.warn(`⚠️ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - montoAbonado es 0 pero hay historial, forzando cálculo: ${calculadoFinal}`);
+              pedidoConPagos.montoAbonado = calculadoFinal;
+            }
+            
+            return pedidoConPagos;
           } catch (err: any) {
             // Si el pedido tiene estado_general = "orden4", incluirlo aunque haya errores
             if (pedido.estado_general === "orden4") {
@@ -550,23 +566,31 @@ const FacturacionPage: React.FC = () => {
               
               // Calcular monto abonado desde historial_pagos si está disponible
               const historialDelPedido = pedido.historial_pagos || [];
-              let montoAbonado = 0;
+              let montoAbonadoError = 0;
               if (historialDelPedido.length > 0) {
-                montoAbonado = historialDelPedido.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
-                console.log(`⚠️ DEBUG FACTURACION ERROR: Pedido ${pedido._id.slice(-4)} - Calculando desde historial_pagos: ${montoAbonado}`);
+                montoAbonadoError = historialDelPedido.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                console.log(`⚠️ DEBUG FACTURACION ERROR: Pedido ${pedido._id.slice(-4)} - Calculando desde historial_pagos: ${montoAbonadoError}`);
               } else {
-                montoAbonado = pedido.total_abonado || 0;
-                console.log(`⚠️ DEBUG FACTURACION ERROR: Pedido ${pedido._id.slice(-4)} - Usando total_abonado: ${montoAbonado}`);
+                montoAbonadoError = pedido.total_abonado || 0;
+                console.log(`⚠️ DEBUG FACTURACION ERROR: Pedido ${pedido._id.slice(-4)} - Usando total_abonado: ${montoAbonadoError}`);
               }
               
-              return {
+              const pedidoError = {
                 ...pedido,
                 montoTotal,
-                montoAbonado,
+                montoAbonado: montoAbonadoError, // Asegurar que siempre tenga un valor
                 fecha100Porciento: null,
-                historialPagos: historialDelPedido,
-                puedeFacturar: montoAbonado >= montoTotal
+                historialPagos: historialDelPedido, // Asegurar que siempre tenga un array
+                puedeFacturar: montoAbonadoError >= montoTotal
               };
+              
+              console.log(`📊 DEBUG FACTURACION ERROR: Pedido ${pedido._id.slice(-4)} - Valores asignados en error:`, {
+                montoAbonado: pedidoError.montoAbonado,
+                montoTotal: pedidoError.montoTotal,
+                historialPagos_length: pedidoError.historialPagos.length
+              });
+              
+              return pedidoError;
             }
             // Para otros errores, ignorar silenciosamente solo si son timeout
             if (err.name !== 'AbortError' && err.name !== 'TimeoutError') {
