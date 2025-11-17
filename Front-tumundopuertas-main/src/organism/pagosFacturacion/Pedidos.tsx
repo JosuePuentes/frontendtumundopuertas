@@ -255,7 +255,7 @@ const Pedidos: React.FC = () => {
           Gestión de Pagos
         </CardTitle>
         <p className="text-xs sm:text-sm text-gray-500">
-          Se muestran todos los pedidos con saldo pendiente mayor a 0 (total > abonado)
+          Se muestran todos los pedidos con saldo pendiente mayor a 0 (total mayor a abonado)
         </p>
         <div className="mt-2 text-xs sm:text-sm text-green-700 font-semibold">
           Suma de pagos realizados: {sumaPagos.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
