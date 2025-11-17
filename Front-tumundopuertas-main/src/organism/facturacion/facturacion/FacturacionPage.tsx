@@ -521,12 +521,13 @@ const FacturacionPage: React.FC = () => {
             // Usar una tolerancia de 0.01 para manejar errores de redondeo
             const puedeFacturar = montoAbonado >= montoTotal - 0.01;
             
-            console.log(`✅ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Puede facturar: ${puedeFacturar} (Abonado: ${montoAbonado.toFixed(2)}, Total: ${montoTotal.toFixed(2)})`);
+            console.log(`✅ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Puede facturar: ${puedeFacturar} (Abonado: ${montoAbonado.toFixed(2)}, Total: ${montoTotal.toFixed(2)}, Diferencia: ${(montoTotal - montoAbonado).toFixed(2)})`);
             console.log(`📊 DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Valores finales asignados:`, {
               montoAbonado,
               montoTotal,
               historialPagos_length: historialPagos.length,
-              puedeFacturar
+              puedeFacturar,
+              condicion: `${montoAbonado.toFixed(2)} >= ${(montoTotal - 0.01).toFixed(2)}`
             });
             
             // Retornar el pedido con los valores calculados
