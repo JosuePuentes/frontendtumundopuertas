@@ -339,7 +339,7 @@ const Pedidos: React.FC = () => {
                     
                     if (!todosItemsCompletados) return false;
                     
-                    // FILTRO CRÍTICO: Solo mostrar pedidos con saldo pendiente > 0
+                    // FILTRO: Mostrar pedidos con saldo pendiente > 0
                     // Calcular total incluyendo adicionales y descuentos
                     const totalItems = items.reduce(
                       (acc, item) => {
@@ -358,21 +358,31 @@ const Pedidos: React.FC = () => {
                     }, 0);
                     const totalPedido = totalItems + totalAdicionales;
                     
-                    // Calcular monto abonado
-                    const montoAbonado = pedido.total_abonado || (pedido.historial_pagos || []).reduce(
-                      (acc, pago) => acc + (pago.monto || 0),
-                      0
-                    );
+                    // Calcular monto abonado desde múltiples fuentes
+                    let montoAbonado = 0;
+                    if (pedido.total_abonado && pedido.total_abonado > 0) {
+                      montoAbonado = pedido.total_abonado;
+                    } else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                      montoAbonado = pedido.historial_pagos.reduce(
+                        (acc, pago) => acc + (pago.monto || 0),
+                        0
+                      );
+                    }
                     
                     // Calcular saldo pendiente
                     const saldoPendiente = totalPedido - montoAbonado;
                     
-                    // Solo mostrar si tiene saldo pendiente > 0
-                    // Si el total es 0, incluir por seguridad (puede ser un error de cálculo)
+                    // Mostrar pedidos que:
+                    // 1. Tienen saldo pendiente > 0 (total > abonado y aún resta)
+                    // 2. O tienen abonos pero aún no están completamente pagados
+                    // Excluir solo los que están completamente pagados (saldo pendiente <= 0)
                     if (totalPedido > 0 && saldoPendiente <= 0) {
-                      return false; // Excluir pedidos completamente pagados
+                      // Pedido completamente pagado, no mostrar
+                      return false;
                     }
                     
+                    // Si el total es 0 o negativo, incluir por seguridad (puede ser un error de cálculo)
+                    // Si tiene saldo pendiente > 0, siempre mostrar
                     return true;
                   })
                   .map((pedido) => {
