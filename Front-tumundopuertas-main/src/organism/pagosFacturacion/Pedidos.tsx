@@ -222,10 +222,44 @@ const Pedidos: React.FC = () => {
       
       console.log(`📥 PAGOS: Total pedidos recibidos del backend: ${pedidosArray.length}`);
       
+      // Buscar pedido específico antes de filtrar
+      const pedidoEspecifico = pedidosArray.find((pedido: Pedido) => {
+        const idStr = String(pedido._id || "");
+        return idStr.includes("68e7b0c8a05e21da5396c494") || 
+               idStr.includes("c494") ||
+               (pedido.cliente_nombre && pedido.cliente_nombre.toUpperCase().includes("MELVIN LEDEZMA"));
+      });
+      
+      if (pedidoEspecifico) {
+        console.log(`🔍🔍🔍 PEDIDO ESPECÍFICO ENCONTRADO ANTES DE FILTRAR:`, {
+          _id: pedidoEspecifico._id,
+          cliente_nombre: pedidoEspecifico.cliente_nombre,
+          total_abonado: pedidoEspecifico.total_abonado,
+          historial_pagos: pedidoEspecifico.historial_pagos,
+          items: pedidoEspecifico.items,
+          adicionales: pedidoEspecifico.adicionales
+        });
+      } else {
+        console.log(`⚠️ PEDIDO 68e7b0c8a05e21da5396c494 NO ENCONTRADO EN LOS ${pedidosArray.length} PEDIDOS RECIBIDOS`);
+      }
+      
       // Filtrar pedidos de TU MUNDO PUERTA (RIF: J-507172554)
       const datosFiltrados = pedidosArray.filter((pedido: Pedido) => {
         const nombreCliente = (pedido.cliente_nombre || "").toUpperCase();
-        return !nombreCliente.includes("TU MUNDO PUERTA") && !nombreCliente.includes("TU MUNDO  PUERTA");
+        const pasaFiltro = !nombreCliente.includes("TU MUNDO PUERTA") && !nombreCliente.includes("TU MUNDO  PUERTA");
+        
+        // Log si el pedido específico es filtrado aquí
+        const idStr = String(pedido._id || "");
+        if (idStr.includes("68e7b0c8a05e21da5396c494") || idStr.includes("c494") || 
+            (pedido.cliente_nombre && pedido.cliente_nombre.toUpperCase().includes("MELVIN LEDEZMA"))) {
+          console.log(`🔍🔍🔍 PEDIDO ESPECÍFICO EN FILTRO TU MUNDO PUERTA:`, {
+            _id: pedido._id,
+            cliente_nombre: pedido.cliente_nombre,
+            pasaFiltro: pasaFiltro
+          });
+        }
+        
+        return pasaFiltro;
       });
       
       console.log(`📥 PAGOS: Pedidos después de filtrar TU MUNDO PUERTA: ${datosFiltrados.length}`);
@@ -375,10 +409,17 @@ const Pedidos: React.FC = () => {
                     // Calcular saldo pendiente
                     const saldoPendiente = totalPedido - montoAbonado;
                     
-                    // Log detallado para pedido específico (68e7b0c8a05e21da5396c494)
-                    const pedidoIdCompleto = pedido._id;
-                    if (pedidoIdCompleto && pedidoIdCompleto.includes('68e7b0c8a05e21da5396c494')) {
-                      console.log(`🔍🔍🔍 PEDIDO ESPECÍFICO 68e7b0c8a05e21da5396c494:`, {
+                    // Log detallado para pedido específico (68e7b0c8a05e21da5396c494 o MELVIN LEDEZMA)
+                    const pedidoIdCompleto = String(pedido._id || "");
+                    const nombreCliente = (pedido.cliente_nombre || "").toUpperCase();
+                    const esPedidoEspecifico = pedidoIdCompleto.includes('68e7b0c8a05e21da5396c494') || 
+                                                pedidoIdCompleto.includes('c494') ||
+                                                nombreCliente.includes('MELVIN LEDEZMA');
+                    
+                    if (esPedidoEspecifico) {
+                      console.log(`🔍🔍🔍 PEDIDO ESPECÍFICO EN FILTRO DE SALDO PENDIENTE:`, {
+                        _id: pedido._id,
+                        cliente_nombre: pedido.cliente_nombre,
                         pedido_completo: pedido,
                         items: items,
                         items_length: items.length,
@@ -389,7 +430,8 @@ const Pedidos: React.FC = () => {
                         historial_pagos: pedido.historial_pagos,
                         montoAbonado_calculado: montoAbonado,
                         saldoPendiente: saldoPendiente,
-                        pasaFiltro: saldoPendiente > 0.01
+                        pasaFiltro: saldoPendiente > 0.01,
+                        razon_exclusion: saldoPendiente <= 0.01 ? "Saldo pendiente <= 0.01 (completamente pagado)" : "Pasa el filtro"
                       });
                     }
                     
