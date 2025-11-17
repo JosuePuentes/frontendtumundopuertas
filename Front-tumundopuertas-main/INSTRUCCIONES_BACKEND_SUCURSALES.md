@@ -166,3 +166,11 @@ update_fields = {
 4. Todas las operaciones deben actualizar el campo correcto según la sucursal seleccionada
 
 
+
+
+
+
+
+
+
+

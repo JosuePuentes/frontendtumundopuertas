@@ -72,3 +72,11 @@ Este endpoint se usa en `/pedidos-web` cuando:
 Los pedidos web generalmente tienen clientes de `clientes_collection` (no autenticados), por eso usamos `/clientes/id/{cliente_id}/` en lugar de `/clientes/{cliente_id}`.
 
 
+
+
+
+
+
+
+
+

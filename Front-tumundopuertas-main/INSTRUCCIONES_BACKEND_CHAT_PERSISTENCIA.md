@@ -182,3 +182,11 @@ db.mensajes.countDocuments({
 - El campo `pedido_id` debe coincidir exactamente con el ID del pedido (verificar formato string vs ObjectId)
 
 
+
+
+
+
+
+
+
+

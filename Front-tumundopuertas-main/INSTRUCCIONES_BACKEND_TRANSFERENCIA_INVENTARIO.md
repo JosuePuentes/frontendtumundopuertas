@@ -147,3 +147,11 @@ El frontend ya está configurado para usar este endpoint. La funcionalidad de tr
 
 Si alguna de las dos operaciones falla, el frontend intenta revertir la primera operación automáticamente.
 
+
+
+
+
+
+
+
+

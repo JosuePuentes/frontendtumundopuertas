@@ -145,3 +145,7 @@ Una vez implementado este cambio:
 - ✅ El saldo pendiente se calculará correctamente: `total (items + adicionales) - monto_abonado`
 - ✅ Los totales generales en Mis Pagos incluirán los adicionales
 
+
+
+
+

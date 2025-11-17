@@ -40,3 +40,11 @@ El endpoint está retornando error 400 cuando se intenta descargar/cargar existe
 Una vez que conozcamos el formato exacto que espera el backend, ajustaré el frontend para enviar los datos correctamente.
 
 
+
+
+
+
+
+
+
+

@@ -57,3 +57,9 @@ Retorna:
 
 Retorna todos los datos del panel en formato JSON para generar PDF en frontend.
 
+
+
+
+
+
+

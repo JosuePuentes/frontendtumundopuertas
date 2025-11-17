@@ -66,6 +66,9 @@ const PagoManager: React.FC<{
       setSelectedMetodoPago("");
       setNombreTitular("");
       
+      // Notificar a otros módulos que se registró un pago
+      window.dispatchEvent(new CustomEvent('pagoRealizado', { detail: { pedidoId } }));
+      
       // Refrescar métodos de pago para actualizar saldos
       // Nota: Los métodos de pago se refrescan desde el componente padre
       

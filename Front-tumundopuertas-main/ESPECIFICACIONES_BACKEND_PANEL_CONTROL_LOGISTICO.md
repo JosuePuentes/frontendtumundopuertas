@@ -482,3 +482,11 @@ Cuando ocurre un movimiento, registrar en una colección `movimientos_logisticos
 }
 ```
 
+
+
+
+
+
+
+
+

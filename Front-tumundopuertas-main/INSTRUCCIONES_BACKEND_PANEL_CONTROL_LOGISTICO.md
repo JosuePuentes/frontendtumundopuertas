@@ -190,3 +190,9 @@ Todos los endpoints est√°n implementados y listos para usar. El frontend ya est√
 2. Verificar que los endpoints respondan correctamente
 3. Probar desde el frontend en `/panel-control-logistico`
 
+
+
+
+
+
+
