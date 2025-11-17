@@ -1018,24 +1018,6 @@ const FacturacionPage: React.FC = () => {
     });
   }, [facturacion, busquedaCliente]);
 
-  // Filtrar facturas procesadas por búsqueda
-  const facturasFiltradas = useMemo(() => {
-    if (!busquedaFacturas.trim()) {
-      return facturasConfirmadas;
-    }
-    const busquedaLower = busquedaFacturas.toLowerCase().trim();
-    return facturasConfirmadas.filter((factura) => {
-      const nombreCliente = (factura.clienteNombre || '').toLowerCase();
-      const clienteId = (factura.clienteId || '').toLowerCase();
-      const numeroFactura = (factura.numeroFactura || '').toLowerCase();
-      const pedidoId = (factura.pedidoId || '').toLowerCase();
-      return nombreCliente.includes(busquedaLower) || 
-             clienteId.includes(busquedaLower) || 
-             numeroFactura.includes(busquedaLower) ||
-             pedidoId.includes(busquedaLower);
-    });
-  }, [facturasConfirmadas, busquedaFacturas]);
-
   // Generar número de factura único
   const generarNumeroFactura = (): string => {
     const today = new Date();
