@@ -252,10 +252,10 @@ const Pedidos: React.FC = () => {
     <Card className="w-full shadow-md rounded-2xl max-w-5xl mx-auto px-1 sm:px-4">
       <CardHeader className="px-2 sm:px-6">
         <CardTitle className="text-lg sm:text-xl font-bold text-gray-800">
-          Pedidos Listos para Facturación
+          Gestión de Pagos
         </CardTitle>
         <p className="text-xs sm:text-sm text-gray-500">
-          Solo se muestran pedidos con todos los items completados (estado_item = 4/4) y con saldo pendiente mayor a 0
+          Se muestran todos los pedidos con saldo pendiente mayor a 0 (total > abonado)
         </p>
         <div className="mt-2 text-xs sm:text-sm text-green-700 font-semibold">
           Suma de pagos realizados: {sumaPagos.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
@@ -338,19 +338,9 @@ const Pedidos: React.FC = () => {
                     
                     if (!pasaFiltroCliente) return false;
                     
-                    // FILTRO PRINCIPAL: Solo mostrar pedidos donde TODOS los items tienen estado_item = 4 (100% completados)
+                    // FILTRO: Mostrar pedidos con saldo pendiente > 0
                     const items = pedido.items || [];
                     if (items.length === 0) return false; // No mostrar pedidos sin items
-                    
-                    // Verificar que todos los items estén completados (estado_item = 4)
-                    const todosItemsCompletados = items.every((item) => {
-                      const estadoItem = item.estado_item ?? 0;
-                      return estadoItem >= 4; // estado_item = 4 significa completado
-                    });
-                    
-                    if (!todosItemsCompletados) return false;
-                    
-                    // FILTRO: Mostrar pedidos con saldo pendiente > 0
                     // Calcular total incluyendo adicionales y descuentos
                     const totalItems = items.reduce(
                       (acc, item) => {
