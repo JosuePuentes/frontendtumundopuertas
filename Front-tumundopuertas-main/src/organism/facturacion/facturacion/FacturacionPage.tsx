@@ -430,7 +430,7 @@ const FacturacionPage: React.FC = () => {
               signal: AbortSignal.timeout(5000) // 5 segundos timeout
             });
             
-            // Calcular total de items considerando descuentos
+            // Calcular total de items considerando descuentos (como respaldo)
             let montoItems = pedido.items?.reduce((acc: number, item: any) => {
               const precioBase = item.precio || 0;
               const descuento = item.descuento || 0;
@@ -438,7 +438,7 @@ const FacturacionPage: React.FC = () => {
               return acc + (precioConDescuento * (item.cantidad || 0));
             }, 0) || 0;
             
-            // Calcular total de adicionales
+            // Calcular total de adicionales (como respaldo)
             const adicionalesRaw = pedido.adicionales;
             const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
             const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
@@ -447,10 +447,11 @@ const FacturacionPage: React.FC = () => {
               return acc + (precio * cantidad);
             }, 0);
             
-            // Total incluyendo items + adicionales
-            let montoTotal = montoItems + montoAdicionales;
+            // Total calculado localmente (como respaldo)
+            let montoTotalLocal = montoItems + montoAdicionales;
             let montoAbonado = 0;
             let historialPagos: any[] = [];
+            let montoTotal = montoTotalLocal; // Inicializar con cálculo local
             
             if (pagosRes.ok) {
               const pagosData = await pagosRes.json();
@@ -460,6 +461,16 @@ const FacturacionPage: React.FC = () => {
                 total_pedido: pagosData.total_pedido,
                 historial_pagos: pagosData.historial_pagos
               });
+              
+              // CRÍTICO: Usar SIEMPRE el total_pedido que viene del endpoint /pagos
+              // El backend ya calcula esto considerando descuentos usando calcular_precio_final_item()
+              if (pagosData.total_pedido && pagosData.total_pedido > 0) {
+                montoTotal = pagosData.total_pedido;
+                console.log(`✅ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Usando total_pedido del backend: ${montoTotal.toFixed(2)} (local: ${montoTotalLocal.toFixed(2)})`);
+              } else {
+                console.log(`⚠️ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - total_pedido del endpoint no disponible, usando cálculo local: ${montoTotalLocal.toFixed(2)}`);
+                montoTotal = montoTotalLocal;
+              }
               
               // CRÍTICO: Usar SIEMPRE el total_abonado que viene del endpoint /pagos
               // Este endpoint calcula el total_abonado desde historial_pagos, que es la fuente de verdad
@@ -480,7 +491,7 @@ const FacturacionPage: React.FC = () => {
                 montoAbonado = 0;
               }
               
-              console.log(`💰 DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Monto abonado final: ${montoAbonado} (del endpoint: ${pagosData.total_abonado}, calculado: ${calculadoDesdeHistorial})`);
+              console.log(`💰 DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Monto abonado final: ${montoAbonado.toFixed(2)} (del endpoint: ${pagosData.total_abonado || 0}, calculado: ${calculadoDesdeHistorial.toFixed(2)})`);
             } else {
               // Si el endpoint falla, intentar calcular desde historial_pagos del pedido
               const historialDelPedido = pedido.historial_pagos || [];
