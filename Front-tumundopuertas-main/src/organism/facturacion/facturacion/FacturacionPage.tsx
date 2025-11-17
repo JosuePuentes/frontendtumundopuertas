@@ -1991,22 +1991,34 @@ const FacturacionPage: React.FC = () => {
                           <p className="text-lg sm:text-xl font-bold text-green-700">
                             {(() => {
                               // Calcular monto abonado con múltiples fallbacks
-                              let montoAbonadoDisplay = pedido.montoAbonado || 0;
+                              // Prioridad: montoAbonado > historialPagos > historial_pagos > total_abonado
+                              let montoAbonadoDisplay = 0;
                               
-                              // Si montoAbonado es 0, intentar calcular desde historialPagos
-                              if (montoAbonadoDisplay === 0 && pedido.historialPagos && pedido.historialPagos.length > 0) {
+                              // 1. Intentar usar montoAbonado si existe y es mayor a 0
+                              if (pedido.montoAbonado && pedido.montoAbonado > 0) {
+                                montoAbonadoDisplay = pedido.montoAbonado;
+                              }
+                              // 2. Si no, calcular desde historialPagos
+                              else if (pedido.historialPagos && pedido.historialPagos.length > 0) {
                                 montoAbonadoDisplay = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
                               }
-                              
-                              // Si aún es 0, intentar desde historial_pagos (formato del backend)
-                              if (montoAbonadoDisplay === 0 && pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                              // 3. Si aún es 0, intentar desde historial_pagos (formato del backend)
+                              else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
                                 montoAbonadoDisplay = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
                               }
-                              
-                              // Último fallback: usar total_abonado del pedido
-                              if (montoAbonadoDisplay === 0 && pedido.total_abonado) {
+                              // 4. Último fallback: usar total_abonado del pedido
+                              else if (pedido.total_abonado && pedido.total_abonado > 0) {
                                 montoAbonadoDisplay = pedido.total_abonado;
                               }
+                              
+                              console.log(`💰 UI DEBUG: Pedido ${pedido._id?.slice(-4) || 'N/A'} - Monto abonado calculado:`, {
+                                montoAbonadoDisplay,
+                                tiene_montoAbonado: !!pedido.montoAbonado,
+                                tiene_historialPagos: !!(pedido.historialPagos && pedido.historialPagos.length > 0),
+                                tiene_historial_pagos: !!(pedido.historial_pagos && pedido.historial_pagos.length > 0),
+                                tiene_total_abonado: !!pedido.total_abonado,
+                                total_abonado: pedido.total_abonado
+                              });
                               
                               return `$${montoAbonadoDisplay.toFixed(2)}`;
                             })()}
@@ -2019,17 +2031,22 @@ const FacturacionPage: React.FC = () => {
                           <p className="text-lg sm:text-xl font-bold text-blue-700">
                             {(() => {
                               // Calcular monto abonado con múltiples fallbacks (mismo cálculo que arriba)
-                              let montoAbonadoCalc = pedido.montoAbonado || 0;
+                              let montoAbonadoCalc = 0;
                               
-                              if (montoAbonadoCalc === 0 && pedido.historialPagos && pedido.historialPagos.length > 0) {
+                              // 1. Intentar usar montoAbonado si existe y es mayor a 0
+                              if (pedido.montoAbonado && pedido.montoAbonado > 0) {
+                                montoAbonadoCalc = pedido.montoAbonado;
+                              }
+                              // 2. Si no, calcular desde historialPagos
+                              else if (pedido.historialPagos && pedido.historialPagos.length > 0) {
                                 montoAbonadoCalc = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
                               }
-                              
-                              if (montoAbonadoCalc === 0 && pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                              // 3. Si aún es 0, intentar desde historial_pagos (formato del backend)
+                              else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
                                 montoAbonadoCalc = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
                               }
-                              
-                              if (montoAbonadoCalc === 0 && pedido.total_abonado) {
+                              // 4. Último fallback: usar total_abonado del pedido
+                              else if (pedido.total_abonado && pedido.total_abonado > 0) {
                                 montoAbonadoCalc = pedido.total_abonado;
                               }
                               
@@ -2086,17 +2103,22 @@ const FacturacionPage: React.FC = () => {
                                 <span className="text-sm font-bold text-green-700">
                                   {(() => {
                                     // Calcular monto abonado con múltiples fallbacks
-                                    let montoAbonadoTotal = pedido.montoAbonado || 0;
+                                    let montoAbonadoTotal = 0;
                                     
-                                    if (montoAbonadoTotal === 0 && pedido.historialPagos && pedido.historialPagos.length > 0) {
+                                    // 1. Intentar usar montoAbonado si existe y es mayor a 0
+                                    if (pedido.montoAbonado && pedido.montoAbonado > 0) {
+                                      montoAbonadoTotal = pedido.montoAbonado;
+                                    }
+                                    // 2. Si no, calcular desde historialPagos
+                                    else if (pedido.historialPagos && pedido.historialPagos.length > 0) {
                                       montoAbonadoTotal = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
                                     }
-                                    
-                                    if (montoAbonadoTotal === 0 && pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                                    // 3. Si aún es 0, intentar desde historial_pagos (formato del backend)
+                                    else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
                                       montoAbonadoTotal = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
                                     }
-                                    
-                                    if (montoAbonadoTotal === 0 && pedido.total_abonado) {
+                                    // 4. Último fallback: usar total_abonado del pedido
+                                    else if (pedido.total_abonado && pedido.total_abonado > 0) {
                                       montoAbonadoTotal = pedido.total_abonado;
                                     }
                                     
