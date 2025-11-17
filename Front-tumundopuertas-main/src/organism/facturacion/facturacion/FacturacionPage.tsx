@@ -461,20 +461,26 @@ const FacturacionPage: React.FC = () => {
                 historial_pagos: pagosData.historial_pagos
               });
               
-              // Usar siempre nuestro cálculo local que considera descuentos por item
-              // El backend podría no estar considerando descuentos en total_pedido
-              // montoTotal ya está calculado arriba considerando descuentos, mantenerlo
-              montoAbonado = pagosData.total_abonado || 0;
+              // CRÍTICO: Usar SIEMPRE el total_abonado que viene del endpoint /pagos
+              // Este endpoint calcula el total_abonado desde historial_pagos, que es la fuente de verdad
+              // El backend ya considera todos los pagos registrados en el módulo de pagos
               historialPagos = pagosData.historial_pagos || [];
               
-              // Debug: Verificar que se obtuvo el total_abonado correctamente
-              if (montoAbonado === 0 && historialPagos.length > 0) {
-                const calculadoDesdeHistorial = historialPagos.reduce((sum, pago) => sum + (pago.monto || 0), 0);
-                if (calculadoDesdeHistorial > 0) {
-                  console.log(`⚠️ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - total_abonado del endpoint es 0, pero historial_pagos tiene ${calculadoDesdeHistorial}, usando calculado`);
-                  montoAbonado = calculadoDesdeHistorial;
-                }
+              // Calcular total_abonado desde historial_pagos como respaldo si el backend no lo devuelve
+              const calculadoDesdeHistorial = historialPagos.reduce((sum, pago) => sum + (pago.monto || 0), 0);
+              
+              // Usar el total_abonado del endpoint si está disponible y es mayor a 0
+              // Si no, usar el calculado desde historial_pagos
+              if (pagosData.total_abonado && pagosData.total_abonado > 0) {
+                montoAbonado = pagosData.total_abonado;
+              } else if (calculadoDesdeHistorial > 0) {
+                console.log(`⚠️ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - total_abonado del endpoint es 0 o no existe, usando calculado desde historial: ${calculadoDesdeHistorial}`);
+                montoAbonado = calculadoDesdeHistorial;
+              } else {
+                montoAbonado = 0;
               }
+              
+              console.log(`💰 DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Monto abonado final: ${montoAbonado} (del endpoint: ${pagosData.total_abonado}, calculado: ${calculadoDesdeHistorial})`);
             } else {
               // Si el endpoint falla, intentar calcular desde historial_pagos del pedido
               const historialDelPedido = pedido.historial_pagos || [];
@@ -501,7 +507,10 @@ const FacturacionPage: React.FC = () => {
             }
             
             // Verificar si puede facturar: total abonado >= total (items + adicionales)
-            const puedeFacturar = montoAbonado >= montoTotal;
+            // Usar una tolerancia de 0.01 para manejar errores de redondeo
+            const puedeFacturar = montoAbonado >= montoTotal - 0.01;
+            
+            console.log(`✅ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Puede facturar: ${puedeFacturar} (Abonado: ${montoAbonado.toFixed(2)}, Total: ${montoTotal.toFixed(2)})`);
             
             return {
               ...pedido,
@@ -880,17 +889,24 @@ const FacturacionPage: React.FC = () => {
   // Escuchar eventos de abono realizado para actualizar la lista
   // ACTUALIZACIÓN SILENCIOSA - sin mostrar loading
   useEffect(() => {
-    const handleAbonoRealizado = () => {
+    const handleAbonoRealizado = (event?: CustomEvent) => {
+      // Si el evento incluye un pedidoId específico, podemos optimizar la actualización
+      const pedidoId = event?.detail?.pedidoId;
+      console.log(`🔄 FACTURACION: Evento pagoRealizado recibido${pedidoId ? ` para pedido ${pedidoId.slice(-4)}` : ''}`);
+      
       // Recargar pedidos silenciosamente cuando se hace un abono
-      fetchPedidosFacturacion(true); // Actualización silenciosa
+      // Usar un pequeño delay para asegurar que el backend haya procesado el pago
+      setTimeout(() => {
+        fetchPedidosFacturacion(true); // Actualización silenciosa
+      }, 500); // 500ms de delay para dar tiempo al backend
     };
 
-    window.addEventListener('abonoRealizado', handleAbonoRealizado);
-    window.addEventListener('pagoRealizado', handleAbonoRealizado);
+    window.addEventListener('abonoRealizado', handleAbonoRealizado as EventListener);
+    window.addEventListener('pagoRealizado', handleAbonoRealizado as EventListener);
     
     return () => {
-      window.removeEventListener('abonoRealizado', handleAbonoRealizado);
-      window.removeEventListener('pagoRealizado', handleAbonoRealizado);
+      window.removeEventListener('abonoRealizado', handleAbonoRealizado as EventListener);
+      window.removeEventListener('pagoRealizado', handleAbonoRealizado as EventListener);
     };
   }, []); // Sin dependencias - fetchPedidosFacturacion es estable
 
