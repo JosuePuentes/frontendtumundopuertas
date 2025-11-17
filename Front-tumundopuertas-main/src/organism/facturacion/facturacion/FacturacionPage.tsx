@@ -793,12 +793,20 @@ const FacturacionPage: React.FC = () => {
       
       // 2. Intentar actualizar desde backend (priorizar BD sobre localStorage)
       try {
+        console.log('🔄 Intentando cargar facturas desde backend...');
         const facturasBackend = await apiGetFacturas();
+        console.log('📥 Respuesta del backend (tipo):', typeof facturasBackend, Array.isArray(facturasBackend));
+        console.log('📥 Respuesta del backend (contenido):', facturasBackend);
+        
         if (facturasBackend && Array.isArray(facturasBackend)) {
           // SIEMPRE usar datos del backend si están disponibles (aunque esté vacío)
           // Esto asegura que los datos en la UI coincidan con lo que está en la BD
           console.log('📥 Facturas recibidas del backend:', facturasBackend.length);
-          console.log('📥 Ejemplo de factura cruda del backend:', facturasBackend[0]);
+          if (facturasBackend.length > 0) {
+            console.log('📥 Ejemplo de factura cruda del backend:', facturasBackend[0]);
+          } else {
+            console.log('📭 Backend devolvió array vacío - no hay facturas procesadas');
+          }
           
           // Intentar obtener los pedidos completos para completar datos faltantes
           let pedidosCompletos: any[] = [];
@@ -862,12 +870,31 @@ const FacturacionPage: React.FC = () => {
           }
         } else {
           console.warn('⚠️ Respuesta del backend no es un array válido:', facturasBackend);
+          console.warn('⚠️ Tipo de respuesta:', typeof facturasBackend);
+          console.warn('⚠️ Usando datos de localStorage como fallback');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('❌ Error al cargar facturas desde BD:', error);
+        console.error('❌ Detalles del error:', {
+          message: error?.message,
+          status: error?.status,
+          statusText: error?.statusText,
+          errorData: error?.errorData
+        });
         console.warn('⚠️ Usando datos de localStorage como fallback');
         // Si falla el backend, mantener datos de localStorage
       }
+      
+      // Log final del estado
+      console.log('📊 Estado final de facturas confirmadas:', {
+        cantidad: facturasConfirmadas.length,
+        facturas: facturasConfirmadas.map((f: any) => ({
+          id: f.id,
+          pedidoId: f.pedidoId,
+          numeroFactura: f.numeroFactura,
+          clienteNombre: f.clienteNombre
+        }))
+      });
       
       try {
         const pedidosBackend = await apiGetPedidosInventario();
@@ -944,6 +971,26 @@ const FacturacionPage: React.FC = () => {
       window.removeEventListener('pagoRealizado', handleAbonoRealizado as EventListener);
     };
   }, []); // Sin dependencias - fetchPedidosFacturacion es estable
+
+  // Filtrar facturas procesadas por búsqueda
+  const facturasFiltradas = useMemo(() => {
+    if (!busquedaFacturas.trim()) {
+      return facturasConfirmadas;
+    }
+    
+    const busquedaLower = busquedaFacturas.toLowerCase().trim();
+    return facturasConfirmadas.filter((factura) => {
+      const clienteNombre = (factura.clienteNombre || '').toLowerCase();
+      const clienteId = (factura.clienteId || '').toLowerCase();
+      const numeroFactura = (factura.numeroFactura || '').toLowerCase();
+      const pedidoId = (factura.pedidoId || '').toLowerCase();
+      
+      return clienteNombre.includes(busquedaLower) ||
+             clienteId.includes(busquedaLower) ||
+             numeroFactura.includes(busquedaLower) ||
+             pedidoId.includes(busquedaLower);
+    });
+  }, [facturasConfirmadas, busquedaFacturas]);
 
   // Filtrar pedidos por nombre de cliente en tiempo real y mantener orden por fecha más reciente
   const facturacionFiltrada = useMemo(() => {
