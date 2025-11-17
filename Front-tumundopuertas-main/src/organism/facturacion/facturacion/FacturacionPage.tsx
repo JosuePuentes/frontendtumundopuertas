@@ -885,16 +885,18 @@ const FacturacionPage: React.FC = () => {
         // Si falla el backend, mantener datos de localStorage
       }
       
-      // Log final del estado
-      console.log('📊 Estado final de facturas confirmadas:', {
-        cantidad: facturasConfirmadas.length,
-        facturas: facturasConfirmadas.map((f: any) => ({
-          id: f.id,
-          pedidoId: f.pedidoId,
-          numeroFactura: f.numeroFactura,
-          clienteNombre: f.clienteNombre
-        }))
-      });
+      // Log final del estado - usar setTimeout para que se ejecute después de que se actualice el estado
+      setTimeout(() => {
+        console.log('📊 Estado final de facturas confirmadas (después de actualizar estado):', {
+          cantidad: facturasConfirmadas.length,
+          facturas: facturasConfirmadas.map((f: any) => ({
+            id: f.id,
+            pedidoId: f.pedidoId,
+            numeroFactura: f.numeroFactura,
+            clienteNombre: f.clienteNombre
+          }))
+        });
+      }, 100);
       
       try {
         const pedidosBackend = await apiGetPedidosInventario();
@@ -1756,12 +1758,32 @@ const FacturacionPage: React.FC = () => {
                 
                 {/* Lista de facturas */}
                 <div className="overflow-y-auto max-h-[500px]">
+                  {(() => {
+                    // Log para debugging
+                    console.log('🔍 MODAL FACTURAS PROCESADAS - Estado actual:', {
+                      facturasConfirmadas_length: facturasConfirmadas.length,
+                      facturasFiltradas_length: facturasFiltradas.length,
+                      busquedaFacturas,
+                      facturasConfirmadas: facturasConfirmadas.map((f: any) => ({
+                        id: f.id,
+                        pedidoId: f.pedidoId,
+                        numeroFactura: f.numeroFactura,
+                        clienteNombre: f.clienteNombre
+                      }))
+                    });
+                    return null;
+                  })()}
                   {facturasFiltradas.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50">
                       <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
                       <p className="text-gray-600 font-medium">
                         {busquedaFacturas ? 'No se encontraron facturas' : 'No hay facturas procesadas'}
                       </p>
+                      {!busquedaFacturas && facturasConfirmadas.length === 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Verifica la consola para ver los logs de carga
+                        </p>
+                      )}
                     </div>
                   ) : (
                     <ul className="p-2 space-y-2">
