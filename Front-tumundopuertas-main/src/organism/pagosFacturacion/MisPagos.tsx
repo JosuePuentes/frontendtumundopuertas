@@ -151,7 +151,7 @@ const MisPagos: React.FC = () => {
     fetchPagos();
     
     // Escuchar evento de pago realizado para actualizar datos
-    const handlePagoRealizado = (event: CustomEvent) => {
+    const handlePagoRealizado = () => {
       console.log('🔄 MIS PAGOS: Evento pagoRealizado recibido, actualizando datos...');
       // Esperar un poco para que el backend procese el pago
       setTimeout(() => {
