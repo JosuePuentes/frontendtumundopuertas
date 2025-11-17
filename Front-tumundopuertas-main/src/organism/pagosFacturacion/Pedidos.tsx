@@ -341,6 +341,7 @@ const Pedidos: React.FC = () => {
                     // FILTRO: Mostrar pedidos con saldo pendiente > 0
                     const items = pedido.items || [];
                     if (items.length === 0) return false; // No mostrar pedidos sin items
+                    
                     // Calcular total incluyendo adicionales y descuentos
                     const totalItems = items.reduce(
                       (acc, item) => {
@@ -373,6 +374,24 @@ const Pedidos: React.FC = () => {
                     
                     // Calcular saldo pendiente
                     const saldoPendiente = totalPedido - montoAbonado;
+                    
+                    // Log detallado para pedido específico (68e7b0c8a05e21da5396c494)
+                    const pedidoIdCompleto = pedido._id;
+                    if (pedidoIdCompleto && pedidoIdCompleto.includes('68e7b0c8a05e21da5396c494')) {
+                      console.log(`🔍🔍🔍 PEDIDO ESPECÍFICO 68e7b0c8a05e21da5396c494:`, {
+                        pedido_completo: pedido,
+                        items: items,
+                        items_length: items.length,
+                        totalItems: totalItems,
+                        totalAdicionales: totalAdicionales,
+                        totalPedido: totalPedido,
+                        total_abonado: pedido.total_abonado,
+                        historial_pagos: pedido.historial_pagos,
+                        montoAbonado_calculado: montoAbonado,
+                        saldoPendiente: saldoPendiente,
+                        pasaFiltro: saldoPendiente > 0.01
+                      });
+                    }
                     
                     // Log para debugging
                     console.log(`🔍 FILTRO PAGOS - Pedido ${pedido._id.slice(-4)}:`, {
