@@ -1988,27 +1988,66 @@ const FacturacionPage: React.FC = () => {
                           <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
                             <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Abonado
                           </p>
-                          <p className="text-lg sm:text-xl font-bold text-green-700">${(pedido.montoAbonado || 0).toFixed(2)}</p>
+                          <p className="text-lg sm:text-xl font-bold text-green-700">
+                            {(() => {
+                              // Calcular monto abonado con múltiples fallbacks
+                              let montoAbonadoDisplay = pedido.montoAbonado || 0;
+                              
+                              // Si montoAbonado es 0, intentar calcular desde historialPagos
+                              if (montoAbonadoDisplay === 0 && pedido.historialPagos && pedido.historialPagos.length > 0) {
+                                montoAbonadoDisplay = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                              }
+                              
+                              // Si aún es 0, intentar desde historial_pagos (formato del backend)
+                              if (montoAbonadoDisplay === 0 && pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                                montoAbonadoDisplay = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                              }
+                              
+                              // Último fallback: usar total_abonado del pedido
+                              if (montoAbonadoDisplay === 0 && pedido.total_abonado) {
+                                montoAbonadoDisplay = pedido.total_abonado;
+                              }
+                              
+                              return `$${montoAbonadoDisplay.toFixed(2)}`;
+                            })()}
+                          </p>
                         </div>
                         <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
                           <p className="text-xs text-gray-600 font-semibold flex items-center gap-1">
                             <DollarSign className="w-3 h-3 sm:w-4 sm:h-4" /> Saldo Pendiente
                           </p>
                           <p className="text-lg sm:text-xl font-bold text-blue-700">
-                            ${Math.max(0, totalConAdicionales - (pedido.montoAbonado || 0)).toFixed(2)}
+                            {(() => {
+                              // Calcular monto abonado con múltiples fallbacks (mismo cálculo que arriba)
+                              let montoAbonadoCalc = pedido.montoAbonado || 0;
+                              
+                              if (montoAbonadoCalc === 0 && pedido.historialPagos && pedido.historialPagos.length > 0) {
+                                montoAbonadoCalc = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                              }
+                              
+                              if (montoAbonadoCalc === 0 && pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                                montoAbonadoCalc = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                              }
+                              
+                              if (montoAbonadoCalc === 0 && pedido.total_abonado) {
+                                montoAbonadoCalc = pedido.total_abonado;
+                              }
+                              
+                              return `$${Math.max(0, totalConAdicionales - montoAbonadoCalc).toFixed(2)}`;
+                            })()}
                           </p>
                         </div>
                       </div>
 
                       {/* Historial de Pagos */}
-                      {pedido.historialPagos && pedido.historialPagos.length > 0 && (
+                      {((pedido.historialPagos && pedido.historialPagos.length > 0) || (pedido.historial_pagos && pedido.historial_pagos.length > 0)) && (
                         <div className="mb-3">
                           <h4 className="font-bold text-sm sm:text-base text-gray-800 mb-2 flex items-center gap-2">
                             <DollarSign className="w-4 h-4" /> Historial de Abonos
                           </h4>
                           <div className="bg-white border border-gray-200 rounded-lg p-2 sm:p-3 max-h-40 overflow-y-auto">
                             <div className="space-y-2">
-                              {[...pedido.historialPagos]
+                              {[...(pedido.historialPagos || pedido.historial_pagos || [])]
                                 .sort((a: any, b: any) => {
                                   const fechaA = a.fecha ? new Date(a.fecha).getTime() : 0;
                                   const fechaB = b.fecha ? new Date(b.fecha).getTime() : 0;
@@ -2045,7 +2084,24 @@ const FacturacionPage: React.FC = () => {
                               <div className="flex justify-between items-center">
                                 <span className="text-xs text-gray-600 font-semibold">Total Abonado:</span>
                                 <span className="text-sm font-bold text-green-700">
-                                  ${(pedido.montoAbonado || 0).toFixed(2)}
+                                  {(() => {
+                                    // Calcular monto abonado con múltiples fallbacks
+                                    let montoAbonadoTotal = pedido.montoAbonado || 0;
+                                    
+                                    if (montoAbonadoTotal === 0 && pedido.historialPagos && pedido.historialPagos.length > 0) {
+                                      montoAbonadoTotal = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                                    }
+                                    
+                                    if (montoAbonadoTotal === 0 && pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                                      montoAbonadoTotal = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                                    }
+                                    
+                                    if (montoAbonadoTotal === 0 && pedido.total_abonado) {
+                                      montoAbonadoTotal = pedido.total_abonado;
+                                    }
+                                    
+                                    return `$${montoAbonadoTotal.toFixed(2)}`;
+                                  })()}
                                 </span>
                               </div>
                             </div>
