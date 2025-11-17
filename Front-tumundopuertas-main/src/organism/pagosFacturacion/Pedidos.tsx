@@ -245,7 +245,7 @@ const Pedidos: React.FC = () => {
           Pedidos Listos para Facturación
         </CardTitle>
         <p className="text-xs sm:text-sm text-gray-500">
-          Solo se muestran pedidos con todos los items completados (estado_item = 4/4)
+          Solo se muestran pedidos con todos los items completados (estado_item = 4/4) y con saldo pendiente mayor a 0
         </p>
         <div className="mt-2 text-xs sm:text-sm text-green-700 font-semibold">
           Suma de pagos realizados: {sumaPagos.toLocaleString("es-MX", { style: "currency", currency: "MXN" })}
@@ -337,7 +337,43 @@ const Pedidos: React.FC = () => {
                       return estadoItem >= 4; // estado_item = 4 significa completado
                     });
                     
-                    return todosItemsCompletados;
+                    if (!todosItemsCompletados) return false;
+                    
+                    // FILTRO CRÍTICO: Solo mostrar pedidos con saldo pendiente > 0
+                    // Calcular total incluyendo adicionales y descuentos
+                    const totalItems = items.reduce(
+                      (acc, item) => {
+                        const precioBase = item.precio || 0;
+                        const descuento = item.descuento || 0;
+                        const precioConDescuento = Math.max(0, precioBase - descuento);
+                        return acc + (precioConDescuento * (item.cantidad || 0));
+                      },
+                      0
+                    );
+                    const adicionales = pedido.adicionales || [];
+                    const totalAdicionales = adicionales.reduce((sum, ad) => {
+                      const cantidad = ad.cantidad || 1;
+                      const precio = ad.precio || 0;
+                      return sum + (precio * cantidad);
+                    }, 0);
+                    const totalPedido = totalItems + totalAdicionales;
+                    
+                    // Calcular monto abonado
+                    const montoAbonado = pedido.total_abonado || (pedido.historial_pagos || []).reduce(
+                      (acc, pago) => acc + (pago.monto || 0),
+                      0
+                    );
+                    
+                    // Calcular saldo pendiente
+                    const saldoPendiente = totalPedido - montoAbonado;
+                    
+                    // Solo mostrar si tiene saldo pendiente > 0
+                    // Si el total es 0, incluir por seguridad (puede ser un error de cálculo)
+                    if (totalPedido > 0 && saldoPendiente <= 0) {
+                      return false; // Excluir pedidos completamente pagados
+                    }
+                    
+                    return true;
                   })
                   .map((pedido) => {
                   return (
