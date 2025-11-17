@@ -203,15 +203,13 @@ const Pedidos: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      // Construcción del query string - ahora obtiene TODOS los pedidos
-      let params = "";
-      if (fechaInicio) params += `fecha_inicio=${fechaInicio}`;
-      if (fechaFin) params += `${params ? '&' : ''}fecha_fin=${fechaFin}`;
+      // Construcción del query string - usar endpoint mis-pagos que devuelve más pedidos
+      const params = new URLSearchParams();
+      if (fechaInicio) params.append("fecha_inicio", fechaInicio);
+      if (fechaFin) params.append("fecha_fin", fechaFin);
 
-      // Usar endpoint que devuelve todos los pedidos sin filtro de estado
-      const endpoint = params 
-        ? `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/all/?${params}`
-        : `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/all/`;
+      // Usar endpoint mis-pagos que devuelve todos los pedidos con información de pagos
+      const endpoint = `${import.meta.env.VITE_API_URL.replace('http://', 'https://')}/pedidos/mis-pagos?${params.toString()}`;
 
       const res = await fetch(endpoint);
       if (!res.ok) throw new Error("Error al obtener pedidos");
