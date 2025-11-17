@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -186,6 +186,12 @@ const Pedidos: React.FC = () => {
   // Filtro local por cliente
   const [clienteFiltro, setClienteFiltro] = useState<string>("");
 
+  // Cargar pedidos automáticamente al montar el componente
+  useEffect(() => {
+    fetchPedidos();
+    fetchMetodosPago();
+  }, []);
+
   const refreshData = async () => {
     await Promise.all([
       fetchPedidos(),
@@ -214,11 +220,15 @@ const Pedidos: React.FC = () => {
       // Asegurar que siempre sea un array
       const pedidosArray = Array.isArray(data) ? data : (data.pedidos || []);
       
+      console.log(`📥 PAGOS: Total pedidos recibidos del backend: ${pedidosArray.length}`);
+      
       // Filtrar pedidos de TU MUNDO PUERTA (RIF: J-507172554)
       const datosFiltrados = pedidosArray.filter((pedido: Pedido) => {
         const nombreCliente = (pedido.cliente_nombre || "").toUpperCase();
         return !nombreCliente.includes("TU MUNDO PUERTA") && !nombreCliente.includes("TU MUNDO  PUERTA");
       });
+      
+      console.log(`📥 PAGOS: Pedidos después de filtrar TU MUNDO PUERTA: ${datosFiltrados.length}`);
       
       setPedidos(datosFiltrados);
     } catch (err: any) {
@@ -318,8 +328,9 @@ const Pedidos: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pedidos
-                  .filter((pedido) => {
+                {(() => {
+                  console.log(`🔍 PAGOS: Total pedidos antes de filtrar: ${pedidos.length}`);
+                  const pedidosFiltrados = pedidos.filter((pedido) => {
                     // Filtro por cliente
                     const pasaFiltroCliente = clienteFiltro.trim() === ""
                       ? true
@@ -399,8 +410,11 @@ const Pedidos: React.FC = () => {
                     // - Tiene abonos pero aún resta
                     // - Total es 0 o negativo (incluir por seguridad, puede ser error de cálculo)
                     return true;
-                  })
-                  .map((pedido) => {
+                  });
+                  
+                  console.log(`✅ PAGOS: Total pedidos después de filtrar: ${pedidosFiltrados.length}`);
+                  return pedidosFiltrados;
+                })().map((pedido) => {
                   return (
                     <TableRow key={pedido._id} className="hover:bg-gray-50">
                       <TableCell className="font-medium break-all max-w-[120px]">
