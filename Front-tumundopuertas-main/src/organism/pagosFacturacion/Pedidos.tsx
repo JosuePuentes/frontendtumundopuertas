@@ -360,12 +360,10 @@ const Pedidos: React.FC = () => {
                     
                     // Calcular monto abonado desde múltiples fuentes (prioridad: total_abonado > historial_pagos)
                     let montoAbonado = 0;
-                    if (pedido.total_abonado !== undefined && pedido.total_abonado !== null) {
+                    if (pedido.total_abonado !== undefined && pedido.total_abonado !== null && pedido.total_abonado > 0) {
                       montoAbonado = pedido.total_abonado;
-                    }
-                    
-                    // Si total_abonado es 0 o no existe, calcular desde historial_pagos
-                    if (montoAbonado === 0 && pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                    } else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                      // Calcular desde historial_pagos si total_abonado no está disponible o es 0
                       montoAbonado = pedido.historial_pagos.reduce(
                         (acc, pago) => acc + (pago.monto || 0),
                         0
@@ -374,6 +372,16 @@ const Pedidos: React.FC = () => {
                     
                     // Calcular saldo pendiente
                     const saldoPendiente = totalPedido - montoAbonado;
+                    
+                    // Log para debugging
+                    console.log(`🔍 FILTRO PAGOS - Pedido ${pedido._id.slice(-4)}:`, {
+                      totalPedido: totalPedido.toFixed(2),
+                      montoAbonado: montoAbonado.toFixed(2),
+                      saldoPendiente: saldoPendiente.toFixed(2),
+                      tiene_total_abonado: !!pedido.total_abonado,
+                      tiene_historial_pagos: !!(pedido.historial_pagos && pedido.historial_pagos.length > 0),
+                      pasaFiltro: saldoPendiente > 0.01
+                    });
                     
                     // Mostrar pedidos que:
                     // 1. Tienen saldo pendiente > 0 (total > abonado y aún resta)
