@@ -688,30 +688,29 @@ const FacturacionPage: React.FC = () => {
       }
       
       // NO filtrar los pedidos cargados al inventario - mantenerlos en la lista pero marcarlos
-      // Solo filtrar los que ya fueron facturados Y los que tienen saldo pendiente <= 0
+      // Solo filtrar los que ya fueron facturados (NO filtrar por saldo pendiente - deben quedarse hasta que se facturen)
       console.log('🔍 DEBUG FILTRADO: Facturas confirmadas IDs normalizados:', facturasConfirmadasIds);
       console.log('🔍 DEBUG FILTRADO: Total pedidos antes de filtrar:', pedidosSinDuplicados.length);
       const pedidosPendientes = pedidosSinDuplicados
         .filter(p => {
           const pedidoIdNormalizado = normalizarId(p._id);
           
-          // 1. Filtrar pedidos que ya fueron facturados
+          // 1. Filtrar SOLO pedidos que ya fueron facturados
+          // NO filtrar por saldo pendiente - los pedidos deben quedarse en la lista hasta que se facturen
           const yaFacturado = facturasConfirmadasIds.includes(pedidoIdNormalizado);
           if (yaFacturado) {
             console.log(`🚫 DEBUG FILTRADO: Pedido ${pedidoIdNormalizado} ya fue facturado, se excluye de pendientes`);
             return false;
           }
           
-          // 2. Filtrar pedidos que NO tienen saldo pendiente > 0
-          // Calcular saldo pendiente: montoTotal - montoAbonado
+          // Calcular saldo pendiente solo para logging (no para filtrar)
           const montoTotal = p.montoTotal || 0;
           const montoAbonado = p.montoAbonado || 0;
           const saldoPendiente = montoTotal - montoAbonado;
           
-          // Solo incluir si tiene saldo pendiente mayor a 0 (o si no se pudo calcular, incluir por seguridad)
+          // Log para debugging (pero no filtrar)
           if (montoTotal > 0 && saldoPendiente <= 0) {
-            console.log(`🚫 DEBUG FILTRADO: Pedido ${pedidoIdNormalizado} no tiene saldo pendiente (Total: ${montoTotal.toFixed(2)}, Abonado: ${montoAbonado.toFixed(2)}, Saldo: ${saldoPendiente.toFixed(2)}), se excluye de pendientes`);
-            return false;
+            console.log(`✅ DEBUG FILTRADO: Pedido ${pedidoIdNormalizado} está listo para facturar (Total: ${montoTotal.toFixed(2)}, Abonado: ${montoAbonado.toFixed(2)}, Saldo: ${saldoPendiente.toFixed(2)}), se mantiene en pendientes hasta facturar`);
           }
           
           // Si montoTotal es 0 o no se pudo calcular, incluir por seguridad (puede ser un error de cálculo)
