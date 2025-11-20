@@ -29,12 +29,20 @@ interface Abono {
   metodo?: string;
   descripcion?: string;
   nombre_quien_envia?: string;
+  creado_por?: string;
+  total_pedido?: number;
 }
 
 interface VentaDiariaResponse {
   total_ingresos: number;
   abonos: Abono[];
   ingresos_por_metodo: { [key: string]: number };
+}
+
+interface IngresoPorUsuario {
+  usuario: string;
+  total: number;
+  cantidad_pedidos: number;
 }
 
 const ResumenVentaDiaria: React.FC = () => {
@@ -78,6 +86,18 @@ const ResumenVentaDiaria: React.FC = () => {
       const responseData: VentaDiariaResponse = await api(url);
       console.log('📊 Datos recibidos del backend:', responseData);
       
+      // Obtener pedidos completos para tener información de creado_por y montoTotal
+      let pedidosCompletos: any[] = [];
+      try {
+        const pedidosRes = await api('/pedidos/all/');
+        if (Array.isArray(pedidosRes)) {
+          pedidosCompletos = pedidosRes;
+          console.log('📦 Pedidos completos obtenidos:', pedidosCompletos.length);
+        }
+      } catch (err) {
+        console.warn('⚠️ No se pudieron obtener pedidos completos:', err);
+      }
+      
       // IMPORTANTE: Confiar en el backend y mostrar TODOS los abonos que envía
       // No hacer filtrado adicional en el frontend para evitar perder abonos
       if (responseData && responseData.abonos && Array.isArray(responseData.abonos)) {
@@ -87,9 +107,54 @@ const ResumenVentaDiaria: React.FC = () => {
           fechaFin: fechaFin
         });
         
-        // Mostrar todos los abonos que el backend envía
-        // El backend ya hizo el filtrado por fechas si se proporcionaron
-        // Si no se proporcionaron fechas, el backend debe enviar todos los abonos
+        // Enriquecer abonos con información de pedidos (creado_por y total_pedido)
+        const abonosEnriquecidos = responseData.abonos.map(abono => {
+          const pedido = pedidosCompletos.find((p: any) => String(p._id) === String(abono.pedido_id));
+          if (pedido) {
+            // Calcular total del pedido considerando descuentos
+            const adicionalesRaw = pedido.adicionales;
+            const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
+            
+            // Subtotal sin descuento
+            const subtotalSinDescuento = pedido.items?.reduce((acc: number, item: any) => {
+              const precioBase = item.precio || 0;
+              return acc + (precioBase * (item.cantidad || 0));
+            }, 0) || 0;
+            
+            // Descuento total
+            const descuentoTotal = pedido.items?.reduce((acc: number, item: any) => {
+              const descuento = item.descuento || 0;
+              const cantidad = item.cantidad || 0;
+              return acc + (descuento * cantidad);
+            }, 0) || 0;
+            
+            // Monto items con descuento
+            const montoItems = subtotalSinDescuento - descuentoTotal;
+            
+            // Monto adicionales
+            const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+              const cantidad = ad.cantidad || 1;
+              const precio = ad.precio || 0;
+              return acc + (precio * cantidad);
+            }, 0);
+            
+            // Total con descuento y adicionales
+            const totalPedido = montoItems + montoAdicionales;
+            
+            return {
+              ...abono,
+              creado_por: pedido.creado_por || 'N/A',
+              total_pedido: pedido.montoTotal || totalPedido
+            };
+          }
+          return {
+            ...abono,
+            creado_por: 'N/A',
+            total_pedido: 0
+          };
+        });
+        
+        responseData.abonos = abonosEnriquecidos;
         
         // Asegurarse de que total_ingresos esté calculado correctamente
         if (!responseData.total_ingresos || responseData.total_ingresos === 0) {
@@ -141,9 +206,70 @@ const ResumenVentaDiaria: React.FC = () => {
       const responseData: VentaDiariaResponse = await api(url);
       console.log('📊 TODOS los datos recibidos del backend:', responseData);
       
+      // Obtener pedidos completos para tener información de creado_por y montoTotal
+      let pedidosCompletos: any[] = [];
+      try {
+        const pedidosRes = await api('/pedidos/all/');
+        if (Array.isArray(pedidosRes)) {
+          pedidosCompletos = pedidosRes;
+          console.log('📦 Pedidos completos obtenidos:', pedidosCompletos.length);
+        }
+      } catch (err) {
+        console.warn('⚠️ No se pudieron obtener pedidos completos:', err);
+      }
+      
       // Asegurarse de que todos los abonos se muestren
       if (responseData && responseData.abonos && Array.isArray(responseData.abonos)) {
         console.log('✅ Total de abonos recibidos (sin filtro):', responseData.abonos.length);
+        
+        // Enriquecer abonos con información de pedidos (creado_por y total_pedido)
+        const abonosEnriquecidos = responseData.abonos.map(abono => {
+          const pedido = pedidosCompletos.find((p: any) => String(p._id) === String(abono.pedido_id));
+          if (pedido) {
+            // Calcular total del pedido considerando descuentos
+            const adicionalesRaw = pedido.adicionales;
+            const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
+            
+            // Subtotal sin descuento
+            const subtotalSinDescuento = pedido.items?.reduce((acc: number, item: any) => {
+              const precioBase = item.precio || 0;
+              return acc + (precioBase * (item.cantidad || 0));
+            }, 0) || 0;
+            
+            // Descuento total
+            const descuentoTotal = pedido.items?.reduce((acc: number, item: any) => {
+              const descuento = item.descuento || 0;
+              const cantidad = item.cantidad || 0;
+              return acc + (descuento * cantidad);
+            }, 0) || 0;
+            
+            // Monto items con descuento
+            const montoItems = subtotalSinDescuento - descuentoTotal;
+            
+            // Monto adicionales
+            const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+              const cantidad = ad.cantidad || 1;
+              const precio = ad.precio || 0;
+              return acc + (precio * cantidad);
+            }, 0);
+            
+            // Total con descuento y adicionales
+            const totalPedido = montoItems + montoAdicionales;
+            
+            return {
+              ...abono,
+              creado_por: pedido.creado_por || 'N/A',
+              total_pedido: pedido.montoTotal || totalPedido
+            };
+          }
+          return {
+            ...abono,
+            creado_por: 'N/A',
+            total_pedido: 0
+          };
+        });
+        
+        responseData.abonos = abonosEnriquecidos;
         
         // Calcular totales si no vienen del backend
         if (!responseData.total_ingresos || responseData.total_ingresos === 0) {
@@ -422,10 +548,10 @@ const ResumenVentaDiaria: React.FC = () => {
           </div>
         ) : data && (
           <div>
+            <div className="text-right font-bold text-2xl mt-6 p-4 bg-green-100 rounded-md text-green-800 mb-4">
+              Total Ingresos: ${(data.total_ingresos || 0).toFixed(2)}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="text-right font-bold text-2xl mt-6 p-4 bg-green-100 rounded-md text-green-800">
-                Total Ingresos: ${(data.total_ingresos || 0).toFixed(2)}
-              </div>
               <Card>
                 <CardHeader>
                   <CardTitle>Ingresos por Método de Pago</CardTitle>
@@ -445,6 +571,81 @@ const ResumenVentaDiaria: React.FC = () => {
                           <TableCell>${total.toFixed(2)}</TableCell>
                         </TableRow>
                       ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Ingresos por Usuario Creador</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Usuario</TableHead>
+                        <TableHead>Total Pedidos</TableHead>
+                        <TableHead>Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(() => {
+                        // Agrupar abonos por usuario creador y calcular totales
+                        const ingresosPorUsuario: { [key: string]: { total: number; pedidos: Set<string> } } = {};
+                        
+                        (data.abonos || []).forEach(abono => {
+                          const usuario = abono.creado_por || 'N/A';
+                          if (!ingresosPorUsuario[usuario]) {
+                            ingresosPorUsuario[usuario] = {
+                              total: 0,
+                              pedidos: new Set()
+                            };
+                          }
+                          // Sumar el total del pedido (no el monto del abono)
+                          if (abono.total_pedido && abono.total_pedido > 0) {
+                            ingresosPorUsuario[usuario].pedidos.add(abono.pedido_id);
+                            // Solo sumar el total del pedido una vez por pedido
+                            if (!ingresosPorUsuario[usuario].pedidos.has(abono.pedido_id)) {
+                              ingresosPorUsuario[usuario].total += abono.total_pedido;
+                            }
+                          }
+                        });
+                        
+                        // Calcular totales correctamente: sumar total_pedido una vez por pedido único
+                        const ingresosPorUsuarioFinal: IngresoPorUsuario[] = [];
+                        Object.keys(ingresosPorUsuario).forEach(usuario => {
+                          const pedidosUnicos = new Set<string>();
+                          let total = 0;
+                          
+                          (data.abonos || []).forEach(abono => {
+                            if (abono.creado_por === usuario && abono.total_pedido && abono.total_pedido > 0) {
+                              if (!pedidosUnicos.has(abono.pedido_id)) {
+                                pedidosUnicos.add(abono.pedido_id);
+                                total += abono.total_pedido;
+                              }
+                            }
+                          });
+                          
+                          if (pedidosUnicos.size > 0) {
+                            ingresosPorUsuarioFinal.push({
+                              usuario,
+                              total,
+                              cantidad_pedidos: pedidosUnicos.size
+                            });
+                          }
+                        });
+                        
+                        // Ordenar por total descendente
+                        ingresosPorUsuarioFinal.sort((a, b) => b.total - a.total);
+                        
+                        return ingresosPorUsuarioFinal.map((item) => (
+                          <TableRow key={item.usuario}>
+                            <TableCell className="font-medium">{item.usuario}</TableCell>
+                            <TableCell>{item.cantidad_pedidos}</TableCell>
+                            <TableCell className="font-bold">${item.total.toFixed(2)}</TableCell>
+                          </TableRow>
+                        ));
+                      })()}
                     </TableBody>
                   </Table>
                 </CardContent>
