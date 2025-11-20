@@ -490,6 +490,7 @@ const FacturacionPage: React.FC = () => {
             let montoAbonado = 0;
             let historialPagos: any[] = [];
             let montoTotal = montoTotalLocal; // Inicializar con cálculo local
+            let puedeFacturarBackend: boolean | undefined = undefined; // Para almacenar puedeFacturar del backend
             
             if (pagosRes.ok) {
               const pagosData = await pagosRes.json();
@@ -497,6 +498,7 @@ const FacturacionPage: React.FC = () => {
                 total_abonado: pagosData.total_abonado,
                 historial_pagos_length: pagosData.historial_pagos?.length || 0,
                 total_pedido: pagosData.total_pedido,
+                puedeFacturar: pagosData.puedeFacturar,
                 historial_pagos: pagosData.historial_pagos
               });
               
@@ -529,6 +531,12 @@ const FacturacionPage: React.FC = () => {
                 montoAbonado = 0;
               }
               
+              // Guardar puedeFacturar del backend si está disponible
+              if (pagosData.puedeFacturar !== undefined) {
+                puedeFacturarBackend = pagosData.puedeFacturar === true;
+                console.log(`✅ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - puedeFacturar del backend: ${puedeFacturarBackend}`);
+              }
+              
               console.log(`💰 DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Monto abonado final: ${montoAbonado.toFixed(2)} (del endpoint: ${pagosData.total_abonado || 0}, calculado: ${calculadoDesdeHistorial.toFixed(2)})`);
             } else {
               // Si el endpoint falla, intentar calcular desde historial_pagos del pedido
@@ -557,7 +565,15 @@ const FacturacionPage: React.FC = () => {
             
             // Verificar si puede facturar: total abonado >= total (items + adicionales)
             // Usar una tolerancia de 0.01 para manejar errores de redondeo
-            const puedeFacturar = montoAbonado >= montoTotal - 0.01;
+            // CRÍTICO: Usar puedeFacturar del backend si está disponible, sino calcular localmente
+            let puedeFacturar = false;
+            if (puedeFacturarBackend !== undefined) {
+              puedeFacturar = puedeFacturarBackend;
+              console.log(`✅ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Usando puedeFacturar del backend: ${puedeFacturar}`);
+            } else {
+              puedeFacturar = montoAbonado >= montoTotal - 0.01;
+              console.log(`⚠️ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Calculando puedeFacturar localmente: ${puedeFacturar}`);
+            }
             
             console.log(`✅ DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Puede facturar: ${puedeFacturar} (Abonado: ${montoAbonado.toFixed(2)}, Total: ${montoTotal.toFixed(2)}, Diferencia: ${(montoTotal - montoAbonado).toFixed(2)})`);
             console.log(`📊 DEBUG FACTURACION: Pedido ${pedido._id.slice(-4)} - Valores finales asignados:`, {
@@ -565,6 +581,7 @@ const FacturacionPage: React.FC = () => {
               montoTotal,
               historialPagos_length: historialPagos.length,
               puedeFacturar,
+              puedeFacturar_del_backend: puedeFacturarBackend !== undefined ? puedeFacturarBackend : 'N/A',
               condicion: `${montoAbonado.toFixed(2)} >= ${(montoTotal - 0.01).toFixed(2)}`
             });
             
