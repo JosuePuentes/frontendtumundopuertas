@@ -1018,7 +1018,7 @@ const FacturacionPage: React.FC = () => {
     });
   }, [facturasConfirmadas, busquedaFacturas]);
 
-  // Filtrar pedidos por nombre de cliente en tiempo real y mantener orden por fecha más reciente
+  // Filtrar pedidos por nombre de cliente en tiempo real y ordenar: primero listos para facturar, luego por fecha más reciente
   const facturacionFiltrada = useMemo(() => {
     let pedidos = facturacion;
     
@@ -1032,8 +1032,68 @@ const FacturacionPage: React.FC = () => {
       });
     }
     
-    // Asegurar que siempre estén ordenados por fecha más reciente primero
+    // Ordenar: primero los listos para facturar, luego los pendientes, y dentro de cada grupo por fecha más reciente
     return [...pedidos].sort((a: any, b: any) => {
+      // Función auxiliar para calcular si está listo para facturar
+      const calcularListoParaFacturar = (pedido: any): boolean => {
+        // Usar puedeFacturar del backend si está disponible
+        if (pedido.puedeFacturar === true) return true;
+        if (pedido.puedeFacturar === false) return false;
+        
+        // Si no está disponible, calcular localmente
+        const adicionalesRaw = pedido.adicionales;
+        const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
+        
+        // Subtotal sin descuento
+        const subtotalSinDescuento = pedido.items?.reduce((acc: number, item: any) => {
+          const precioBase = item.precio || 0;
+          return acc + (precioBase * (item.cantidad || 0));
+        }, 0) || 0;
+        
+        // Descuento total
+        const descuentoTotal = pedido.items?.reduce((acc: number, item: any) => {
+          const descuento = item.descuento || 0;
+          const cantidad = item.cantidad || 0;
+          return acc + (descuento * cantidad);
+        }, 0) || 0;
+        
+        // Monto items con descuento
+        const montoItems = subtotalSinDescuento - descuentoTotal;
+        
+        // Monto adicionales
+        const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+          const cantidad = ad.cantidad || 1;
+          const precio = ad.precio || 0;
+          return acc + (precio * cantidad);
+        }, 0);
+        
+        // Total con descuento y adicionales
+        const totalConAdicionales = montoItems + montoAdicionales;
+        
+        // Calcular monto abonado
+        let montoAbonado = 0;
+        if (pedido.montoAbonado && pedido.montoAbonado > 0) {
+          montoAbonado = pedido.montoAbonado;
+        } else if (pedido.historialPagos && pedido.historialPagos.length > 0) {
+          montoAbonado = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+        } else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+          montoAbonado = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+        } else if (pedido.total_abonado && pedido.total_abonado > 0) {
+          montoAbonado = pedido.total_abonado;
+        }
+        
+        return Math.abs(totalConAdicionales - montoAbonado) < 0.01;
+      };
+      
+      // Primero ordenar por si está listo para facturar (true primero)
+      const listoA = calcularListoParaFacturar(a) ? 1 : 0;
+      const listoB = calcularListoParaFacturar(b) ? 1 : 0;
+      
+      if (listoA !== listoB) {
+        return listoB - listoA; // Listos para facturar primero
+      }
+      
+      // Si ambos tienen el mismo estado, ordenar por fecha más reciente
       const fechaA = a.fecha100Porciento 
         ? new Date(a.fecha100Porciento).getTime()
         : new Date(a.fecha_creacion || 0).getTime();
@@ -1117,7 +1177,7 @@ const FacturacionPage: React.FC = () => {
   };
 
   const handleFacturar = async (pedido: any) => {
-    // Calcular si el pedido está completo (total == abonado)
+    // Calcular total para asegurar que montoTotal tenga un valor válido
     const adicionalesRawBtn = pedido.adicionales;
     const adicionalesNormalizadosBtn = (adicionalesRawBtn && Array.isArray(adicionalesRawBtn)) ? adicionalesRawBtn : [];
     
@@ -1147,70 +1207,15 @@ const FacturacionPage: React.FC = () => {
     // Total con descuento y adicionales
     const totalConAdicionalesBtn = montoItemsBtn + montoAdicionalesBtn;
     
-    // Calcular monto abonado
-    let montoAbonadoBtn = 0;
-    if (pedido.montoAbonado && pedido.montoAbonado > 0) {
-      montoAbonadoBtn = pedido.montoAbonado;
-    } else if (pedido.historialPagos && pedido.historialPagos.length > 0) {
-      montoAbonadoBtn = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
-    } else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
-      montoAbonadoBtn = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
-    } else if (pedido.total_abonado && pedido.total_abonado > 0) {
-      montoAbonadoBtn = pedido.total_abonado;
+    // Asegurar que montoTotal tenga un valor válido
+    if (!pedido.montoTotal && pedido.montoTotal !== 0) {
+      pedido.montoTotal = totalConAdicionalesBtn;
     }
     
-    const estaCompleto = Math.abs(totalConAdicionalesBtn - montoAbonadoBtn) < 0.01;
-    
-    // Si el pedido está completo, guardar automáticamente la factura
-    if (estaCompleto) {
-      try {
-        // Asegurar que montoTotal tenga un valor válido
-        if (!pedido.montoTotal && pedido.montoTotal !== 0) {
-          pedido.montoTotal = totalConAdicionalesBtn;
-        }
-        
-        const numeroFactura = generarNumeroFactura();
-        const adicionalesNormalizados = (pedido.adicionales && Array.isArray(pedido.adicionales)) ? pedido.adicionales : [];
-        
-        const facturaConfirmada: FacturaConfirmada = {
-          id: pedido._id + '-' + Date.now(),
-          numeroFactura: numeroFactura,
-          pedidoId: pedido._id,
-          clienteNombre: pedido.cliente_nombre || pedido.cliente_id || 'N/A',
-          clienteId: pedido.cliente_id || '',
-          montoTotal: pedido.montoTotal || totalConAdicionalesBtn,
-          fechaCreacion: pedido.fecha_creacion || new Date().toISOString(),
-          fechaFacturacion: new Date().toISOString(),
-          items: pedido.items || [],
-          adicionales: adicionalesNormalizados.length > 0 ? adicionalesNormalizados : undefined
-        };
-        
-        // Guardar la factura confirmada
-        await guardarFacturaConfirmada(facturaConfirmada);
-        console.log('💾 DEBUG FACTURACIÓN: Factura guardada automáticamente:', facturaConfirmada.numeroFactura);
-        
-        // Remover el pedido de la lista de pendientes
-        setFacturacion(prev => {
-          const actualizado = prev.filter(p => p._id !== pedido._id);
-          console.log('🔄 DEBUG FACTURACIÓN: Pedido removido de facturacion. Total restante:', actualizado.length);
-          return actualizado;
-        });
-        
-        // Mostrar mensaje de éxito
-        alert(`✓ Pedido facturado exitosamente\nNúmero de Factura: ${numeroFactura}`);
-      } catch (error) {
-        console.error('Error al facturar automáticamente:', error);
-        alert('Error al facturar el pedido. Por favor, inténtalo de nuevo.');
-      }
-    } else {
-      // Si no está completo, abrir el modal como antes
-      if (!pedido.montoTotal && pedido.montoTotal !== 0) {
-        pedido.montoTotal = totalConAdicionalesBtn;
-      }
-      setSelectedPedido(pedido);
-      setModalAccion('facturar');
-      setModalOpen(true);
-    }
+    // Siempre abrir el modal (no eliminar automáticamente de la lista)
+    setSelectedPedido(pedido);
+    setModalAccion('facturar');
+    setModalOpen(true);
   };
 
   const esClienteCargaInventario = (pedido: any) => {
