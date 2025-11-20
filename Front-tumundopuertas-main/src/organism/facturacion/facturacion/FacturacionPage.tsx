@@ -375,18 +375,56 @@ const FacturacionPage: React.FC = () => {
             // CRÍTICO: El pedido específico o pedidos del cliente especial nuevos deben incluirse SIEMPRE
             // sin importar su progreso, estado_general o estado_item
             else if (!progresoEs100 && !todosItemsCompletados && !todosItemsPrepararOCompletados && !todosItemsEnProgreso && !esPedidoEspecifico && !esPedidoClienteEspecialNuevo) {
-              if (pedido._id.includes('61c3f0') || pedidoIdShort === '3f0' || esClienteEspecial) {
-                console.log(`❌ PEDIDO ${pedidoIdShort} ${esClienteEspecial ? '(CLIENTE ESPECIAL)' : ''} EXCLUIDO:`, {
-                  progresoEs100,
-                  estado_general: pedido.estado_general,
-                  todosItemsCompletados,
-                  todosItemsPrepararOCompletados,
-                  esClienteEspecial,
-                  rifCliente,
-                  items: pedido.items?.map((i: any) => ({ id: i.id?.slice(-4), estado_item: i.estado_item }))
-                });
+              // IMPORTANTE: Verificar si el pedido está listo para facturar (total == abonado)
+              // Si está listo para facturar, incluirlo aunque no tenga progreso 100%
+              let estaListoParaFacturar = false;
+              try {
+                // Calcular si está listo para facturar usando datos básicos del pedido
+                const adicionalesRaw = pedido.adicionales;
+                const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
+                const subtotalSinDescuento = pedido.items?.reduce((acc: number, item: any) => {
+                  const precioBase = item.precio || 0;
+                  return acc + (precioBase * (item.cantidad || 0));
+                }, 0) || 0;
+                const descuentoTotal = pedido.items?.reduce((acc: number, item: any) => {
+                  const descuento = item.descuento || 0;
+                  const cantidad = item.cantidad || 0;
+                  return acc + (descuento * cantidad);
+                }, 0) || 0;
+                const montoItems = subtotalSinDescuento - descuentoTotal;
+                const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+                  const cantidad = ad.cantidad || 1;
+                  const precio = ad.precio || 0;
+                  return acc + (precio * cantidad);
+                }, 0);
+                const totalConAdicionales = montoItems + montoAdicionales;
+                let montoAbonado = pedido.total_abonado || 0;
+                if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                  montoAbonado = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                }
+                estaListoParaFacturar = Math.abs(totalConAdicionales - montoAbonado) < 0.01;
+                
+                if (estaListoParaFacturar) {
+                  console.log(`✅ Pedido ${pedidoIdShort}: INCLUIDO porque está listo para facturar (Total: ${totalConAdicionales.toFixed(2)}, Abonado: ${montoAbonado.toFixed(2)})`);
+                }
+              } catch (err) {
+                console.warn(`⚠️ Error al verificar si pedido ${pedidoIdShort} está listo para facturar:`, err);
               }
-              return null;
+              
+              if (!estaListoParaFacturar) {
+                if (pedido._id.includes('61c3f0') || pedidoIdShort === '3f0' || esClienteEspecial) {
+                  console.log(`❌ PEDIDO ${pedidoIdShort} ${esClienteEspecial ? '(CLIENTE ESPECIAL)' : ''} EXCLUIDO:`, {
+                    progresoEs100,
+                    estado_general: pedido.estado_general,
+                    todosItemsCompletados,
+                    todosItemsPrepararOCompletados,
+                    esClienteEspecial,
+                    rifCliente,
+                    items: pedido.items?.map((i: any) => ({ id: i.id?.slice(-4), estado_item: i.estado_item }))
+                  });
+                }
+                return null;
+              }
             }
             
             // Log especial para cliente "Tu Mundo Puerta" o pedido específico
@@ -751,6 +789,53 @@ const FacturacionPage: React.FC = () => {
       console.log('📊 Pedidos limitados:', pedidosLimitados.length);
       console.log('📊 Pedidos al 100%:', pedidosParaFacturar.length);
       console.log('📊 Pedidos pendientes (sin confirmar):', pedidosPendientes.length);
+      
+      // Debug: Contar pedidos listos para facturar
+      const pedidosListosParaFacturar = pedidosPendientes.filter((p: any) => {
+        const puedeFacturar = p.puedeFacturar === true;
+        if (!puedeFacturar) {
+          // Calcular localmente si no viene del backend
+          const adicionalesRaw = p.adicionales;
+          const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
+          const subtotalSinDescuento = p.items?.reduce((acc: number, item: any) => {
+            const precioBase = item.precio || 0;
+            return acc + (precioBase * (item.cantidad || 0));
+          }, 0) || 0;
+          const descuentoTotal = p.items?.reduce((acc: number, item: any) => {
+            const descuento = item.descuento || 0;
+            const cantidad = item.cantidad || 0;
+            return acc + (descuento * cantidad);
+          }, 0) || 0;
+          const montoItems = subtotalSinDescuento - descuentoTotal;
+          const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+            const cantidad = ad.cantidad || 1;
+            const precio = ad.precio || 0;
+            return acc + (precio * cantidad);
+          }, 0);
+          const totalConAdicionales = montoItems + montoAdicionales;
+          let montoAbonado = 0;
+          if (p.montoAbonado && p.montoAbonado > 0) {
+            montoAbonado = p.montoAbonado;
+          } else if (p.historialPagos && p.historialPagos.length > 0) {
+            montoAbonado = p.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+          } else if (p.historial_pagos && p.historial_pagos.length > 0) {
+            montoAbonado = p.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+          } else if (p.total_abonado && p.total_abonado > 0) {
+            montoAbonado = p.total_abonado;
+          }
+          return Math.abs(totalConAdicionales - montoAbonado) < 0.01;
+        }
+        return puedeFacturar;
+      });
+      
+      console.log('✅ DEBUG: Pedidos listos para facturar (puedeFacturar=true o total==abonado):', pedidosListosParaFacturar.length);
+      console.log('✅ DEBUG: IDs de pedidos listos para facturar:', pedidosListosParaFacturar.map((p: any) => ({
+        id: p._id?.slice(-8),
+        puedeFacturar: p.puedeFacturar,
+        montoTotal: p.montoTotal,
+        montoAbonado: p.montoAbonado
+      })));
+      
       console.log('📊 Pedidos ordenados por fecha (más reciente primero):', pedidosOrdenadosPorFecha.length);
       
       setFacturacion(pedidosOrdenadosPorFecha);
@@ -2025,6 +2110,12 @@ const FacturacionPage: React.FC = () => {
             <p className="text-gray-500 text-sm mt-2">
               {busquedaCliente ? 'Intenta con otro nombre o limpia la búsqueda' : 'Los pedidos aparecerán aquí cuando estén al 100%'}
             </p>
+            {/* Debug info */}
+            <div className="mt-4 text-xs text-gray-400">
+              <p>Debug: facturacion.length = {facturacion.length}</p>
+              <p>Debug: facturacionFiltrada.length = {facturacionFiltrada.length}</p>
+              <p>Debug: busquedaCliente = "{busquedaCliente}"</p>
+            </div>
           </div>
         ) : (
           <ul className="space-y-3">
