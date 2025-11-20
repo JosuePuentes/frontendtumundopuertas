@@ -89,13 +89,38 @@ const ResumenVentaDiaria: React.FC = () => {
       // Obtener pedidos completos para tener información de creado_por y montoTotal
       let pedidosCompletos: any[] = [];
       try {
+        console.log('🔍 Intentando obtener pedidos completos desde /pedidos/all/...');
         const pedidosRes = await api('/pedidos/all/');
+        console.log('📥 Respuesta de /pedidos/all/:', {
+          tipo: typeof pedidosRes,
+          esArray: Array.isArray(pedidosRes),
+          longitud: Array.isArray(pedidosRes) ? pedidosRes.length : 'N/A',
+          muestra: Array.isArray(pedidosRes) && pedidosRes.length > 0 ? pedidosRes[0] : 'Sin datos'
+        });
+        
         if (Array.isArray(pedidosRes)) {
           pedidosCompletos = pedidosRes;
           console.log('📦 Pedidos completos obtenidos:', pedidosCompletos.length);
+          // Mostrar muestra de pedidos para debugging
+          if (pedidosCompletos.length > 0) {
+            console.log('📦 Muestra de pedidos (primeros 3):', pedidosCompletos.slice(0, 3).map((p: any) => ({
+              _id: p._id,
+              id: p.id,
+              creado_por: p.creado_por,
+              cliente_nombre: p.cliente_nombre
+            })));
+          } else {
+            console.warn('⚠️ El endpoint /pedidos/all/ devolvió un array vacío');
+          }
+        } else {
+          console.error('❌ El endpoint /pedidos/all/ no devolvió un array. Tipo:', typeof pedidosRes, 'Valor:', pedidosRes);
         }
-      } catch (err) {
-        console.warn('⚠️ No se pudieron obtener pedidos completos:', err);
+      } catch (err: any) {
+        console.error('❌ Error al obtener pedidos completos:', {
+          mensaje: err?.message,
+          error: err,
+          stack: err?.stack
+        });
       }
       
       // IMPORTANTE: Confiar en el backend y mostrar TODOS los abonos que envía
@@ -109,6 +134,32 @@ const ResumenVentaDiaria: React.FC = () => {
         
         // Enriquecer abonos con información de pedidos (creado_por y total_pedido)
         console.log('🔍 Enriqueciendo abonos. Total abonos:', responseData.abonos.length, 'Total pedidos:', pedidosCompletos.length);
+        
+        // Si no se obtuvieron pedidos desde /all/, intentar obtenerlos individualmente
+        if (pedidosCompletos.length === 0 && responseData.abonos.length > 0) {
+          console.log('⚠️ No se obtuvieron pedidos desde /all/, intentando obtener pedidos individualmente...');
+          const pedidosIdsUnicos = [...new Set(responseData.abonos.map(a => a.pedido_id).filter(Boolean))];
+          console.log('📋 IDs de pedidos únicos a buscar:', pedidosIdsUnicos);
+          
+          // Obtener pedidos individualmente (limitado a los primeros 10 para no sobrecargar)
+          const pedidosIndividuales: any[] = [];
+          for (const pedidoId of pedidosIdsUnicos.slice(0, 10)) {
+            try {
+              const pedidoRes = await api(`/pedidos/id/${pedidoId}/`);
+              if (pedidoRes && pedidoRes._id) {
+                pedidosIndividuales.push(pedidoRes);
+                console.log(`✅ Pedido ${pedidoId} obtenido individualmente`);
+              }
+            } catch (err) {
+              console.warn(`⚠️ No se pudo obtener pedido ${pedidoId}:`, err);
+            }
+          }
+          
+          if (pedidosIndividuales.length > 0) {
+            pedidosCompletos = pedidosIndividuales;
+            console.log(`📦 ${pedidosIndividuales.length} pedidos obtenidos individualmente`);
+          }
+        }
         
         const abonosEnriquecidos = responseData.abonos.map((abono, index) => {
           // Intentar diferentes formas de matching
@@ -260,7 +311,15 @@ const ResumenVentaDiaria: React.FC = () => {
       // Obtener pedidos completos para tener información de creado_por y montoTotal
       let pedidosCompletos: any[] = [];
       try {
+        console.log('🔍 Intentando obtener pedidos completos desde /pedidos/all/ (sin filtro)...');
         const pedidosRes = await api('/pedidos/all/');
+        console.log('📥 Respuesta de /pedidos/all/ (sin filtro):', {
+          tipo: typeof pedidosRes,
+          esArray: Array.isArray(pedidosRes),
+          longitud: Array.isArray(pedidosRes) ? pedidosRes.length : 'N/A',
+          muestra: Array.isArray(pedidosRes) && pedidosRes.length > 0 ? pedidosRes[0] : 'Sin datos'
+        });
+        
         if (Array.isArray(pedidosRes)) {
           pedidosCompletos = pedidosRes;
           console.log('📦 Pedidos completos obtenidos (sin filtro):', pedidosCompletos.length);
@@ -272,10 +331,18 @@ const ResumenVentaDiaria: React.FC = () => {
               creado_por: p.creado_por,
               cliente_nombre: p.cliente_nombre
             })));
+          } else {
+            console.warn('⚠️ El endpoint /pedidos/all/ devolvió un array vacío (sin filtro)');
           }
+        } else {
+          console.error('❌ El endpoint /pedidos/all/ no devolvió un array (sin filtro). Tipo:', typeof pedidosRes, 'Valor:', pedidosRes);
         }
-      } catch (err) {
-        console.warn('⚠️ No se pudieron obtener pedidos completos:', err);
+      } catch (err: any) {
+        console.error('❌ Error al obtener pedidos completos (sin filtro):', {
+          mensaje: err?.message,
+          error: err,
+          stack: err?.stack
+        });
       }
       
       // Asegurarse de que todos los abonos se muestren
@@ -284,6 +351,32 @@ const ResumenVentaDiaria: React.FC = () => {
         
         // Enriquecer abonos con información de pedidos (creado_por y total_pedido)
         console.log('🔍 Enriqueciendo abonos (sin filtro). Total abonos:', responseData.abonos.length, 'Total pedidos:', pedidosCompletos.length);
+        
+        // Si no se obtuvieron pedidos desde /all/, intentar obtenerlos individualmente
+        if (pedidosCompletos.length === 0 && responseData.abonos.length > 0) {
+          console.log('⚠️ No se obtuvieron pedidos desde /all/, intentando obtener pedidos individualmente (sin filtro)...');
+          const pedidosIdsUnicos = [...new Set(responseData.abonos.map(a => a.pedido_id).filter(Boolean))];
+          console.log('📋 IDs de pedidos únicos a buscar:', pedidosIdsUnicos);
+          
+          // Obtener pedidos individualmente (limitado a los primeros 10 para no sobrecargar)
+          const pedidosIndividuales: any[] = [];
+          for (const pedidoId of pedidosIdsUnicos.slice(0, 10)) {
+            try {
+              const pedidoRes = await api(`/pedidos/id/${pedidoId}/`);
+              if (pedidoRes && pedidoRes._id) {
+                pedidosIndividuales.push(pedidoRes);
+                console.log(`✅ Pedido ${pedidoId} obtenido individualmente (sin filtro)`);
+              }
+            } catch (err) {
+              console.warn(`⚠️ No se pudo obtener pedido ${pedidoId} (sin filtro):`, err);
+            }
+          }
+          
+          if (pedidosIndividuales.length > 0) {
+            pedidosCompletos = pedidosIndividuales;
+            console.log(`📦 ${pedidosIndividuales.length} pedidos obtenidos individualmente (sin filtro)`);
+          }
+        }
         
         const abonosEnriquecidos = responseData.abonos.map((abono, index) => {
           // Intentar diferentes formas de matching
