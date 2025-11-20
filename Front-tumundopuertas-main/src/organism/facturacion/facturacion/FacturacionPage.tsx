@@ -1964,13 +1964,22 @@ const FacturacionPage: React.FC = () => {
                   const adicionalesRaw = pedido.adicionales;
                   const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
                   
-                  // Calcular monto de items considerando descuentos
-                  const montoItems = pedido.items?.reduce((acc: number, item: any) => {
+                  // Calcular subtotal sin descuento
+                  const subtotalSinDescuento = pedido.items?.reduce((acc: number, item: any) => {
                     const precioBase = item.precio || 0;
-                    const descuento = item.descuento || 0;
-                    const precioConDescuento = Math.max(0, precioBase - descuento);
-                    return acc + (precioConDescuento * (item.cantidad || 0));
+                    return acc + (precioBase * (item.cantidad || 0));
                   }, 0) || 0;
+                  
+                  // Calcular descuento total
+                  const descuentoTotal = pedido.items?.reduce((acc: number, item: any) => {
+                    const descuento = item.descuento || 0;
+                    const cantidad = item.cantidad || 0;
+                    return acc + (descuento * cantidad);
+                  }, 0) || 0;
+                  
+                  // Calcular monto de items con descuento aplicado
+                  const montoItems = subtotalSinDescuento - descuentoTotal;
+                  
                   // Calcular monto de adicionales (precio * cantidad, default cantidad = 1)
                   const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
                     const cantidad = ad.cantidad || 1;
@@ -1978,7 +1987,7 @@ const FacturacionPage: React.FC = () => {
                     return acc + (precio * cantidad);
                   }, 0);
                   
-                  // CRÍTICO: Calcular total como Items + Adicionales (suma manual)
+                  // CRÍTICO: Calcular total como Items (con descuento) + Adicionales
                   const totalConAdicionales = montoItems + montoAdicionales;
                   
                   // Debug: Log para verificar estructura de adicionales y el pedido completo
@@ -2002,16 +2011,27 @@ const FacturacionPage: React.FC = () => {
                   
                   return (
                     <>
-                      {/* Mostrar desglose: Subtotal Items, Adicional, Total */}
+                      {/* Mostrar desglose: Subtotal Items, Descuento, Adicional, Total */}
                       <div className="mb-3 space-y-2">
-                        {/* Subtotal Items - SIEMPRE visible */}
+                        {/* Subtotal Items sin descuento - SIEMPRE visible */}
                         <div className="bg-blue-50 p-2 sm:p-3 rounded-lg border border-blue-200">
                           <div className="flex justify-between items-center">
                             <p className="text-xs text-gray-600 font-semibold">Subtotal:</p>
-                            <p className="text-sm sm:text-base font-bold text-blue-700">${montoItems.toFixed(2)}</p>
+                            <p className="text-sm sm:text-base font-bold text-blue-700">${subtotalSinDescuento.toFixed(2)}</p>
                           </div>
-                          <p className="text-xs text-blue-600 mt-1">Total $ de los items</p>
+                          <p className="text-xs text-blue-600 mt-1">Total $ de los items (sin descuento)</p>
                         </div>
+                        
+                        {/* Descuento - Mostrar solo si hay descuento */}
+                        {descuentoTotal > 0 && (
+                          <div className="bg-red-50 p-2 sm:p-3 rounded-lg border border-red-200">
+                            <div className="flex justify-between items-center">
+                              <p className="text-xs text-gray-600 font-semibold">Descuento:</p>
+                              <p className="text-sm sm:text-base font-bold text-red-700">-${descuentoTotal.toFixed(2)}</p>
+                            </div>
+                            <p className="text-xs text-red-600 mt-1">Descuento otorgado</p>
+                          </div>
+                        )}
                         
                         {/* Adicionales - Mostrar SIEMPRE, incluso si está vacío para que el usuario vea que no hay */}
                         {adicionalesNormalizados.length > 0 ? (
@@ -2054,7 +2074,7 @@ const FacturacionPage: React.FC = () => {
                             </p>
                             <p className="text-lg sm:text-xl font-bold text-gray-800">${totalConAdicionales.toFixed(2)}</p>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">Total items + adicional</p>
+                          <p className="text-xs text-gray-500 mt-1">Total items (con descuento) + adicional</p>
                         </div>
                       </div>
                       
@@ -2324,9 +2344,86 @@ const FacturacionPage: React.FC = () => {
                   ) : (
                   <Button
                     onClick={() => handleFacturar(pedido)}
-                    disabled={!pedido.puedeFacturar}
+                    disabled={(() => {
+                      // Calcular si está completo usando el mismo cálculo que en el modal
+                      const adicionalesRawBtn = pedido.adicionales;
+                      const adicionalesNormalizadosBtn = (adicionalesRawBtn && Array.isArray(adicionalesRawBtn)) ? adicionalesRawBtn : [];
+                          
+                      // Subtotal sin descuento
+                      const subtotalSinDescuentoBtn = pedido.items?.reduce((acc: number, item: any) => {
+                        const precioBase = item.precio || 0;
+                        return acc + (precioBase * (item.cantidad || 0));
+                      }, 0) || 0;
+                          
+                      // Descuento total
+                      const descuentoTotalBtn = pedido.items?.reduce((acc: number, item: any) => {
+                        const descuento = item.descuento || 0;
+                        const cantidad = item.cantidad || 0;
+                        return acc + (descuento * cantidad);
+                      }, 0) || 0;
+                          
+                      // Monto items con descuento
+                      const montoItemsBtn = subtotalSinDescuentoBtn - descuentoTotalBtn;
+                          
+                      // Monto adicionales
+                      const montoAdicionalesBtn = adicionalesNormalizadosBtn.reduce((acc: number, ad: any) => {
+                        const cantidad = ad.cantidad || 1;
+                        const precio = ad.precio || 0;
+                        return acc + (precio * cantidad);
+                      }, 0);
+                          
+                      // Total con descuento y adicionales
+                      const totalConAdicionalesBtn = montoItemsBtn + montoAdicionalesBtn;
+                          
+                      // Calcular monto abonado
+                      let montoAbonadoBtn = 0;
+                      if (pedido.montoAbonado && pedido.montoAbonado > 0) {
+                        montoAbonadoBtn = pedido.montoAbonado;
+                      } else if (pedido.historialPagos && pedido.historialPagos.length > 0) {
+                        montoAbonadoBtn = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                      } else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                        montoAbonadoBtn = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                      } else if (pedido.total_abonado && pedido.total_abonado > 0) {
+                        montoAbonadoBtn = pedido.total_abonado;
+                      }
+                          
+                      const estaCompleto = Math.abs(totalConAdicionalesBtn - montoAbonadoBtn) < 0.01;
+                      return !estaCompleto;
+                    })()}
                     className={`w-full py-3 text-xs sm:text-sm font-bold whitespace-normal break-words ${
-                      pedido.puedeFacturar
+                      (() => {
+                        // Mismo cálculo para determinar si está completo
+                        const adicionalesRawBtn = pedido.adicionales;
+                        const adicionalesNormalizadosBtn = (adicionalesRawBtn && Array.isArray(adicionalesRawBtn)) ? adicionalesRawBtn : [];
+                        const subtotalSinDescuentoBtn = pedido.items?.reduce((acc: number, item: any) => {
+                          const precioBase = item.precio || 0;
+                          return acc + (precioBase * (item.cantidad || 0));
+                        }, 0) || 0;
+                        const descuentoTotalBtn = pedido.items?.reduce((acc: number, item: any) => {
+                          const descuento = item.descuento || 0;
+                          const cantidad = item.cantidad || 0;
+                          return acc + (descuento * cantidad);
+                        }, 0) || 0;
+                        const montoItemsBtn = subtotalSinDescuentoBtn - descuentoTotalBtn;
+                        const montoAdicionalesBtn = adicionalesNormalizadosBtn.reduce((acc: number, ad: any) => {
+                          const cantidad = ad.cantidad || 1;
+                          const precio = ad.precio || 0;
+                          return acc + (precio * cantidad);
+                        }, 0);
+                        const totalConAdicionalesBtn = montoItemsBtn + montoAdicionalesBtn;
+                        let montoAbonadoBtn = 0;
+                        if (pedido.montoAbonado && pedido.montoAbonado > 0) {
+                          montoAbonadoBtn = pedido.montoAbonado;
+                        } else if (pedido.historialPagos && pedido.historialPagos.length > 0) {
+                          montoAbonadoBtn = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                        } else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                          montoAbonadoBtn = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                        } else if (pedido.total_abonado && pedido.total_abonado > 0) {
+                          montoAbonadoBtn = pedido.total_abonado;
+                        }
+                        const estaCompleto = Math.abs(totalConAdicionalesBtn - montoAbonadoBtn) < 0.01;
+                        return estaCompleto;
+                      })()
                         ? 'bg-green-600 hover:bg-green-700 text-white'
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
@@ -2335,12 +2432,52 @@ const FacturacionPage: React.FC = () => {
                       <Receipt className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
                       <span className="text-center leading-tight">
                         {(() => {
-                          // Usar montoTotal del pedido que ya incluye descuentos y adicionales
-                          // Esto asegura consistencia con el cálculo de puedeFacturar
-                          const montoTotalPedido = pedido.montoTotal || 0;
-                          const montoAbonadoPedido = pedido.montoAbonado || 0;
-                          const saldoPendienteBtn = Math.max(0, montoTotalPedido - montoAbonadoPedido);
-                          return pedido.puedeFacturar ? '✓ LISTO PARA FACTURAR' : `⚠️ Pendiente pago ($${saldoPendienteBtn.toFixed(2)})`;
+                          // Calcular total considerando descuentos (mismo cálculo que en el modal)
+                          const adicionalesRawBtn = pedido.adicionales;
+                          const adicionalesNormalizadosBtn = (adicionalesRawBtn && Array.isArray(adicionalesRawBtn)) ? adicionalesRawBtn : [];
+                          
+                          // Subtotal sin descuento
+                          const subtotalSinDescuentoBtn = pedido.items?.reduce((acc: number, item: any) => {
+                            const precioBase = item.precio || 0;
+                            return acc + (precioBase * (item.cantidad || 0));
+                          }, 0) || 0;
+                          
+                          // Descuento total
+                          const descuentoTotalBtn = pedido.items?.reduce((acc: number, item: any) => {
+                            const descuento = item.descuento || 0;
+                            const cantidad = item.cantidad || 0;
+                            return acc + (descuento * cantidad);
+                          }, 0) || 0;
+                          
+                          // Monto items con descuento
+                          const montoItemsBtn = subtotalSinDescuentoBtn - descuentoTotalBtn;
+                          
+                          // Monto adicionales
+                          const montoAdicionalesBtn = adicionalesNormalizadosBtn.reduce((acc: number, ad: any) => {
+                            const cantidad = ad.cantidad || 1;
+                            const precio = ad.precio || 0;
+                            return acc + (precio * cantidad);
+                          }, 0);
+                          
+                          // Total con descuento y adicionales
+                          const totalConAdicionalesBtn = montoItemsBtn + montoAdicionalesBtn;
+                          
+                          // Calcular monto abonado
+                          let montoAbonadoBtn = 0;
+                          if (pedido.montoAbonado && pedido.montoAbonado > 0) {
+                            montoAbonadoBtn = pedido.montoAbonado;
+                          } else if (pedido.historialPagos && pedido.historialPagos.length > 0) {
+                            montoAbonadoBtn = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                          } else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                            montoAbonadoBtn = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                          } else if (pedido.total_abonado && pedido.total_abonado > 0) {
+                            montoAbonadoBtn = pedido.total_abonado;
+                          }
+                          
+                          const saldoPendienteBtn = Math.max(0, totalConAdicionalesBtn - montoAbonadoBtn);
+                          const estaCompleto = Math.abs(totalConAdicionalesBtn - montoAbonadoBtn) < 0.01; // Tolerancia para comparación de decimales
+                          
+                          return estaCompleto ? '✓ LISTO PARA FACTURAR' : `⚠️ Pendiente pago ($${saldoPendienteBtn.toFixed(2)})`;
                         })()}
                       </span>
                     </div>
