@@ -47,29 +47,56 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       // Cargar datos del cliente si existe cliente_id
       if (pedido?.cliente_id) {
         const apiUrl = (import.meta.env.VITE_API_URL || "https://localhost:3000").replace('http://', 'https://');
-        fetch(`${apiUrl}/clientes/id/${pedido.cliente_id}/`)
-          .then(res => {
-            if (res.ok) {
-              return res.json();
-            }
-            return null;
-          })
-          .then(data => {
+        // Intentar primero por ID, luego por RIF
+        Promise.all([
+          fetch(`${apiUrl}/clientes/id/${pedido.cliente_id}/`).then(res => res.ok ? res.json() : null).catch(() => null),
+          fetch(`${apiUrl}/clientes/rif/${pedido.cliente_id}/`).then(res => res.ok ? res.json() : null).catch(() => null)
+        ])
+          .then(([dataById, dataByRif]) => {
+            const data = dataById || dataByRif;
             if (data) {
               setClienteData({
-                nombre: data.nombre || pedido.cliente_nombre || 'N/A',
-                cedula: data.cedula || data.rif || 'N/A',
+                nombre: data.nombre || data.nombres || pedido.cliente_nombre || 'N/A',
+                cedula: data.cedula || data.rif || pedido.cliente_id || 'N/A',
                 direccion: data.direccion || 'N/A',
                 telefono: data.telefono || data.telefono_contacto || 'N/A'
               });
             } else {
-              // Si no se encuentra, usar los datos que ya están en el pedido
-              setClienteData({
-                nombre: pedido.cliente_nombre || 'N/A',
-                cedula: pedido.cliente_cedula || 'N/A',
-                direccion: pedido.cliente_direccion || 'N/A',
-                telefono: pedido.cliente_telefono || 'N/A'
-              });
+              // Si no se encuentra, intentar buscar en la lista de clientes por RIF
+              fetch(`${apiUrl}/clientes/all`)
+                .then(res => res.ok ? res.json() : null)
+                .then((clientes: any[]) => {
+                  if (Array.isArray(clientes)) {
+                    const clienteEncontrado = clientes.find((c: any) => 
+                      String(c.rif || c._id || '').toUpperCase() === String(pedido.cliente_id).toUpperCase()
+                    );
+                    if (clienteEncontrado) {
+                      setClienteData({
+                        nombre: clienteEncontrado.nombre || clienteEncontrado.nombres || pedido.cliente_nombre || 'N/A',
+                        cedula: clienteEncontrado.cedula || clienteEncontrado.rif || pedido.cliente_id || 'N/A',
+                        direccion: clienteEncontrado.direccion || 'N/A',
+                        telefono: clienteEncontrado.telefono || clienteEncontrado.telefono_contacto || 'N/A'
+                      });
+                      return;
+                    }
+                  }
+                  // Fallback: usar datos del pedido
+                  setClienteData({
+                    nombre: pedido.cliente_nombre || 'N/A',
+                    cedula: pedido.cliente_id || 'N/A',
+                    direccion: pedido.cliente_direccion || 'N/A',
+                    telefono: pedido.cliente_telefono || 'N/A'
+                  });
+                })
+                .catch(() => {
+                  // Fallback final: usar datos del pedido
+                  setClienteData({
+                    nombre: pedido.cliente_nombre || 'N/A',
+                    cedula: pedido.cliente_id || 'N/A',
+                    direccion: pedido.cliente_direccion || 'N/A',
+                    telefono: pedido.cliente_telefono || 'N/A'
+                  });
+                });
             }
           })
           .catch(err => {
@@ -77,7 +104,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
             // Usar datos del pedido como fallback
             setClienteData({
               nombre: pedido.cliente_nombre || 'N/A',
-              cedula: pedido.cliente_cedula || 'N/A',
+              cedula: pedido.cliente_id || 'N/A',
               direccion: pedido.cliente_direccion || 'N/A',
               telefono: pedido.cliente_telefono || 'N/A'
             });
@@ -86,7 +113,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         // Si no hay cliente_id, usar datos del pedido
         setClienteData({
           nombre: pedido?.cliente_nombre || 'N/A',
-          cedula: pedido?.cliente_cedula || 'N/A',
+          cedula: pedido?.cliente_cedula || pedido?.cliente_id || 'N/A',
           direccion: pedido?.cliente_direccion || 'N/A',
           telefono: pedido?.cliente_telefono || 'N/A'
         });
@@ -170,7 +197,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       doc.setFont('helvetica', 'normal');
       doc.text(`Nombre: ${clienteData.nombre || 'N/A'}`, 20, yPosition);
       yPosition += 6;
-      doc.text(`Cédula: ${clienteData.cedula || 'N/A'}`, 20, yPosition);
+      doc.text(`RIF/Cédula: ${clienteData.cedula || 'N/A'}`, 20, yPosition);
       yPosition += 6;
       doc.text(`Dirección: ${clienteData.direccion || 'N/A'}`, 20, yPosition);
       yPosition += 6;
@@ -264,16 +291,24 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
 
     // Totales
     if (config.totales.mostrar) {
-      // Calcular subtotal desde los items
-      const subtotal = pedido.items?.reduce((sum: number, item: any) => {
+      // Calcular subtotal sin descuento
+      const subtotalSinDescuento = pedido.items?.reduce((sum: number, item: any) => {
         const cantidad = item.cantidad || 1;
         const precio = item.precio || 0;
         return sum + (precio * cantidad);
       }, 0) || 0;
       
-      const totalFactura = subtotal;
+      // Calcular descuento total
+      const descuentoTotal = pedido.items?.reduce((sum: number, item: any) => {
+        const cantidad = item.cantidad || 1;
+        const descuento = item.descuento || 0;
+        return sum + (descuento * cantidad);
+      }, 0) || 0;
+      
+      // Calcular total factura (con descuento)
+      const totalFactura = subtotalSinDescuento - descuentoTotal;
       const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
-      const restante = totalFactura - totalAbonado;
+      const restante = Math.max(0, totalFactura - totalAbonado);
       
       doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
@@ -283,9 +318,17 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       
-      // Subtotal - siempre mostrarlo
-      doc.text(`Subtotal: $ ${subtotal.toLocaleString()}`, 20, yPosition);
+      // Subtotal sin descuento - siempre mostrarlo
+      doc.text(`Subtotal: $ ${subtotalSinDescuento.toLocaleString()}`, 20, yPosition);
       yPosition += 6;
+      
+      // Descuento - mostrarlo si hay descuento
+      if (descuentoTotal > 0) {
+        doc.setTextColor(255, 0, 0); // Rojo para descuento
+        doc.text(`Descuento: -$ ${descuentoTotal.toLocaleString()}`, 20, yPosition);
+        yPosition += 6;
+        doc.setTextColor(0, 0, 0); // Volver a negro
+      }
       
       // Total Factura - siempre mostrarlo
       doc.setFont('helvetica', 'bold');
@@ -293,7 +336,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       yPosition += 6;
       doc.setFont('helvetica', 'normal');
       
-      // Mostrar abonos si existen
+      // Total Abonado - siempre mostrarlo si hay abonos
       if (totalAbonado > 0) {
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(0, 128, 0); // Verde
@@ -477,7 +520,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
       html += '<div class="client-info">';
       html += '<h3>Cliente</h3>';
       html += `<strong>Nombre:</strong> ${clienteData.nombre || 'N/A'}<br>`;
-      html += `<strong>Cédula:</strong> ${clienteData.cedula || 'N/A'}<br>`;
+      html += `<strong>RIF/Cédula:</strong> ${clienteData.cedula || 'N/A'}<br>`;
       html += `<strong>Dirección:</strong> ${clienteData.direccion || 'N/A'}<br>`;
       html += `<strong>Teléfono:</strong> ${clienteData.telefono || 'N/A'}<br>`;
       html += '</div>';
@@ -541,25 +584,38 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
 
     // Totales
     if (config.totales.mostrar) {
-      // Calcular subtotal desde los items
-      const subtotal = pedido.items?.reduce((sum: number, item: any) => {
+      // Calcular subtotal sin descuento
+      const subtotalSinDescuento = pedido.items?.reduce((sum: number, item: any) => {
         const cantidad = item.cantidad || 1;
         const precio = item.precio || 0;
         return sum + (precio * cantidad);
       }, 0) || 0;
       
-      const totalFactura = subtotal;
+      // Calcular descuento total
+      const descuentoTotal = pedido.items?.reduce((sum: number, item: any) => {
+        const cantidad = item.cantidad || 1;
+        const descuento = item.descuento || 0;
+        return sum + (descuento * cantidad);
+      }, 0) || 0;
+      
+      // Calcular total factura (con descuento)
+      const totalFactura = subtotalSinDescuento - descuentoTotal;
       const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
-      const restante = totalFactura - totalAbonado;
+      const restante = Math.max(0, totalFactura - totalAbonado);
       
       html += '<div class="totals">';
-      // Subtotal - siempre mostrarlo
-      html += '<p><strong>Subtotal:</strong> $ ' + subtotal.toLocaleString() + '</p>';
+      // Subtotal sin descuento - siempre mostrarlo
+      html += '<p><strong>Subtotal:</strong> $ ' + subtotalSinDescuento.toLocaleString() + '</p>';
+      
+      // Descuento - mostrarlo si hay descuento
+      if (descuentoTotal > 0) {
+        html += '<p style="color: red;"><strong>Descuento:</strong> -$ ' + descuentoTotal.toLocaleString() + '</p>';
+      }
       
       // Total Factura - siempre mostrarlo
       html += '<p class="total-final"><strong>Total Factura:</strong> $ ' + totalFactura.toLocaleString() + '</p>';
       
-      // Mostrar abonos si existen
+      // Total Abonado - siempre mostrarlo si hay abonos
       if (totalAbonado > 0) {
         html += '<p style="color: green; font-weight: bold;"><strong>Total Abonado:</strong> $ ' + totalAbonado.toLocaleString() + '</p>';
         html += '<p style="color: red; font-weight: bold;"><strong>Resta por Pagar:</strong> $ ' + restante.toLocaleString() + '</p>';
@@ -614,7 +670,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
             <h3 className="font-medium mb-2">Información del Cliente</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div><strong>Nombre:</strong> {clienteData.nombre || 'N/A'}</div>
-              <div><strong>Cédula:</strong> {clienteData.cedula || 'N/A'}</div>
+              <div><strong>RIF/Cédula:</strong> {clienteData.cedula || 'N/A'}</div>
               <div className="col-span-2"><strong>Dirección:</strong> {clienteData.direccion || 'N/A'}</div>
               <div><strong>Teléfono:</strong> {clienteData.telefono || 'N/A'}</div>
             </div>
@@ -677,27 +733,41 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
         {/* Totales */}
         <div className="flex justify-end">
           <div className="w-48 space-y-1 text-sm">
-            {/* Calcular subtotal desde los items considerando descuentos */}
             {(() => {
-              const subtotal = pedido.items?.reduce((sum: number, item: any) => {
+              // Calcular subtotal sin descuento
+              const subtotalSinDescuento = pedido.items?.reduce((sum: number, item: any) => {
                 const cantidad = item.cantidad || 1;
-                const precioBase = item.precio || 0;
-                const descuento = item.descuento || 0;
-                const precioConDescuento = Math.max(0, precioBase - descuento);
-                return sum + (precioConDescuento * cantidad);
+                const precio = item.precio || 0;
+                return sum + (precio * cantidad);
               }, 0) || 0;
               
-              const totalFactura = subtotal;
+              // Calcular descuento total
+              const descuentoTotal = pedido.items?.reduce((sum: number, item: any) => {
+                const cantidad = item.cantidad || 1;
+                const descuento = item.descuento || 0;
+                return sum + (descuento * cantidad);
+              }, 0) || 0;
+              
+              // Calcular total factura (con descuento)
+              const totalFactura = subtotalSinDescuento - descuentoTotal;
               const totalAbonado = pedido.total_abonado || pedido.abonado || 0;
-              const restante = totalFactura - totalAbonado;
+              const restante = Math.max(0, totalFactura - totalAbonado);
               
               return (
                 <>
-                  {/* Subtotal - siempre mostrarlo */}
+                  {/* Subtotal sin descuento - siempre mostrarlo */}
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
-                    <span>$ {subtotal.toLocaleString()}</span>
+                    <span>$ {subtotalSinDescuento.toLocaleString()}</span>
                   </div>
+                  
+                  {/* Descuento - mostrarlo si hay descuento */}
+                  {descuentoTotal > 0 && (
+                    <div className="flex justify-between text-red-600">
+                      <span>Descuento:</span>
+                      <span>-$ {descuentoTotal.toLocaleString()}</span>
+                    </div>
+                  )}
                   
                   {/* Total Factura - siempre mostrarlo */}
                   <div className="flex justify-between font-bold border-t pt-1 mt-2">
@@ -705,7 +775,7 @@ const PreliminarImpresion: React.FC<PreliminarImpresionProps> = ({
                     <span>$ {totalFactura.toLocaleString()}</span>
                   </div>
                   
-                  {/* Mostrar abonos si existen */}
+                  {/* Total Abonado - siempre mostrarlo si hay abonos */}
                   {totalAbonado > 0 && (
                     <>
                       <div className="flex justify-between text-green-600 font-bold mt-2">
