@@ -109,8 +109,19 @@ const ResumenVentaDiaria: React.FC = () => {
         
         // Enriquecer abonos con información de pedidos (creado_por y total_pedido)
         const abonosEnriquecidos = responseData.abonos.map(abono => {
-          const pedido = pedidosCompletos.find((p: any) => String(p._id) === String(abono.pedido_id));
+          const pedido = pedidosCompletos.find((p: any) => {
+            const pedidoIdStr = String(p._id || p.id || '');
+            const abonoPedidoIdStr = String(abono.pedido_id || '');
+            return pedidoIdStr === abonoPedidoIdStr;
+          });
+          
           if (pedido) {
+            console.log('✅ Pedido encontrado para abono:', {
+              pedido_id: abono.pedido_id,
+              creado_por: pedido.creado_por,
+              montoTotal: pedido.montoTotal
+            });
+            
             // Calcular total del pedido considerando descuentos
             const adicionalesRaw = pedido.adicionales;
             const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
@@ -146,13 +157,25 @@ const ResumenVentaDiaria: React.FC = () => {
               creado_por: pedido.creado_por || 'N/A',
               total_pedido: pedido.montoTotal || totalPedido
             };
+          } else {
+            console.warn('⚠️ Pedido no encontrado para abono:', {
+              pedido_id: abono.pedido_id,
+              total_pedidos_disponibles: pedidosCompletos.length
+            });
           }
+          
           return {
             ...abono,
             creado_por: 'N/A',
             total_pedido: 0
           };
         });
+        
+        console.log('📊 Abonos enriquecidos (muestra):', abonosEnriquecidos.slice(0, 3).map(a => ({
+          pedido_id: a.pedido_id,
+          creado_por: a.creado_por,
+          total_pedido: a.total_pedido
+        })));
         
         responseData.abonos = abonosEnriquecidos;
         
@@ -224,7 +247,12 @@ const ResumenVentaDiaria: React.FC = () => {
         
         // Enriquecer abonos con información de pedidos (creado_por y total_pedido)
         const abonosEnriquecidos = responseData.abonos.map(abono => {
-          const pedido = pedidosCompletos.find((p: any) => String(p._id) === String(abono.pedido_id));
+          const pedido = pedidosCompletos.find((p: any) => {
+            const pedidoIdStr = String(p._id || p.id || '');
+            const abonoPedidoIdStr = String(abono.pedido_id || '');
+            return pedidoIdStr === abonoPedidoIdStr;
+          });
+          
           if (pedido) {
             // Calcular total del pedido considerando descuentos
             const adicionalesRaw = pedido.adicionales;
@@ -262,6 +290,7 @@ const ResumenVentaDiaria: React.FC = () => {
               total_pedido: pedido.montoTotal || totalPedido
             };
           }
+          
           return {
             ...abono,
             creado_por: 'N/A',
@@ -590,53 +619,57 @@ const ResumenVentaDiaria: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {(() => {
-                        // Agrupar abonos por usuario creador y calcular totales
-                        const ingresosPorUsuario: { [key: string]: { total: number; pedidos: Set<string> } } = {};
+                        // Calcular totales correctamente: sumar total_pedido una vez por pedido único por usuario
+                        const ingresosPorUsuarioMap: { [key: string]: { total: number; pedidos: Set<string> } } = {};
                         
                         (data.abonos || []).forEach(abono => {
                           const usuario = abono.creado_por || 'N/A';
-                          if (!ingresosPorUsuario[usuario]) {
-                            ingresosPorUsuario[usuario] = {
+                          
+                          // Inicializar si no existe
+                          if (!ingresosPorUsuarioMap[usuario]) {
+                            ingresosPorUsuarioMap[usuario] = {
                               total: 0,
                               pedidos: new Set()
                             };
                           }
-                          // Sumar el total del pedido (no el monto del abono)
+                          
+                          // Solo sumar el total del pedido una vez por pedido único
                           if (abono.total_pedido && abono.total_pedido > 0) {
-                            ingresosPorUsuario[usuario].pedidos.add(abono.pedido_id);
-                            // Solo sumar el total del pedido una vez por pedido
-                            if (!ingresosPorUsuario[usuario].pedidos.has(abono.pedido_id)) {
-                              ingresosPorUsuario[usuario].total += abono.total_pedido;
+                            // Verificar si el pedido ya fue contado para este usuario
+                            if (!ingresosPorUsuarioMap[usuario].pedidos.has(abono.pedido_id)) {
+                              ingresosPorUsuarioMap[usuario].pedidos.add(abono.pedido_id);
+                              ingresosPorUsuarioMap[usuario].total += abono.total_pedido;
                             }
                           }
                         });
                         
-                        // Calcular totales correctamente: sumar total_pedido una vez por pedido único
-                        const ingresosPorUsuarioFinal: IngresoPorUsuario[] = [];
-                        Object.keys(ingresosPorUsuario).forEach(usuario => {
-                          const pedidosUnicos = new Set<string>();
-                          let total = 0;
-                          
-                          (data.abonos || []).forEach(abono => {
-                            if (abono.creado_por === usuario && abono.total_pedido && abono.total_pedido > 0) {
-                              if (!pedidosUnicos.has(abono.pedido_id)) {
-                                pedidosUnicos.add(abono.pedido_id);
-                                total += abono.total_pedido;
-                              }
-                            }
-                          });
-                          
-                          if (pedidosUnicos.size > 0) {
-                            ingresosPorUsuarioFinal.push({
-                              usuario,
-                              total,
-                              cantidad_pedidos: pedidosUnicos.size
-                            });
-                          }
-                        });
+                        // Convertir a array y ordenar
+                        const ingresosPorUsuarioFinal: IngresoPorUsuario[] = Object.keys(ingresosPorUsuarioMap).map(usuario => ({
+                          usuario,
+                          total: ingresosPorUsuarioMap[usuario].total,
+                          cantidad_pedidos: ingresosPorUsuarioMap[usuario].pedidos.size
+                        }));
                         
                         // Ordenar por total descendente
                         ingresosPorUsuarioFinal.sort((a, b) => b.total - a.total);
+                        
+                        // Debug: mostrar en consola
+                        console.log('📊 Ingresos por Usuario:', ingresosPorUsuarioFinal);
+                        console.log('📊 Abonos con datos:', (data.abonos || []).map(a => ({
+                          pedido_id: a.pedido_id,
+                          creado_por: a.creado_por,
+                          total_pedido: a.total_pedido
+                        })));
+                        
+                        if (ingresosPorUsuarioFinal.length === 0) {
+                          return (
+                            <TableRow>
+                              <TableCell colSpan={3} className="text-center text-gray-500">
+                                No hay datos disponibles
+                              </TableCell>
+                            </TableRow>
+                          );
+                        }
                         
                         return ingresosPorUsuarioFinal.map((item) => (
                           <TableRow key={item.usuario}>
