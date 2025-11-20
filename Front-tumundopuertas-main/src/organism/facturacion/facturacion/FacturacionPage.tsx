@@ -1117,13 +1117,100 @@ const FacturacionPage: React.FC = () => {
   };
 
   const handleFacturar = async (pedido: any) => {
-    // Asegurar que montoTotal siempre tenga un valor válido antes de establecerlo
-    if (!pedido.montoTotal && pedido.montoTotal !== 0) {
-      pedido.montoTotal = pedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+    // Calcular si el pedido está completo (total == abonado)
+    const adicionalesRawBtn = pedido.adicionales;
+    const adicionalesNormalizadosBtn = (adicionalesRawBtn && Array.isArray(adicionalesRawBtn)) ? adicionalesRawBtn : [];
+    
+    // Subtotal sin descuento
+    const subtotalSinDescuentoBtn = pedido.items?.reduce((acc: number, item: any) => {
+      const precioBase = item.precio || 0;
+      return acc + (precioBase * (item.cantidad || 0));
+    }, 0) || 0;
+    
+    // Descuento total
+    const descuentoTotalBtn = pedido.items?.reduce((acc: number, item: any) => {
+      const descuento = item.descuento || 0;
+      const cantidad = item.cantidad || 0;
+      return acc + (descuento * cantidad);
+    }, 0) || 0;
+    
+    // Monto items con descuento
+    const montoItemsBtn = subtotalSinDescuentoBtn - descuentoTotalBtn;
+    
+    // Monto adicionales
+    const montoAdicionalesBtn = adicionalesNormalizadosBtn.reduce((acc: number, ad: any) => {
+      const cantidad = ad.cantidad || 1;
+      const precio = ad.precio || 0;
+      return acc + (precio * cantidad);
+    }, 0);
+    
+    // Total con descuento y adicionales
+    const totalConAdicionalesBtn = montoItemsBtn + montoAdicionalesBtn;
+    
+    // Calcular monto abonado
+    let montoAbonadoBtn = 0;
+    if (pedido.montoAbonado && pedido.montoAbonado > 0) {
+      montoAbonadoBtn = pedido.montoAbonado;
+    } else if (pedido.historialPagos && pedido.historialPagos.length > 0) {
+      montoAbonadoBtn = pedido.historialPagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+    } else if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+      montoAbonadoBtn = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+    } else if (pedido.total_abonado && pedido.total_abonado > 0) {
+      montoAbonadoBtn = pedido.total_abonado;
     }
-    setSelectedPedido(pedido);
-    setModalAccion('facturar');
-    setModalOpen(true);
+    
+    const estaCompleto = Math.abs(totalConAdicionalesBtn - montoAbonadoBtn) < 0.01;
+    
+    // Si el pedido está completo, guardar automáticamente la factura
+    if (estaCompleto) {
+      try {
+        // Asegurar que montoTotal tenga un valor válido
+        if (!pedido.montoTotal && pedido.montoTotal !== 0) {
+          pedido.montoTotal = totalConAdicionalesBtn;
+        }
+        
+        const numeroFactura = generarNumeroFactura();
+        const adicionalesNormalizados = (pedido.adicionales && Array.isArray(pedido.adicionales)) ? pedido.adicionales : [];
+        
+        const facturaConfirmada: FacturaConfirmada = {
+          id: pedido._id + '-' + Date.now(),
+          numeroFactura: numeroFactura,
+          pedidoId: pedido._id,
+          clienteNombre: pedido.cliente_nombre || pedido.cliente_id || 'N/A',
+          clienteId: pedido.cliente_id || '',
+          montoTotal: pedido.montoTotal || totalConAdicionalesBtn,
+          fechaCreacion: pedido.fecha_creacion || new Date().toISOString(),
+          fechaFacturacion: new Date().toISOString(),
+          items: pedido.items || [],
+          adicionales: adicionalesNormalizados.length > 0 ? adicionalesNormalizados : undefined
+        };
+        
+        // Guardar la factura confirmada
+        await guardarFacturaConfirmada(facturaConfirmada);
+        console.log('💾 DEBUG FACTURACIÓN: Factura guardada automáticamente:', facturaConfirmada.numeroFactura);
+        
+        // Remover el pedido de la lista de pendientes
+        setFacturacion(prev => {
+          const actualizado = prev.filter(p => p._id !== pedido._id);
+          console.log('🔄 DEBUG FACTURACIÓN: Pedido removido de facturacion. Total restante:', actualizado.length);
+          return actualizado;
+        });
+        
+        // Mostrar mensaje de éxito
+        alert(`✓ Pedido facturado exitosamente\nNúmero de Factura: ${numeroFactura}`);
+      } catch (error) {
+        console.error('Error al facturar automáticamente:', error);
+        alert('Error al facturar el pedido. Por favor, inténtalo de nuevo.');
+      }
+    } else {
+      // Si no está completo, abrir el modal como antes
+      if (!pedido.montoTotal && pedido.montoTotal !== 0) {
+        pedido.montoTotal = totalConAdicionalesBtn;
+      }
+      setSelectedPedido(pedido);
+      setModalAccion('facturar');
+      setModalOpen(true);
+    }
   };
 
   const esClienteCargaInventario = (pedido: any) => {
@@ -1404,12 +1491,25 @@ const FacturacionPage: React.FC = () => {
         // Flujo normal de facturación
         const numeroFactura = generarNumeroFactura();
         // IMPORTANTE: El backend envía adicionales con estructura: { descripcion?, precio, cantidad? }
-        // El montoTotal del backend YA incluye los adicionales
         // Normalizar adicionales: puede ser null, undefined, o array vacío desde el backend
         const adicionalesNormalizados = (selectedPedido.adicionales && Array.isArray(selectedPedido.adicionales)) ? selectedPedido.adicionales : [];
         
-        // Calcular monto de items (solo para mostrar, no para el total)
-        const montoItems = selectedPedido.items?.reduce((acc: number, item: any) => acc + ((item.precio || 0) * (item.cantidad || 0)), 0) || 0;
+        // Calcular subtotal sin descuento
+        const subtotalSinDescuento = selectedPedido.items?.reduce((acc: number, item: any) => {
+          const precioBase = item.precio || 0;
+          return acc + (precioBase * (item.cantidad || 0));
+        }, 0) || 0;
+        
+        // Calcular descuento total
+        const descuentoTotal = selectedPedido.items?.reduce((acc: number, item: any) => {
+          const descuento = item.descuento || 0;
+          const cantidad = item.cantidad || 0;
+          return acc + (descuento * cantidad);
+        }, 0) || 0;
+        
+        // Calcular monto de items con descuento aplicado
+        const montoItems = subtotalSinDescuento - descuentoTotal;
+        
         // Calcular monto de adicionales (precio * cantidad, default cantidad = 1)
         const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
           const cantidad = ad.cantidad || 1;
@@ -1417,9 +1517,8 @@ const FacturacionPage: React.FC = () => {
           return acc + (precio * cantidad);
         }, 0);
         
-        // CRÍTICO: Usar montoTotal del backend (ya incluye adicionales)
-        // Si no existe, calcular como fallback
-        const montoTotalCalculado = selectedPedido.montoTotal || (montoItems + montoAdicionales);
+        // CRÍTICO: Calcular total como Items (con descuento) + Adicionales
+        const montoTotalCalculado = montoItems + montoAdicionales;
         
         console.log('💰 DEBUG FACTURACIÓN - Cálculo de total:', {
           pedidoId: selectedPedido._id,
