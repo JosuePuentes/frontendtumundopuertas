@@ -42,6 +42,7 @@ interface VentaDiariaResponse {
 interface IngresoPorUsuario {
   usuario: string;
   total: number;
+  total_abonado: number;
   cantidad_pedidos: number;
 }
 
@@ -789,13 +790,14 @@ const ResumenVentaDiaria: React.FC = () => {
                       <TableRow>
                         <TableHead>Usuario</TableHead>
                         <TableHead>Total Pedidos</TableHead>
+                        <TableHead>Total Abonado</TableHead>
                         <TableHead>Total</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {(() => {
-                        // Calcular totales correctamente: sumar total_pedido una vez por pedido único por usuario
-                        const ingresosPorUsuarioMap: { [key: string]: { total: number; pedidos: Set<string> } } = {};
+                        // Calcular totales: sumar monto de abonos y total del pedido por usuario
+                        const ingresosPorUsuarioMap: { [key: string]: { total: number; total_abonado: number; pedidos: Set<string> } } = {};
                         
                         (data.abonos || []).forEach(abono => {
                           const usuario = abono.creado_por || 'N/A';
@@ -804,8 +806,14 @@ const ResumenVentaDiaria: React.FC = () => {
                           if (!ingresosPorUsuarioMap[usuario]) {
                             ingresosPorUsuarioMap[usuario] = {
                               total: 0,
+                              total_abonado: 0,
                               pedidos: new Set()
                             };
+                          }
+                          
+                          // Sumar el monto del abono (siempre se suma)
+                          if (abono.monto && abono.monto > 0) {
+                            ingresosPorUsuarioMap[usuario].total_abonado += abono.monto;
                           }
                           
                           // Solo sumar el total del pedido una vez por pedido único
@@ -822,24 +830,26 @@ const ResumenVentaDiaria: React.FC = () => {
                         const ingresosPorUsuarioFinal: IngresoPorUsuario[] = Object.keys(ingresosPorUsuarioMap).map(usuario => ({
                           usuario,
                           total: ingresosPorUsuarioMap[usuario].total,
+                          total_abonado: ingresosPorUsuarioMap[usuario].total_abonado,
                           cantidad_pedidos: ingresosPorUsuarioMap[usuario].pedidos.size
                         }));
                         
-                        // Ordenar por total descendente
-                        ingresosPorUsuarioFinal.sort((a, b) => b.total - a.total);
+                        // Ordenar por total abonado descendente
+                        ingresosPorUsuarioFinal.sort((a, b) => b.total_abonado - a.total_abonado);
                         
                         // Debug: mostrar en consola
                         console.log('📊 Ingresos por Usuario:', ingresosPorUsuarioFinal);
                         console.log('📊 Abonos con datos:', (data.abonos || []).map(a => ({
                           pedido_id: a.pedido_id,
                           creado_por: a.creado_por,
+                          monto: a.monto,
                           total_pedido: a.total_pedido
                         })));
                         
                         if (ingresosPorUsuarioFinal.length === 0) {
                           return (
                             <TableRow>
-                              <TableCell colSpan={3} className="text-center text-gray-500">
+                              <TableCell colSpan={4} className="text-center text-gray-500">
                                 No hay datos disponibles
                               </TableCell>
                             </TableRow>
@@ -850,6 +860,7 @@ const ResumenVentaDiaria: React.FC = () => {
                           <TableRow key={item.usuario}>
                             <TableCell className="font-medium">{item.usuario}</TableCell>
                             <TableCell>{item.cantidad_pedidos}</TableCell>
+                            <TableCell className="font-bold text-green-600">${item.total_abonado.toFixed(2)}</TableCell>
                             <TableCell className="font-bold">${item.total.toFixed(2)}</TableCell>
                           </TableRow>
                         ));
