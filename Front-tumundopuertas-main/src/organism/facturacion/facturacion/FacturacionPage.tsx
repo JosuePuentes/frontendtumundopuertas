@@ -72,21 +72,36 @@ const FacturacionPage: React.FC = () => {
       
       // Cargar ambas peticiones en paralelo para mejor rendimiento
       const [resOrden4, resAll] = await Promise.allSettled([
-        fetch(`${getApiUrl()}/pedidos/estado/?estado_general=orden4`),
-        fetch(`${getApiUrl()}/pedidos/all/`)
+        fetch(`${getApiUrl()}/pedidos/estado/?estado_general=orden4`).catch((err) => {
+          // Silenciar errores de red (ERR_NAME_NOT_RESOLVED, etc.)
+          if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+            return null; // Retornar null en lugar de lanzar error
+          }
+          throw err; // Re-lanzar otros errores
+        }),
+        fetch(`${getApiUrl()}/pedidos/all/`).catch((err) => {
+          // Silenciar errores de red (ERR_NAME_NOT_RESOLVED, etc.)
+          if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+            return null; // Retornar null en lugar de lanzar error
+          }
+          throw err; // Re-lanzar otros errores
+        })
       ]);
       
       // Procesar respuesta de pedidos orden4
-      if (resOrden4.status === 'fulfilled' && resOrden4.value.ok) {
+      if (resOrden4.status === 'fulfilled' && resOrden4.value && resOrden4.value.ok) {
         pedidosOrden4 = await resOrden4.value.json();
         pedidos = [...pedidosOrden4];
         console.log(`✅ Pedidos con estado_general=orden4 obtenidos: ${pedidosOrden4.length}`);
       } else {
-        console.warn(`⚠️ No se pudieron obtener pedidos con orden4`);
+        // Solo mostrar warning si no es un error de red silencioso
+        if (resOrden4.status === 'rejected' || (resOrden4.value && !resOrden4.value.ok)) {
+          console.warn(`⚠️ No se pudieron obtener pedidos con orden4 (backend no disponible)`);
+        }
       }
       
       // Procesar respuesta de todos los pedidos
-      if (resAll.status === 'fulfilled' && resAll.value.ok) {
+      if (resAll.status === 'fulfilled' && resAll.value && resAll.value.ok) {
         try {
           const todosLosPedidos = await resAll.value.json();
         
@@ -161,8 +176,15 @@ const FacturacionPage: React.FC = () => {
         try {
           console.log(`🔍 Buscando pedido específico ${pedidoIdEspecifico} que no está en la lista inicial...`);
           // CRÍTICO: Usar el endpoint correcto del backend /pedidos/id/{pedido_id}/
-          const resEspecifico = await fetch(`${getApiUrl()}/pedidos/id/${pedidoIdEspecifico}/`);
-          if (resEspecifico.ok) {
+          const resEspecifico = await fetch(`${getApiUrl()}/pedidos/id/${pedidoIdEspecifico}/`).catch((err) => {
+            // Silenciar errores de red (ERR_NAME_NOT_RESOLVED, etc.)
+            if (err.name === 'TypeError' && err.message.includes('Failed to fetch')) {
+              return null; // Retornar null en lugar de lanzar error
+            }
+            throw err; // Re-lanzar otros errores
+          });
+          
+          if (resEspecifico && resEspecifico.ok) {
             const pedidoEspecifico = await resEspecifico.json();
             pedidos.push(pedidoEspecifico);
             console.log(`✅ Pedido específico ${pedidoIdEspecifico} encontrado y agregado a la lista`, {
@@ -171,12 +193,16 @@ const FacturacionPage: React.FC = () => {
               estado_general: pedidoEspecifico.estado_general,
               fecha_creacion: pedidoEspecifico.fecha_creacion
             });
-          } else {
+          } else if (resEspecifico) {
             const errorText = await resEspecifico.text();
             console.warn(`⚠️ No se pudo obtener el pedido específico ${pedidoIdEspecifico}: ${resEspecifico.status} - ${errorText}`);
           }
+          // Si resEspecifico es null (error de red), no hacer nada (silencioso)
         } catch (err: any) {
-          console.error(`❌ Error al buscar pedido específico ${pedidoIdEspecifico}:`, err.message || err);
+          // Solo mostrar error si no es un error de red
+          if (!(err.name === 'TypeError' && err.message.includes('Failed to fetch'))) {
+            console.error(`❌ Error al buscar pedido específico ${pedidoIdEspecifico}:`, err.message || err);
+          }
         }
       }
       
@@ -375,37 +401,52 @@ const FacturacionPage: React.FC = () => {
             // CRÍTICO: El pedido específico o pedidos del cliente especial nuevos deben incluirse SIEMPRE
             // sin importar su progreso, estado_general o estado_item
             else if (!progresoEs100 && !todosItemsCompletados && !todosItemsPrepararOCompletados && !todosItemsEnProgreso && !esPedidoEspecifico && !esPedidoClienteEspecialNuevo) {
-              // IMPORTANTE: Verificar si el pedido está listo para facturar (total == abonado)
-              // Si está listo para facturar, incluirlo aunque no tenga progreso 100%
+              // IMPORTANTE: Primero verificar con el endpoint /pagos si está listo para facturar
+              // Esto usa el campo puedeFacturar del backend que es más confiable
               let estaListoParaFacturar = false;
               try {
-                // Calcular si está listo para facturar usando datos básicos del pedido
-                const adicionalesRaw = pedido.adicionales;
-                const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
-                const subtotalSinDescuento = pedido.items?.reduce((acc: number, item: any) => {
-                  const precioBase = item.precio || 0;
-                  return acc + (precioBase * (item.cantidad || 0));
-                }, 0) || 0;
-                const descuentoTotal = pedido.items?.reduce((acc: number, item: any) => {
-                  const descuento = item.descuento || 0;
-                  const cantidad = item.cantidad || 0;
-                  return acc + (descuento * cantidad);
-                }, 0) || 0;
-                const montoItems = subtotalSinDescuento - descuentoTotal;
-                const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
-                  const cantidad = ad.cantidad || 1;
-                  const precio = ad.precio || 0;
-                  return acc + (precio * cantidad);
-                }, 0);
-                const totalConAdicionales = montoItems + montoAdicionales;
-                let montoAbonado = pedido.total_abonado || 0;
-                if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
-                  montoAbonado = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
-                }
-                estaListoParaFacturar = Math.abs(totalConAdicionales - montoAbonado) < 0.01;
+                // Intentar obtener puedeFacturar del backend primero
+                const pagosResCheck = await fetch(`${getApiUrl()}/pedidos/${pedido._id}/pagos`, {
+                  signal: AbortSignal.timeout(3000) // 3 segundos timeout para verificación rápida
+                });
                 
-                if (estaListoParaFacturar) {
-                  console.log(`✅ Pedido ${pedidoIdShort}: INCLUIDO porque está listo para facturar (Total: ${totalConAdicionales.toFixed(2)}, Abonado: ${montoAbonado.toFixed(2)})`);
+                if (pagosResCheck.ok) {
+                  const pagosDataCheck = await pagosResCheck.json();
+                  if (pagosDataCheck.puedeFacturar === true) {
+                    estaListoParaFacturar = true;
+                    console.log(`✅ Pedido ${pedidoIdShort}: INCLUIDO porque puedeFacturar=true del backend`);
+                  }
+                }
+                
+                // Si el backend no devuelve puedeFacturar o no está disponible, calcular localmente
+                if (!estaListoParaFacturar) {
+                  const adicionalesRaw = pedido.adicionales;
+                  const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
+                  const subtotalSinDescuento = pedido.items?.reduce((acc: number, item: any) => {
+                    const precioBase = item.precio || 0;
+                    return acc + (precioBase * (item.cantidad || 0));
+                  }, 0) || 0;
+                  const descuentoTotal = pedido.items?.reduce((acc: number, item: any) => {
+                    const descuento = item.descuento || 0;
+                    const cantidad = item.cantidad || 0;
+                    return acc + (descuento * cantidad);
+                  }, 0) || 0;
+                  const montoItems = subtotalSinDescuento - descuentoTotal;
+                  const montoAdicionales = adicionalesNormalizados.reduce((acc: number, ad: any) => {
+                    const cantidad = ad.cantidad || 1;
+                    const precio = ad.precio || 0;
+                    return acc + (precio * cantidad);
+                  }, 0);
+                  const totalConAdicionales = montoItems + montoAdicionales;
+                  let montoAbonado = pedido.total_abonado || 0;
+                  if (pedido.historial_pagos && pedido.historial_pagos.length > 0) {
+                    montoAbonado = pedido.historial_pagos.reduce((sum: number, pago: any) => sum + (pago.monto || 0), 0);
+                  }
+                  estaListoParaFacturar = Math.abs(totalConAdicionales - montoAbonado) < 0.01;
+                  
+                  if (estaListoParaFacturar) {
+                    console.log(`✅ Pedido ${pedidoIdShort}: INCLUIDO porque está listo para facturar (cálculo local - Total: ${totalConAdicionales.toFixed(2)}, Abonado: ${montoAbonado.toFixed(2)})`);
+                  }
                 }
               } catch (err) {
                 console.warn(`⚠️ Error al verificar si pedido ${pedidoIdShort} está listo para facturar:`, err);
@@ -997,14 +1038,19 @@ const FacturacionPage: React.FC = () => {
           console.warn('⚠️ Usando datos de localStorage como fallback');
         }
       } catch (error: any) {
-        console.error('❌ Error al cargar facturas desde BD:', error);
-        console.error('❌ Detalles del error:', {
-          message: error?.message,
-          status: error?.status,
-          statusText: error?.statusText,
-          errorData: error?.errorData
-        });
-        console.warn('⚠️ Usando datos de localStorage como fallback');
+        // Solo mostrar errores detallados si no es un error de red (ERR_NAME_NOT_RESOLVED, etc.)
+        if (error?.name === 'TypeError' && error?.message?.includes('Failed to fetch')) {
+          console.warn('⚠️ Backend no disponible, usando datos de localStorage como fallback');
+        } else {
+          console.error('❌ Error al cargar facturas desde BD:', error);
+          console.error('❌ Detalles del error:', {
+            message: error?.message,
+            status: error?.status,
+            statusText: error?.statusText,
+            errorData: error?.errorData
+          });
+          console.warn('⚠️ Usando datos de localStorage como fallback');
+        }
         // Si falla el backend, mantener datos de localStorage
       }
       
