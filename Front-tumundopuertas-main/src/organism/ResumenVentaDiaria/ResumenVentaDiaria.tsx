@@ -108,18 +108,37 @@ const ResumenVentaDiaria: React.FC = () => {
         });
         
         // Enriquecer abonos con información de pedidos (creado_por y total_pedido)
-        const abonosEnriquecidos = responseData.abonos.map(abono => {
+        console.log('🔍 Enriqueciendo abonos. Total abonos:', responseData.abonos.length, 'Total pedidos:', pedidosCompletos.length);
+        
+        const abonosEnriquecidos = responseData.abonos.map((abono, index) => {
+          // Intentar diferentes formas de matching
           const pedido = pedidosCompletos.find((p: any) => {
-            const pedidoIdStr = String(p._id || p.id || '');
-            const abonoPedidoIdStr = String(abono.pedido_id || '');
-            return pedidoIdStr === abonoPedidoIdStr;
+            const pedidoIdStr = String(p._id || p.id || '').trim();
+            const abonoPedidoIdStr = String(abono.pedido_id || '').trim();
+            
+            // Comparación exacta
+            if (pedidoIdStr === abonoPedidoIdStr) return true;
+            
+            // Comparación sin espacios y en minúsculas
+            if (pedidoIdStr.toLowerCase() === abonoPedidoIdStr.toLowerCase()) return true;
+            
+            // Comparación de últimos caracteres (por si hay prefijos)
+            if (pedidoIdStr.length > 0 && abonoPedidoIdStr.length > 0) {
+              const pedidoIdLast = pedidoIdStr.slice(-24); // Últimos 24 caracteres (típico de ObjectId)
+              const abonoIdLast = abonoPedidoIdStr.slice(-24);
+              if (pedidoIdLast === abonoIdLast) return true;
+            }
+            
+            return false;
           });
           
           if (pedido) {
-            console.log('✅ Pedido encontrado para abono:', {
-              pedido_id: abono.pedido_id,
+            console.log(`✅ Pedido encontrado para abono ${index + 1}:`, {
+              abono_pedido_id: abono.pedido_id,
+              pedido_id: pedido._id || pedido.id,
               creado_por: pedido.creado_por,
-              montoTotal: pedido.montoTotal
+              montoTotal: pedido.montoTotal,
+              tiene_creado_por: !!pedido.creado_por
             });
             
             // Calcular total del pedido considerando descuentos
@@ -158,10 +177,19 @@ const ResumenVentaDiaria: React.FC = () => {
               total_pedido: pedido.montoTotal || totalPedido
             };
           } else {
-            console.warn('⚠️ Pedido no encontrado para abono:', {
-              pedido_id: abono.pedido_id,
-              total_pedidos_disponibles: pedidosCompletos.length
-            });
+            // Mostrar más información de debugging solo para los primeros 3 abonos no encontrados
+            if (index < 3) {
+              console.warn(`⚠️ Pedido no encontrado para abono ${index + 1}:`, {
+                abono_pedido_id: abono.pedido_id,
+                tipo_abono_pedido_id: typeof abono.pedido_id,
+                total_pedidos_disponibles: pedidosCompletos.length,
+                primeros_pedido_ids: pedidosCompletos.slice(0, 3).map((p: any) => ({
+                  _id: p._id,
+                  id: p.id,
+                  tipo_id: typeof p._id
+                }))
+              });
+            }
           }
           
           return {
@@ -235,7 +263,16 @@ const ResumenVentaDiaria: React.FC = () => {
         const pedidosRes = await api('/pedidos/all/');
         if (Array.isArray(pedidosRes)) {
           pedidosCompletos = pedidosRes;
-          console.log('📦 Pedidos completos obtenidos:', pedidosCompletos.length);
+          console.log('📦 Pedidos completos obtenidos (sin filtro):', pedidosCompletos.length);
+          // Mostrar muestra de pedidos para debugging
+          if (pedidosCompletos.length > 0) {
+            console.log('📦 Muestra de pedidos (primeros 3):', pedidosCompletos.slice(0, 3).map((p: any) => ({
+              _id: p._id,
+              id: p.id,
+              creado_por: p.creado_por,
+              cliente_nombre: p.cliente_nombre
+            })));
+          }
         }
       } catch (err) {
         console.warn('⚠️ No se pudieron obtener pedidos completos:', err);
@@ -246,14 +283,39 @@ const ResumenVentaDiaria: React.FC = () => {
         console.log('✅ Total de abonos recibidos (sin filtro):', responseData.abonos.length);
         
         // Enriquecer abonos con información de pedidos (creado_por y total_pedido)
-        const abonosEnriquecidos = responseData.abonos.map(abono => {
+        console.log('🔍 Enriqueciendo abonos (sin filtro). Total abonos:', responseData.abonos.length, 'Total pedidos:', pedidosCompletos.length);
+        
+        const abonosEnriquecidos = responseData.abonos.map((abono, index) => {
+          // Intentar diferentes formas de matching
           const pedido = pedidosCompletos.find((p: any) => {
-            const pedidoIdStr = String(p._id || p.id || '');
-            const abonoPedidoIdStr = String(abono.pedido_id || '');
-            return pedidoIdStr === abonoPedidoIdStr;
+            const pedidoIdStr = String(p._id || p.id || '').trim();
+            const abonoPedidoIdStr = String(abono.pedido_id || '').trim();
+            
+            // Comparación exacta
+            if (pedidoIdStr === abonoPedidoIdStr) return true;
+            
+            // Comparación sin espacios y en minúsculas
+            if (pedidoIdStr.toLowerCase() === abonoPedidoIdStr.toLowerCase()) return true;
+            
+            // Comparación de últimos caracteres (por si hay prefijos)
+            if (pedidoIdStr.length > 0 && abonoPedidoIdStr.length > 0) {
+              const pedidoIdLast = pedidoIdStr.slice(-24); // Últimos 24 caracteres (típico de ObjectId)
+              const abonoIdLast = abonoPedidoIdStr.slice(-24);
+              if (pedidoIdLast === abonoIdLast) return true;
+            }
+            
+            return false;
           });
           
           if (pedido) {
+            console.log(`✅ Pedido encontrado para abono ${index + 1} (sin filtro):`, {
+              abono_pedido_id: abono.pedido_id,
+              pedido_id: pedido._id || pedido.id,
+              creado_por: pedido.creado_por,
+              montoTotal: pedido.montoTotal,
+              tiene_creado_por: !!pedido.creado_por
+            });
+            
             // Calcular total del pedido considerando descuentos
             const adicionalesRaw = pedido.adicionales;
             const adicionalesNormalizados = (adicionalesRaw && Array.isArray(adicionalesRaw)) ? adicionalesRaw : [];
@@ -289,6 +351,20 @@ const ResumenVentaDiaria: React.FC = () => {
               creado_por: pedido.creado_por || 'N/A',
               total_pedido: pedido.montoTotal || totalPedido
             };
+          } else {
+            // Mostrar más información de debugging solo para los primeros 3 abonos no encontrados
+            if (index < 3) {
+              console.warn(`⚠️ Pedido no encontrado para abono ${index + 1} (sin filtro):`, {
+                abono_pedido_id: abono.pedido_id,
+                tipo_abono_pedido_id: typeof abono.pedido_id,
+                total_pedidos_disponibles: pedidosCompletos.length,
+                primeros_pedido_ids: pedidosCompletos.slice(0, 3).map((p: any) => ({
+                  _id: p._id,
+                  id: p.id,
+                  tipo_id: typeof p._id
+                }))
+              });
+            }
           }
           
           return {
@@ -297,6 +373,12 @@ const ResumenVentaDiaria: React.FC = () => {
             total_pedido: 0
           };
         });
+        
+        console.log('📊 Abonos enriquecidos (sin filtro, muestra):', abonosEnriquecidos.slice(0, 3).map(a => ({
+          pedido_id: a.pedido_id,
+          creado_por: a.creado_por,
+          total_pedido: a.total_pedido
+        })));
         
         responseData.abonos = abonosEnriquecidos;
         
