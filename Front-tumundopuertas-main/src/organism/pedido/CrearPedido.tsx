@@ -132,6 +132,7 @@ const CrearPedido: React.FC = () => {
   const [sucursal, setSucursal] = useState<string>("");
   const [modalSucursalOpen, setModalSucursalOpen] = useState<boolean>(true); // Abrir al entrar
   const [modalCrearClienteOpen, setModalCrearClienteOpen] = useState<boolean>(false);
+  const [descuentoGeneral, setDescuentoGeneral] = useState<number>(0); // Descuento general del pedido
 
   const { fetchPedido } = usePedido();
   const {
@@ -219,18 +220,54 @@ const CrearPedido: React.FC = () => {
     );
   }, [selectedItems]);
 
-  const totalMontoItems = useMemo(() => {
+  // Calcular total sin descuento para distribución proporcional
+  const totalMontoItemsSinDescuento = useMemo(() => {
     return selectedItems.reduce(
       (acc, item) => {
         if (!item.confirmed || !item.precio) return acc;
-        const precioBase = item.precio;
-        const descuento = item.descuento || 0;
-        const precioConDescuento = Math.max(0, precioBase - descuento); // Precio no puede ser negativo
-        return acc + (item.cantidad * precioConDescuento);
+        return acc + (item.cantidad * item.precio);
       },
       0
     );
   }, [selectedItems]);
+
+  // Validar que el descuento general no exceda el total sin descuento
+  const descuentoGeneralValido = useMemo(() => {
+    return Math.min(descuentoGeneral, totalMontoItemsSinDescuento);
+  }, [descuentoGeneral, totalMontoItemsSinDescuento]);
+
+  // Calcular descuento distribuido proporcionalmente por item
+  const calcularDescuentoPorItem = useCallback((item: SelectedItem, descuentoGeneral: number): number => {
+    if (!item.confirmed || !item.precio || totalMontoItemsSinDescuento === 0) return 0;
+    const montoItem = item.cantidad * item.precio;
+    const proporcion = montoItem / totalMontoItemsSinDescuento;
+    // Distribuir el descuento proporcionalmente y dividir por cantidad para obtener descuento por unidad
+    return (descuentoGeneral * proporcion) / item.cantidad;
+  }, [totalMontoItemsSinDescuento]);
+
+  const totalMontoItems = useMemo(() => {
+    if (descuentoGeneral === 0) {
+      // Si no hay descuento general, calcular normalmente
+      return selectedItems.reduce(
+        (acc, item) => {
+          if (!item.confirmed || !item.precio) return acc;
+          return acc + (item.cantidad * item.precio);
+        },
+        0
+      );
+    }
+    // Calcular con descuento general distribuido proporcionalmente
+    return selectedItems.reduce(
+      (acc, item) => {
+        if (!item.confirmed || !item.precio) return acc;
+        const precioBase = item.precio;
+        const descuentoPorUnidad = calcularDescuentoPorItem(item, descuentoGeneralValido);
+        const precioConDescuento = Math.max(0, precioBase - descuentoPorUnidad);
+        return acc + (item.cantidad * precioConDescuento);
+      },
+      0
+    );
+  }, [selectedItems, descuentoGeneral, descuentoGeneralValido, calcularDescuentoPorItem]);
 
   const totalAdicionales = useMemo(() => {
     return adicionales.reduce(
@@ -345,7 +382,7 @@ const CrearPedido: React.FC = () => {
 
   const handleItemChange = (
     index: number,
-    field: "itemId" | "cantidad" | "search" | "precio" | "detalleitem" | "descuento",
+    field: "itemId" | "cantidad" | "search" | "precio" | "detalleitem",
     value: number | string
   ) => {
     setSelectedItems((prev) => {
@@ -535,6 +572,24 @@ const CrearPedido: React.FC = () => {
     // Construir lista de items para el pedido
     const itemsPedido: PedidoItem[] = [];
 
+    // Calcular total sin descuento de itemsParaUsar para distribución proporcional
+    const totalSinDescuentoItemsParaUsar = itemsParaUsar.reduce(
+      (acc, item) => {
+        if (!item.confirmed || !item.precio) return acc;
+        return acc + (item.cantidad * item.precio);
+      },
+      0
+    );
+
+    // Función auxiliar para calcular descuento por item basado en itemsParaUsar
+    const calcularDescuentoPorItemParaPedido = (item: SelectedItem, descuentoGeneral: number): number => {
+      if (!item.confirmed || !item.precio || totalSinDescuentoItemsParaUsar === 0) return 0;
+      const montoItem = item.cantidad * item.precio;
+      const proporcion = montoItem / totalSinDescuentoItemsParaUsar;
+      // Distribuir el descuento proporcionalmente y dividir por cantidad para obtener descuento por unidad
+      return (descuentoGeneral * proporcion) / item.cantidad;
+    };
+
     // Agregar los items al pedido
     itemsParaUsar.forEach((item) => {
       const itemData = itemsArray.find((it: any) => it._id === item.itemId);
@@ -542,6 +597,11 @@ const CrearPedido: React.FC = () => {
 
       const itemIdFinal = itemData._id ?? item.itemId;
       const codigoFinal = itemData.codigo || itemIdFinal;
+
+      // Calcular descuento por item basado en descuento general
+      const descuentoPorItem = descuentoGeneral > 0 
+        ? calcularDescuentoPorItemParaPedido(item, descuentoGeneralValido)
+        : 0;
 
       if (forzarProduccion) {
         // Regla especial: todo va a producción (estado_item = 0) con la cantidad solicitada
@@ -560,7 +620,7 @@ const CrearPedido: React.FC = () => {
           detalleitem: item.detalleitem || "",
           imagenes: itemData.imagenes ?? [],
           estado_item: 0,
-          descuento: item.descuento || 0,
+          descuento: descuentoPorItem,
         });
         return;
       }
@@ -582,7 +642,7 @@ const CrearPedido: React.FC = () => {
           detalleitem: item.detalleitem || "",
           imagenes: itemData.imagenes ?? [],
           estado_item: 4,
-          descuento: item.descuento || 0,
+          descuento: descuentoPorItem,
         });
       }
 
@@ -604,7 +664,7 @@ const CrearPedido: React.FC = () => {
           detalleitem: item.detalleitem || "",
           imagenes: itemData.imagenes ?? [],
           estado_item: 0,
-          descuento: item.descuento || 0,
+          descuento: descuentoPorItem,
         });
       }
     });
@@ -700,6 +760,7 @@ const CrearPedido: React.FC = () => {
         setNuevoAdicionalDescripcion("");
         setNuevoAdicionalMonto(0);
         setNuevoAdicionalMetodoPago("");
+        setDescuentoGeneral(0);
         // Refrescar la lista de items para mostrar las existencias actualizadas
         if (sucursal) {
           fetchItems(`${apiUrl}/inventario/all?sucursal=${sucursal}`);
@@ -1242,39 +1303,6 @@ const CrearPedido: React.FC = () => {
                       />
                     </div>
 
-                    {/* Descuento */}
-                    <div className="col-span-1 md:col-span-2">
-                      <Label className="block text-xs text-gray-600 mb-1">
-                        Descuento ($)
-                      </Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min={0}
-                          step="0.01"
-                          max={item.precio || 0}
-                          value={item.descuento ?? ""}
-                          onChange={(e) => {
-                            const descuentoValue = Number(e.target.value);
-                            const precioMax = item.precio || 0;
-                            // Limitar el descuento al precio máximo
-                            const descuentoFinal = Math.min(descuentoValue, precioMax);
-                            handleItemChange(idx, "descuento", descuentoFinal);
-                          }}
-                          disabled={!item.confirmed}
-                          className="w-24 focus:ring-2 focus:ring-orange-400"
-                          placeholder="0.00"
-                        />
-                        {item.confirmed && item.precio && item.precio > 0 && (
-                          <span className="text-xs text-gray-500 whitespace-nowrap">
-                            {item.descuento && item.descuento > 0
-                              ? `(${((item.descuento / item.precio) * 100).toFixed(1)}%)`
-                              : "(0%)"}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
                     {/* Quitar */}
                     <div className="col-span-1 md:col-span-1 flex justify-end">
                       <Button
@@ -1289,24 +1317,28 @@ const CrearPedido: React.FC = () => {
                     </div>
 
                     {/* Precio con descuento aplicado - Información */}
-                    {item.confirmed && item.precio && (
+                    {item.confirmed && item.precio && descuentoGeneral > 0 && (
                       <div className="col-span-1 md:col-span-12">
                         <div className="flex items-center gap-2 text-sm">
                           <span className="text-gray-600">Precio original:</span>
                           <span className="font-semibold text-gray-800">${item.precio.toFixed(2)}</span>
-                          {item.descuento && item.descuento > 0 && (
-                            <>
-                              <span className="text-gray-400">-</span>
-                              <span className="text-red-600 font-semibold">${item.descuento.toFixed(2)}</span>
-                              <span className="text-gray-400">=</span>
-                              <span className="font-bold text-green-600">
-                                ${(item.precio - item.descuento).toFixed(2)} c/u
-                              </span>
-                              <span className="text-gray-500">
-                                (Total: ${((item.precio - item.descuento) * item.cantidad).toFixed(2)})
-                              </span>
-                            </>
-                          )}
+                          {(() => {
+                            const descuentoPorUnidad = calcularDescuentoPorItem(item, descuentoGeneralValido);
+                            const precioConDescuento = Math.max(0, item.precio - descuentoPorUnidad);
+                            return (
+                              <>
+                                <span className="text-gray-400">-</span>
+                                <span className="text-red-600 font-semibold">${descuentoPorUnidad.toFixed(2)}</span>
+                                <span className="text-gray-400">=</span>
+                                <span className="font-bold text-green-600">
+                                  ${precioConDescuento.toFixed(2)} c/u
+                                </span>
+                                <span className="text-gray-500">
+                                  (Total: ${(precioConDescuento * item.cantidad).toFixed(2)})
+                                </span>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     )}
@@ -1628,6 +1660,43 @@ const CrearPedido: React.FC = () => {
                     )}
                   </div>
 
+                  {/* Descuento General */}
+                  {selectedItems.filter(item => item.confirmed).length > 0 && (
+                    <div className="space-y-2 mt-4 pt-4 border-t border-gray-200">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Descuento General del Pedido
+                      </Label>
+                      <div className="space-y-2 bg-orange-50 rounded-lg p-3 border-2 border-orange-200">
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            max={totalMontoItemsSinDescuento}
+                            value={descuentoGeneral || ""}
+                            onChange={(e) => {
+                              const valor = Number(e.target.value);
+                              const maximo = totalMontoItemsSinDescuento;
+                              setDescuentoGeneral(Math.min(Math.max(0, valor), maximo));
+                            }}
+                            placeholder="0.00"
+                            className="flex-1 focus:ring-2 focus:ring-orange-400 border-2"
+                          />
+                          <span className="text-xs text-gray-600 whitespace-nowrap">
+                            Máx: ${totalMontoItemsSinDescuento.toFixed(2)}
+                          </span>
+                        </div>
+                        {descuentoGeneral > 0 && (
+                          <div className="text-xs text-gray-600">
+                            <p>Descuento aplicado: <span className="font-bold text-red-600">-${descuentoGeneral.toFixed(2)}</span></p>
+                            <p>Total sin descuento: <span className="line-through">${totalMontoItemsSinDescuento.toFixed(2)}</span></p>
+                            <p>Total con descuento: <span className="font-bold text-green-600">${totalMontoItems.toFixed(2)}</span></p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Totales */}
                   {selectedItems.length > 0 && (
                     <>
@@ -1638,15 +1707,33 @@ const CrearPedido: React.FC = () => {
                           {totalItems}
                         </p>
                       </div>
-                      <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
-                        <p className="text-gray-600 text-sm font-medium mb-2">Total Items</p>
-                        <p className="text-2xl font-bold text-gray-700">
-                          ${totalMontoItems.toLocaleString("es-AR", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </p>
-                      </div>
+                      {descuentoGeneral > 0 ? (
+                        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                          <p className="text-gray-600 text-sm font-medium mb-2">Total Items (con descuento)</p>
+                          <p className="text-2xl font-bold text-gray-700">
+                            ${totalMontoItems.toLocaleString("es-AR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-1 line-through">
+                            ${totalMontoItemsSinDescuento.toLocaleString("es-AR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                          <p className="text-gray-600 text-sm font-medium mb-2">Total Items</p>
+                          <p className="text-2xl font-bold text-gray-700">
+                            ${totalMontoItems.toLocaleString("es-AR", {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </p>
+                        </div>
+                      )}
                       {totalAdicionales > 0 && (
                         <div className="bg-yellow-50 rounded-lg p-4 shadow-sm border-2 border-yellow-200">
                           <p className="text-gray-600 text-sm font-medium mb-2">Adicionales</p>
@@ -1704,8 +1791,10 @@ const CrearPedido: React.FC = () => {
                             ? (itemsData as any[]).find((it: any) => it._id === item.itemId)
                             : undefined;
                           const precioBase = item.precio || 0;
-                          const descuento = item.descuento || 0;
-                          const precioConDescuento = Math.max(0, precioBase - descuento);
+                          const descuentoPorUnidad = descuentoGeneral > 0 
+                            ? calcularDescuentoPorItem(item, descuentoGeneralValido)
+                            : 0;
+                          const precioConDescuento = Math.max(0, precioBase - descuentoPorUnidad);
                           const totalItem = precioConDescuento * item.cantidad;
                           return (
                             <div key={idx} className="bg-white rounded-lg p-3 shadow-sm border border-gray-200">
@@ -1713,16 +1802,16 @@ const CrearPedido: React.FC = () => {
                                 <div className="flex-1">
                                   <p className="text-sm font-semibold text-gray-800">{itemData?.nombre || item.search}</p>
                                   <p className="text-xs text-gray-600">Cód: {itemData?.codigo}</p>
-                                  {descuento > 0 && (
+                                  {descuentoPorUnidad > 0 && (
                                     <p className="text-xs text-red-600 mt-1">
-                                      Descuento: ${descuento.toFixed(2)} ({((descuento / precioBase) * 100).toFixed(1)}%)
+                                      Descuento: ${descuentoPorUnidad.toFixed(2)} c/u ({((descuentoPorUnidad / precioBase) * 100).toFixed(1)}%)
                                     </p>
                                   )}
                                 </div>
                                 <div className="text-right">
                                   <p className="text-sm font-bold text-blue-700">${totalItem.toFixed(2)}</p>
                                   <p className="text-xs text-gray-500">x{item.cantidad}</p>
-                                  {descuento > 0 && (
+                                  {descuentoPorUnidad > 0 && (
                                     <p className="text-xs text-gray-400 line-through">
                                       ${(precioBase * item.cantidad).toFixed(2)}
                                     </p>
