@@ -78,7 +78,8 @@ const DashboardAsignaciones: React.FC = () => {
     }
   }, []);
 
-  // OPTIMIZACIÓN: Función memoizada para cargar asignaciones usando endpoint /pedidos/all/
+  // OPTIMIZACIÓN: Función memoizada para cargar asignaciones
+  // Primero intenta usar el endpoint optimizado /asignaciones/todas, si falla usa /pedidos/all/
   const cargarAsignaciones = useCallback(async (silent = false) => {
     // Solo mostrar loading en la carga inicial, no en actualizaciones silenciosas
     if (!silent && isInitialLoad.current) {
@@ -87,8 +88,59 @@ const DashboardAsignaciones: React.FC = () => {
     setError(null);
     
     try {
-      // OPTIMIZACIÓN: Usar endpoint con límite para evitar cargar demasiados pedidos
-      // Obtener pedidos con límite para mejor rendimiento
+      // INTENTAR PRIMERO: Usar endpoint optimizado /asignaciones/todas del backend
+      try {
+        const responseOptimizado = await fetch(`${getApiUrl()}/pedidos/asignaciones/todas`);
+        
+        if (responseOptimizado.ok) {
+          const data = await responseOptimizado.json();
+          console.log('✅ DEBUG: Usando endpoint optimizado /asignaciones/todas');
+          console.log('🔍 DEBUG: Asignaciones recibidas del backend:', data.total);
+          
+          if (data.asignaciones && Array.isArray(data.asignaciones)) {
+            // Mapear las asignaciones del formato del backend al formato del componente
+            const asignacionesMapeadas: Asignacion[] = data.asignaciones.map((asig: any) => ({
+              _id: asig._id || `${asig.pedido_id}_${asig.item_id}_${asig.empleado_id}_${asig.modulo}`,
+              pedido_id: asig.pedido_id,
+              orden: asig.orden || 1,
+              item_id: asig.item_id,
+              empleado_id: asig.empleado_id,
+              empleado_nombre: asig.empleado_nombre || "Sin asignar",
+              modulo: asig.modulo || "herreria",
+              estado: asig.estado || "en_proceso",
+              fecha_asignacion: asig.fecha_asignacion || new Date().toISOString(),
+              fecha_fin: asig.fecha_fin,
+              descripcionitem: asig.descripcionitem || "",
+              detalleitem: asig.detalleitem || "",
+              cliente_nombre: asig.cliente_nombre || "",
+              costo_produccion: asig.costo_produccion || 0,
+              imagenes: asig.imagenes || [],
+              cantidad: 1, // El backend ya devuelve asignaciones individuales
+              unidad_index: asig.unidad_index
+            }));
+            
+            // Ordenar por fecha de asignación (más recientes primero)
+            asignacionesMapeadas.sort((a, b) => {
+              const fechaA = new Date(a.fecha_asignacion).getTime();
+              const fechaB = new Date(b.fecha_asignacion).getTime();
+              return fechaB - fechaA; // Descendente (más recientes primero)
+            });
+            
+            setAsignaciones(asignacionesMapeadas);
+            isInitialLoad.current = false;
+            if (!silent) {
+              setLoading(false);
+            }
+            return; // Salir exitosamente
+          }
+        }
+      } catch (errorOptimizado) {
+        console.warn('⚠️ DEBUG: Endpoint optimizado no disponible, usando método alternativo:', errorOptimizado);
+        // Continuar con el método alternativo
+      }
+      
+      // MÉTODO ALTERNATIVO: Usar endpoint /pedidos/all/ y procesar manualmente
+      console.log('🔄 DEBUG: Usando método alternativo /pedidos/all/');
       const response = await fetch(`${getApiUrl()}/pedidos/all/?limite=200&ordenar=fecha_desc`);
       
       if (response.ok) {
@@ -96,6 +148,8 @@ const DashboardAsignaciones: React.FC = () => {
         
         // OPTIMIZACIÓN: Limitar procesamiento a los primeros 200 pedidos para mejor rendimiento
         const pedidosLimitados = Array.isArray(pedidos) ? pedidos.slice(0, 200) : [];
+        
+        console.log('🔍 DEBUG: Total de pedidos recibidos:', pedidosLimitados.length);
         
         // Extraer todas las asignaciones en proceso de todos los pedidos
         // OPTIMIZACIÓN: Usar Map para búsqueda rápida de items
@@ -110,7 +164,11 @@ const DashboardAsignaciones: React.FC = () => {
           }
         }
         
+        console.log('🔍 DEBUG: Total de items mapeados:', itemsMap.size);
+        
         const asignacionesRaw: any[] = [];
+        let totalAsignacionesEncontradas = 0;
+        let asignacionesFiltradas = 0;
         
         for (const pedido of pedidosLimitados) {
           const pedido_id = pedido._id;
@@ -119,6 +177,8 @@ const DashboardAsignaciones: React.FC = () => {
             for (const sub of seguimiento) {
             if (sub.asignaciones_articulos && Array.isArray(sub.asignaciones_articulos)) {
               for (const asignacion of sub.asignaciones_articulos) {
+                totalAsignacionesEncontradas++;
+                
                 // OPTIMIZACIÓN: Usar Map para búsqueda O(1) en lugar de find O(n)
                 const item = itemsMap.get(asignacion.itemId);
                 
@@ -136,8 +196,28 @@ const DashboardAsignaciones: React.FC = () => {
                 const estadoItemActual = item?.estado_item || 1;  // El estado actual del item (1,2,3 o 4)
                 const moduloCoincide = ordenDelModulo === estadoItemActual;  // Solo mostrar si el orden coincide con el estado_item
                 
+                // DEBUG: Log para entender qué se está filtrando
+                if (asignacion.estado === "en_proceso" || asignacion.estado === "pendiente") {
+                  console.log('🔍 DEBUG Asignación encontrada:', {
+                    pedido_id: pedido_id?.slice(-4),
+                    item_id: asignacion.itemId?.slice(-4),
+                    estado: asignacion.estado,
+                    estaTerminada,
+                    tieneEmpleado: !!asignacion.empleadoId,
+                    moduloCoincide,
+                    ordenDelModulo,
+                    estadoItemActual,
+                    fecha_fin: asignacion.fecha_fin
+                  });
+                }
+                
                 // CRÍTICO: Filtrar estrictamente - solo mostrar si NO está terminada, tiene empleado asignado Y el módulo coincide
-                if (asignacion.estado === "en_proceso" && !estaTerminada && asignacion.empleadoId && moduloCoincide) {
+                // RELAJADO: Permitir también estado "pendiente" además de "en_proceso"
+                const estadoValido = asignacion.estado === "en_proceso" || asignacion.estado === "pendiente";
+                
+                if (estadoValido && !estaTerminada && asignacion.empleadoId) {
+                  // RELAJADO: Si el módulo no coincide exactamente, usar el orden del módulo como fallback
+                  const ordenAUsar = moduloCoincide ? ordenDelModulo : estadoItemActual;
                   
                   // OPTIMIZACIÓN: Usar ref para acceder a empleados sin causar re-renders
                   // Esto evita loops infinitos de actualización
@@ -159,7 +239,7 @@ const DashboardAsignaciones: React.FC = () => {
                   
                   // Obtener orden BASADO EN ESTADO_ITEM ACTUAL, no en el orden del subestado
                   // esto asegura que enviemos orden 3 cuando el item está en Preparar (estado_item 3)
-                  const ordenActual = obtenerOrdenPorEstadoItem(item?.estado_item || 1);
+                  const ordenActual = obtenerOrdenPorEstadoItem(item?.estado_item || ordenAUsar);
                   
                   asignacionesRaw.push({
                     pedido_id,
@@ -167,7 +247,7 @@ const DashboardAsignaciones: React.FC = () => {
                     empleado_id: asignacion.empleadoId,
                     empleado_nombre: nombreEmpleado,
                     orden: ordenActual,
-                    modulo: obtenerModuloPorEstadoItem(item?.estado_item || 1),
+                    modulo: obtenerModuloPorEstadoItem(item?.estado_item || ordenAUsar),
                     estado: asignacion.estado || "en_proceso",
                     fecha_asignacion: asignacion.fecha_inicio || new Date().toISOString(),
                     fecha_fin: asignacion.fecha_fin,
@@ -179,11 +259,16 @@ const DashboardAsignaciones: React.FC = () => {
                     unidad_index: asignacion.unidad_index,
                     item: item
                   });
+                  
+                  asignacionesFiltradas++;
                 }
               }
             }
           }
         }
+        
+        console.log('🔍 DEBUG: Total asignaciones encontradas:', totalAsignacionesEncontradas);
+        console.log('🔍 DEBUG: Asignaciones que pasaron el filtro:', asignacionesFiltradas);
         
           // Agrupar asignaciones por pedido_id + item_id + empleado_id + módulo + unidad_index para contar unidades
         // Si unidad_index está disponible, usar una clave única por unidad
