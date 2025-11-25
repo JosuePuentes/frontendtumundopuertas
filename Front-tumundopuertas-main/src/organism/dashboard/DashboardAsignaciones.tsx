@@ -99,7 +99,20 @@ const DashboardAsignaciones: React.FC = () => {
           
           if (data.asignaciones && Array.isArray(data.asignaciones)) {
             // Mapear las asignaciones del formato del backend al formato del componente
-            const asignacionesMapeadas: Asignacion[] = data.asignaciones.map((asig: any) => ({
+            // FILTRAR: Excluir asignaciones terminadas antes de mapear
+            const asignacionesActivas = data.asignaciones.filter((asig: any) => {
+              // Verificar múltiples condiciones para determinar si está terminada
+              const estaTerminada = 
+                asig.fecha_fin ||  // Tiene fecha_fin - SIEMPRE significa que está terminada
+                asig.estado === "terminado" ||  // Estado es "terminado"
+                asig.estado_subestado === "terminado";  // Estado subestado es "terminado"
+              
+              // Solo incluir si NO está terminada y tiene estado válido
+              const estadoValido = asig.estado === "en_proceso" || asig.estado === "pendiente";
+              return !estaTerminada && estadoValido && asig.empleado_id;
+            });
+            
+            const asignacionesMapeadas: Asignacion[] = asignacionesActivas.map((asig: any) => ({
               _id: asig._id || `${asig.pedido_id}_${asig.item_id}_${asig.empleado_id}_${asig.modulo}`,
               pedido_id: asig.pedido_id,
               orden: asig.orden || 1,
