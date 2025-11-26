@@ -545,7 +545,8 @@ const HomePage: React.FC = () => {
             description: "Personalizar página principal",
             icon: Settings,
             color: "from-cyan-400 to-blue-500",
-            href: "/admin-home"
+            href: "/admin-home",
+            permiso: "admin-home"
         },
         {
             title: "Reportes",

@@ -22,6 +22,7 @@ interface Usuario {
     "empleados",
     "clientes",
     "admin",
+    "admin-home",
     "crearusuarios",
     "crearclientes",
     "crearinventario",

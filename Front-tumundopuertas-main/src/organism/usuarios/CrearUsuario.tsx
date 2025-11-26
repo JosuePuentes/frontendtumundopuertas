@@ -13,6 +13,7 @@ const permisosDisponibles = [
     "empleados",
     "clientes",
     "admin",
+    "admin-home",
     "crearusuarios",
     "crearclientes",
     "crearinventario",

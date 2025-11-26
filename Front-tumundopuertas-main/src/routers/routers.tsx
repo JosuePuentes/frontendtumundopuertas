@@ -376,7 +376,7 @@ function AppRouter() {
         <Route
           path="admin-home"
           element={
-            <ProtectedRoute permiso="admin">
+            <ProtectedRoute permiso="admin-home">
               <Suspense fallback={<LoadingFallback />}>
                 <AdminHome />
               </Suspense>

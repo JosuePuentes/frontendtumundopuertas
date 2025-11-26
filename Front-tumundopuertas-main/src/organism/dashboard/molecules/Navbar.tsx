@@ -64,7 +64,7 @@ const permisosRuta: Record<string, string | null> = {
   "/cuentas-por-pagar": "cuentas_por_pagar",
   "/pedidos-web": "pedidos_web",
   "/formatos-impresion": "admin",
-  "/admin-home": "admin",
+  "/admin-home": "admin-home",
   "/home": null,
   "/": null,
 };
