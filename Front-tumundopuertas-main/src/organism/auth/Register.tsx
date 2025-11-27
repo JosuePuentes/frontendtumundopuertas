@@ -25,6 +25,7 @@ interface RegisterResponse {
     "empleados",
     "clientes",
     "admin",
+    "admin-home",
     "crearusuarios",
     "crearclientes",
     "crearinventario",
